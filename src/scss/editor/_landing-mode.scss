@@ -1,0 +1,10 @@
+// Hide the post-title field when the editor is in Landing Page mode.
+// The hero slider's first slide carries the H1 instead.
+// Selectors cover both legacy and current block-editor markup.
+body.bridge-landing-mode .editor-post-title,
+body.bridge-landing-mode .editor-visual-editor__post-title-wrapper,
+body.bridge-landing-mode .edit-post-visual-editor__post-title-wrapper,
+body.bridge-landing-mode .wp-block-post-title.editor-post-title__block,
+body.bridge-landing-mode .editor-post-title__input {
+	display: none !important;
+}

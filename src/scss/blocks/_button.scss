@@ -1,0 +1,15 @@
+// theme.json owns the button's resting look (color, border, padding).
+// This layer adds interactive states it can't express.
+.wp-block-button__link {
+	transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+
+	&:hover,
+	&:focus-visible {
+		background-color: var(--wp--preset--color--secondary);
+		border-color: var(--wp--preset--color--secondary);
+	}
+
+	&:active {
+		transform: translateY(1px);
+	}
+}

@@ -1,0 +1,9 @@
+// Bridge — global stylesheet entry.
+// theme.json owns the design tokens; this file holds only the thin custom
+// layer that theme.json can't express (resets, a11y helpers, block states).
+
+@use 'base/reset';
+@use 'base/a11y';
+@use 'base/adminbar';
+@use 'blocks/button';
+@use 'editor/landing-mode';

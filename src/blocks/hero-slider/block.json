@@ -1,0 +1,64 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/hero-slider",
+	"version": "1.0.0",
+	"title": "Hero Slider",
+	"category": "media",
+	"icon": "format-gallery",
+	"description": "Full-screen hero slider powered by Swiper. Drop Cover blocks inside to author slides.",
+	"textdomain": "bridge",
+	"keywords": ["slider", "hero", "swiper", "carousel"],
+	"supports": {
+		"align": ["full"],
+		"anchor": true,
+		"html": false,
+		"layout": false
+	},
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "full"
+		},
+		"heightPreset": {
+			"type": "string",
+			"default": "full"
+		},
+		"customHeight": {
+			"type": "number",
+			"default": 80
+		},
+		"customHeightUnit": {
+			"type": "string",
+			"default": "vh"
+		},
+		"effect": {
+			"type": "string",
+			"default": "fade"
+		},
+		"autoplay": {
+			"type": "boolean",
+			"default": true
+		},
+		"autoplayDelay": {
+			"type": "number",
+			"default": 6
+		},
+		"loop": {
+			"type": "boolean",
+			"default": true
+		},
+		"showPagination": {
+			"type": "boolean",
+			"default": true
+		},
+		"showNavigation": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"editorScript": "bridge-hero-slider-editor",
+	"viewScript": "bridge-hero-slider-view",
+	"viewStyle": "bridge-hero-slider-style",
+	"render": "file:./render.php"
+}

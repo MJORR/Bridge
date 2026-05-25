@@ -1,0 +1,17 @@
+.screen-reader-text {
+	border: 0;
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	height: 1px;
+	width: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	position: absolute;
+	word-wrap: normal !important;
+}
+
+:focus-visible {
+	outline: 2px solid var(--wp--preset--color--secondary);
+	outline-offset: 2px;
+}

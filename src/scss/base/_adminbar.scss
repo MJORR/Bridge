@@ -1,0 +1,17 @@
+// WordPress admin bar compensations.
+//
+// WP renders a fixed 32px (46px on small screens) admin bar at top:0 for
+// logged-in users. Any element positioned absolutely from the body top
+// — like the transparent landing-page header — sits underneath it.
+// `.admin-bar` is added to <body> only when the toolbar is rendered,
+// so logged-out visitors get the original layout.
+
+body.admin-bar .bridge-header--transparent {
+  top: 32px;
+}
+
+@media screen and (max-width: 782px) {
+  body.admin-bar .bridge-header--transparent {
+    top: 46px;
+  }
+}

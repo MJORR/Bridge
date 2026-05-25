@@ -1,0 +1,460 @@
+/**
+ * Primary Navigation Menu Component
+ * Professional banking-style navigation with mobile burger menu and desktop dropdowns
+ * Uses theme.json variables for colors, spacing, and typography
+ */
+
+/* ============================================================================
+   MOBILE-FIRST BASE STYLES
+   ========================================================================= */
+
+/* Menu Toggle Button (Hamburger) - Mobile Only */
+.menu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-base);
+  background-color: transparent;
+  color: var(--wp--preset--color--text);
+  cursor: pointer;
+  transition: background-color var(--transition-base);
+  position: relative;
+  z-index: calc(var(--z-fixed) + 1);
+}
+
+.menu-toggle:hover {
+  background-color: var(--wp--preset--color--surface);
+}
+
+.menu-toggle:focus-visible {
+  outline: 2px solid var(--wp--preset--color--primary);
+  outline-offset: 2px;
+}
+
+/* Animated Hamburger Icon */
+.menu-toggle__icon {
+  position: relative;
+  width: 1.5rem;
+  height: 2px;
+  background-color: currentColor;
+  transition: background-color var(--transition-base);
+}
+
+.menu-toggle__icon::before,
+.menu-toggle__icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: currentColor;
+  transition:
+    transform var(--transition-base),
+    top var(--transition-base);
+}
+
+.menu-toggle__icon::before {
+  top: -0.5rem;
+}
+
+.menu-toggle__icon::after {
+  top: 0.5rem;
+}
+
+/* Animate to X when menu is open */
+.menu-toggle[aria-expanded='true'] .menu-toggle__icon {
+  background-color: transparent;
+}
+
+.menu-toggle[aria-expanded='true'] .menu-toggle__icon::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+
+.menu-toggle[aria-expanded='true'] .menu-toggle__icon::after {
+  top: 0;
+  transform: rotate(-45deg);
+}
+
+/* Navigation Container */
+.nav-primary {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-fixed);
+  visibility: hidden;
+  transition: visibility 0s var(--transition-slow);
+}
+
+.nav-primary[data-menu-state='open'] {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* Overlay - Darkens background when menu is open */
+.nav-primary__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgb(0 0 0 / 0.5);
+  opacity: 0;
+  transition: opacity var(--transition-slow);
+}
+
+.nav-primary[data-menu-state='open'] .nav-primary__overlay {
+  opacity: 1;
+}
+
+/* Slide-in Panel from Right */
+.nav-primary__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  width: min(20rem, 85vw);
+  background-color: var(--wp--preset--color--base);
+  box-shadow: var(--shadow-xl);
+  transform: translateX(100%);
+  transition: transform var(--transition-slow);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  z-index: 1;
+}
+
+.nav-primary[data-menu-state='open'] .nav-primary__panel {
+  transform: translateX(0);
+}
+
+/* Menu List */
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: var(--wp--preset--spacing--md);
+  padding-top: 5rem;
+}
+
+/* Menu Items */
+.nav > li {
+  position: relative;
+}
+
+.nav > li > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--wp--preset--spacing--sm) var(--wp--preset--spacing--md);
+  font-size: var(--wp--preset--font-size--base);
+  font-weight: 500;
+  color: var(--wp--preset--color--text);
+  text-decoration: none;
+  transition: all var(--transition-base);
+}
+
+.nav > li > a:hover {
+  background-color: var(--wp--preset--color--surface);
+  color: var(--wp--preset--color--primary);
+}
+
+.nav > li > a:focus-visible {
+  outline: 2px solid var(--wp--preset--color--primary);
+  outline-offset: 2px;
+}
+
+/* Active/Current Menu Item */
+.nav > li.current-menu-item > a,
+.nav > li.current-menu-parent > a {
+  background-color: var(--wp--preset--color--surface);
+  color: var(--wp--preset--color--primary);
+  font-weight: 600;
+}
+
+/* Submenu Styles - Mobile */
+.nav .sub-menu {
+  display: grid;
+  grid-template-rows: 0fr;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  padding-inline-start: var(--wp--preset--spacing--md);
+  transition: grid-template-rows var(--transition-slow);
+}
+
+.nav .sub-menu > * {
+  overflow: hidden;
+}
+
+.nav li.menu-item-has-children.is-open > .sub-menu {
+  grid-template-rows: 1fr;
+  padding-block: var(--wp--preset--spacing--xs);
+}
+
+.nav .sub-menu li a {
+  display: block;
+  padding: var(--wp--preset--spacing--xs) var(--wp--preset--spacing--md);
+  font-size: var(--wp--preset--font-size--sm);
+  color: var(--wp--preset--color--muted);
+  text-decoration: none;
+  border-radius: var(--radius-base);
+  transition: all var(--transition-base);
+}
+
+.nav .sub-menu li a:hover {
+  background-color: var(--wp--preset--color--surface);
+  color: var(--wp--preset--color--primary);
+}
+
+.nav .sub-menu li.current-menu-item > a {
+  color: var(--wp--preset--color--primary);
+  font-weight: 600;
+}
+
+/* Submenu Toggle Button - Mobile */
+.submenu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--wp--preset--color--muted);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border-radius: var(--radius-sm);
+}
+
+.submenu-toggle:hover {
+  background-color: var(--wp--preset--color--overlay);
+  color: var(--wp--preset--color--text);
+}
+
+.submenu-toggle svg {
+  width: 1rem;
+  height: 1rem;
+  transition: transform var(--transition-base);
+}
+
+.menu-item-has-children.is-open > a .submenu-toggle svg {
+  transform: rotate(180deg);
+}
+
+/* ============================================================================
+   DESKTOP STYLES - Tablet and up
+   ========================================================================= */
+
+@media (min-width: 768px) {
+  /* Hide mobile menu toggle on desktop */
+  .menu-toggle {
+    display: none;
+  }
+
+  /* Reset navigation to static horizontal layout */
+  .nav-primary {
+    position: static;
+    visibility: visible;
+    transition: none;
+  }
+
+  .nav-primary__overlay {
+    display: none;
+  }
+
+  .nav-primary__panel {
+    position: static;
+    width: auto;
+    height: auto;
+    background-color: transparent;
+    box-shadow: none;
+    transform: none;
+    transition: none;
+    overflow: visible;
+  }
+
+  /* Horizontal menu layout */
+  .nav {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--wp--preset--spacing--xs);
+    padding: 0;
+  }
+
+  .nav > li > a {
+    display: flex;
+    align-items: center;
+    min-height: 4.5rem;
+    padding-inline: var(--wp--preset--spacing--md);
+    font-size: var(--wp--preset--font-size--sm);
+    font-weight: 500;
+  }
+
+  /* Dropdown positioning */
+  .nav > li.menu-item-has-children {
+    position: relative;
+  }
+
+  /* Keep parent menu item highlighted when dropdown is open */
+  .nav > li.menu-item-has-children:hover > a,
+  .nav > li.menu-item-has-children:focus-within > a,
+  .nav > li.menu-item-has-children.is-open > a {
+    background-color: var(--wp--preset--color--surface);
+    color: var(--wp--preset--color--primary);
+  }
+
+  /* Desktop Submenu - Integrated slide-down style */
+  .nav .sub-menu {
+    display: block;
+    grid-template-rows: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 12rem;
+    padding: var(--wp--preset--spacing--sm) var(--wp--preset--spacing--xs);
+    padding-top: var(--wp--preset--spacing--md);
+    padding-inline-start: var(--wp--preset--spacing--xs);
+    background-color: var(--wp--preset--color--base);
+    border-left: 1px solid var(--wp--preset--color--overlay);
+    border-right: 1px solid var(--wp--preset--color--overlay);
+    border-bottom: 1px solid var(--wp--preset--color--overlay);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    box-shadow:
+      2px 4px 6px -1px rgb(0 0 0 / 0.1),
+      2px 2px 4px -2px rgb(0 0 0 / 0.1);
+    opacity: 0;
+    visibility: hidden;
+    max-height: 0;
+    overflow: hidden;
+    transform-origin: top;
+    transform: scaleY(0);
+    transition:
+      transform var(--transition-slow),
+      opacity var(--transition-base),
+      visibility 0s var(--transition-slow),
+      max-height var(--transition-slow);
+    z-index: var(--z-dropdown);
+  }
+
+  .nav .sub-menu > * {
+    overflow: visible;
+  }
+
+  /* Show dropdown on hover or focus-within */
+  .nav > li.menu-item-has-children:hover > .sub-menu,
+  .nav > li.menu-item-has-children:focus-within > .sub-menu,
+  .nav > li.menu-item-has-children.is-open > .sub-menu {
+    opacity: 1;
+    visibility: visible;
+    max-height: 50rem;
+    transform: scaleY(1);
+    transition:
+      transform var(--transition-slow),
+      opacity var(--transition-base),
+      visibility 0s,
+      max-height var(--transition-slow);
+  }
+
+  .nav .sub-menu li {
+    margin: 0;
+  }
+
+  .nav .sub-menu li a {
+    display: block;
+    padding: var(--wp--preset--spacing--xs) var(--wp--preset--spacing--sm);
+    font-size: var(--wp--preset--font-size--sm);
+    color: var(--wp--preset--color--text);
+    white-space: nowrap;
+  }
+
+  .nav .sub-menu li a:hover {
+    background-color: var(--wp--preset--color--surface);
+    color: var(--wp--preset--color--primary);
+  }
+
+  /* Dropdown indicator arrow */
+  .nav > li.menu-item-has-children > a::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-inline-start: var(--wp--preset--spacing--xs);
+    border-left: 0.25rem solid transparent;
+    border-right: 0.25rem solid transparent;
+    border-top: 0.25rem solid currentColor;
+    transition: transform var(--transition-base);
+  }
+
+  .nav > li.menu-item-has-children:hover > a::after,
+  .nav > li.menu-item-has-children.is-open > a::after {
+    transform: rotate(180deg);
+  }
+
+  /* Hide mobile submenu toggle on desktop */
+  .submenu-toggle {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   LARGE DESKTOP ENHANCEMENTS
+   ========================================================================= */
+
+@media (min-width: 1024px) {
+  .nav {
+    gap: var(--wp--preset--spacing--sm);
+  }
+
+  .nav > li > a {
+    padding: var(--wp--preset--spacing--sm) var(--wp--preset--spacing--md);
+    font-size: var(--wp--preset--font-size--base);
+  }
+
+  .nav .sub-menu {
+    min-width: 14rem;
+    padding: var(--wp--preset--spacing--sm);
+  }
+
+  .nav .sub-menu li a {
+    padding: var(--wp--preset--spacing--sm) var(--wp--preset--spacing--md);
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY & FOCUS STATES
+   ========================================================================= */
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .menu-toggle,
+  .menu-toggle__icon,
+  .menu-toggle__icon::before,
+  .menu-toggle__icon::after,
+  .nav-primary,
+  .nav-primary__overlay,
+  .nav-primary__panel,
+  .nav > li > a,
+  .nav .sub-menu,
+  .submenu-toggle svg,
+  .nav > li.menu-item-has-children > a::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .nav > li > a:focus-visible,
+  .nav .sub-menu li a:focus-visible,
+  .menu-toggle:focus-visible {
+    outline-width: 3px;
+  }
+}

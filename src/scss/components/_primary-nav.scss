@@ -1,0 +1,202 @@
+// Primary navigation — visual polish for WordPress's core/navigation block.
+//
+// CSS-only. The block's markup, ARIA attributes, focus trap, Escape
+// handling, and aria-expanded state are all owned by WP's Interactivity
+// API. This file only restyles existing classes; it doesn't replace icons,
+// rewrite HTML, or wire up custom JS.
+
+// ---------------------------------------------------------------------------
+// Top-level menu links — hover, focus, active state
+// ---------------------------------------------------------------------------
+.wp-block-navigation {
+  // Strip any background WP/theme.json puts on the <li> so only the
+  // anchor's rounded pill shows on hover (no square halo around it).
+  .wp-block-navigation-item {
+    background: transparent;
+  }
+
+  .wp-block-navigation-item__content {
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
+
+    &:hover {
+      background-color: color-mix(in srgb, currentColor 12%, transparent);
+    }
+
+    &:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 2px;
+    }
+  }
+
+  // Current-page emphasis (core/navigation sets aria-current="page")
+  .wp-block-navigation-item__content[aria-current="page"],
+  .current-menu-item > .wp-block-navigation-item__content {
+    font-weight: 600;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Submenu dropdown panel (desktop)
+// ---------------------------------------------------------------------------
+.wp-block-navigation__submenu-container {
+  background: var(--wp--preset--color--background);
+  color: var(--wp--preset--color--text);
+  border: 1px solid color-mix(in srgb, var(--wp--preset--color--text) 10%, transparent);
+  border-radius: 6px;
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.1),
+    0 2px 4px -2px rgba(15, 23, 42, 0.08);
+  padding: 0.5rem;
+  min-width: 14rem;
+  margin-top: 0.5rem;
+
+  .wp-block-navigation-item__content {
+    color: var(--wp--preset--color--text);
+    padding: 0.625rem 0.875rem;
+    white-space: nowrap;
+    width: 100%;
+
+    &:hover {
+      background-color: var(--wp--preset--color--surface);
+      color: var(--wp--preset--color--primary);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--wp--preset--color--primary);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Hamburger toggle — larger touch target, clear focus
+// ---------------------------------------------------------------------------
+.wp-block-navigation__responsive-container-open {
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background-color: color-mix(in srgb, currentColor 10%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mobile overlay (responsive container in modal mode)
+// ---------------------------------------------------------------------------
+.wp-block-navigation__responsive-container.has-modal-open {
+  // Dim + blur the page behind the panel
+  background: rgba(15, 23, 42, 0.5);
+
+  @supports (backdrop-filter: blur(4px)) {
+    backdrop-filter: blur(4px);
+  }
+
+  // Animate the panel itself in from the right
+  .wp-block-navigation__responsive-container-content {
+    background: var(--wp--preset--color--background);
+    color: var(--wp--preset--color--text);
+    width: min(22rem, 85vw);
+    margin-left: auto;
+    padding: 4rem 1.5rem 1.5rem;
+    min-height: 100dvh;
+    box-shadow: -8px 0 32px rgba(15, 23, 42, 0.2);
+    overflow-y: auto;
+    animation: bridge-nav-slide-in 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+
+  // Menu items in the overlay — larger touch targets, dark text for contrast
+  .wp-block-navigation-item__content {
+    color: var(--wp--preset--color--text);
+    padding: 0.875rem 1rem;
+    font-size: 1.0625rem;
+    line-height: 1.4;
+    border-radius: 4px;
+    display: block;
+
+    &:hover {
+      background-color: var(--wp--preset--color--surface);
+      color: var(--wp--preset--color--primary);
+    }
+  }
+
+  // Submenus inside the overlay — flatten (no nested dropdown panel)
+  .wp-block-navigation__submenu-container {
+    position: static;
+    box-shadow: none;
+    border: 0;
+    background: transparent;
+    padding: 0 0 0 1rem;
+    min-width: 0;
+    margin-top: 0;
+
+    .wp-block-navigation-item__content {
+      font-size: 1rem;
+      color: color-mix(in srgb, var(--wp--preset--color--text) 80%, transparent);
+    }
+  }
+}
+
+// Close button — top-right, generous hit area, strong focus ring
+.wp-block-navigation__responsive-container-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 4px;
+  color: var(--wp--preset--color--text);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background-color: var(--wp--preset--color--surface);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--wp--preset--color--primary);
+    outline-offset: 2px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Animation + reduced-motion respect
+// ---------------------------------------------------------------------------
+@keyframes bridge-nav-slide-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wp-block-navigation__responsive-container.has-modal-open
+    .wp-block-navigation__responsive-container-content {
+    animation: none;
+  }
+
+  .wp-block-navigation-item__content,
+  .wp-block-navigation__responsive-container-open,
+  .wp-block-navigation__responsive-container-close {
+    transition: none;
+  }
+}

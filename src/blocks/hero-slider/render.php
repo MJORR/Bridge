@@ -4,7 +4,8 @@
  *
  * Serializes settings as `data-*` attributes (read by slider.js to configure
  * Swiper) plus a `--bridge-slider-height` CSS variable that drives the
- * container height.
+ * container height. The first cover's image is upgraded to `fetchpriority`
+ * `high` and `loading="eager"` so the browser treats it as the LCP element.
  *
  * @package Bridge
  *
@@ -46,6 +47,24 @@ switch ( $height_preset ) {
 		break;
 	default:
 		$height_value = '100dvh';
+}
+
+// Prioritize the first slide's background image — it's the LCP element.
+// WordPress otherwise defaults to loading="lazy" + fetchpriority="auto",
+// which delays the most visible image on the page.
+if ( class_exists( 'WP_HTML_Tag_Processor' ) ) {
+	$processor = new WP_HTML_Tag_Processor( $content );
+	if ( $processor->next_tag(
+		array(
+			'tag_name'   => 'img',
+			'class_name' => 'wp-block-cover__image-background',
+		)
+	) ) {
+		$processor->set_attribute( 'fetchpriority', 'high' );
+		$processor->set_attribute( 'loading', 'eager' );
+		$processor->remove_attribute( 'decoding' );
+		$content = $processor->get_updated_html();
+	}
 }
 
 $wrapper_attributes = get_block_wrapper_attributes(

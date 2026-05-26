@@ -1,0 +1,59 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/cards",
+	"version": "1.0.0",
+	"title": "Cards",
+	"category": "widgets",
+	"icon": "grid-view",
+	"description": "Configurable, responsive grid of post cards.",
+	"textdomain": "bridge",
+	"keywords": ["posts", "grid", "cards", "loop"],
+	"supports": {
+		"align": ["wide", "full"],
+		"anchor": true,
+		"html": false,
+		"layout": false
+	},
+	"attributes": {
+		"postType": {
+			"type": "string",
+			"default": "post"
+		},
+		"numberOfPosts": {
+			"type": "number",
+			"default": 6
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		},
+		"orderBy": {
+			"type": "string",
+			"default": "date"
+		},
+		"order": {
+			"type": "string",
+			"default": "desc"
+		},
+		"categories": {
+			"type": "array",
+			"default": [],
+			"items": { "type": "number" }
+		},
+		"excerptLength": {
+			"type": "number",
+			"default": 20
+		},
+		"showReadMore": {
+			"type": "boolean",
+			"default": true
+		},
+		"readMoreText": {
+			"type": "string",
+			"default": "Read more →"
+		}
+	},
+	"editorScript": "bridge-cards-editor",
+	"render": "file:./render.php"
+}

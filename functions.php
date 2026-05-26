@@ -134,8 +134,59 @@ function bridge_register_blocks(): void {
 	if ( is_dir( $hero_slider_dir ) && file_exists( $hero_slider_dir . '/block.json' ) ) {
 		register_block_type( $hero_slider_dir );
 	}
+
+	// --- Cards -------------------------------------------------------------
+	$cards_editor_js = BRIDGE_DIST_PATH . '/cards-editor.js';
+	if ( file_exists( $cards_editor_js ) ) {
+		wp_register_script(
+			'bridge-cards-editor',
+			BRIDGE_DIST_URI . '/cards-editor.js',
+			array(
+				'wp-blocks',
+				'wp-block-editor',
+				'wp-element',
+				'wp-i18n',
+				'wp-components',
+				'wp-data',
+				'wp-server-side-render',
+			),
+			(string) filemtime( $cards_editor_js ),
+			true
+		);
+	}
+
+	$cards_dir = $blocks_root . '/cards';
+	if ( is_dir( $cards_dir ) && file_exists( $cards_dir . '/block.json' ) ) {
+		register_block_type( $cards_dir );
+	}
 }
 add_action( 'init', 'bridge_register_blocks' );
+
+/**
+ * Preload the hero-slider CSS when the current request actually renders
+ * the block. The browser starts fetching it in parallel with the HTML
+ * parser, removing it from the render-blocking critical path.
+ */
+function bridge_preload_hero_slider_css(): void {
+	if ( is_admin() || is_feed() || is_embed() ) {
+		return;
+	}
+
+	if ( ! has_block( 'bridge/hero-slider' ) ) {
+		return;
+	}
+
+	$css_path = BRIDGE_DIST_PATH . '/slider.css';
+	if ( ! file_exists( $css_path ) ) {
+		return;
+	}
+
+	printf(
+		'<link rel="preload" href="%s" as="style" />' . "\n",
+		esc_url( BRIDGE_DIST_URI . '/slider.css?ver=' . filemtime( $css_path ) )
+	);
+}
+add_action( 'wp_head', 'bridge_preload_hero_slider_css', 1 );
 
 /**
  * Enqueue the landing-mode editor watcher on Page edit screens only.

@@ -42,6 +42,7 @@ export default defineConfig({
         main: resolve(__dirname, 'src/main.js'),
         slider: resolve(__dirname, 'src/js/slider.js'),
         'hero-slider-editor': resolve(__dirname, 'src/blocks/hero-slider/index.js'),
+        'cards-editor': resolve(__dirname, 'src/blocks/cards/index.js'),
         'template-watcher': resolve(__dirname, 'src/editor/template-watcher.js'),
       },
       external: [
@@ -50,6 +51,12 @@ export default defineConfig({
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: 'chunks/[name].js',
+        // WordPress loads these via <script>, not <script type="module">.
+        // Without this IIFE wrap, ES-module top-level `const`s leak to
+        // global scope and collide across bundles (cards/hero-slider both
+        // declare `const InspectorControls` etc.) — SyntaxError on load.
+        banner: ';(function(){"use strict";',
+        footer: '})();',
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.css')) {
             return '[name][extname]';

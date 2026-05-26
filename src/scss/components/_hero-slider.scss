@@ -85,12 +85,14 @@ body:has(.bridge-header--transparent) .wp-site-blocks > main {
   // Cover's flex centering only centers the inner-container *as a box* —
   // the box itself is content-sized, so visually the content still hugs
   // the top. Make the inner-container fill the cover, then center its
-  // own children (the title/subtitle) vertically inside it.
+  // own children (the title/subtitle) vertically inside it. Inline padding
+  // keeps content clear of the prev/next buttons at the slide edges.
   .swiper-slide.wp-block-cover > .wp-block-cover__inner-container {
     min-height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    padding-inline: clamp(4rem, 10vw, 8rem);
   }
 
   .swiper-button-prev,

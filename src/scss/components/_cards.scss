@@ -1,0 +1,148 @@
+// Bridge — Cards block (bridge/cards) styles.
+//
+// Scoped under .bridge-cards-grid (added in render.php) rather than the
+// auto-generated .wp-block-bridge-cards class, because the editor wraps the
+// block twice — outer .wp-block-bridge-cards from useBlockProps and inner
+// .wp-block-bridge-cards from our render.php. Targeting only our explicit
+// class avoids that double-wrap collision.
+
+.bridge-cards-grid {
+  --bridge-cards-gap: 1.5rem;
+  --post-card-radius: 8px;
+  --post-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --post-card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1), 0 12px 24px rgba(0, 0, 0, 0.08);
+  --post-card-bg: var(--wp--preset--color--background, #fff);
+  --post-card-text: var(--wp--preset--color--text, #1f2937);
+  --post-card-muted: color-mix(in srgb, var(--post-card-text) 65%, transparent);
+  --post-card-surface: var(--wp--preset--color--surface, #f5f5f4);
+  --post-card-accent: var(--wp--preset--color--secondary, #2563eb);
+  --post-card-title-size: 1.25rem;
+  --post-card-excerpt-size: 0.9375rem;
+  --post-card-padding: 1.25rem;
+
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 3), 1fr);
+  gap: var(--bridge-cards-gap);
+  width: 100%;
+
+  @media (max-width: 768px) {
+    --columns: 2;
+  }
+
+  @media (max-width: 480px) {
+    --columns: 1;
+  }
+
+  // ---- Card -----------------------------------------------------------
+  .post-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--post-card-bg);
+    color: var(--post-card-text);
+    border-radius: var(--post-card-radius);
+    box-shadow: var(--post-card-shadow);
+    text-decoration: none;
+    overflow: hidden;
+    transition:
+      box-shadow 200ms ease,
+      transform 200ms ease;
+
+    &:hover,
+    &:focus-visible {
+      box-shadow: var(--post-card-shadow-hover);
+      transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--post-card-accent);
+      outline-offset: 2px;
+    }
+  }
+
+  .post-card__image {
+    margin: 0;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--post-card-surface);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 400ms ease;
+    }
+  }
+
+  .post-card:hover .post-card__image img {
+    transform: scale(1.04);
+  }
+
+  .post-card__image-placeholder {
+    width: 100%;
+    height: 100%;
+    background-image:
+      linear-gradient(135deg, transparent 49%, currentColor 49%, currentColor 51%, transparent 51%),
+      linear-gradient(45deg, transparent 49%, currentColor 49%, currentColor 51%, transparent 51%);
+    opacity: 0.08;
+  }
+
+  .post-card__body {
+    padding: var(--post-card-padding);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .post-card__title {
+    margin: 0;
+    font-size: var(--post-card-title-size);
+    font-weight: 600;
+    line-height: 1.3;
+    color: inherit;
+  }
+
+  .post-card__excerpt {
+    margin: 0;
+    font-size: var(--post-card-excerpt-size);
+    line-height: 1.5;
+    color: var(--post-card-muted);
+    flex: 1;
+  }
+
+  .post-card__read-more {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--post-card-accent);
+    margin-top: 0.5rem;
+    align-self: flex-start;
+  }
+
+  // ---- Empty state ----------------------------------------------------
+  .bridge-cards__empty {
+    grid-column: 1 / -1;
+    padding: 2rem;
+    text-align: center;
+    color: var(--post-card-muted);
+    background: var(--post-card-surface);
+    border-radius: var(--post-card-radius);
+  }
+
+  // Editor: card link is non-clickable inside the SSR preview.
+  .post-card[role="presentation"] {
+    cursor: default;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .post-card,
+    .post-card__image img {
+      transition: none;
+    }
+
+    .post-card:hover,
+    .post-card:hover .post-card__image img {
+      transform: none;
+    }
+  }
+}

@@ -1,0 +1,564 @@
+/**
+ * Bridge — the site header.
+ *
+ * Three layouts, each a plain flex arrangement, plus modifiers for background,
+ * contrast, sticky and border. No colour literals: everything resolves to a
+ * palette preset or a custom property published by the block, so the header
+ * follows the brand rather than shadowing it.
+ *
+ * Every modifier is a class on the header element itself, never on <body>.
+ * The editor renders this block without a page around it, and a rule that
+ * needs a body class is a rule that only works on the front end — which is the
+ * whole failure this header was rebuilt to remove. The two exceptions below
+ * are positional rather than cosmetic: sticky and transparent headers have to
+ * escape the template-part wrapper, which is a box the theme does not emit.
+ */
+
+.bridge-header {
+	position: relative;
+	z-index: 20;
+	background-color: var(--bridge-header-bg, transparent);
+
+	/**
+	 * How tall this header is, for the things that have to be placed against
+	 * its bottom edge — the mobile panel and the close button sitting on top
+	 * of the toggle.
+	 *
+	 * Measured by header.js and published as `--bridge-header-height`, because
+	 * the real answer depends on what the header is carrying: a top bar, a
+	 * wrapped row, a logo the operator swapped this morning. The fallback is
+	 * the same sum for the ordinary case — one row of padding above and below
+	 * whichever is taller, the logo or the toggle — so a header rendered
+	 * before the script runs, or in the editor where it never does, is placed
+	 * close rather than placed at zero.
+	 */
+	// stylelint-disable-next-line length-zero-no-unit -- read inside a calc().
+	--bridge-header-pad: var(--bridge-header-padding, 0px);
+	--bridge-header-icon: max(var(--bridge-header-logo-height, 2.5rem), 2.75rem);
+	--bridge-header-size: var(
+		--bridge-header-height,
+		calc(var(--bridge-header-icon) + 2 * var(--bridge-header-pad))
+	);
+}
+
+// The header spans the viewport; its contents line up with the page.
+.bridge-header__inner {
+	max-width: var(--wp--style--global--content-size);
+	margin-inline: auto;
+}
+
+// ---- Layouts ---------------------------------------------------------------
+
+.bridge-header__row,
+.bridge-header__stack {
+	display: flex;
+	// Published by the block, already compiled into a fluid clamp: the operator
+	// sets the padding a full-width viewport gets and narrow ones interpolate
+	// down, because the same pixels are a much larger share of a phone. The
+	// fallback keeps a header rendered outside the block — an old cached
+	// template part, say — on the spacing scale it used before.
+	padding-block: var(--bridge-header-padding, var(--wp--preset--spacing--30));
+}
+
+.bridge-header__row {
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: nowrap;
+	gap: var(--wp--preset--spacing--40);
+}
+
+.bridge-header__stack {
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20);
+}
+
+.bridge-header--centre .bridge-header__stack {
+	align-items: center;
+	text-align: center;
+}
+
+.bridge-header--two-row .bridge-header__stack {
+	align-items: flex-start;
+}
+
+// The menu and the button share a row on every layout, so the button is
+// always beside the menu rather than moving house when the layout changes.
+.bridge-header__end {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--40);
+}
+
+// ---- Top bar ---------------------------------------------------------------
+
+// A modifier, not a layout: it styles itself the same way above any of the
+// three arrangements.
+.bridge-header__top {
+	padding-block: var(--wp--preset--spacing--20);
+	border-bottom: 1px solid color-mix(in srgb, currentcolor 12%, transparent);
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.bridge-header__top-inner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--20);
+}
+
+// ---- Logo ------------------------------------------------------------------
+
+// Sized by height so a wordmark and a monogram of different aspect ratios both
+// sit correctly without per-asset fiddling.
+.bridge-header__logo img {
+	height: var(--bridge-header-logo-height, 40px);
+	width: auto;
+	max-width: none;
+	display: block;
+}
+
+.bridge-header__logo {
+	display: inline-flex;
+	align-items: center;
+	text-decoration: none;
+	color: inherit;
+}
+
+.bridge-header__logo--text {
+	font-size: var(--wp--preset--font-size--large);
+	font-weight: 600;
+	line-height: 1.1;
+}
+
+/**
+ * Two images of one wordmark, one of them visible: the dark logo for a light
+ * ground, the light one for a dark ground.
+ *
+ * Only a sticky header prints both — every other header knows its ground at
+ * render time and ships the image that wins — so these rules are scoped to
+ * `--dual`. A header carrying a single logo is then never hidden by them,
+ * which is what makes "use the light one if there is one" safe to say.
+ *
+ * The default-hidden rule matches on `img` as well as the class: the sizing
+ * rule above sets `display: block` through a descendant selector, and a plain
+ * class would lose to it.
+ */
+.bridge-header__logo img.bridge-header__logo-light {
+	display: none;
+}
+
+.bridge-header--contrast-light .bridge-header__logo--dual {
+
+	.bridge-header__logo-img {
+		display: none;
+	}
+
+	.bridge-header__logo-light {
+		display: block;
+	}
+}
+
+// Scrolled, a sticky header is solid on the site's own background whatever it
+// sat on at the top of the page. `--scrolled-contrast-*` carries which logo
+// that ground wants, decided server-side where the palette is known.
+.is-scrolled.bridge-header--scrolled-contrast-dark .bridge-header__logo--dual {
+
+	.bridge-header__logo-img {
+		display: block;
+	}
+
+	.bridge-header__logo-light {
+		display: none;
+	}
+}
+
+.is-scrolled.bridge-header--scrolled-contrast-light .bridge-header__logo--dual {
+
+	.bridge-header__logo-img {
+		display: none;
+	}
+
+	.bridge-header__logo-light {
+		display: block;
+	}
+}
+
+// ---- Dropdowns -------------------------------------------------------------
+
+/**
+ * The primary nav's dropdown panels hang from the bottom edge of the header.
+ *
+ * Core positions a submenu against its own <li>, so the panel starts wherever
+ * that item happens to end — mid-header, and at a different height every time
+ * the logo grows or the padding changes. What a dropdown should hang from is
+ * the header.
+ *
+ * The panel is not repositioned against a different ancestor to achieve that.
+ * Absolute positioning is one decision for both axes, so moving the anchor up
+ * to the header would also drag the panel sideways, away from the item it
+ * belongs to. Instead the item is stretched to the full height of the header
+ * row: `top: 100%` then lands on the bottom of the row's content box, and one
+ * padding's worth of margin carries it the rest of the way. Horizontal
+ * alignment stays exactly where core put it.
+ *
+ * Scoped above 600px because that is where core stops rendering the nav as an
+ * overlay and starts rendering it as a menu bar. Below it there are no panels
+ * to place — the submenu is flattened into the modal.
+ */
+@media (min-width: 600px) {
+
+	// The height has to be handed down every wrapper core renders between the
+	// <nav> and the <li>. A percentage height against an auto-height ancestor
+	// resolves to auto, so one gap anywhere breaks the whole run.
+	.bridge-header__row > .bridge-header__end,
+	.bridge-header .bridge-nav--primary,
+	.bridge-header .bridge-nav--primary .wp-block-navigation__responsive-container,
+	.bridge-header .bridge-nav--primary .wp-block-navigation__container,
+	.bridge-header .bridge-nav--primary .wp-block-navigation-item {
+		align-self: stretch;
+	}
+
+	// These three are block boxes rather than flex items, so they take the
+	// height rather than the stretch.
+	.bridge-header .bridge-nav--primary {
+
+		.wp-block-navigation__responsive-close,
+		.wp-block-navigation__responsive-dialog,
+		.wp-block-navigation__responsive-container-content {
+			height: 100%;
+		}
+	}
+
+	/**
+	 * The panel opens from the item's leading edge.
+	 *
+	 * Core right-aligns submenus under a right-justified menu, which keeps a
+	 * panel on screen but leaves its rows sitting under nothing in particular.
+	 * Anchored left instead, and with the rows carrying the same inset as the
+	 * top-level links, a dropdown item's text starts exactly where the text of
+	 * the item it opened from starts.
+	 *
+	 * Six classes because core's right-alignment rule is five, and a tie would
+	 * hand the decision to stylesheet order.
+	 */
+	.bridge-header
+		.bridge-nav--primary
+		.wp-block-navigation__container
+		> .wp-block-navigation-item.has-child
+		> .wp-block-navigation__submenu-container {
+		left: 0;
+		right: auto;
+	}
+
+	/**
+	 * The rows sit at the same inset as the top-level links.
+	 *
+	 * Which is the other half of aligning the text: anchoring the panel left
+	 * only helps if what is inside it starts where the parent's text starts.
+	 * Core pads these rows `.5em 1em` at five classes — an em-based inset that
+	 * drifts with the fluid type scale, so it could not line up with a rem one
+	 * by coincidence. Six classes here to settle it.
+	 */
+	.bridge-header
+		.bridge-nav--primary
+		.wp-block-navigation__container
+		.wp-block-navigation__submenu-container
+		.wp-block-navigation-item
+		.wp-block-navigation-item__content {
+		padding-block: 0.6875rem;
+		padding-inline: var(--bridge-nav-inset);
+	}
+
+	/**
+	 * The panel's surface.
+	 *
+	 * Core paints every submenu white with a hairline border and black text,
+	 * through `.wp-block-navigation:not(.has-background)
+	 * .wp-block-navigation__submenu-container` — three classes, which a rule
+	 * written as one class loses to without saying so. The theme's palette
+	 * declarations sat in the nav component doing nothing at all until this
+	 * selector went past core's.
+	 *
+	 * Scoped inside this media query rather than written globally so the
+	 * mobile overlay, where the submenu is flattened and has no surface of its
+	 * own, keeps winning on its own terms.
+	 */
+	.bridge-header
+		.bridge-nav--primary
+		.wp-block-navigation__container
+		.wp-block-navigation__submenu-container {
+
+		/**
+		 * The header's own ground, published by the block, lifted one step.
+		 *
+		 * Opaque, not a tint of it: a translucent panel reads whatever is
+		 * scrolling underneath it, and body copy showing faintly through a
+		 * menu is the difference between a dropdown and a smudge.
+		 *
+		 * The step is mixed from `currentcolor` — the header's text colour —
+		 * so the panel lightens off a dark bar and darkens off a light one
+		 * from a single declaration, and keeps doing the right thing when a
+		 * sticky header swaps ground mid-page. Text colour is inherited for
+		 * the same reason: the panel follows the contrast treatment rather
+		 * than restating it.
+		 */
+		background: color-mix(
+			in srgb,
+			currentcolor 6%,
+			var(--bridge-header-menu-bg, var(--wp--preset--color--background))
+		);
+		color: inherit;
+		border: 0;
+		border-radius: 0 0 10px 10px;
+		min-width: 15rem;
+
+		/**
+		 * A hairline on three sides, and the elevation.
+		 *
+		 * The hairline is three inset shadows rather than a border, because a
+		 * border is a box and this panel's whole job is to line its rows up
+		 * with a link one level above it: a 1px left border moves every row in
+		 * the panel 1px right of the text it is meant to sit under, and 1px
+		 * out is exactly as wrong as 10 for something the eye reads as a
+		 * column. An inset shadow paints in the same place and takes no space.
+		 *
+		 * Nothing on the top edge: that side is against the header, which the
+		 * panel is continuous with, and a line there would draw a seam through
+		 * the join the full-height hover just closed.
+		 */
+		box-shadow:
+			inset 1px 0 0 0 color-mix(in srgb, currentcolor 12%, transparent),
+			inset -1px 0 0 0 color-mix(in srgb, currentcolor 12%, transparent),
+			inset 0 -1px 0 0 color-mix(in srgb, currentcolor 12%, transparent),
+			0 18px 32px -18px rgba(15, 23, 42, 0.45),
+			0 4px 10px -6px rgba(15, 23, 42, 0.25);
+		// Closed, the panel is clipped to nothing, so this is only ever seen
+		// on the way in: the panel drops the last few pixels into place rather
+		// than appearing whole.
+		transform: translateY(-6px);
+	}
+
+	// Open. Core un-clips the panel and fades it in, and names three ways that
+	// can happen — pointer on the item, focus inside it, and the caret button
+	// on a menu that opens by click. All three land here, so the drop plays
+	// whichever way the panel was asked for.
+	.bridge-header
+		.bridge-nav--primary
+		.wp-block-navigation-item.has-child:hover
+		> .wp-block-navigation__submenu-container,
+	.bridge-header
+		.bridge-nav--primary
+		.wp-block-navigation-item.has-child:focus-within
+		> .wp-block-navigation__submenu-container,
+	.bridge-header
+		.bridge-nav--primary
+		.wp-block-navigation-submenu__toggle[aria-expanded="true"]
+		~ .wp-block-navigation__submenu-container {
+		transform: translateY(0);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+
+		.bridge-header
+			.bridge-nav--primary
+			.wp-block-navigation__submenu-container {
+			transition:
+				opacity 160ms ease,
+				transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+		}
+	}
+
+	// Only the first level. Nested panels open sideways from their parent
+	// panel, and core has already placed them.
+	.bridge-header
+		.bridge-nav--primary
+		.wp-block-navigation__container
+		> .wp-block-navigation-item
+		> .wp-block-navigation__submenu-container {
+		margin-top: var(--bridge-header-padding, 0);
+
+		/**
+		 * The gap the margin opens is dead ground: leave the item and the
+		 * pointer is over neither the item nor the panel, `:hover` drops, and
+		 * the panel closes on the way to it. This bridges it — invisible, part
+		 * of the panel, and clipped out of existence while the panel is closed
+		 * because a closed panel is `width: 0; height: 0; overflow: hidden`.
+		 */
+		&::before {
+			content: "";
+			position: absolute;
+			inset-inline: 0;
+			bottom: 100%;
+			height: var(--bridge-header-padding, 0);
+		}
+	}
+}
+
+// ---- Background and contrast ----------------------------------------------
+
+// Contrast is a class rather than a colour so the same rule serves a palette
+// ground and a photograph.
+.bridge-header--contrast-light {
+	color: var(--wp--preset--color--background);
+
+	a:where(:not(.wp-element-button)) {
+		color: inherit;
+	}
+}
+
+.bridge-header--contrast-dark {
+	color: var(--wp--preset--color--text);
+
+	a:where(:not(.wp-element-button)) {
+		color: inherit;
+	}
+}
+
+/**
+ * ---- Position --------------------------------------------------------------
+ *
+ * A transparent or sticky header has to be positioned against the page, but
+ * the theme does not emit its own outermost element: core wraps every template
+ * part in one. Positioning the inner element instead would trap `sticky`
+ * inside a wrapper exactly as tall as the header, which is a header that
+ * silently never sticks. So these two rules — and only these two — reach the
+ * wrapper, matched by what it contains.
+ */
+
+// Transparent headers overlay whatever follows them, so the first section has
+// to start at the top of the viewport rather than below the header.
+:where(.wp-block-template-part):has(> .bridge-header--transparent) {
+	position: absolute;
+	inset-inline: 0;
+	top: 0;
+	z-index: 100;
+}
+
+:where(.wp-block-template-part):has(> .bridge-header--sticky) {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+}
+
+:where(.wp-block-template-part):has(
+	> .bridge-header--sticky.bridge-header--transparent
+) {
+	position: fixed;
+}
+
+// The overlay is positioned from the page, so the page has to be a containing
+// block for it.
+body:has(.bridge-header--transparent) {
+	position: relative;
+}
+
+// WordPress applies `margin-block-start: var(--wp--preset--spacing--40)` to
+// every direct child of `.wp-site-blocks` via `:where(.wp-site-blocks) > *`.
+// That pushes <main> down even though the transparent header is absolute and
+// takes no flow space. Scoped via :has() so it triggers only where a
+// transparent header is actually overlaying something.
+body:has(.bridge-header--transparent) .wp-site-blocks > main {
+	margin-block-start: 0;
+}
+
+// A header that overlays a photograph keeps its links plain: an underline on
+// hover reads as damage over a busy image, where the pill from the nav
+// component does the job on its own.
+.bridge-header--transparent {
+
+	a,
+	.wp-block-navigation .wp-block-navigation-item__content {
+		text-decoration: none;
+	}
+}
+
+/**
+ * A sticky header covers the top of the viewport, so anything the page scrolls
+ * to has to stop below it rather than under it: a focused link reached by Tab,
+ * an in-page anchor, a skip link's target. WCAG 2.2 SC 2.4.11 (Focus Not
+ * Obscured) is the one that fails otherwise, and it fails invisibly — the
+ * focus ring is drawn correctly, behind the header.
+ *
+ * `scroll-padding` belongs to the scroll container rather than to the element
+ * doing the covering, which is why this reads the height off the root: the
+ * header publishes its measurement there as well as on itself. The extra rem
+ * is so focus lands clear of the header rather than tight against it.
+ */
+html:has(.bridge-header--sticky) {
+	scroll-padding-top: calc(var(--bridge-header-height, 5rem) + 1rem);
+}
+
+.bridge-header--sticky {
+	transition:
+		background-color 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+// A transparent sticky header becomes solid once it leaves the hero,
+// otherwise its links sit invisibly over body copy — the single most common
+// way this combination breaks.
+.bridge-header--sticky.is-scrolled {
+	background-color: var(--wp--preset--color--background);
+	color: var(--wp--preset--color--text);
+	box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+	// Repointed with the header, not left behind on the ground it had at the
+	// top of the page — an open dropdown keeps matching as the bar goes solid.
+	--bridge-header-menu-bg: var(--wp--preset--color--background);
+}
+
+/**
+ * WordPress renders a fixed 32px (46px on small screens) toolbar at the top of
+ * the viewport for logged-in users, and pushes the document out of its way
+ * with `margin-top` on <html>. `.admin-bar` is on <body> only while the
+ * toolbar renders, so logged-out visitors keep the original layout.
+ *
+ * Only the sticky header needs the offset, and it is worth being exact about
+ * why, because the obvious reading — "the toolbar covers the top of the
+ * screen, so everything at the top of the screen moves down" — is what put a
+ * transparent header 32px too low on the landing template.
+ *
+ * A sticky header is positioned against the viewport, which the toolbar sits
+ * over: without this it slides underneath the toolbar on scroll. A transparent
+ * header is positioned against <body>, and <body> has already been moved down
+ * by the margin on <html> — the offset is in the page's own geometry, and
+ * adding it here applies it a second time. Which is what a logged-in visitor
+ * saw: a hero starting at the top of the page and a header floating a
+ * toolbar's height below it.
+ *
+ * A header that is both sticky and transparent is `position: fixed`, back
+ * against the viewport, and matches on `--sticky` here as it should.
+ */
+.admin-bar :where(.wp-block-template-part):has(> .bridge-header--sticky) {
+	top: 32px;
+}
+
+@media screen and (max-width: 782px) {
+
+	.admin-bar :where(.wp-block-template-part):has(> .bridge-header--sticky) {
+		top: 46px;
+	}
+}
+
+// ---- Border ----------------------------------------------------------------
+
+.bridge-header--border {
+	border-bottom: 1px solid color-mix(in srgb, currentcolor 15%, transparent);
+}
+
+// ---- Call to action --------------------------------------------------------
+
+.bridge-header__cta .wp-element-button {
+	white-space: nowrap;
+	display: inline-block;
+}
+
+// The stacked layouts collapse earlier than the single-row one: two rows of
+// centred content runs out of width long before a logo and a menu side by side.
+@media (max-width: 600px) {
+
+	.bridge-header__cta {
+		display: none;
+	}
+}

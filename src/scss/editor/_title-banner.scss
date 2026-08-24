@@ -1,0 +1,87 @@
+/**
+ * Title Banner — live editor preview on the native post-title field.
+ *
+ * The front end renders the real banner via the bridge/page-title block; this
+ * only mirrors the per-page choice onto the editor's title field so the
+ * selected option is visible while editing. Classes and the colour custom
+ * properties are set by editor/banner-preview.js. Scoped under
+ * body.bridge-has-banner so none of this leaks onto the front end, where the
+ * same compiled stylesheet is also loaded.
+ */
+
+body.bridge-has-banner {
+
+	.wp-block-post-title,
+	.editor-post-title,
+	.editor-post-title__input {
+		box-sizing: border-box;
+		background-color: var(--bridge-editor-banner-bg, transparent);
+		color: var(--bridge-editor-banner-text, inherit);
+		// The same presets the real banner uses, so the mirror moves with it —
+		// and without the literal fallbacks, which were a step out and would
+		// not scale with the viewport the way the presets now do.
+		padding: var(--wp--preset--spacing--50) var(--wp--preset--spacing--40);
+		border-radius: 8px;
+		transition:
+			background-color 150ms ease,
+			color 150ms ease;
+	}
+
+	&.bridge-banner-align-center {
+
+		.wp-block-post-title,
+		.editor-post-title,
+		.editor-post-title__input {
+			text-align: center;
+		}
+	}
+
+	// Full width: stretch to the canvas edges and square off the corners to
+	// distinguish it from the contained, inset banner.
+	&.bridge-banner-style-fullwidth {
+
+		.wp-block-post-title,
+		.editor-post-title,
+		.editor-post-title__input {
+			border-radius: 0;
+			margin-inline: calc(
+				var(--wp--style--root--padding-left, 1.5rem) * -1
+			);
+			padding-inline: var(--wp--style--root--padding-left, 1.5rem);
+		}
+	}
+}
+
+// ---- No title ------------------------------------------------------------
+// There is no banner to mirror here, so this is not a preview of anything —
+// it is the canvas telling the truth about the page. The front end renders no
+// heading and closes the space above the content; a title field still sitting
+// at the top of the editor, however it were styled, would put a block of air
+// there that the published page does not have, and the operator would be
+// composing against a layout that is not the one they are making. The same
+// selector list as bridge-landing-mode, and for the same reason: the
+// title field is one element under several names across editor versions.
+body.bridge-title-hidden {
+
+	.editor-post-title,
+	.editor-visual-editor__post-title-wrapper,
+	.edit-post-visual-editor__post-title-wrapper,
+	.wp-block-post-title.editor-post-title__block,
+	.editor-post-title__input {
+		display: none !important;
+	}
+}
+
+// The stand-in the block prints in the template editor, where an empty render
+// would leave nothing to click and no way back to the panel. Frontend never
+// sees it — render.php prints it only for the editor's own preview request.
+.bridge-page-title--hidden {
+	margin: 0;
+	padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+	border: 1px dashed
+		color-mix(in srgb, var(--wp--preset--color--text) 30%, transparent);
+	border-radius: 4px;
+	color: color-mix(in srgb, var(--wp--preset--color--text) 60%, transparent);
+	font-size: var(--wp--preset--font-size--small, 0.875rem);
+	font-style: italic;
+}

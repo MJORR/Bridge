@@ -1,0 +1,26 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/header",
+	"version": "1.0.0",
+	"title": "Site Header",
+	"category": "theme",
+	"icon": "table-row-before",
+	"description": "The site header, drawn entirely from Theme Options: layout, menus, logo, top bar and button.",
+	"textdomain": "bridge",
+	"attributes": {
+		"background": {
+			"type": "string",
+			"default": "",
+			"enum": ["", "solid", "transparent"]
+		}
+	},
+	"supports": {
+		"inserter": false,
+		"html": false,
+		"reusable": false,
+		"multiple": false
+	},
+	"editorScript": "bridge-header-editor",
+	"render": "file:./render.php"
+}

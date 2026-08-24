@@ -1,0 +1,88 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/feature-blocks",
+	"version": "1.0.0",
+	"title": "Feature Blocks",
+	"category": "design",
+	"icon": "grid-view",
+	"description": "A grid of feature panels, each with a graphic, a title and a line of copy.",
+	"textdomain": "bridge",
+	"keywords": ["features", "services", "grid", "panels", "blocks"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "wide"
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		},
+		"gutters": {
+			"type": "boolean",
+			"default": true
+		},
+		"textAlignment": {
+			"type": "string",
+			"default": "left"
+		},
+		"alignImageTop": {
+			"type": "boolean",
+			"default": false
+		}
+	},
+	"providesContext": {
+		"bridge/textAlignment": "textAlignment",
+		"bridge/alignImageTop": "alignImageTop"
+	},
+	"example": {
+		"attributes": {
+			"columns": 3,
+			"width": "wide"
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"content": "What we do"
+				}
+			},
+			{
+				"name": "bridge/feature-block",
+				"attributes": {
+					"title": "Strategy",
+					"text": "A line about it."
+				}
+			},
+			{
+				"name": "bridge/feature-block",
+				"attributes": {
+					"title": "Design",
+					"text": "A line about it."
+				}
+			},
+			{
+				"name": "bridge/feature-block",
+				"attributes": {
+					"title": "Build",
+					"text": "A line about it."
+				}
+			}
+		]
+	},
+	"editorScript": "bridge-feature-blocks-editor",
+	"style": "bridge-feature-blocks-style",
+	"render": "file:./render.php"
+}

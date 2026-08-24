@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/alternating-row",
+	"version": "1.0.0",
+	"title": "Row",
+	"category": "design",
+	"icon": "align-pull-left",
+	"description": "One row of media beside text.",
+	"textdomain": "bridge",
+	"parent": ["bridge/alternating-content"],
+	"supports": { "anchor": false, "html": false, "reusable": false },
+	"attributes": {
+		"mediaType": { "type": "string", "default": "image" },
+		"imageId": { "type": "number" },
+		"imageUrl": { "type": "string", "default": "" },
+		"alt": { "type": "string", "default": "" },
+		"videoUrl": { "type": "string", "default": "" },
+		"youtubeId": { "type": "string", "default": "" }
+	},
+	"editorScript": "bridge-alternating-row-editor",
+	"render": "file:./render.php"
+}

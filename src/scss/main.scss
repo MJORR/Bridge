@@ -1,11 +1,70 @@
 // Bridge — global stylesheet entry.
+//
 // theme.json owns the design tokens; this file holds only the thin custom
-// layer that theme.json can't express (resets, a11y helpers, block states).
+// layer that theme.json cannot express (resets, a11y helpers, block states).
+//
+// Compiling, from the theme root:
+//
+//   npm install          Once, to fetch the toolchain.
+//   npm run build        Production build. Compiles every entry, minifies, and
+//                        writes dist/ — this file becomes dist/main.css.
+//   npm run dev          The same build left watching. Rebuilds on save and
+//                        keeps sourcemaps, which the production build drops.
+//   npm run lint:css     stylelint over src/**/*.scss.
+//   npm run format       prettier over the same files, in place.
+//
+// This file is not itself an entry in vite.config.js, which is worth knowing
+// before going to look for it there: src/main.js is the entry, it imports this
+// file on its first line, and that pairing is what emits dist/main.js
+// alongside dist/main.css.
+//
+// Vite drives it, not the Sass CLI: `sass src/scss/main.scss` would compile,
+// but it knows nothing about the other entries, the output names PHP registers
+// by, or the minifying, so it writes the wrong file to the wrong place. Always
+// go through the npm script.
+//
+// Nothing is compiled at runtime and dist/ is committed, so a change to a
+// stylesheet does nothing on the site until a build has been run.
+//
+// Editing a partial rebuilds every entry that @uses it — a change in
+// abstracts/ reaches most of dist/. Adding a stylesheet means adding it to
+// `input` in vite.config.js as well, and registering the built file in PHP
+// (bridge_register_style(), or a `style` handle in the block's block.json);
+// a new .scss file on its own is compiled by nothing and loaded by nothing.
+//
+// The folders, and what belongs in each:
+//
+//   abstracts/   Mixins, functions and shared values. Emits no CSS on its own,
+//                so a partial here can be @used by any number of bundles
+//                without duplicating a single declaration.
+//   base/        Element-level rules that apply to the whole document.
+//   blocks/      One partial per Bridge block, named after the block. If
+//                src/blocks/<name>/ exists, its styles live in blocks/_<name>.
+//   components/  Everything that is UI but not one of our blocks: overrides
+//                for core blocks, and cross-cutting furniture like the section
+//                skins.
+//   editor/      Rules that only ever apply inside the editor.
+//   admin/       Rules for the wp-admin screens the theme adds.
+//
+// The .scss files beside this one are entries in their own right, one per
+// block bundle: each is a list of @use lines and nothing else. A block that
+// ships its own stylesheet has one of those, a line in vite.config.js, and a
+// `style` handle in its block.json; blocks without one are bundled into this
+// file instead, from the list at the foot of it.
+//
+// The order below is the cascade order and is deliberate — `sections` has to
+// follow the block partials it paints over. Regroup it and rules that used to
+// win stop winning.
 
-@use 'base/reset';
-@use 'base/a11y';
-@use 'base/adminbar';
-@use 'blocks/button';
-@use 'components/primary-nav';
-@use 'components/cards';
-@use 'editor/landing-mode';
+@use "base/reset";
+@use "base/a11y";
+@use "components/button";
+@use "components/primary-nav";
+@use "blocks/cards";
+@use "blocks/page-title";
+@use "blocks/icon";
+@use "components/sections";
+@use "blocks/header";
+@use "editor/landing-mode";
+@use "editor/media-field";
+@use "editor/title-banner";

@@ -1,11 +1,16 @@
 <?php
+
 /**
  * Server-side render for `bridge/hero-slider`.
  *
- * Serializes settings as `data-*` attributes (read by slider.js to configure
- * Swiper) plus a `--bridge-slider-height` CSS variable that drives the
- * container height. The first cover's image is upgraded to `fetchpriority`
- * `high` and `loading="eager"` so the browser treats it as the LCP element.
+ * Serialises the slider's settings as `data-*` attributes, read by slider.js to
+ * configure Swiper, plus three CSS variables: `--bridge-slider-height` drives
+ * the container height, `--bridge-slider-inset` takes the header out of it, and
+ * `--bridge-slider-lead` leads the slide content past a header that overlays
+ * rather than precedes it.
+ *
+ * The arithmetic behind all three, the width rule and the LCP hint are shared
+ * with `bridge/hero-banner` and live in inc/hero-blocks.php.
  *
  * @package Bridge
  *
@@ -14,81 +19,80 @@
  * @var WP_Block $block      Parsed block instance.
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
 	exit;
 }
 
-if ( '' === trim( (string) $content ) ) {
+if ('' === trim((string) $content)) {
 	return;
 }
 
-$effect          = isset( $attributes['effect'] ) ? (string) $attributes['effect'] : 'fade';
-$autoplay        = ! empty( $attributes['autoplay'] );
-$autoplay_delay  = isset( $attributes['autoplayDelay'] ) ? (int) $attributes['autoplayDelay'] : 6;
-$loop            = ! empty( $attributes['loop'] );
-$show_pagination = ! empty( $attributes['showPagination'] );
-$show_navigation = ! empty( $attributes['showNavigation'] );
+$effect          = isset($attributes['effect']) ? (string) $attributes['effect'] : 'fade';
+$autoplay        = ! empty($attributes['autoplay']);
+$autoplay_delay  = isset($attributes['autoplayDelay']) ? (int) $attributes['autoplayDelay'] : 6;
+$loop            = ! empty($attributes['loop']);
+$show_pagination = ! empty($attributes['showPagination']);
+$show_navigation = ! empty($attributes['showNavigation']);
 
-$height_preset = isset( $attributes['heightPreset'] ) ? (string) $attributes['heightPreset'] : 'full';
-$custom_height = isset( $attributes['customHeight'] ) ? (int) $attributes['customHeight'] : 80;
-$custom_unit   = isset( $attributes['customHeightUnit'] ) ? (string) $attributes['customHeightUnit'] : 'vh';
+$metrics       = bridge_hero_metrics($attributes);
+$is_full_width = bridge_hero_is_full_width($attributes);
+$content       = bridge_hero_prioritise_cover_image($content);
 
-switch ( $height_preset ) {
-	case 'tall':
-		$height_value = '80dvh';
-		break;
-	case 'medium':
-		$height_value = '60dvh';
-		break;
-	case 'custom':
-		$unit          = in_array( $custom_unit, array( 'vh', 'dvh', 'px' ), true ) ? $custom_unit : 'vh';
-		$custom_height = max( 20, min( 4000, $custom_height ) );
-		$height_value  = $custom_height . $unit;
-		break;
-	default:
-		$height_value = '100dvh';
-}
+/*
+ * Swiper's own a11y module writes the labels for the controls it manages, and
+ * it would otherwise write English ones over the translated labels below. The
+ * strings travel to it as data attributes so this file stays the one place they
+ * are written, and translating the theme translates the slider with it.
+ */
+$label_previous = __('Previous slide', 'bridge');
+$label_next     = __('Next slide', 'bridge');
+/* translators: %s: slide number. Swiper substitutes {{index}} itself. */
+$label_bullet   = __('Go to slide {{index}}', 'bridge');
 
-// Prioritize the first slide's background image — it's the LCP element.
-// WordPress otherwise defaults to loading="lazy" + fetchpriority="auto",
-// which delays the most visible image on the page.
-if ( class_exists( 'WP_HTML_Tag_Processor' ) ) {
-	$processor = new WP_HTML_Tag_Processor( $content );
-	if ( $processor->next_tag(
-		array(
-			'tag_name'   => 'img',
-			'class_name' => 'wp-block-cover__image-background',
-		)
-	) ) {
-		$processor->set_attribute( 'fetchpriority', 'high' );
-		$processor->set_attribute( 'loading', 'eager' );
-		$processor->remove_attribute( 'decoding' );
-		$content = $processor->get_updated_html();
-	}
-}
-
-$wrapper_attributes = get_block_wrapper_attributes(
+// Nothing escaped on the way in: get_block_wrapper_attributes() runs esc_attr()
+// over every value it is handed.
+$open_tag = '<div ' . get_block_wrapper_attributes(
 	array(
-		'class'               => 'bridge-hero-slider swiper alignfull',
-		'style'               => '--bridge-slider-height: ' . esc_attr( $height_value ) . ';',
+		'class'               => 'bridge-hero-slider swiper' . ($is_full_width ? ' alignfull' : ''),
+		'style'               => sprintf(
+			'--bridge-slider-height: %s; --bridge-slider-inset: %s; --bridge-slider-lead: %s;',
+			$metrics['height'],
+			$metrics['inset'],
+			$metrics['lead']
+		),
 		'data-effect'         => $effect,
 		'data-autoplay'       => $autoplay ? '1' : '0',
-		'data-autoplay-delay' => (string) ( $autoplay_delay * 1000 ),
+		'data-autoplay-delay' => (string) ($autoplay_delay * 1000),
 		'data-loop'           => $loop ? '1' : '0',
 		'data-pagination'     => $show_pagination ? '1' : '0',
 		'data-navigation'     => $show_navigation ? '1' : '0',
+		'data-label-previous' => $label_previous,
+		'data-label-next'     => $label_next,
+		'data-label-bullet'   => $label_bullet,
 	)
-);
+) . '>';
+
+if (! $is_full_width) {
+	$open_tag = bridge_hero_strip_bare_align($open_tag);
+}
 ?>
-<div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+<?php echo $open_tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — get_block_wrapper_attributes() is pre-escaped. ?>
 	<div class="swiper-wrapper">
 		<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	</div>
-	<?php if ( $show_pagination ) : ?>
-		<div class="swiper-pagination" aria-hidden="true"></div>
+	<?php if ($show_pagination) : ?>
+		<?php
+		/*
+		 * Not `aria-hidden`. Swiper renders these bullets clickable and its
+		 * a11y module gives each one a role, a label and a tabindex — so
+		 * hiding the container hid focusable controls from the very users the
+		 * labels were for, which is the one thing aria-hidden must never do.
+		 */
+		?>
+		<div class="swiper-pagination"></div>
 	<?php endif; ?>
-	<?php if ( $show_navigation ) : ?>
-		<button class="swiper-button-prev" type="button" aria-label="<?php esc_attr_e( 'Previous slide', 'bridge' ); ?>"></button>
-		<button class="swiper-button-next" type="button" aria-label="<?php esc_attr_e( 'Next slide', 'bridge' ); ?>"></button>
+	<?php if ($show_navigation) : ?>
+		<button class="swiper-button-prev" type="button" aria-label="<?php echo esc_attr($label_previous); ?>"></button>
+		<button class="swiper-button-next" type="button" aria-label="<?php echo esc_attr($label_next); ?>"></button>
 	<?php endif; ?>
 </div>

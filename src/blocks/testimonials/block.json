@@ -1,0 +1,87 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/testimonials",
+	"version": "1.0.0",
+	"title": "Testimonials",
+	"category": "design",
+	"icon": "format-quote",
+	"description": "A set of customer testimonials, in a grid or a swipeable row.",
+	"textdomain": "bridge",
+	"keywords": [
+		"testimonials",
+		"reviews",
+		"quotes",
+		"customers",
+		"social proof"
+	],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "narrow"
+		},
+		"cardStyle": {
+			"type": "string",
+			"default": "solid"
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		},
+		"overflowStyle": {
+			"type": "string",
+			"default": "wrap"
+		}
+	},
+	"providesContext": {
+		"bridge/cardStyle": "cardStyle"
+	},
+	"example": {
+		"attributes": {
+			"columns": 3,
+			"cardStyle": "solid",
+			"overflowStyle": "wrap"
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"content": "What clients say"
+				}
+			},
+			{
+				"name": "bridge/testimonial",
+				"attributes": {
+					"text": "They understood the brief immediately.",
+					"name": "A. Client",
+					"company": "Acme Ltd",
+					"rating": 5
+				}
+			},
+			{
+				"name": "bridge/testimonial",
+				"attributes": {
+					"text": "Delivered early and answered every question.",
+					"name": "B. Customer",
+					"company": "Widget Co",
+					"rating": 5
+				}
+			}
+		]
+	},
+	"editorScript": "bridge-testimonials-editor",
+	"style": "bridge-testimonials-style",
+	"render": "file:./render.php"
+}

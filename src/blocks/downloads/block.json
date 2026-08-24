@@ -1,0 +1,59 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/downloads",
+	"version": "1.0.0",
+	"title": "Downloads",
+	"category": "design",
+	"icon": "download",
+	"description": "A set of downloadable files, each with an optional preview image.",
+	"textdomain": "bridge",
+	"keywords": ["downloads", "files", "pdf", "brochure", "resources"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "wide"
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		}
+	},
+	"example": {
+		"attributes": {
+			"columns": 3
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"content": "Downloads"
+				}
+			},
+			{
+				"name": "bridge/download-item"
+			},
+			{
+				"name": "bridge/download-item"
+			},
+			{
+				"name": "bridge/download-item"
+			}
+		]
+	},
+	"editorScript": "bridge-downloads-editor",
+	"style": "bridge-downloads-style",
+	"render": "file:./render.php"
+}

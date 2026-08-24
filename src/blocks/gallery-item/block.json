@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/gallery-item",
+	"version": "1.0.0",
+	"title": "Gallery Image",
+	"category": "media",
+	"icon": "format-image",
+	"description": "One gallery image.",
+	"textdomain": "bridge",
+	"parent": ["bridge/gallery"],
+	"supports": { "anchor": false, "html": false, "reusable": false },
+	"attributes": {
+		"imageId": { "type": "number" },
+		"imageUrl": { "type": "string", "default": "" },
+		"alt": { "type": "string", "default": "" },
+		"label": { "type": "string", "default": "" },
+		"linkUrl": { "type": "string", "default": "" }
+	},
+	"usesContext": ["bridge/lightbox"],
+	"editorScript": "bridge-gallery-item-editor",
+	"render": "file:./render.php"
+}

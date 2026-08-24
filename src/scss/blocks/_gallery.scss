@@ -1,0 +1,178 @@
+/**
+ * Bridge — Gallery block, its items and its lightbox.
+ */
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+.bridge-gallery {
+	&__inner {
+		@include section.container(wide);
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	&--narrow &__inner {
+		@include section.container(narrow);
+	}
+
+	&__grid {
+		@include section.auto-grid(12rem, var(--wp--preset--spacing--30));
+
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	&__item {
+		position: relative;
+		margin: 0;
+		overflow: hidden;
+		border-radius: var(--wp--custom--radius--medium);
+	}
+
+	&__image {
+		@include section.media-fill("1 / 1");
+
+		// A slow lift on hover, so the grid feels responsive without anything
+		// moving far enough to be distracting.
+		transition: transform 300ms ease;
+	}
+
+	&__link,
+	&__trigger {
+		display: block;
+		width: 100%;
+		padding: 0;
+		border: 0;
+		background: none;
+		cursor: pointer;
+		color: inherit;
+
+		&:hover .bridge-gallery__image,
+		&:focus-visible .bridge-gallery__image {
+			transform: scale(1.04);
+		}
+
+		&:focus-visible {
+			outline: 2px solid currentcolor;
+			outline-offset: -2px;
+		}
+	}
+
+	&__label {
+		position: absolute;
+		inset-inline: 0;
+		inset-block-end: 0;
+		padding: var(--wp--preset--spacing--20);
+		font-size: var(--wp--preset--font-size--small);
+		color: var(--wp--preset--color--background);
+		// A gradient rather than a flat bar: the label stays readable over a
+		// busy photograph without hiding the bottom of every image behind a
+		// solid strip.
+		background-image: linear-gradient(
+			to top,
+			rgb(0 0 0 / 0.65),
+			transparent
+		);
+		text-align: start;
+	}
+
+	&__empty {
+		display: grid;
+		place-items: center;
+		aspect-ratio: 1;
+		background-color: var(--wp--preset--color--surface);
+		font-size: var(--wp--preset--font-size--small);
+	}
+
+	&__add {
+		align-self: flex-start;
+	}
+
+	// ---- Lightbox --------------------------------------------------------
+	// The browser supplies the modal behaviour; these rules only place the
+	// image and its controls.
+	&__lightbox {
+		width: min(92vw, 80rem);
+		max-width: none;
+		max-height: 92dvh;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: var(--wp--preset--color--background);
+		overflow: visible;
+
+		&::backdrop {
+			background-color: rgb(0 0 0 / 0.85);
+		}
+
+		&[open] {
+			display: grid;
+			grid-template-columns: auto 1fr auto;
+			align-items: center;
+			gap: var(--wp--preset--spacing--20);
+		}
+	}
+
+	&__figure {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--20);
+		min-width: 0;
+	}
+
+	&__full {
+		display: block;
+		width: 100%;
+		max-height: 80dvh;
+		object-fit: contain;
+	}
+
+	&__caption {
+		text-align: center;
+		font-size: var(--wp--preset--font-size--small);
+	}
+
+	&__close,
+	&__prev,
+	&__next {
+		border: 0;
+		background: rgb(0 0 0 / 0.4);
+		color: inherit;
+		cursor: pointer;
+		border-radius: 50%;
+		// A 44px target, which is the smallest a control should be on a
+		// touchscreen.
+		inline-size: 2.75rem;
+		block-size: 2.75rem;
+		font-size: 1.5rem;
+		line-height: 1;
+
+		&:focus-visible {
+			outline: 2px solid currentcolor;
+			outline-offset: 2px;
+		}
+	}
+
+	&__close {
+		position: absolute;
+		inset-block-start: -3.25rem;
+		inset-inline-end: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bridge-gallery__image {
+		transition: none;
+	}
+
+	.bridge-gallery__link:hover .bridge-gallery__image,
+	.bridge-gallery__trigger:hover .bridge-gallery__image {
+		transform: none;
+	}
+}

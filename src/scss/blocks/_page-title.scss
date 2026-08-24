@@ -1,0 +1,95 @@
+/**
+ * Bridge — Page Title block (bridge/page-title) styles.
+ *
+ * Three treatments, selected per page via post meta and emitted by
+ * render.php as is-style-{none|contained|fullwidth}:
+ *
+ * none       Plain <h1.bridge-page-title> in the constrained content column.
+ * contained  Coloured banner box at wide width, padded, inside the page.
+ * fullwidth  Full-window-width coloured banner; title in a centred container.
+ *
+ * Background colour and contrasting text colour are set inline by render.php
+ * from the chosen theme-palette colour.
+ */
+
+.bridge-page-title {
+
+	&.has-text-align-left {
+		text-align: left;
+	}
+
+	&.has-text-align-center {
+		text-align: center;
+	}
+}
+
+.bridge-title-banner {
+	// Named presets, never literals. Each of these carried a hardcoded
+	// fallback that was one step too large, which mattered little while the
+	// presets were fixed lengths and matters more now they are clamps: a
+	// fallback is the one value in the file that could not be fluid.
+	--bridge-banner-padding-block: var(--wp--preset--spacing--50);
+	--bridge-banner-radius: var(--wp--custom--radius--large);
+
+	box-sizing: border-box;
+
+	&.has-text-align-left {
+		text-align: left;
+	}
+
+	&.has-text-align-center {
+		text-align: center;
+	}
+
+	&__inner {
+		margin: 0;
+	}
+
+	&__title {
+		margin: 0;
+		color: inherit;
+	}
+
+	// ---- Contained: padded banner box inside the page width -------------
+	&.is-style-contained {
+		padding-block: var(--bridge-banner-padding-block);
+		padding-inline: var(--wp--preset--spacing--40);
+		border-radius: var(--bridge-banner-radius);
+	}
+
+	// ---- Full width: edge-to-edge background, title in the site container -
+	// Horizontal sizing/gutters and the content-width cap come entirely from
+	// the WordPress layout classes emitted in render.php (alignfull +
+	// has-global-padding + is-layout-constrained), so the title aligns exactly
+	// with post-content and the footer. We only add the vertical rhythm here.
+	&.is-style-fullwidth {
+		padding-block: var(--wp--preset--spacing--60);
+	}
+}
+
+// Full-width banner pages: drop the block-gap margin the site layout
+// (:where(.wp-site-blocks) > * + *) adds above main, so the banner sits flush
+// beneath the header with no gap between the nav and the banner. The body
+// class is added by bridge_banner_body_class() only for these pages.
+.bridge-banner-fullwidth main {
+	margin-block-start: 0;
+}
+
+// No-title pages: the same flush join, one layer deeper. The block renders
+// nothing, so `.bridge-content` becomes the first child of main and the page
+// opens on whatever the operator put first — but two pieces of spacing are
+// still measuring from a title that is not there. The margin above main is
+// the gap between the header and the page's first band; the content region's
+// top padding is the air a title would have sat in. Both go. Only the top
+// padding, though: the matching bottom padding is still holding the
+// content off the footer, and nothing about hiding a title changes that.
+.bridge-title-hidden {
+
+	main {
+		margin-block-start: 0;
+	}
+
+	.bridge-content {
+		padding-block-start: 0;
+	}
+}

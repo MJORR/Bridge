@@ -1,0 +1,162 @@
+/**
+ * Bridge — Alternating Content and its rows.
+ */
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+.bridge-alternating {
+	// One shape for every row's media. An image cropped to 4/3 beside a 16/9
+	// video made a section that mixed the two come out ragged, and two of the
+	// three kinds of media this block takes are 16/9 to begin with.
+	--bridge-alternating-ratio: 16 / 9;
+
+	// Row to row.
+	--bridge-alternating-gap: var(--wp--preset--spacing--70);
+
+	// Media to words, inside a row. The global block gap, so the space between
+	// a picture and the sentence beside it is set once in Global Styles for
+	// every block on the site — where it used to be a yes/no toggle on this
+	// block alone, offering two values and agreeing with nothing else.
+	--bridge-alternating-row-gap: var(
+		--wp--style--block-gap,
+		var(--wp--preset--spacing--50)
+	);
+
+	&__inner {
+		@include section.container(wide);
+
+		display: flex;
+		flex-direction: column;
+	}
+
+	&--narrow &__inner {
+		@include section.container(narrow);
+	}
+
+	// Margins rather than the flex `gap`, because the parts of this list do not
+	// all want the same air: the rows want the section's gap between them, and
+	// a summary line wants to sit under its own heading. On the front end the
+	// intro is one wrapped child and the mixin above spaces its insides; in the
+	// editor it is still loose headings and paragraphs, and the second rule is
+	// what stops the editor from showing them a whole row-gap apart.
+	&__inner > * {
+		margin-block: 0;
+	}
+
+	&__inner > * + * {
+		margin-block-start: var(--bridge-alternating-gap);
+	}
+
+	&__inner
+		> :is(h1, h2, h3, h4, h5, h6, p)
+		+ :is(h1, h2, h3, h4, h5, h6, p) {
+		margin-block-start: var(--wp--style--block-gap, var(--wp--preset--spacing--30));
+	}
+
+	&__row {
+		display: grid;
+		gap: var(--bridge-alternating-row-gap);
+		align-items: center;
+
+		// One column until there is room for two. Media first in the source,
+		// so a stacked row leads with the picture — which is the order the
+		// desktop layout reads in too, for the rows where media is on the
+		// left, and the least surprising order for the rest.
+		@include section.two-column {
+			grid-template-columns: 1fr 1fr;
+
+			// Half the rows put the media on the right, so no single source
+			// order matches what every row looks like, and on those rows a
+			// keyboard reaches the video's play button before the words it
+			// belongs to. This asks the browser to move focus in the order the
+			// row is *drawn*. Ignored where it isn't supported, which leaves
+			// exactly the behaviour this block already had.
+			// stylelint-disable-next-line property-no-unknown
+			reading-flow: grid-order;
+		}
+	}
+
+	/**
+	 * Which side the media sits on.
+	 *
+	 * Counted here rather than stamped onto each row by render.php: `of`
+	 * narrows the count to the rows themselves, which is the whole reason a
+	 * plain nth-child was wrong — the intro is a sibling of the rows, and so is
+	 * any block an editor drops between two of them.
+	 *
+	 * One rule for the editor and the front end both. There used to be two, and
+	 * they disagreed: this one shipped to visitors as well, so a section set to
+	 * start on the right had PHP flip the odd rows and CSS flip the even ones,
+	 * and every row ended up with its media on the right.
+	 */
+	@include section.two-column {
+		&:not(.is-first-right)
+			&__row:nth-child(even of .bridge-alternating__row)
+			&__media,
+		&.is-first-right
+			&__row:nth-child(odd of .bridge-alternating__row)
+			&__media {
+			order: 2;
+		}
+	}
+
+	&__media {
+		min-width: 0;
+	}
+
+	&__image {
+		@include section.media-fill(var(--bridge-alternating-ratio));
+
+		border-radius: var(--wp--custom--radius--medium);
+	}
+
+	&__video {
+		position: relative;
+		aspect-ratio: var(--bridge-alternating-ratio);
+		border-radius: var(--wp--custom--radius--medium);
+		overflow: hidden;
+	}
+
+	&__embed {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		border: 0;
+	}
+
+	&__video-file {
+		@include section.media-fill(var(--bridge-alternating-ratio));
+
+		background-color: var(--wp--preset--color--primary);
+		border-radius: var(--wp--custom--radius--medium);
+	}
+
+	&__copy {
+		min-width: 0;
+
+		> * {
+			margin-block: 0;
+		}
+
+		// The copy is ordinary blocks with no layout container of their own, so
+		// the gap between them is named here — as the global one, so a site
+		// that widens its rhythm widens this too.
+		> * + * {
+			margin-block-start: var(--wp--style--block-gap, var(--wp--preset--spacing--30));
+		}
+	}
+
+	&__placeholder {
+		display: grid;
+		place-items: center;
+		aspect-ratio: var(--bridge-alternating-ratio);
+		padding: var(--wp--preset--spacing--30);
+		background-color: var(--wp--preset--color--surface);
+		border-radius: var(--wp--custom--radius--medium);
+		font-size: var(--wp--preset--font-size--small);
+		text-align: center;
+	}
+}

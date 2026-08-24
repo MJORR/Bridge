@@ -1,0 +1,68 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/gallery",
+	"version": "1.0.0",
+	"title": "Gallery",
+	"category": "media",
+	"icon": "format-gallery",
+	"description": "A grid of images, each with an optional label and link.",
+	"textdomain": "bridge",
+	"keywords": ["gallery", "images", "grid", "photos", "lightbox"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "wide"
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		},
+		"lightbox": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"providesContext": {
+		"bridge/lightbox": "lightbox"
+	},
+	"example": {
+		"attributes": {
+			"columns": 3,
+			"width": "wide"
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"content": "Gallery"
+				}
+			},
+			{
+				"name": "bridge/gallery-item"
+			},
+			{
+				"name": "bridge/gallery-item"
+			},
+			{
+				"name": "bridge/gallery-item"
+			}
+		]
+	},
+	"editorScript": "bridge-gallery-editor",
+	"style": "bridge-gallery-style",
+	"viewScript": "bridge-gallery-view",
+	"render": "file:./render.php"
+}

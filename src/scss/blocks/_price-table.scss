@@ -1,0 +1,80 @@
+/**
+ * Bridge — Price Table block and its cards.
+ */
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+.bridge-price-table {
+	&__inner {
+		@include section.container(wide);
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	&--narrow &__inner {
+		@include section.container(narrow);
+	}
+
+	&__list {
+		@include section.auto-grid(15rem, var(--wp--preset--spacing--40));
+
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		// Cards of different heights should still end level, and a
+		// highlighted card should not be the only one that reaches the
+		// bottom of the row.
+		align-items: stretch;
+	}
+}
+
+.bridge-price-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20);
+	margin: 0;
+	padding: var(--wp--preset--spacing--40);
+	text-align: center;
+	background-color: var(--wp--preset--color--surface);
+	border-radius: var(--wp--custom--radius--medium);
+	border: 1px solid color-mix(in srgb, currentcolor 12%, transparent);
+
+	&__image {
+		@include section.media-fill("1 / 1");
+
+		max-width: 5rem;
+		margin-inline: auto;
+		border-radius: 50%;
+	}
+
+	&__title {
+		margin: 0;
+		font-weight: 600;
+	}
+
+	&__price {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--x-large);
+		line-height: 1.1;
+		font-weight: 700;
+	}
+
+	&__description {
+		margin: 0;
+		// Pushes nothing below it, but keeps cards of unequal copy the same
+		// height so the row reads as a set rather than a staircase.
+		flex-grow: 1;
+	}
+
+	// The recommended plan. Outlined in the accent rather than recoloured:
+	// a filled card would have to name its own text colour to stay legible,
+	// and would then be the one thing on the page that ignores the skin.
+	&.is-featured {
+		border-color: var(--wp--preset--color--accent);
+		border-width: 2px;
+	}
+}

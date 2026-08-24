@@ -1,0 +1,21 @@
+{
+	"$comment": "Curated Google Fonts shortlist, split by the job each face does. Six per role, not the full ~1800-family directory: an agency picking a brand face wants a considered set, not a search box. Each list is deliberately flat — WordPress's SelectControl renders plain options with no optgroup support, so a nested structure silently collapses to its group labels. Families are downloaded and self-hosted on save; nothing is ever requested from Google at page-render time. Add a family by name only — available weights are discovered from the API at install.",
+
+	"heading": [
+		{ "family": "Inter", "note": "Neutral and modern. Tight at display sizes, never shouty." },
+		{ "family": "Montserrat", "note": "Geometric and urban. The default confident headline." },
+		{ "family": "Poppins", "note": "Geometric monoline. Clean, friendly, current." },
+		{ "family": "Playfair Display", "note": "High-contrast serif. Luxury, fashion, editorial." },
+		{ "family": "Oswald", "note": "Condensed gothic. Strong headlines in tight space." },
+		{ "family": "Lora", "note": "Brushed serif with warmth. Considered rather than corporate." }
+	],
+
+	"body": [
+		{ "family": "Inter", "note": "Built for screens. Excellent at small sizes." },
+		{ "family": "Open Sans", "note": "Humanist and dependable. The safe choice." },
+		{ "family": "Lato", "note": "Warm humanist with semi-rounded detailing." },
+		{ "family": "Roboto", "note": "Neutral and ubiquitous. Disappears into the content." },
+		{ "family": "Work Sans", "note": "Optimised specifically for on-screen body copy." },
+		{ "family": "Merriweather", "note": "Sturdy serif, highly legible at length." }
+	]
+}

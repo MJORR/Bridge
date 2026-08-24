@@ -1,0 +1,63 @@
+/**
+ * Bridge — JavaScript linting.
+ *
+ * WordPress's own ruleset, which is also what decides formatting: the
+ * recommended config defers every stylistic question to prettier through
+ * `@wordpress/prettier-config`. Nothing here restyles the code; running
+ * `npm run format` does.
+ *
+ * `.cjs` because package.json sets `"type": "module"`.
+ */
+
+module.exports = {
+	root: true,
+
+	extends: ['plugin:@wordpress/eslint-plugin/recommended'],
+
+	env: {
+		browser: true,
+	},
+
+	globals: {
+		// WordPress prints these. The build externalises @wordpress/* rather
+		// than bundling it, so the packages arrive as globals on `wp` rather
+		// than as imports — which is why the i18n and dependency-group rules
+		// below have nothing to work with.
+		wp: 'readonly',
+		// Printed by inc/icons.php ahead of the icon block's editor script.
+		bridgeIcons: 'readonly',
+	},
+
+	settings: {
+		// Every translator call in this theme belongs to one domain, and the
+		// rule cannot know which without being told.
+		'@wordpress/i18n-text-domain': {
+			allowedTextDomain: 'bridge',
+		},
+	},
+
+	rules: {
+		// The rule checks that translator functions were imported from
+		// @wordpress/i18n. Here they are destructured from the `wp` global,
+		// which is the documented approach for scripts that declare
+		// wp-i18n as a script dependency rather than bundling it.
+		'@wordpress/i18n-no-variables': 'off',
+
+		// Document the props bag, not every key in it. jsdoc has no name for a
+		// destructured parameter, so it invents one: asking for these produces
+		// `@param root0.title` — a parameter that does not exist in the source,
+		// with no type and no description. Left on, the rule's own autofix
+		// writes sixty of those. Functions with named parameters are still
+		// required to document them.
+		'jsdoc/require-param': ['error', { checkDestructured: false }],
+		'jsdoc/check-param-names': ['error', { checkDestructured: false }],
+
+		// Swiper 11 publishes its subpaths through an `exports` map, which
+		// eslint-plugin-import's resolver does not read. The paths are real —
+		// the build resolves them and the bundle works.
+		'import/no-unresolved': ['error', { ignore: ['^swiper/'] }],
+	},
+
+	// Build output is generated, minified and not ours to lint.
+	ignorePatterns: ['dist/**', 'node_modules/**'],
+};

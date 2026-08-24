@@ -29,7 +29,11 @@ $order           = strtoupper( sanitize_key( $attributes['order'] ?? 'desc' ) );
 $categories      = array_filter( array_map( 'absint', (array) ( $attributes['categories'] ?? array() ) ) );
 $excerpt_length  = max( 10, min( 100, (int) ( $attributes['excerptLength'] ?? 20 ) ) );
 $show_read_more  = ! empty( $attributes['showReadMore'] );
-$read_more_text  = (string) ( $attributes['readMoreText'] ?? 'Read more →' );
+// Empty means "use the theme's wording", which is the only wording that can be
+// translated: a default written into block.json is a literal string that never
+// reaches a .po file, so every site in every language got the English one.
+$read_more_text  = trim( (string) ( $attributes['readMoreText'] ?? '' ) );
+$read_more_text  = '' !== $read_more_text ? $read_more_text : __( 'Read more', 'bridge' );
 
 $orderby_map = array(
 	'date'          => 'date',
@@ -61,6 +65,8 @@ $query_args = array(
 	'order'               => $order,
 	'ignore_sticky_posts' => true,
 	'no_found_rows'       => true,
+	// Cards render no taxonomy terms — skip the term-cache priming query.
+	'update_post_term_cache' => false,
 );
 
 if ( 'post' === $post_type && ! empty( $categories ) ) {
@@ -80,6 +86,23 @@ if ( ! $query->have_posts() ) {
 	wp_reset_postdata();
 	return;
 }
+
+// Prime the featured-image attachments (post objects + image metadata + alt)
+// in a single batch so the per-card wp_get_attachment_image() calls below hit
+// the cache instead of querying once per card (avoids an N+1).
+$thumbnail_ids = array_values( array_filter( array_map( 'get_post_thumbnail_id', $query->posts ) ) );
+if ( $thumbnail_ids ) {
+	_prime_post_caches( $thumbnail_ids, false, true );
+}
+
+// Responsive `sizes`. The grid collapses on its own now — it asks how much room
+// the container has rather than how wide the window is — so this is the browser's
+// hint rather than a description of fixed breakpoints: full width on a phone,
+// half on a tablet, and the authored column share above that.
+$card_image_sizes = sprintf(
+	'(max-width: 480px) 100vw, (max-width: 768px) 50vw, %dvw',
+	max( 1, (int) round( 100 / $columns ) )
+);
 ?>
 <div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php
@@ -94,12 +117,6 @@ if ( ! $query->have_posts() ) {
 			$excerpt_length,
 			'…'
 		);
-		$image_url    = $thumbnail_id
-			? wp_get_attachment_image_url( $thumbnail_id, 'large' )
-			: '';
-		$image_alt    = $thumbnail_id
-			? (string) get_post_meta( $thumbnail_id, '_wp_attachment_image_alt', true )
-			: '';
 
 		include __DIR__ . '/card.php';
 	endwhile;

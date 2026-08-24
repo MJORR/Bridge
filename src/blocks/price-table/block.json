@@ -1,0 +1,76 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/price-table",
+	"version": "1.0.0",
+	"title": "Price Table",
+	"category": "design",
+	"icon": "money-alt",
+	"description": "A row of priced cards — plans, packages or products.",
+	"textdomain": "bridge",
+	"keywords": ["price", "pricing", "plans", "packages", "table"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "wide"
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		}
+	},
+	"example": {
+		"attributes": {
+			"columns": 3
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"textAlign": "center",
+					"content": "Pricing"
+				}
+			},
+			{
+				"name": "bridge/price-card",
+				"attributes": {
+					"title": "Starter",
+					"price": "\u00a319",
+					"description": "For one site."
+				}
+			},
+			{
+				"name": "bridge/price-card",
+				"attributes": {
+					"title": "Studio",
+					"price": "\u00a349",
+					"description": "For a small team.",
+					"featured": true
+				}
+			},
+			{
+				"name": "bridge/price-card",
+				"attributes": {
+					"title": "Agency",
+					"price": "\u00a399",
+					"description": "For many sites."
+				}
+			}
+		]
+	},
+	"editorScript": "bridge-price-table-editor",
+	"style": "bridge-price-table-style",
+	"render": "file:./render.php"
+}

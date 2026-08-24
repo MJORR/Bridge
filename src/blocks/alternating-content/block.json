@@ -1,0 +1,56 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/alternating-content",
+	"version": "1.0.0",
+	"title": "Alternating Content",
+	"category": "design",
+	"icon": "align-pull-left",
+	"description": "Rows of media and text, the image swapping sides down the page.",
+	"textdomain": "bridge",
+	"keywords": ["alternating", "zigzag", "media", "text", "rows"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "wide"
+		},
+		"firstImageRight": {
+			"type": "boolean",
+			"default": false
+		}
+	},
+	"example": {
+		"attributes": {
+			"width": "wide"
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"content": "How it works"
+				}
+			},
+			{
+				"name": "bridge/alternating-row"
+			},
+			{
+				"name": "bridge/alternating-row"
+			}
+		]
+	},
+	"editorScript": "bridge-alternating-content-editor",
+	"style": "bridge-alternating-content-style",
+	"render": "file:./render.php"
+}

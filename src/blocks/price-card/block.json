@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/price-card",
+	"version": "1.0.0",
+	"title": "Price Card",
+	"category": "design",
+	"icon": "money-alt",
+	"description": "One priced card.",
+	"textdomain": "bridge",
+	"parent": ["bridge/price-table"],
+	"supports": { "anchor": false, "html": false, "reusable": false },
+	"attributes": {
+		"title": { "type": "string", "default": "" },
+		"price": { "type": "string", "default": "" },
+		"description": { "type": "string", "default": "" },
+		"imageId": { "type": "number" },
+		"imageUrl": { "type": "string", "default": "" },
+		"featured": { "type": "boolean", "default": false }
+	},
+	"editorScript": "bridge-price-card-editor",
+	"render": "file:./render.php"
+}

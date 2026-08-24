@@ -1,0 +1,51 @@
+// theme.json owns the resting look of both buttons — `styles.blocks.core/button`
+// for the filled one and its `variations.outline` for the secondary. This layer
+// adds only the interactive states it cannot express, and keeps the two apart:
+// they do not want the same feedback, and a single rule for both was giving the
+// secondary button none at all.
+.wp-block-button__link {
+	transition:
+		background-color 150ms ease,
+		border-color 150ms ease,
+		color 150ms ease,
+		transform 150ms ease;
+
+	&:active {
+		transform: translateY(1px);
+	}
+}
+
+// Filled. Hover moves it to the secondary brand colour. Scoped away from the
+// outline style, which this selector used to catch and then lose to anyway:
+// core's outline declarations sit at a higher specificity, so hovering a
+// secondary button changed nothing — no fill, no border, no feedback at all.
+.wp-block-button:not(.is-style-outline)
+	> .wp-block-button__link:not(.is-style-outline) {
+
+	&:hover,
+	&:focus-visible {
+		background-color: var(--wp--preset--color--secondary);
+		border-color: var(--wp--preset--color--secondary);
+	}
+}
+
+// Outline. Core paints it transparent with a `currentColor` border, which is
+// the property that makes one secondary button legible on every ground this
+// theme has — white, surface, accent, the inverted skin and a dimmed
+// photograph. So hover tints it with its own colour rather than naming one that
+// would only be right on some of them.
+.wp-block-button.is-style-outline > .wp-block-button__link,
+.wp-block-button .wp-block-button__link.is-style-outline {
+	// The two buttons have to be the same height. Core's outline style sets a
+	// padding of its own at the same specificity as theme.json's, so which one
+	// won came down to which stylesheet printed last. Settled here, where
+	// nothing competes, and spent from the same custom property theme.json uses
+	// for the filled button so the pair cannot drift.
+	padding: var(--wp--custom--button-padding--block)
+		var(--wp--custom--button-padding--inline);
+
+	&:hover,
+	&:focus-visible {
+		background-color: color-mix(in srgb, currentcolor 14%, transparent);
+	}
+}

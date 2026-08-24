@@ -1,0 +1,176 @@
+/**
+ * Bridge — section skins and structural header variants.
+ *
+ * Every colour here resolves to a palette preset, never a literal. That is
+ * what makes a skin safe to hand to an editor: "Inverted" restyles itself the
+ * moment the brand's primary colour changes, and there is no hex code in the
+ * stylesheet to fall out of step with the design system.
+ */
+@use "../abstracts/on-dark" as on-dark;
+
+// ---- Section skins -------------------------------------------------------
+
+/**
+ * How much air a section keeps above and below its content, set once in Theme
+ * Options and read by everything that counts as a band of the page: the skins
+ * below, the section patterns, which carry `bridge-section` for exactly this,
+ * and the post content itself.
+ *
+ * The content region is included deliberately. A page whose body is ordinary
+ * paragraphs contains no sections and no groups, so without this it had no
+ * vertical rhythm of its own at all — it began 16px under whatever preceded it
+ * and ended flush against the footer, and the one setting that governs the
+ * spacing between bands of a page did not reach the commonest band there is.
+ * `bridge-content` is on the post-content block in page.html rather than in
+ * the stylesheet on `.wp-block-post-content`, because the landing template
+ * opens on a full-bleed hero that must stay flush under the header.
+ * The fallback is the value the theme shipped with, for a stylesheet that
+ * somehow outlives its global styles.
+ *
+ * No fluid rule of its own. The spacing presets are themselves clamps now, so
+ * a section that names one is already fluid, on the same curve as the type and
+ * everything else that spends spacing. A `min()` here would be a second curve
+ * layered over the first — two answers to one question, and the reason to have
+ * put the fluidity in the scale rather than in the rules that use it.
+ */
+.bridge-section,
+.bridge-content,
+.is-style-bridge-surface,
+.is-style-bridge-inverted,
+.is-style-bridge-accent {
+	padding-block: var(--wp--custom--section-padding, var(--wp--preset--spacing--70));
+}
+
+/**
+ * The air a full-bleed hero owes whatever follows it.
+ *
+ * The other half of the paragraph above. A standard page opens with the title
+ * banner and then `bridge-content`, so the first block of the body clears the
+ * banner by the block gap *plus* the content region's own top padding. The
+ * landing template drops `bridge-content` on purpose — the hero has to sit
+ * flush under the header — and the block after the slider was left with only
+ * the block gap, a visibly tighter join than the same page break on every
+ * other template.
+ *
+ * Spent on the following block rather than as a bottom margin on the slider:
+ * adjacent margins collapse, so a margin here would have swallowed the block
+ * gap instead of adding to it, and the two templates would still not match.
+ * Both terms are named, not summed by hand, so the join keeps tracking Theme
+ * Options when either setting moves.
+ *
+ * `.alignfull` is on the wrapper in both render.php and the editor's
+ * useBlockProps, and carries the rule past core's `:root :where(.is-layout-*)
+ * > *` block-gap declaration without an `!important`.
+ */
+.bridge-hero-slider.alignfull + *:not(.bridge-band) {
+	margin-block-start: calc(var(--wp--style--block-gap, var(--wp--preset--spacing--60)) + var(--wp--custom--section-padding, var(--wp--preset--spacing--70)));
+}
+
+.is-style-bridge-surface {
+	background-color: var(--wp--preset--color--surface);
+	padding-inline: var(--wp--preset--spacing--40);
+}
+
+.is-style-bridge-inverted {
+	@include on-dark.on-dark(var(--wp--preset--color--primary));
+
+	background-color: var(--wp--preset--color--primary);
+	padding-inline: var(--wp--preset--spacing--40);
+}
+
+.is-style-bridge-accent {
+	background-color: var(--wp--preset--color--accent);
+	color: var(--wp--preset--color--text);
+	padding-inline: var(--wp--preset--spacing--40);
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		color: inherit;
+	}
+}
+
+// A full-width skinned section keeps its colour edge to edge but its content
+// aligned with everything else on the page.
+.alignfull:is(
+	.is-style-bridge-surface,
+	.is-style-bridge-inverted,
+	.is-style-bridge-accent
+) {
+	padding-left: var(--wp--preset--spacing--40);
+	padding-right: var(--wp--preset--spacing--40);
+}
+
+// ---- Footer --------------------------------------------------------------
+
+.bridge-footer--columns .bridge-footer__legal {
+	border-top: 1px solid
+		color-mix(in srgb, var(--wp--preset--color--text) 15%, transparent);
+	padding-top: var(--wp--preset--spacing--30);
+}
+
+.bridge-footer--columns .wp-block-page-list {
+	gap: 0.35rem;
+
+	.wp-block-pages-list__item {
+		display: block;
+	}
+}
+
+/**
+ * The section blocks' band.
+ *
+ * Every one of them renders a <section> carrying this class, and every one is
+ * the full width of the window — a band of the page that stopped at the text
+ * column would be a panel, not a band. The content inside stays in its own
+ * container; only the paint reaches the edges.
+ *
+ * WP's `.has-global-padding > .alignfull` breakout only fires for direct
+ * children, and these blocks sit inside `wp-block-post-content`, so the
+ * alignment is taken into our own hands. The class is repeated to carry three
+ * of them, because core has a rule for exactly the arrangement a standard page
+ * puts these in:
+ *
+ *   .has-global-padding :where(:not(.alignfull.is-layout-flow) >
+ *     .has-global-padding:not(.wp-block-block, .alignfull)) > .alignfull
+ *     { margin-left: 0; margin-right: 0; }
+ *
+ * A padded container inside another padded container — `main` in page.html,
+ * with post-content inside it. Core zeroes the breakout there because it
+ * expects the outer container to have done it, which it cannot, since the
+ * inner column is capped at the content width. Matching that selector's
+ * specificity would still lose on source order, and `!important` would go on
+ * winning against things it should not.
+ */
+.bridge-band.bridge-band.alignfull {
+	width: 100vw;
+	max-width: 100vw;
+	margin-inline: calc(50% - 50vw);
+}
+
+/**
+ * A band butts against whatever precedes and follows it.
+ *
+ * Each one paints its own background and spends its own section padding, so a
+ * margin between two of them is a stripe of page background showing through
+ * the join — which is what the block gap was doing. The air between bands is
+ * their padding, set once in Theme Options, not a gap as well.
+ *
+ * Two classes to clear core's block-gap rule, which lands at one.
+ */
+.bridge-band.bridge-band {
+	margin-block: 0;
+}
+
+/**
+ * A band that paints itself spends the page's side padding too, so its content
+ * clears the window edge on a phone. Bands with no background of their own are
+ * left alone — padding on a transparent box only pulls the content inwards
+ * twice, since each block's container already has its own gutter.
+ */
+.bridge-band:where([class*="has-"][class*="-background-color"], [class*="is-style-bridge-"], [style*="background"]) {
+	padding-inline: var(--wp--preset--spacing--40);
+}

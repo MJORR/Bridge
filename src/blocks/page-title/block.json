@@ -1,0 +1,40 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/page-title",
+	"version": "1.0.0",
+	"title": "Page Title",
+	"category": "theme",
+	"icon": "heading",
+	"description": "Page title with an optional banner. Banner style, alignment and background colour are chosen per page from the Title Banner panel.",
+	"textdomain": "bridge",
+	"keywords": ["title", "banner", "heading", "page"],
+	"supports": {
+		"align": false,
+		"anchor": false,
+		"html": false,
+		"layout": false,
+		"reusable": false,
+		"multiple": false
+	},
+	"attributes": {
+		"isEditorPreview": {
+			"type": "boolean",
+			"default": false
+		},
+		"previewStyle": {
+			"type": "string",
+			"default": "none"
+		},
+		"previewAlign": {
+			"type": "string",
+			"default": "left"
+		},
+		"previewColor": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"editorScript": "bridge-page-title-editor",
+	"render": "file:./render.php"
+}

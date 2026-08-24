@@ -1,0 +1,7 @@
+// Bridge — Hero Banner stylesheet entry.
+//
+// A build entry rather than a partial imported by main.scss: the rules ship
+// only on pages that render the block, enqueued through the `style` handle
+// declared in the block's block.json. The component itself lives alongside
+// the theme's other components.
+@use "blocks/hero-banner";

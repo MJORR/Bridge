@@ -1,0 +1,123 @@
+/**
+ * Bridge — Logo Slider.
+ *
+ * A CSS marquee. The track holds each logo twice; the animation moves it by
+ * exactly half its own width, so at the moment it loops the second copy is
+ * standing where the first began and the seam is invisible.
+ */
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+.bridge-logos {
+	&__inner {
+		@include section.container(wide);
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	&--narrow &__inner {
+		@include section.container(narrow);
+	}
+
+	&__row {
+		overflow: hidden;
+		// Fades the logos out at both ends rather than cutting them off at a
+		// hard edge, which makes the row read as continuing past the section
+		// instead of being clipped by it.
+		mask-image: linear-gradient(
+			to right,
+			transparent,
+			#000 8%,
+			#000 92%,
+			transparent
+		);
+	}
+
+	&__track {
+		display: flex;
+		align-items: center;
+		gap: var(--wp--preset--spacing--50);
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		width: max-content;
+		// Duration scales with how many logos there are, so adding one makes
+		// the row longer rather than faster.
+		animation: bridge-logos-scroll calc(var(--bridge-logo-count, 6) * 3s)
+			linear infinite;
+	}
+
+	&__row.is-reverse &__track {
+		animation-direction: reverse;
+	}
+
+	// The editor preview, and any row short enough that scrolling it would be
+	// silly.
+	&__row.is-static &__track {
+		animation: none;
+		flex-wrap: wrap;
+		width: auto;
+		justify-content: center;
+	}
+
+	&__item {
+		margin: 0;
+		flex: 0 0 auto;
+	}
+
+	&__image {
+		display: block;
+		width: auto;
+		height: 3rem;
+		// Logos arrive at every proportion. A fixed height with `contain`
+		// makes a wide wordmark and a square badge occupy the same optical
+		// weight, which is the only way a row of them looks deliberate.
+		object-fit: contain;
+
+		&.is-cover {
+			width: 8rem;
+			object-fit: cover;
+		}
+	}
+
+	// Pausing on hover gives anyone reading the logos a way to stop them.
+	&__row:hover &__track,
+	&__row:focus-within &__track {
+		animation-play-state: paused;
+	}
+}
+
+@keyframes bridge-logos-scroll {
+	from {
+		transform: translateX(0);
+	}
+
+	to {
+		// Half the track, which is one full set of logos.
+		transform: translateX(-50%);
+	}
+}
+
+/**
+ * Motion is the whole block, so honouring the preference means stopping it —
+ * not slowing it down. The row becomes a static, wrapped grid of logos, which
+ * is what it was always trying to show.
+ */
+@media (prefers-reduced-motion: reduce) {
+	.bridge-logos__track {
+		animation: none;
+		flex-wrap: wrap;
+		width: auto;
+		justify-content: center;
+	}
+
+	// With the track static, the duplicated half is visible — and it is the
+	// copy a screen reader was already told to ignore.
+	.bridge-logos__item[aria-hidden="true"] {
+		display: none;
+	}
+}

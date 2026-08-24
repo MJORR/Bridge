@@ -1,0 +1,83 @@
+/**
+ * Bridge — Downloads block and its items.
+ */
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+.bridge-downloads {
+	&__inner {
+		@include section.container(wide);
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	&--narrow &__inner {
+		@include section.container(narrow);
+	}
+
+	// Same grid as the feature panels, and the same gap: the global block gap,
+	// so a site that opens up the space between its blocks opens up this one
+	// too. The gallery keeps a tighter gap of its own on purpose — a mosaic of
+	// photographs is not a row of cards.
+	&__list {
+		@include section.auto-grid(
+			16rem,
+			var(--wp--style--block-gap, var(--wp--preset--spacing--40))
+		);
+
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+}
+
+.bridge-download {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20);
+	margin: 0;
+	padding: var(--wp--preset--spacing--30);
+	background-color: var(--wp--preset--color--surface);
+	border-radius: var(--wp--custom--radius--medium);
+
+	&__preview {
+		@include section.media-fill("4 / 3");
+
+		border-radius: var(--wp--custom--radius--small);
+	}
+
+	&__body {
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--10);
+		// Holds the link at the foot of the card so a row of downloads with
+		// titles of different lengths still has its links in a line.
+		flex-grow: 1;
+	}
+
+	&__title {
+		margin: 0;
+		font-weight: 600;
+	}
+
+	&__meta {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--small);
+		opacity: 0.75;
+	}
+
+	&__link {
+		margin-block-start: auto;
+		align-self: flex-start;
+		font-weight: 600;
+		// The whole card is not the link — a preview image that opens a
+		// download on click is a surprise, and it takes the image out of the
+		// reach of anyone who wanted to view it full size.
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+}

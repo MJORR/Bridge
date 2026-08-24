@@ -1,0 +1,27 @@
+/**
+ * Bridge — the media chooser used in the section blocks' Inspector panels.
+ *
+ * Editor-only. A "choose image" button, an optional "remove" beside it and,
+ * for files, the chosen filename underneath — the shape every one of these
+ * blocks needs and none of them should draw differently.
+ *
+ * Lives in main.css, which is registered with add_editor_style(), so it
+ * reaches the Inspector. A per-block stylesheet would not: block styles paint
+ * the canvas, and the sidebar is outside it.
+ */
+.bridge-media-field {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-block-end: 16px;
+
+	&__name {
+		flex-basis: 100%;
+		font-size: 12px;
+		// Filenames are long and arbitrary; wrapping mid-word keeps one from
+		// pushing the whole sidebar wider.
+		overflow-wrap: anywhere;
+		opacity: 0.75;
+	}
+}

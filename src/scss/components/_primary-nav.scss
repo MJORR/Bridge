@@ -1,202 +1,930 @@
-// Primary navigation — visual polish for WordPress's core/navigation block.
-//
-// CSS-only. The block's markup, ARIA attributes, focus trap, Escape
-// handling, and aria-expanded state are all owned by WP's Interactivity
-// API. This file only restyles existing classes; it doesn't replace icons,
-// rewrite HTML, or wire up custom JS.
+/**
+ * Primary navigation — visual polish for WordPress's core/navigation block.
+ *
+ * CSS-only. The block's markup, ARIA attributes, focus trap, Escape
+ * handling, and aria-expanded state are all owned by WP's Interactivity
+ * API. This file only restyles existing classes; it doesn't replace icons,
+ * rewrite HTML, or wire up custom JS.
+ *
+ * Three treatments, one per context, because a menu bar and a menu sheet are
+ * not the same object with different numbers:
+ *
+ *   1. The menu bar — the primary nav in the header, above 600px. Items tile
+ *      edge to edge and each hover surface runs the full height of the
+ *      header, so the bar reads as a row of tabs rather than a line of
+ *      floating pills.
+ *   2. Any other nav — the utility bar, a nav dropped in a footer. A compact
+ *      pill, which is the right answer when the nav does not own its row.
+ *   3. The mobile panel — a full-width sheet that slides in from the right
+ *      and stops at the bottom of the header, so the logo and the toggle stay
+ *      where they are and the site stays on screen behind it.
+ */
 
 // ---------------------------------------------------------------------------
-// Top-level menu links — hover, focus, active state
+// Shared tokens
 // ---------------------------------------------------------------------------
 .wp-block-navigation {
-  // Strip any background WP/theme.json puts on the <li> so only the
-  // anchor's rounded pill shows on hover (no square halo around it).
-  .wp-block-navigation-item {
-    background: transparent;
-  }
+	// How far every menu item's text sits from the edge of the thing that
+	// holds it. A property rather than a number repeated per level: the
+	// dropdown has to line its rows up with a link it does not contain, and
+	// two literals that have to stay equal eventually stop being equal. The
+	// menu bar raises it below — a full-height hover surface needs more
+	// horizontal room than a pill does, or it reads as a narrow stripe.
+	--bridge-nav-inset: 0.75rem;
 
-  .wp-block-navigation-item__content {
-    padding: 0.5rem 0.75rem;
-    border-radius: 4px;
-    transition:
-      background-color 150ms ease,
-      color 150ms ease;
+	// One tint for every hoverable surface in the nav, stated once. It is
+	// mixed from `currentcolor`, so it resolves against whatever ground the
+	// header is on — dark bar, light bar, or a photograph — without any of
+	// the three being named.
+	--bridge-nav-tint: color-mix(in srgb, currentcolor 10%, transparent);
 
-    &:hover {
-      background-color: color-mix(in srgb, currentColor 12%, transparent);
-    }
+	// The bar under a hovered or current item. Brand colour, because this is
+	// the one mark in the header that is about the site rather than the
+	// chrome; `currentcolor` if the palette has no accent.
+	--bridge-nav-marker: var(--wp--preset--color--accent, currentcolor);
+	--bridge-nav-marker-size: 2px;
 
-    &:focus-visible {
-      outline: 2px solid currentColor;
-      outline-offset: 2px;
-    }
-  }
+	// How far the marker stops short of the header's bottom edge. Not flush
+	// with it: the header sits directly on whatever the page opens with, and
+	// a marker drawn on that join disappears into any band that happens to
+	// share its colour — which on this theme is the page title, in this exact
+	// accent. A strip of header ground beneath it keeps the mark reading as
+	// part of the bar rather than as a notch cut out of the page.
+	--bridge-nav-lift: 0.5rem;
 
-  // Current-page emphasis (core/navigation sets aria-current="page")
-  .wp-block-navigation-item__content[aria-current="page"],
-  .current-menu-item > .wp-block-navigation-item__content {
-    font-weight: 600;
-  }
+	// Everything in the nav that changes state — a hover surface, a marker, a
+	// caret turning over — moves on this curve and this clock.
+	--bridge-nav-ease: cubic-bezier(0.4, 0, 0.2, 1);
+	--bridge-nav-speed: 200ms;
+
+	// Things that *arrive* get their own: no easing in, because the tap that
+	// asked for them has already happened and a slow first frame reads as the
+	// interface thinking about it. They leave at full speed and decelerate
+	// into place instead.
+	--bridge-nav-enter-ease: cubic-bezier(0, 0, 0.2, 1);
+
+	// The toggle. A 44px box because that is the smallest target a thumb hits
+	// reliably, holding two bars narrower than it — the button is bigger than
+	// its mark, which is what makes a small icon comfortable to press.
+	--bridge-nav-toggle-size: 2.75rem;
+	--bridge-nav-bar-width: 1.5rem;
+
+	// The floor WCAG 2.2 puts under a pointer target (SC 2.5.8). Named rather
+	// than typed in place, because the one control in this header that was
+	// under it is core's dropdown caret, and a number with a reason attached
+	// is harder to quietly optimise away later.
+	--bridge-nav-target-min: 24px;
+	--bridge-nav-bar-size: 2px;
+	--bridge-nav-bar-gap: 0.3125rem;
+	--bridge-nav-toggle-speed: 260ms;
+
+	// The panel. Its inset is the gutter the page itself uses, so the menu's
+	// labels start on the same line as the content behind it. It moves on the
+	// shared curve at 280ms, and has no curve of its own: the entrance used to
+	// run on an ease that spent its last third covering the final few pixels,
+	// arriving long after it looked like it had arrived — which reads as lag
+	// rather than as ease.
+	--bridge-nav-panel-inset: var(--wp--style--root--padding-left, 1rem);
+	--bridge-nav-panel-pad-block: 1.25rem;
+	--bridge-nav-panel-speed: 280ms;
+	--bridge-nav-row-speed: 220ms;
+	--bridge-nav-row-pad: 1.0625rem;
+	--bridge-nav-row-size: 1.1875rem;
+
+	// Strip any background WP/theme.json puts on the <li> so only the surface
+	// this file paints shows on hover (no square halo around it).
+	.wp-block-navigation-item {
+		background: transparent;
+	}
+
+	// theme.json underlines links on hover, which is right in body copy and
+	// wrong in a header: the item already has a surface and a marker, and a
+	// third signal on top of those is just noise.
+	.wp-block-navigation-item__content {
+		text-decoration: none;
+
+		&:hover,
+		&:focus {
+			text-decoration: none;
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// 1. The menu bar — primary nav in the header, desktop
+// ---------------------------------------------------------------------------
+// Scoped above 600px because that is where core stops rendering the nav as an
+// overlay and starts rendering it as a menu bar. The height these rules build
+// on is set up in _header.scss, which stretches every wrapper core renders
+// between the <nav> and the <li> to the full height of the header row.
+@media (min-width: 600px) {
+
+	.bridge-header .bridge-nav--primary {
+		// Roomier than the pill: the inset is what separates one label from
+		// the next now that the gap is gone, and it is also what sets the
+		// width of each hover column.
+		--bridge-nav-inset: 1.125rem;
+
+		// The header's own vertical padding, restated under a short name: the
+		// surface and the marker are both placed relative to it, and both of
+		// those are already long enough lines.
+		// The unit on the fallback is load-bearing, not a slip: this value is
+		// only ever read inside a calc(), and a bare 0 there makes the whole
+		// expression invalid the moment a header sets no padding.
+		// stylelint-disable-next-line length-zero-no-unit
+		--bridge-nav-pad: var(--bridge-header-padding, 0px);
+
+		font-weight: 500;
+		letter-spacing: 0.01em;
+
+		// Items tile edge to edge. A gap here would cut a stripe of bare
+		// header between two hover surfaces, which is the one thing a row of
+		// tabs cannot have. Separation is the inset's job instead.
+		.wp-block-navigation__container {
+			gap: 0;
+		}
+
+		// The item is the surface — not the anchor. Core renders the dropdown
+		// caret as a *sibling* of the anchor, so an anchor-painted hover stops
+		// short and leaves the caret sitting outside its own item.
+		.wp-block-navigation__container > .wp-block-navigation-item {
+			position: relative;
+			display: flex;
+			align-items: center;
+			padding-inline: var(--bridge-nav-inset);
+
+			/**
+			 * The hover surface, drawn as a pseudo-element rather than as a
+			 * background on the item itself.
+			 *
+			 * The item is only as tall as the header's content box — the row's
+			 * vertical padding sits outside it. A background would stop there,
+			 * leaving a band of bare header above and below every hovered item
+			 * and a visible seam between the item and the panel hanging off
+			 * it. This is inset by minus that padding, so the surface runs the
+			 * true full height of the header and meets the dropdown exactly.
+			 *
+			 * It paints underneath the label because core gives the anchor
+			 * `z-index: 1`, and the anchor is a flex item, where z-index
+			 * applies.
+			 */
+			&::before {
+				content: "";
+				position: absolute;
+				inset-inline: 0;
+				inset-block: calc(-1 * var(--bridge-nav-pad));
+				background-color: transparent;
+				transition: background-color var(--bridge-nav-speed) ease;
+			}
+
+			// The marker is placed against the bottom of the header rather
+			// than the bottom of the item — one lift short of the edge, so it
+			// sits on the bar itself whatever the page opens with. And it
+			// underlines the label rather than the whole item: run it edge to
+			// edge and the marker on a hovered item touches the one on the
+			// current page beside it, where two separate states read as a
+			// single long bar. Held in by the inset, each is unmistakably
+			// about one word.
+			&::after {
+				content: "";
+				position: absolute;
+				inset-inline: var(--bridge-nav-inset);
+				bottom: calc(var(--bridge-nav-lift) - var(--bridge-nav-pad));
+				height: var(--bridge-nav-marker-size);
+				background-color: var(--bridge-nav-marker);
+				transform: scaleX(0);
+				transition: transform var(--bridge-nav-speed) var(--bridge-nav-ease);
+			}
+
+			&:hover::before,
+			&:focus-within::before {
+				background-color: var(--bridge-nav-tint);
+			}
+
+			// The current page keeps the marker without keeping a surface: the
+			// page you are on is worth a mark, but not one that looks like the
+			// pointer is resting on it. Matched three ways because core labels
+			// it three ways — a class on the item, a class on its ancestor,
+			// and `aria-current` on the anchor — and with no weight change,
+			// which would reflow the bar as a visitor moves around the site.
+			&:hover::after,
+			&:focus-within::after,
+			&.current-menu-item::after,
+			&.current-menu-ancestor::after,
+			&:has(> [aria-current="page"])::after {
+				transform: scaleX(1);
+			}
+
+			// The anchor keeps the full height of the item as its hit area and
+			// gives up its own padding to the item.
+			> .wp-block-navigation-item__content {
+				display: flex;
+				align-items: center;
+				align-self: stretch;
+				padding: 0;
+				border-radius: 0;
+				background: none;
+
+				// Inset, because the item now runs edge to edge against its
+				// neighbours: a ring drawn outside the anchor would cross into
+				// the item next door.
+				&:focus-visible {
+					outline: 2px solid currentcolor;
+					outline-offset: -4px;
+				}
+			}
+
+			/**
+			 * The caret. It is a <button> — the same element core toggles the
+			 * panel with on click, and the only way to open a dropdown from
+			 * the keyboard — so it is dimmed rather than restyled, and keeps a
+			 * focus ring of its own.
+			 *
+			 * Core draws it at 0.6em, which measures 10 by 10: under half the
+			 * 24px minimum SC 2.5.8 asks of a pointer target, and no help from
+			 * the spacing exception either, since the link it sits beside is a
+			 * target too. The button is grown to the minimum and the mark left
+			 * where it was, so what changes is the size of the thing you can
+			 * hit, not the size of the thing you can see.
+			 */
+			> .wp-block-navigation__submenu-icon {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				width: var(--bridge-nav-target-min);
+				height: var(--bridge-nav-target-min);
+				// Two pixels, and the button's own width carries the rest of
+				// the gap to the label: the mark ends up where it always sat,
+				// and the focus ring drawn inside the box clears the last
+				// letter of the link rather than touching it.
+				margin-left: 0.125rem;
+				padding: 0;
+				opacity: 0.6;
+				transition: opacity var(--bridge-nav-speed) ease;
+
+				// Drawn inside the button, not around it. The hit area now
+				// reaches to within a few pixels of the label it belongs to,
+				// and a ring outside that box lands on the last letter of the
+				// link — an indicator that reads as a rendering fault.
+				&:focus-visible {
+					outline: 2px solid currentcolor;
+					outline-offset: -2px;
+					border-radius: 5px;
+				}
+
+				// The size is restated because core sets it to `inherit`,
+				// which followed the button's width up to 24px and would have
+				// drawn a caret twice the size it has always been.
+				svg {
+					width: 0.6em;
+					height: 0.6em;
+					transition: transform var(--bridge-nav-speed) var(--bridge-nav-ease);
+				}
+			}
+
+			&:hover > .wp-block-navigation__submenu-icon,
+			&:focus-within > .wp-block-navigation__submenu-icon {
+				opacity: 1;
+			}
+
+			/**
+			 * The caret turns over while its panel is open.
+			 *
+			 * The rotation is on the <svg> and not on the button that holds
+			 * it, because core already turns that same svg 180° when the
+			 * toggle reports `aria-expanded="true"`. Two rotations on two
+			 * elements would compose — a menu opened by click and then hovered
+			 * would spin its caret a full turn back to pointing down. On one
+			 * element they simply agree.
+			 *
+			 * Only the top level: core rotates nested carets 90° to point
+			 * sideways, which is where their panels open.
+			 */
+			&:hover > .wp-block-navigation__submenu-icon svg,
+			&:focus-within > .wp-block-navigation__submenu-icon svg {
+				transform: rotate(180deg);
+			}
+		}
+	}
+
+	/**
+	 * The menu's text lines up with the page; its hover surfaces don't have to.
+	 *
+	 * The last item's inset would otherwise hold the final label a padding's
+	 * width short of the content edge the logo is measured from — the menu
+	 * reads as misaligned even though nothing is. Pulling the container out by
+	 * one inset puts the text back on the grid and lets the hover column run
+	 * into the gutter, which is where a full-bleed surface should end anyway.
+	 *
+	 * Only when the nav is the last thing in the row: with a CTA beside it,
+	 * the button owns the edge and the nav is an interior element.
+	 */
+	.bridge-header__row .bridge-header__end > .bridge-nav--primary:last-child {
+		margin-inline-end: calc(-1 * var(--bridge-nav-inset));
+	}
+
+	/**
+	 * Escape shuts a dropdown the pointer opened, and holds it shut.
+	 *
+	 * WCAG 2.2 SC 1.4.13 asks that content shown on hover can be dismissed
+	 * without moving the pointer. Half of that is a keypress core never hears,
+	 * which header.js handles; this is the other half. Core opens the panel
+	 * from a CSS `:hover` rule that consults no state at all, so closing the
+	 * block's state leaves the panel exactly where it was — the class it adds
+	 * is what actually takes it off the screen, by restoring the closed values
+	 * core itself uses.
+	 *
+	 * Six classes, because core's hover rule is four and this has to outrank
+	 * it while the pointer is still on the item.
+	 */
+	.bridge-header
+		.bridge-nav--primary.is-hover-dismissed
+		.wp-block-navigation-item.has-child:hover
+		> .wp-block-navigation__submenu-container {
+		width: 0;
+		height: 0;
+		opacity: 0;
+		overflow: hidden;
+		visibility: hidden;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// 2. Every other nav — utility bar, footer menus
+// ---------------------------------------------------------------------------
+// A nav that shares its row with something else gets a pill: it has no height
+// of its own to fill, so a full-bleed surface would paint over its neighbours.
+.wp-block-navigation:not(.bridge-nav--primary) {
+
+	.wp-block-navigation-item__content {
+		padding: 0.5rem var(--bridge-nav-inset);
+		border-radius: 4px;
+		transition:
+			background-color var(--bridge-nav-speed) ease,
+			color var(--bridge-nav-speed) ease;
+
+		&:hover {
+			background-color: var(--bridge-nav-tint);
+		}
+
+		&:focus-visible {
+			outline: 2px solid currentcolor;
+			outline-offset: 2px;
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
 // Submenu dropdown panel (desktop)
 // ---------------------------------------------------------------------------
+// The panel's surface — background, colour, border, radius, elevation and the
+// padding of its rows — is not set here. Core claims all of it at three to
+// five classes, which a bare class silently loses to, so it lives in
+// _header.scss where the selector is long enough to win. What is left is what
+// core does not contest.
 .wp-block-navigation__submenu-container {
-  background: var(--wp--preset--color--background);
-  color: var(--wp--preset--color--text);
-  border: 1px solid color-mix(in srgb, var(--wp--preset--color--text) 10%, transparent);
-  border-radius: 6px;
-  box-shadow:
-    0 4px 6px -1px rgba(15, 23, 42, 0.1),
-    0 2px 4px -2px rgba(15, 23, 42, 0.08);
-  padding: 0.5rem;
-  min-width: 14rem;
-  margin-top: 0.5rem;
+	// No inline padding of its own: the rows carry the inset instead, so a
+	// dropdown item's text starts exactly where its parent's text starts and
+	// the hover runs the full width of the panel rather than floating inside
+	// a margin.
+	padding-block: 0.5rem;
+	padding-inline: 0;
 
-  .wp-block-navigation-item__content {
-    color: var(--wp--preset--color--text);
-    padding: 0.625rem 0.875rem;
-    white-space: nowrap;
-    width: 100%;
+	// Colour is inherited, not stated: the panel sits on the header's own
+	// ground, so a fixed palette hover would be the one thing in the header
+	// that ignores which ground that is. `currentcolor` is the same tint the
+	// top-level items use, and it works on either.
+	.wp-block-navigation-item__content {
+		// Padding is not set here — core claims it at five classes, the same
+		// way it claims the panel's surface. It lives in _header.scss with the
+		// rest of what has to outrank core.
+		position: relative;
+		white-space: nowrap;
+		width: 100%;
+		transition: background-color var(--bridge-nav-speed) ease;
 
-    &:hover {
-      background-color: var(--wp--preset--color--surface);
-      color: var(--wp--preset--color--primary);
-    }
+		// The row's marker: the bar that runs along the bottom of a top-level
+		// item, stood on its end. Same colour, same idea, turned through 90°
+		// because a row is entered from the side.
+		&::before {
+			content: "";
+			position: absolute;
+			inset-block: 0;
+			left: 0;
+			width: var(--bridge-nav-marker-size);
+			background-color: var(--bridge-nav-marker);
+			transform: scaleX(0);
+			transform-origin: left;
+			transition: transform var(--bridge-nav-speed) var(--bridge-nav-ease);
+		}
 
-    &:focus-visible {
-      outline: 2px solid var(--wp--preset--color--primary);
-    }
-  }
+		&:hover,
+		&:focus-visible {
+			background-color: var(--bridge-nav-tint);
+		}
+
+		&:hover::before,
+		&:focus-visible::before,
+		&[aria-current="page"]::before {
+			transform: scaleX(1);
+		}
+
+		&:focus-visible {
+			outline: 2px solid currentcolor;
+			outline-offset: -2px;
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
-// Hamburger toggle — larger touch target, clear focus
+// 3. The toggle — a two-bar icon that turns into a cross
 // ---------------------------------------------------------------------------
-.wp-block-navigation__responsive-container-open {
-  padding: 0.5rem;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background-color 150ms ease;
 
-  &:hover {
-    background-color: color-mix(in srgb, currentColor 10%, transparent);
-  }
+/**
+ * Core ships two buttons: an "open" one in the header and a "close" one inside
+ * the overlay, and it never hides the first when the second appears — the
+ * overlay simply covers it. This panel does not cover it, so the two are
+ * stacked instead: the open button is the icon you see, and it animates
+ * between states because it is one element that never goes away; the close
+ * button is laid over it, invisible, as the thing a tap or a Tab actually
+ * lands on while the panel is out.
+ *
+ * Which keeps the toggle in one place. A mark that jumps to a different corner
+ * the moment it is pressed is a mark the eye has to find again.
+ */
+.bridge-header .wp-block-navigation__responsive-container-open {
+	position: relative;
+	// No `display` of its own. Core shows this button below 600px and hides it
+	// above, both at two classes, and a rule here that set `display` at two
+	// classes of its own would win the tie on stylesheet order alone — putting
+	// a hamburger next to a menu bar that is already showing every link it
+	// has. The bars centre themselves instead.
+	width: var(--bridge-nav-toggle-size);
+	height: var(--bridge-nav-toggle-size);
+	padding: 0;
+	cursor: pointer;
+	border-radius: 6px;
+	color: inherit;
+	transition: background-color var(--bridge-nav-speed) ease;
 
-  &:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
+	// Core's own icon, replaced rather than restyled: an <svg> of two fixed
+	// paths cannot be rotated into a cross, and the animation is the point.
+	svg {
+		display: none;
+	}
+
+	// The two bars. Both are drawn at the centre and pushed apart, so closing
+	// the gap and turning them is one transform each rather than a rotation
+	// about a point that has to be worked out per bar.
+	&::before,
+	&::after {
+		content: "";
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		width: var(--bridge-nav-bar-width);
+		height: var(--bridge-nav-bar-size);
+		border-radius: var(--bridge-nav-bar-size);
+		background-color: currentcolor;
+		transition: transform var(--bridge-nav-toggle-speed)
+			var(--bridge-nav-ease);
+	}
+
+	&::before {
+		transform: translate(-50%, -50%)
+			translateY(calc(-1 * var(--bridge-nav-bar-gap)));
+	}
+
+	&::after {
+		transform: translate(-50%, -50%) translateY(var(--bridge-nav-bar-gap));
+	}
+
+	&:hover {
+		background-color: var(--bridge-nav-tint);
+	}
+
+	&:focus-visible {
+		outline: 2px solid currentcolor;
+		outline-offset: 2px;
+	}
+}
+
+/**
+ * Open: the bars meet in the middle and cross.
+ *
+ * Matched with `:has()` on the nav, because the state lives on the overlay
+ * container and the button is its *previous* sibling — there is no combinator
+ * that reaches backwards, and the alternative is a second element that fades
+ * in already crossed, which does not animate at all.
+ */
+.bridge-header
+	.bridge-nav--primary:has(.wp-block-navigation__responsive-container.is-menu-open) {
+
+	.wp-block-navigation__responsive-container-open {
+		// The close button laid over it takes the tap. Without this the press
+		// lands on whichever of the two the browser picks.
+		pointer-events: none;
+
+		&::before {
+			transform: translate(-50%, -50%) rotate(45deg);
+		}
+
+		&::after {
+			transform: translate(-50%, -50%) rotate(-45deg);
+		}
+	}
+}
+
+/**
+ * The close button, sitting exactly where the toggle is.
+ *
+ * It is invisible — no icon of its own, no ground — because the icon under it
+ * is the one doing the work. It keeps its label, its focus ring and its hit
+ * area, so nothing about operating the menu by keyboard or screen reader
+ * changes; only the pixels come from somewhere else.
+ *
+ * Placed by measuring up from the panel rather than down from the viewport:
+ * the panel's top edge is the header's bottom edge, so half a header above it
+ * is the middle of the header on any page, at any scroll position, whether or
+ * not the header is sticky.
+ */
+.bridge-header .wp-block-navigation__responsive-container-close {
+	position: absolute;
+	top: calc(-0.5 * var(--bridge-header-size));
+	right: var(--wp--style--root--padding-right, 1rem);
+	transform: translateY(-50%);
+	width: var(--bridge-nav-toggle-size);
+	height: var(--bridge-nav-toggle-size);
+	padding: 0;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: transparent;
+	cursor: pointer;
+
+	svg {
+		display: none;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--bridge-nav-panel-fg, currentcolor);
+		outline-offset: 2px;
+	}
 }
 
 // ---------------------------------------------------------------------------
-// Mobile overlay (responsive container in modal mode)
+// 4. The mobile panel
 // ---------------------------------------------------------------------------
-.wp-block-navigation__responsive-container.has-modal-open {
-  // Dim + blur the page behind the panel
-  background: rgba(15, 23, 42, 0.5);
 
-  @supports (backdrop-filter: blur(4px)) {
-    backdrop-filter: blur(4px);
-  }
+/**
+ * The panel is positioned against the header, so the nav must stop being a
+ * containing block.
+ *
+ * Core makes every navigation block `position: relative`, which on the bar is
+ * exactly right — it is what the dropdowns hang from. Below 600px there are no
+ * dropdowns, and it is the one thing standing between a full-width panel and
+ * the width of the toggle: leave it, and `left: 0; right: 0` resolves to the
+ * 44 pixels the hamburger occupies.
+ */
+@media (max-width: 599px) {
 
-  // Animate the panel itself in from the right
-  .wp-block-navigation__responsive-container-content {
-    background: var(--wp--preset--color--background);
-    color: var(--wp--preset--color--text);
-    width: min(22rem, 85vw);
-    margin-left: auto;
-    padding: 4rem 1.5rem 1.5rem;
-    min-height: 100dvh;
-    box-shadow: -8px 0 32px rgba(15, 23, 42, 0.2);
-    overflow-y: auto;
-    animation: bridge-nav-slide-in 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
-  }
-
-  // Menu items in the overlay — larger touch targets, dark text for contrast
-  .wp-block-navigation-item__content {
-    color: var(--wp--preset--color--text);
-    padding: 0.875rem 1rem;
-    font-size: 1.0625rem;
-    line-height: 1.4;
-    border-radius: 4px;
-    display: block;
-
-    &:hover {
-      background-color: var(--wp--preset--color--surface);
-      color: var(--wp--preset--color--primary);
-    }
-  }
-
-  // Submenus inside the overlay — flatten (no nested dropdown panel)
-  .wp-block-navigation__submenu-container {
-    position: static;
-    box-shadow: none;
-    border: 0;
-    background: transparent;
-    padding: 0 0 0 1rem;
-    min-width: 0;
-    margin-top: 0;
-
-    .wp-block-navigation-item__content {
-      font-size: 1rem;
-      color: color-mix(in srgb, var(--wp--preset--color--text) 80%, transparent);
-    }
-  }
+	.bridge-header .bridge-nav--primary {
+		position: static;
+	}
 }
 
-// Close button — top-right, generous hit area, strong focus ring
-.wp-block-navigation__responsive-container-close {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 3rem;
-  height: 3rem;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 4px;
-  color: var(--wp--preset--color--text);
-  background: transparent;
-  cursor: pointer;
-  transition: background-color 150ms ease;
+/**
+ * Core's overlay is a fixed box over the whole viewport: the site disappears
+ * behind it, logo included, and the way back out is a close button in a corner
+ * the visitor did not press. This rebuilds it as a panel that slides in from
+ * the right and stops at the bottom of the header.
+ *
+ * The panel is positioned against the header rather than the viewport —
+ * absolute inside `.bridge-header`, which is already `position: relative` —
+ * and `top: 100%` puts its top edge exactly on the header's bottom edge. Not
+ * `position: fixed` with an offset: that measures from the top of the screen,
+ * which is only the same thing while the page is scrolled to the top. Tapping
+ * the toggle a hundred pixels down would open a panel with a hundred pixels of
+ * page showing above it. Hung off the header, there is no gap to get wrong.
+ *
+ * Five classes on these selectors, one more than they read as needing: core
+ * paints the overlay white at four whenever the nav has no background of its
+ * own, and a tie would leave the panel's colour to stylesheet order. The nav
+ * element carries both of the first two classes.
+ */
+.bridge-header
+	.wp-block-navigation.bridge-nav--primary
+	.wp-block-navigation__responsive-container.is-menu-open {
+	position: absolute;
+	inset: 100% 0 auto 0;
+	// A full screen's worth, measured from the header rather than trimmed to
+	// fit under it. Trimmed, the panel is exactly right with the page at the
+	// top and one scroll position short of the bottom everywhere else — the
+	// header has moved up, and the strip it used to occupy shows page through
+	// the foot of the menu. Overshooting costs nothing: the excess is below
+	// the fold, and core has already locked the page behind it.
+	height: 100dvh;
+	padding: 0;
+	background: transparent;
 
-  &:hover {
-    background-color: var(--wp--preset--color--surface);
-  }
+	/**
+	 * Not clipped, and nothing inside it needs clipping.
+	 *
+	 * A clip here is the reflex — the panel comes in from off-screen, so hide
+	 * what is off-screen — and it cannot be used: the close button sits above
+	 * this box, over the toggle, and there is no way to clip one axis only.
+	 * CSS computes `visible` to `clip` the moment the other axis is clipped,
+	 * so a horizontal clip takes the button with it, off the screen and out of
+	 * hit testing both. The menu would still close when tapped, but only
+	 * because the tap knocks focus out of the dialog — a coincidence that
+	 * behaves like a close button until the day it doesn't.
+	 *
+	 * Nothing is needed in its place, because the panel is revealed rather
+	 * than moved: see the entrance below. Its box never leaves the viewport,
+	 * so there is no overflow here to hide.
+	 */
+	overflow: visible;
 
-  &:focus-visible {
-    outline: 2px solid var(--wp--preset--color--primary);
-    outline-offset: 2px;
-  }
+	// Core centres this wrapper on the site's wide size and leaves the dialog
+	// inside it at its own width. The panel is the full width of the screen.
+	.wp-block-navigation__responsive-close,
+	.wp-block-navigation__responsive-dialog {
+		width: 100%;
+		height: 100%;
+		max-width: none;
+		margin: 0;
+	}
+
+	// The panel itself: the surface that slides, so the colour arrives with
+	// the movement rather than appearing under it.
+	.wp-block-navigation__responsive-container-content {
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+		margin: 0;
+		padding: var(--bridge-nav-panel-pad-block)
+			var(--bridge-nav-panel-inset);
+		background-color: var(
+			--bridge-nav-panel-bg,
+			var(--wp--preset--color--secondary)
+		);
+		color: var(--bridge-nav-panel-fg, var(--wp--preset--color--background));
+		box-shadow: none;
+		// Down only. The rows come in from the right, and a list that can be
+		// dragged sideways by the width of its own entrance is a list that
+		// feels broken the first time a thumb catches it.
+		overflow-x: hidden;
+		overflow-y: auto;
+		// The page behind is already locked by core; this stops a flick at the
+		// end of the list from being handed on to it anyway.
+		overscroll-behavior: contain;
+		align-items: stretch;
+		animation: bridge-nav-panel-in var(--bridge-nav-panel-speed)
+			var(--bridge-nav-enter-ease) both;
+	}
+
+	// The list fills the panel and stacks from the top. Core hands the overlay
+	// the bar's own justification, which for a right-aligned menu means a
+	// column of labels shrunk against the right edge — the row you tap is not
+	// the row you see.
+	.wp-block-navigation__container,
+	.wp-block-navigation__submenu-container {
+		align-items: stretch;
+		justify-content: flex-start;
+		gap: 0;
+		width: 100%;
+	}
+
+	// An item with children is a row on the bar — link, caret, panel — and a
+	// stack in the panel, where the submenu is flattened into the list under
+	// its parent. Left as a row it wraps, and the children end up beside the
+	// link they belong to rather than beneath it.
+	.wp-block-navigation-item {
+		flex-direction: column;
+		align-items: stretch;
+		width: 100%;
+	}
+
+	// Flattened submenus: no panel of their own, one indent, and the rail
+	// their rows carry starts where that indent ends.
+	.wp-block-navigation__submenu-container {
+		position: static;
+		min-width: 0;
+		margin: 0;
+		padding: 0 0 0.5rem var(--bridge-nav-panel-inset);
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+		transform: none;
+	}
+}
+
+/**
+ * The rows.
+ *
+ * Written long rather than nested above because core zeroes the padding of
+ * every item in an open overlay at four classes, and pads its submenu rows at
+ * five — a row styled at anything less is a row with no padding at all, which
+ * is what this menu had. Six settles both.
+ *
+ * They run the full width of the panel, dividers included: the inset that
+ * holds the labels off the edge is given back as negative margin, so a press
+ * lights up the whole row rather than a floating strip inside it.
+ */
+.bridge-header
+	.wp-block-navigation.bridge-nav--primary
+	.wp-block-navigation__responsive-container.is-menu-open
+	.wp-block-navigation-item__content {
+	display: flex;
+	align-items: center;
+	width: auto;
+	margin-inline: calc(-1 * var(--bridge-nav-panel-inset));
+	padding: var(--bridge-nav-row-pad) var(--bridge-nav-panel-inset);
+	border-bottom: 1px solid
+		color-mix(in srgb, currentcolor 16%, transparent);
+	border-radius: 0;
+	color: inherit;
+	font-size: var(--bridge-nav-row-size);
+	font-weight: 500;
+	line-height: 1.3;
+	text-decoration: none;
+	transition: background-color var(--bridge-nav-speed) ease;
+
+	&:hover,
+	&:active {
+		background-color: color-mix(in srgb, currentcolor 12%, transparent);
+	}
+
+	&:focus-visible {
+		outline: 2px solid currentcolor;
+		outline-offset: -3px;
+	}
+
+	// The marker is the dropdown's; in the panel a child is placed by its
+	// indent and the rule beside it.
+	&::before {
+		display: none;
+	}
+}
+
+// A child row: quieter, one step in, and standing against a rail rather than a
+// divider — indentation alone reads as a smaller sibling, and a line down the
+// side says which parent the group belongs to without repeating its name. It
+// gives up its left bleed to do that and keeps the right one, so a press still
+// lights the row all the way to the edge of the screen.
+.bridge-header
+	.wp-block-navigation.bridge-nav--primary
+	.wp-block-navigation__responsive-container.is-menu-open
+	.wp-block-navigation__submenu-container
+	.wp-block-navigation-item__content {
+	margin-inline: 0 calc(-1 * var(--bridge-nav-panel-inset));
+	padding-block: calc(var(--bridge-nav-row-pad) * 0.75);
+	padding-inline: 0.875rem var(--bridge-nav-panel-inset);
+	border-bottom: 0;
+	border-left: 2px solid color-mix(in srgb, currentcolor 30%, transparent);
+	font-size: 1rem;
+	font-weight: 400;
+}
+
+// The last row keeps the list's rhythm without drawing a line under a panel
+// that has nothing below it.
+.bridge-header
+	.wp-block-navigation.bridge-nav--primary
+	.wp-block-navigation__responsive-container.is-menu-open
+	.wp-block-navigation__container
+	> .wp-block-navigation-item:last-child
+	> .wp-block-navigation-item__content {
+	border-bottom: 0;
+}
+
+/**
+ * The rows arrive after the panel, a beat apart.
+ *
+ * Six of them, because past the sixth the delay is longer than the movement
+ * and the list would be waiting on itself; everything after simply comes in
+ * with the panel. `both` holds the first frame, so nothing is briefly visible
+ * in the wrong place before its turn.
+ */
+.bridge-header
+	.wp-block-navigation.bridge-nav--primary
+	.wp-block-navigation__responsive-container.is-menu-open
+	.wp-block-navigation__container
+	> .wp-block-navigation-item {
+	animation: bridge-nav-row-in var(--bridge-nav-row-speed)
+		var(--bridge-nav-enter-ease) both;
+
+	&:nth-child(1) {
+		animation-delay: 70ms;
+	}
+
+	&:nth-child(2) {
+		animation-delay: 105ms;
+	}
+
+	&:nth-child(3) {
+		animation-delay: 140ms;
+	}
+
+	&:nth-child(4) {
+		animation-delay: 175ms;
+	}
+
+	&:nth-child(5) {
+		animation-delay: 210ms;
+	}
+
+	&:nth-child(6) {
+		animation-delay: 245ms;
+	}
 }
 
 // ---------------------------------------------------------------------------
 // Animation + reduced-motion respect
 // ---------------------------------------------------------------------------
-@keyframes bridge-nav-slide-in {
-  from {
-    transform: translateX(24px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+
+/**
+ * The panel arrives from the right, without going anywhere to do it.
+ *
+ * The obvious version of this animation — start at `translateX(100%)`, end at
+ * zero — puts a full screen's width of panel outside the viewport for the
+ * length of the entrance, and a box outside the viewport is still part of the
+ * page. The document doubles in width, and the browser, sending focus into the
+ * menu it has just opened, scrolls the entire site sideways to reach it and
+ * then rides back as the panel catches up. Measured on this site: the page
+ * jumped 440px and crawled home over twenty frames, with the header, the logo
+ * and the body copy all travelling with it.
+ *
+ * Clipping the panel back is a reveal instead. Nothing moves, so nothing
+ * overflows, so there is no axis for the page to scroll on and nothing for
+ * focus to chase. The edge sweeps left at exactly the speed the panel would
+ * have travelled, and the rows underneath it come in from the right on their
+ * own, which is where the sense of movement actually comes from.
+ */
+@keyframes bridge-nav-panel-in {
+
+	from {
+		clip-path: inset(0 0 0 100%);
+	}
+
+	to {
+		clip-path: inset(0 0 0 0);
+	}
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .wp-block-navigation__responsive-container.has-modal-open
-    .wp-block-navigation__responsive-container-content {
-    animation: none;
-  }
+// The rows follow the panel in rather than riding along with it: a short lift
+// and a fade, in the same direction the panel came from.
+@keyframes bridge-nav-row-in {
 
-  .wp-block-navigation-item__content,
-  .wp-block-navigation__responsive-container-open,
-  .wp-block-navigation__responsive-container-close {
-    transition: none;
-  }
+	from {
+		transform: translateX(1.25rem);
+		opacity: 0;
+	}
+
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+// Every transition in this file is timed by one property, so switching motion
+// off is one declaration rather than a list of overrides that has to be kept
+// in step with the rules above it. The markers and surfaces still appear —
+// they just stop growing into place.
+@media (prefers-reduced-motion: reduce) {
+
+	.wp-block-navigation {
+		--bridge-nav-speed: 0ms;
+	}
+
+	/**
+	 * The panel and its rows still arrive; they just stop travelling to get
+	 * here.
+	 *
+	 * Written at the same length as the rules they switch off. `animation:
+	 * none` at one class against a five-class rule is a declaration that never
+	 * applies — the quiet way this kind of block fails, since nothing about it
+	 * looks wrong until someone with the setting turned on watches a menu fly
+	 * in anyway.
+	 */
+	.bridge-header
+		.wp-block-navigation.bridge-nav--primary
+		.wp-block-navigation__responsive-container.is-menu-open
+		.wp-block-navigation__responsive-container-content,
+	.bridge-header
+		.wp-block-navigation.bridge-nav--primary
+		.wp-block-navigation__responsive-container.is-menu-open
+		.wp-block-navigation__container
+		> .wp-block-navigation-item {
+		animation: none;
+	}
+
+	// The bars cross without the turn.
+	.bridge-header .wp-block-navigation__responsive-container-open {
+
+		&::before,
+		&::after {
+			transition: none;
+		}
+	}
 }

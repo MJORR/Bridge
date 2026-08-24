@@ -51,7 +51,13 @@
 		},
 		"readMoreText": {
 			"type": "string",
-			"default": "Read more →"
+			"default": ""
+		}
+	},
+	"example": {
+		"attributes": {
+			"numberOfPosts": 3,
+			"columns": 3
 		}
 	},
 	"editorScript": "bridge-cards-editor",

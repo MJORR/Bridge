@@ -1,0 +1,114 @@
+/**
+ * Bridge — mixins shared by the section blocks.
+ *
+ * Mixins, not rules: a partial of rules imported by ten stylesheets would ship
+ * the same declarations ten times over, once per per-block bundle. A mixin
+ * emits only into the blocks that ask for it, and only the parts they ask for.
+ */
+@use "sass:string";
+
+// The width one item of a set wants: never narrower than $min, and never wider
+// than an equal share of the container once `--columns` of them are placed.
+//
+// One expression rather than a ladder of breakpoints, because `100%` here is
+// the *container's* width. Media queries asked the window how wide it was,
+// which stopped being the same question the moment a band's content moved to
+// `contentSize` — a 720px column inside a 1440px window was still being handed
+// the three-column answer. Paired with `auto-fit`, this makes `--columns` a
+// ceiling the grid drops below on its own.
+//
+// Built as a string so Sass hands `min()` and `max()` through to CSS rather
+// than trying to evaluate them against units it cannot compare.
+@function track-width($min, $gap, $cap: 100%) {
+	@return string.unquote(
+		"max(min(#{$min}, #{$cap}), calc((100% - (var(--columns, 3) - 1) * #{$gap}) / var(--columns, 3)))"
+	);
+}
+
+// The width at which a stacked pair of things has room to sit side by side.
+// One number, named once: it was written as a bare `48rem` in five media
+// queries across two components, which is five places to change and five
+// chances to change four of them.
+$two-column: 48rem;
+
+// The rules that only apply once there are two columns.
+@mixin two-column {
+	@media (width >= $two-column) {
+		@content;
+	}
+}
+
+// The content column, for a block that paints its background full-width but
+// must keep its content off the window edge. Named widths come from
+// theme.json, so a site that changes its content width changes these too.
+// stylelint-disable at-rule-empty-line-before -- `} @else {` is one construct
+// with `@if`; a blank line between them would break the pair apart.
+@mixin container($width: wide) {
+	@if $width == narrow {
+		max-width: var(--wp--style--global--content-size);
+	} @else {
+		max-width: var(--wp--style--global--wide-size);
+	}
+
+	margin-inline: auto;
+	padding-inline: var(--wp--preset--spacing--40);
+}
+// stylelint-enable at-rule-empty-line-before
+
+// A responsive grid that collapses on its own rather than at one hard
+// breakpoint. `--columns` is the authored count and the most it will ever
+// place; `track-width()` is what stops a three-column grid from demanding
+// 3 × 16rem in a column that has no room for it.
+@mixin auto-grid($min: 16rem, $gap: var(--wp--preset--spacing--50)) {
+	display: grid;
+	gap: $gap;
+	grid-template-columns: repeat(
+		auto-fit,
+		minmax(#{track-width($min, $gap)}, 1fr)
+	);
+
+	// The editor keeps a section's intro and its items in one flat list, so
+	// they can be dragged past each other; render.php sorts them into separate
+	// containers afterwards. Until it does, a heading or a summary line
+	// dropped in here is a grid cell sitting beside the first card. No item is
+	// ever a heading or a paragraph — every one of them renders an <li> or a
+	// <figure> — so this only ever catches the intro, and only in the editor.
+	> :is(h1, h2, h3, h4, h5, h6, p) {
+		grid-column: 1 / -1;
+	}
+}
+
+// A horizontally scrolling row that snaps, for the "carousel" overflow style.
+// CSS scroll-snap rather than a slider library: it is keyboard-scrollable,
+// works before JavaScript arrives, and costs nothing to ship.
+@mixin snap-row($gap: var(--wp--preset--spacing--50)) {
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: minmax(min(20rem, 80%), 1fr);
+	gap: $gap;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	overscroll-behavior-inline: contain;
+	// Room for the focus ring on the first and last card, which a plain
+	// overflow container would clip.
+	padding-block: 2px;
+	scrollbar-width: thin;
+
+	> * {
+		scroll-snap-align: start;
+	}
+}
+
+// Media that fills its box at a fixed shape. Prevents the layout shifting as
+// images of different proportions load into the same grid.
+//
+// The ratio arrives as a string, or as a custom property. Written bare — as
+// `media-fill(4 / 3)` — Sass reads the slash as division and hands CSS the
+// number 1.3333 instead of the ratio, on a syntax Dart Sass 2 removes
+// altogether. Quoted, it passes through untouched.
+@mixin media-fill($ratio: "16 / 9") {
+	display: block;
+	width: 100%;
+	aspect-ratio: #{$ratio};
+	object-fit: cover;
+}

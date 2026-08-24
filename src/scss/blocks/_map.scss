@@ -1,0 +1,53 @@
+/**
+ * Bridge — Map block.
+ *
+ * The frame is sized by `--bridge-map-height`, published inline by render.php
+ * from the block's height setting.
+ */
+@use "../abstracts/section" as section;
+
+.bridge-map {
+	&__inner {
+		@include section.container(wide);
+
+		position: relative;
+	}
+
+	&--narrow &__inner {
+		@include section.container(narrow);
+	}
+
+	&__frame {
+		display: block;
+		width: 100%;
+		// The height an editor set, but never more than most of the window: a
+		// 900px map on a phone is a screenful of tiles with the page's own
+		// content pushed off the bottom of it.
+		height: min(var(--bridge-map-height, 420px), 80dvh);
+		border: 0;
+		// A map is a picture of a place; matching the theme's other media
+		// keeps it from being the one square-cornered thing on the page.
+		border-radius: var(--wp--custom--radius--medium);
+	}
+
+	&__label {
+		margin-block: var(--wp--preset--spacing--20) 0;
+		font-size: var(--wp--preset--font-size--small);
+	}
+
+	// Editor only — see edit.js. Sits over the iframe so the block stays
+	// selectable and draggable.
+	&__shield {
+		position: absolute;
+		inset: 0 0 auto 0;
+		height: min(var(--bridge-map-height, 420px), 80dvh);
+		z-index: 1;
+	}
+
+	&__form {
+		display: flex;
+		gap: var(--wp--preset--spacing--20);
+		align-items: flex-end;
+		flex-wrap: wrap;
+	}
+}

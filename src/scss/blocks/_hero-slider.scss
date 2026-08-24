@@ -1,0 +1,196 @@
+/**
+ * Bridge — Hero Slider component.
+ *
+ * The slider sits in page content — full window width by default, inside the
+ * content column when the width toggle is off. Each slide is a core/cover
+ * block; Cover owns its own layout (background image, overlay, content
+ * positioning), so this layer only handles sizing and Swiper UI chrome — no
+ * flex overrides that would fight Cover's CSS.
+ */
+
+// The transparent header that overlays this slider is styled in
+// blocks/_header.scss. It used to be described here too, which meant the
+// landing page's header only positioned itself correctly on pages that
+// happened to contain a slider — this file compiles into slider.css, which is
+// enqueued per block.
+
+// ---------------------------------------------------------------------------
+// Slider
+// ---------------------------------------------------------------------------
+.bridge-hero-slider {
+	--swiper-theme-color: var(--wp--preset--color--background);
+	--swiper-navigation-size: 1.75rem;
+	--swiper-pagination-color: var(--wp--preset--color--background);
+	--swiper-pagination-bullet-inactive-color: var(
+		--wp--preset--color--background
+	);
+	--swiper-pagination-bullet-inactive-opacity: 0.5;
+	--swiper-pagination-bullet-size: 0.5rem;
+
+	position: relative;
+	// Height is driven by --bridge-slider-height set inline from render.php
+	// (preset or custom value from the InspectorControls). Falls back to
+	// full viewport if no value is present. Less whatever the header is already
+	// spending of the window: render.php decides what that is worth — it is
+	// the only place that knows whether the height was asked for in viewport
+	// units, and whether the header on this page occupies its own band or
+	// floats over this one — and publishes the answer as a length. Zero in
+	// every case where neither applies, so this stays one expression rather
+	// than a set of variants.
+	height: calc(
+		var(--bridge-slider-height, 100dvh) - var(--bridge-slider-inset, 0px)
+	);
+	overflow: hidden;
+	color: var(--wp--preset--color--background);
+
+	.swiper-wrapper {
+		height: 100%;
+	}
+
+	.swiper-slide {
+		position: relative;
+		width: 100%;
+		height: 100%;
+	}
+
+	// Each slide is a Cover. Override its per-slide minHeight so it always
+	// fills the slider — Swiper sizes the slide; let Cover follow.
+	.swiper-slide.wp-block-cover {
+		min-height: 100% !important;
+		margin: 0;
+	}
+
+	// Cover's flex centering only centers the inner-container *as a box* —
+	// the box itself is content-sized, so visually the content still hugs
+	// the top. Make the inner-container fill the cover, then center its
+	// own children (the title/subtitle) vertically inside it. Inline padding
+	// keeps content clear of the prev/next buttons at the slide edges.
+	.swiper-slide.wp-block-cover > .wp-block-cover__inner-container {
+		min-height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		// The scale, not a bespoke clamp: these presets are fluid, and a
+		// hand-rolled one here would taper on its own schedule.
+		padding-inline: var(--wp--preset--spacing--80);
+		// A transparent header covers the top of this box without shortening
+		// it, so centring here would centre against a strip the visitor
+		// cannot see into. Padding the covered part out of the box moves the
+		// middle down to where it looks like the middle. Zero whenever the
+		// header sits above the slider instead, where the height already
+		// accounts for it.
+		padding-block-start: var(--bridge-slider-lead, 0);
+
+		// Cover's inner container carries core's constrained layout, which
+		// centres each child with `margin-inline: auto` — declared
+		// `!important`, so it is not ours to remove. Auto cross-axis margins
+		// on a flex item outrank `align-items` and shrink the item to its own
+		// content, which turns every child into a text-width box sitting in
+		// the middle of the slide. A heading set to "left" then looks centred:
+		// the class is on it and the rule applies, but the box is exactly as
+		// wide as the words, so there is nothing for the alignment to move it
+		// within. The editor never showed it because `swiper-slide` is added
+		// by slider.js at runtime — the selector above only matches once the
+		// page is published, so the two views disagreed.
+		// A definite width sends the free space back to the auto margins as
+		// margin instead of taking it out of the box: the child is the content
+		// column again, centred as core intends, and alignment inside it means
+		// what it says. Widths core sets on wide and full children still win —
+		// this is 100% of whatever their own max-width allows.
+		> * {
+			width: 100%;
+		}
+	}
+
+	.swiper-button-prev,
+	.swiper-button-next {
+		background: transparent;
+		border: 0;
+		padding: 0;
+		cursor: pointer;
+		color: var(--wp--preset--color--background);
+
+		&::after {
+			font-weight: 600;
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--wp--preset--color--background);
+			outline-offset: 4px;
+		}
+	}
+
+	.swiper-pagination-bullet {
+		transition:
+			opacity 150ms ease,
+			transform 150ms ease;
+	}
+
+	.swiper-pagination-bullet-active {
+		transform: scale(1.2);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Width
+// ---------------------------------------------------------------------------
+
+/**
+ * Force viewport-edge alignment. WP's `.has-global-padding > .alignfull`
+ * breakout only fires for direct children, and the slider is nested inside
+ * `wp-block-post-content` — so we take alignment into our own hands. Scoped to
+ * the full-width choice rather than applied to every slider: with the width
+ * toggle off the block keeps no width rule of its own, being an ordinary
+ * constrained child that the content width the page already uses sizes. One
+ * setting, in theme.json, still deciding how wide the column is.
+ *
+ * The class is repeated to carry three of them, because core has a rule for
+ * exactly the arrangement a standard page puts this block in:
+ *
+ *   .has-global-padding :where(:not(.alignfull.is-layout-flow) >
+ *     .has-global-padding:not(.wp-block-block, .alignfull)) > .alignfull
+ *     { margin-left: 0; margin-right: 0; }
+ *
+ * A padded container inside another padded container: `main` in page.html,
+ * with post-content inside it. Core zeroes the breakout there because it
+ * expects the outer container to have done it — which it cannot, since the
+ * inner column is capped at the content width. The slider kept its 100vw and
+ * lost the pull, so it began at the text column and ran off the right of the
+ * window. page-landing.html escaped it by accident: its `main` is `alignfull
+ * is-layout-flow`, the one shape that selector excludes, which is why the same
+ * block reached the window edges on a landing page and not on a normal one.
+ *
+ * Core's selector carries two classes and lands after this file — slider.css
+ * is a per-block stylesheet, printed well before the global styles — so
+ * matching its specificity would still lose on order. `!important` would win
+ * too, and would go on winning against the editor and against any width an
+ * operator sets on the block, which is not what this needs to beat.
+ */
+.bridge-hero-slider.bridge-hero-slider.alignfull {
+	width: 100vw;
+	max-width: 100vw;
+	margin-inline: calc(50% - 50vw);
+}
+
+// ---------------------------------------------------------------------------
+// Editor preview — stack slides vertically so each is editable.
+// ---------------------------------------------------------------------------
+.bridge-hero-slider.is-editor-preview {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	height: auto;
+	overflow: visible;
+
+	.swiper-button-prev,
+	.swiper-button-next,
+	.swiper-pagination {
+		display: none;
+	}
+
+	// In editor, let each Cover use a realistic preview height instead of
+	// trying to fill the slider container (which is auto-height here).
+	.swiper-slide.wp-block-cover {
+		min-height: 60vh !important;
+	}
+}

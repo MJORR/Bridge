@@ -9,6 +9,8 @@
  *
  * Reverting the template removes the body class so the title reappears
  * and resets the per-session insert lock.
+ *
+ * @param {Object} wp The WordPress globals this file is wrapped around.
  */
 
 (function (wp) {
@@ -24,16 +26,20 @@
 
 	const setLandingMode = (enabled) => {
 		document.body.classList.toggle(BODY_CLASS, enabled);
-		document.querySelectorAll('iframe[name="editor-canvas"]').forEach((iframe) => {
-			const doc = iframe.contentDocument;
-			if (doc && doc.body) {
-				doc.body.classList.toggle(BODY_CLASS, enabled);
-			}
-		});
+		document
+			.querySelectorAll('iframe[name="editor-canvas"]')
+			.forEach((iframe) => {
+				const doc = iframe.contentDocument;
+				if (doc && doc.body) {
+					doc.body.classList.toggle(BODY_CLASS, enabled);
+				}
+			});
 	};
 
 	const hasHeroSlider = () =>
-		select('core/block-editor').getBlocks().some((block) => block.name === HERO_BLOCK);
+		select('core/block-editor')
+			.getBlocks()
+			.some((block) => block.name === HERO_BLOCK);
 
 	/**
 	 * The editor mounts before the post entity is fully fetched. Inserting
@@ -43,11 +49,19 @@
 	const isPostReady = () => {
 		const editor = select('core/editor');
 		const core = select('core');
-		if (!editor || !core) return false;
+		if (!editor || !core) {
+			return false;
+		}
 		const postId = editor.getCurrentPostId();
 		const postType = editor.getCurrentPostType();
-		if (!postId || !postType) return false;
-		return core.hasFinishedResolution('getEntityRecord', ['postType', postType, postId]);
+		if (!postId || !postType) {
+			return false;
+		}
+		return core.hasFinishedResolution('getEntityRecord', [
+			'postType',
+			postType,
+			postId,
+		]);
 	};
 
 	const coverAttrs = {
@@ -82,22 +96,32 @@
 		]);
 
 	const autoInsertHero = () => {
-		if (didAutoInsert || hasHeroSlider() || !isPostReady()) return;
-		const title = select('core/editor').getEditedPostAttribute('title') || '';
+		if (didAutoInsert || hasHeroSlider() || !isPostReady()) {
+			return;
+		}
+		const title =
+			select('core/editor').getEditedPostAttribute('title') || '';
 		dispatch('core/block-editor').insertBlock(buildHeroSlider(title), 0);
 		didAutoInsert = true;
 	};
 
 	const start = () => {
-		if (!select('core/editor') || !select('core/block-editor') || !select('core')) {
+		if (
+			!select('core/editor') ||
+			!select('core/block-editor') ||
+			!select('core')
+		) {
 			setTimeout(start, 100);
 			return;
 		}
 
 		subscribe(() => {
-			if (select('core/editor').getCurrentPostType() !== 'page') return;
+			if (select('core/editor').getCurrentPostType() !== 'page') {
+				return;
+			}
 
-			const template = select('core/editor').getEditedPostAttribute('template');
+			const template =
+				select('core/editor').getEditedPostAttribute('template');
 
 			// Reset per-session insert lock when the user changes templates.
 			if (template !== lastTemplate) {

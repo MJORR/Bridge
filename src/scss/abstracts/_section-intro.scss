@@ -1,0 +1,36 @@
+/**
+ * Bridge — the intro every section block opens with.
+ *
+ * A headline and, optionally, a summary. A row of its own at the full width of
+ * the section's container: the headline introduces everything under it, so it
+ * is not a column of the grid it sits above, and it is not narrowed to a
+ * measure that would set it against the content it heads.
+ *
+ * The wrapper is emitted by bridge_section_intro(), which also gives the
+ * heading the id that names the <section> for assistive technology.
+ *
+ * A mixin rather than a rule so the declarations land only in the bundles that
+ * ask for them.
+ */
+
+@mixin section-intro {
+	.bridge-section__intro {
+		// Its own row, whatever the parent is doing — a grid parent would
+		// otherwise place this in the first cell alongside the items.
+		grid-column: 1 / -1;
+		width: 100%;
+
+		// Margins dropped in favour of the parent's gap, so the space between
+		// a section's parts is one value rather than whichever margin won the
+		// collapse.
+		> * {
+			margin-block: 0;
+		}
+
+		// The global rhythm, so a site that widens the space between its blocks
+		// widens the space under a section's headline with it.
+		> * + * {
+			margin-block-start: var(--wp--style--block-gap, var(--wp--preset--spacing--30));
+		}
+	}
+}

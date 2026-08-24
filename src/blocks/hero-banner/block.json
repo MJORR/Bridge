@@ -1,0 +1,53 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/hero-banner",
+	"version": "1.0.0",
+	"title": "Hero Banner",
+	"category": "media",
+	"icon": "cover-image",
+	"description": "A single full-height hero. One Cover block, laid out in columns — the static counterpart to the Hero Slider.",
+	"textdomain": "bridge",
+	"keywords": [
+		"hero",
+		"banner",
+		"cover",
+		"columns",
+		"split"
+	],
+	"supports": {
+		"align": [
+			"full"
+		],
+		"anchor": true,
+		"html": false,
+		"layout": false
+	},
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "full"
+		},
+		"heightPreset": {
+			"type": "string",
+			"default": "full"
+		},
+		"customHeight": {
+			"type": "number",
+			"default": 80
+		},
+		"customHeightUnit": {
+			"type": "string",
+			"default": "vh"
+		}
+	},
+	"example": {
+		"attributes": {
+			"align": "full",
+			"heightPreset": "medium"
+		}
+	},
+	"editorScript": "bridge-hero-banner-editor",
+	"style": "bridge-hero-banner-style",
+	"render": "file:./render.php"
+}

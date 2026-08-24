@@ -1,0 +1,1062 @@
+/**
+ * Bridge — Theme Options screen.
+ *
+ * Layout only. Colour and control styling come from wp-components, so the
+ * screen keeps looking like WordPress across core updates instead of drifting
+ * into a bespoke admin theme we would have to maintain.
+ */
+
+.bridge-options {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+	gap: 2rem;
+	align-items: start;
+	margin-top: 1.5rem;
+	max-width: 78rem;
+
+	@media (max-width: 1180px) {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.bridge-options__main {
+	display: grid;
+	gap: 1.5rem;
+	min-width: 0;
+}
+
+.bridge-options__section {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.bridge-options__section-title {
+	margin: 0;
+	font-size: 1rem;
+	line-height: 1.4;
+}
+
+.bridge-options__section-description {
+	margin: 0.35rem 0 0;
+	max-width: 60ch;
+	color: #50575e;
+}
+
+.bridge-options__controls {
+	display: grid;
+	gap: 1.25rem;
+	margin-top: 1.25rem;
+}
+
+// ---- Palette slots -------------------------------------------------------
+
+.bridge-options__slots {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+	gap: 1.25rem;
+}
+
+$slot-height: 40px;
+$slot-border: #949494;
+$slot-focus: #2271b1;
+$slot-error: #d63638;
+
+.bridge-slot {
+	display: grid;
+	gap: 0.375rem;
+	min-width: 0;
+}
+
+.bridge-slot__slug {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.6875rem;
+	letter-spacing: 0.04em;
+	color: #787c82;
+}
+
+// The name field sits above the colour field and should read as its equal:
+// same height, same radius, same border weight.
+.bridge-slot .components-text-control__input {
+	height: $slot-height;
+	border-radius: 4px;
+}
+
+// Swatch and hex input share one border so they read as a single colour
+// field rather than a button sitting beside unrelated text.
+.bridge-slot__field {
+	display: flex;
+	align-items: stretch;
+	height: $slot-height;
+	border: 1px solid $slot-border;
+	border-radius: 4px;
+	background: #fff;
+	overflow: hidden;
+	transition:
+		border-color 0.1s ease-in-out,
+		box-shadow 0.1s ease-in-out;
+
+	&:hover {
+		border-color: #646970;
+	}
+
+	// One ring around the pair, so tabbing to either half highlights the
+	// whole control rather than lighting up half of it.
+	&:focus-within {
+		border-color: $slot-focus;
+		box-shadow: 0 0 0 1px $slot-focus;
+	}
+
+	&.is-invalid {
+		border-color: $slot-error;
+
+		&:focus-within {
+			box-shadow: 0 0 0 1px $slot-error;
+		}
+	}
+}
+
+.bridge-slot__swatch.components-button {
+	flex: 0 0 $slot-height;
+	width: $slot-height;
+	height: 100%;
+	min-width: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	cursor: pointer;
+
+	// The default button focus ring would draw a second, rounded outline
+	// inside the square well; the field's own ring already covers this.
+	&:focus:not(:disabled) {
+		box-shadow: none;
+		outline: 0;
+	}
+
+	&:hover .bridge-slot__chip::after {
+		opacity: 1;
+	}
+}
+
+.bridge-slot__chip {
+	position: relative;
+	display: block;
+	width: 100%;
+	height: 100%;
+
+	// Keeps a pale swatch (#ffffff) from dissolving into the field, and
+	// draws the divider between swatch and input in one shadow.
+	box-shadow:
+		inset 0 0 0 1px rgb(0 0 0 / 10%),
+		inset -1px 0 0 0 rgb(0 0 0 / 12%);
+
+	// Hover affordance that works on any underlying colour, light or dark.
+	&::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		background: rgb(255 255 255 / 22%);
+		opacity: 0;
+		transition: opacity 0.1s ease-in-out;
+	}
+}
+
+// Beating the admin's own input[type="text"] rules, which set a border, a
+// box-shadow and a min-height this field has to shed.
+.bridge-slot__field input.bridge-slot__hex {
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+	min-height: 0;
+	margin: 0;
+	padding: 0 0.625rem;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	background: transparent;
+	color: #1e1e1e;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.8125rem;
+	line-height: 1;
+	letter-spacing: 0.03em;
+	text-transform: lowercase;
+
+	&:focus {
+		border: 0;
+		box-shadow: none;
+		outline: 0;
+	}
+
+	&::placeholder {
+		color: #a7aaad;
+	}
+}
+
+.bridge-slot__picker {
+	padding: 0.5rem;
+}
+
+// ---- Google Fonts --------------------------------------------------------
+
+.bridge-google {
+	display: grid;
+	gap: 0.75rem;
+	padding: 0.9rem 1rem;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #f6f7f7;
+}
+
+.bridge-google__pickers {
+	display: grid;
+	gap: 1rem;
+	padding-top: 0.25rem;
+	border-top: 1px solid #dcdcde;
+}
+
+.bridge-google__note {
+	margin: 0;
+	font-size: 0.75rem;
+	color: #646970;
+}
+
+// ---- Preview column ------------------------------------------------------
+
+.bridge-options__preview {
+	min-width: 0;
+}
+
+.bridge-options__preview-inner {
+	position: sticky;
+	top: 2rem;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 1.25rem;
+	display: grid;
+	gap: 0.75rem;
+
+	h3 {
+		margin: 0.75rem 0 0;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #50575e;
+	}
+}
+
+.bridge-options__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.bridge-options__dirty {
+	margin: 0;
+	font-size: 0.8rem;
+	color: #996800;
+}
+
+.bridge-options__loading {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 2rem 0;
+	justify-content: center;
+	color: #50575e;
+}
+
+// ---- Brand preview -------------------------------------------------------
+
+.bridge-preview__swatches {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.bridge-preview__swatch {
+	display: grid;
+	gap: 0.2rem;
+	justify-items: center;
+	font-size: 0.65rem;
+
+	span {
+		display: block;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 3px;
+		box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%);
+	}
+}
+
+.bridge-preview__card {
+	margin-top: 0.75rem;
+	padding: 1rem;
+	border-radius: 4px;
+	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+	font-size: 0.85rem;
+
+	strong {
+		display: block;
+		font-size: 1.05rem;
+	}
+
+	p {
+		margin: 0.4rem 0 0.75rem;
+	}
+}
+
+.bridge-preview__panel {
+	padding: 0.6rem 0.75rem;
+	border-radius: 3px;
+	margin-bottom: 0.75rem;
+	font-size: 0.8rem;
+}
+
+.bridge-preview__button {
+	display: inline-block;
+	padding: 0.45rem 0.9rem;
+	border-radius: 4px;
+	font-size: 0.8rem;
+	margin-right: 0.4rem;
+}
+
+// ---- Type scale ----------------------------------------------------------
+
+.bridge-preview__scale {
+	display: grid;
+	gap: 0.9rem;
+}
+
+.bridge-preview__step {
+	display: grid;
+	gap: 0.15rem;
+	padding-bottom: 0.9rem;
+	border-bottom: 1px solid #f0f0f1;
+
+	&:last-child {
+		border-bottom: 0;
+		padding-bottom: 0;
+	}
+}
+
+.bridge-preview__step-meta {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	font-size: 0.65rem;
+	color: #787c82;
+
+	code {
+		background: none;
+		padding: 0;
+		font-size: inherit;
+	}
+}
+
+.bridge-preview__specimen {
+	// The whole point is showing real sizes, so let big steps be big — but
+	// never let one push the sticky column sideways.
+	overflow-wrap: break-word;
+	color: #1e1e1e;
+}
+
+// ---- Icon weights --------------------------------------------------------
+
+.bridge-preview__icons {
+	display: grid;
+	gap: 0.4rem;
+}
+
+.bridge-preview__icon-row {
+	display: grid;
+	gap: 0.3rem;
+	padding: 0.55rem 0.65rem;
+	border: 1px solid #f0f0f1;
+	border-radius: 4px;
+	color: #50575e;
+
+	// The active weight gets the accent treatment so the comparison always
+	// answers "and which one am I actually shipping?".
+	&.is-active {
+		border-color: #2271b1;
+		background: #f0f6fc;
+		color: #1e1e1e;
+	}
+}
+
+.bridge-preview__icon-label {
+	display: flex;
+	align-items: baseline;
+	gap: 0.4rem;
+	font-size: 0.68rem;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	color: #787c82;
+
+	em {
+		font-style: normal;
+		text-transform: none;
+		letter-spacing: 0;
+		color: #2271b1;
+	}
+}
+
+.bridge-preview__icon-set {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.65rem;
+	align-items: center;
+}
+
+.bridge-preview__empty {
+	margin: 0;
+	font-size: 0.8rem;
+	color: #757575;
+	font-style: italic;
+}
+
+// ---- Width bars ----------------------------------------------------------
+
+.bridge-preview__layout {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.bridge-preview__bar {
+	display: grid;
+	grid-template-columns: 4rem minmax(0, 1fr) 4rem;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.7rem;
+	color: #50575e;
+}
+
+.bridge-preview__bar-track {
+	background: #f0f0f1;
+	border-radius: 2px;
+	height: 0.6rem;
+	overflow: hidden;
+}
+
+.bridge-preview__bar-fill {
+	display: block;
+	height: 100%;
+	background: #2271b1;
+	border-radius: 2px;
+}
+
+.bridge-preview__bar-value {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+// ---- Screen title --------------------------------------------------------
+
+.bridge-options__title {
+	font-weight: 700;
+	letter-spacing: -0.015em;
+}
+
+// ---- Tabs ----------------------------------------------------------------
+
+.bridge-options__tabs {
+
+	.components-tab-panel__tabs {
+		border-bottom: 1px solid #dcdcde;
+		gap: 0.25rem;
+	}
+
+	.components-tab-panel__tabs-item {
+		font-weight: 500;
+		padding: 0 1rem;
+	}
+}
+
+.bridge-options__panel {
+	display: grid;
+	gap: 1.5rem;
+	padding-top: 1.25rem;
+}
+
+// ---- Read-only inventories (Templates tab) -------------------------------
+
+.bridge-inventory {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: 0.5rem;
+
+	> li {
+		display: grid;
+		gap: 0.3rem;
+		padding: 0.7rem 0.85rem;
+		border: 1px solid #f0f0f1;
+		border-radius: 4px;
+		background: #fbfbfb;
+	}
+}
+
+.bridge-inventory__head {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+
+	strong {
+		font-weight: 600;
+	}
+
+	code {
+		font-size: 0.72rem;
+		color: #787c82;
+		background: none;
+		padding: 0;
+	}
+}
+
+.bridge-inventory__desc {
+	font-size: 0.82rem;
+	color: #50575e;
+	max-width: 62ch;
+}
+
+.bridge-inventory__parts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+
+.bridge-part {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	font-size: 0.72rem;
+
+	code {
+		background: #f0f0f1;
+		padding: 0.1em 0.4em;
+		border-radius: 2px;
+		font-size: inherit;
+	}
+
+	em {
+		font-style: normal;
+		color: #996800;
+	}
+}
+
+.bridge-lock {
+	font-size: 0.68rem;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	padding: 0.15em 0.45em;
+	border-radius: 2px;
+	background: #f0f0f1;
+	color: #757575;
+
+	&.is-locked {
+		background: #edf7ed;
+		color: #2c6e2f;
+	}
+}
+
+.bridge-families {
+	display: grid;
+	gap: 1.25rem;
+}
+
+.bridge-family__name {
+	margin: 0 0 0.5rem;
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.09em;
+	color: #787c82;
+}
+
+.bridge-skins {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+
+	> li {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.85rem;
+	}
+}
+
+.bridge-skins__chip {
+	display: block;
+	width: 2.5rem;
+	height: 1.6rem;
+	border-radius: 3px;
+	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+	padding: 0;
+}
+
+.bridge-empty {
+	margin: 0;
+	color: #757575;
+	font-style: italic;
+}
+
+// ---- Header/footer schematics (Blocks tab preview) -----------------------
+
+.bridge-schemas {
+	display: grid;
+	gap: 0.4rem;
+}
+
+.bridge-schema {
+	display: grid;
+	gap: 0.35rem;
+	padding: 0.55rem 0.65rem;
+	border: 1px solid #f0f0f1;
+	border-radius: 4px;
+
+	&.is-active {
+		border-color: #2271b1;
+		background: #f0f6fc;
+	}
+}
+
+.bridge-schema__label {
+	display: flex;
+	align-items: baseline;
+	gap: 0.4rem;
+	font-size: 0.68rem;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	color: #787c82;
+
+	em {
+		font-style: normal;
+		text-transform: none;
+		letter-spacing: 0;
+		color: #2271b1;
+	}
+}
+
+.bridge-schema__frame {
+	display: grid;
+	gap: 0.25rem;
+	padding: 0.4rem;
+	border-radius: 3px;
+	background: #fff;
+	box-shadow: inset 0 0 0 1px #e0e0e0;
+}
+
+.bridge-schema__row {
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+}
+
+// Each cell is a stand-in for a real element; width carries the meaning, so
+// the proportions are what have to read correctly rather than the detail.
+.bridge-schema__cell {
+	display: block;
+	height: 0.5rem;
+	border-radius: 2px;
+	background: #c3c4c7;
+
+	&.is-logo {
+		width: 2.75rem;
+		background: #1e1e1e;
+	}
+
+	&.is-nav {
+		width: 4rem;
+	}
+
+	&.is-cta {
+		width: 2rem;
+		background: #2271b1;
+	}
+
+	&.is-col {
+		flex: 1;
+		height: 1.5rem;
+	}
+
+	&.is-legal {
+		width: 3.5rem;
+		height: 0.35rem;
+	}
+
+	&.is-grow {
+		flex: 1;
+		background: none;
+	}
+}
+
+.bridge-schema__note {
+	margin: 0;
+	font-size: 0.72rem;
+	color: #2271b1;
+}
+
+.bridge-schema__rule {
+	margin: 0.35rem 0;
+	border: 0;
+	border-top: 1px solid #f0f0f1;
+}
+
+// ---- Skin previews (Templates tab preview) -------------------------------
+
+.bridge-skin-previews {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.bridge-skin-preview {
+	display: grid;
+	gap: 0.3rem;
+	justify-items: start;
+	padding: 0.85rem 0.9rem;
+	border-radius: 4px;
+	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+	font-size: 0.8rem;
+
+	strong {
+		font-size: 0.95rem;
+		font-weight: 600;
+	}
+}
+
+.bridge-skin-preview__button {
+	margin-top: 0.15rem;
+	padding: 0.3rem 0.7rem;
+	border-radius: 3px;
+	font-size: 0.72rem;
+}
+
+// ---- Logo pickers --------------------------------------------------------
+
+.bridge-logo {
+	display: grid;
+	gap: 0.4rem;
+}
+
+.bridge-logo__label {
+	font-size: 0.8125rem;
+	font-weight: 500;
+	color: #1e1e1e;
+}
+
+.bridge-logo__row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+// A checkerboard behind the thumbnail, so a white logo on a transparent PNG
+// is visible rather than appearing to be a missing image.
+.bridge-logo__preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 5.5rem;
+	height: 2.5rem;
+	padding: 0.25rem;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background-color: #fff;
+	background-image:
+		linear-gradient(
+			45deg,
+			#f0f0f1 25%,
+			transparent 25%,
+			transparent 75%,
+			#f0f0f1 75%
+		),
+		linear-gradient(
+			45deg,
+			#f0f0f1 25%,
+			transparent 25%,
+			transparent 75%,
+			#f0f0f1 75%
+		);
+	background-size: 10px 10px;
+	background-position:
+		0 0,
+		5px 5px;
+
+	img {
+		max-width: 100%;
+		max-height: 100%;
+		object-fit: contain;
+	}
+
+	em {
+		font-size: 0.7rem;
+		color: #a7aaad;
+		font-style: normal;
+	}
+}
+
+.bridge-logo__help {
+	margin: 0;
+	font-size: 0.75rem;
+	color: #646970;
+}
+
+// ---- Full-width tab ------------------------------------------------------
+
+// Templates has no sidebar: its layout pickers are drawings, so they already
+// serve as the preview. The main column takes the full width the sidebar
+// vacated rather than staying at the narrower two-column measure.
+.bridge-options--single {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.bridge-options__bar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	padding: 0.75rem 1rem;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+
+	.bridge-options__dirty {
+		margin-left: auto;
+	}
+}
+
+// ---- Layout pickers ------------------------------------------------------
+
+.bridge-layouts {
+	display: grid;
+	gap: 0.6rem;
+}
+
+.bridge-layouts__label {
+	font-size: 0.8125rem;
+	font-weight: 500;
+	color: #1e1e1e;
+}
+
+.bridge-layouts__grid {
+	display: grid;
+	// auto-fit with 1fr tracks: the tiles share the full width of the panel
+	// rather than sitting in a capped row with dead space beside them.
+	grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+	gap: 0.75rem;
+}
+
+// The whole tile is the target. Colour is set once here and the drawing
+// inherits it through currentColor, so the selected state is a single change.
+.bridge-layout {
+	display: grid;
+	gap: 0.15rem;
+	justify-items: start;
+	padding: 0.75rem;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #fff;
+	color: #1e1e1e;
+	cursor: pointer;
+	text-align: left;
+	transition:
+		border-color 0.12s ease,
+		background-color 0.12s ease,
+		box-shadow 0.12s ease;
+
+	&:hover {
+		border-color: #a7aaad;
+		background: #fbfbfb;
+	}
+
+	&:focus-visible {
+		outline: 2px solid #2271b1;
+		outline-offset: 1px;
+	}
+
+	&.is-active {
+		border-color: #2271b1;
+		background: #f0f6fc;
+		color: #2271b1;
+		box-shadow: inset 0 0 0 1px #2271b1;
+	}
+}
+
+.bridge-layout__art {
+	display: block;
+	width: 100%;
+	height: auto;
+	// Fills its tile, but stops short of becoming a poster on a wide screen.
+	// The SVG keeps its aspect ratio and centres in the remaining space, so
+	// the tinted panel behind it still reads as the header's own frame.
+	max-height: 9rem;
+	margin-bottom: 0.4rem;
+	border-radius: 3px;
+	background: color-mix(in srgb, currentcolor 5%, transparent);
+}
+
+.bridge-layout__name {
+	font-size: 0.8125rem;
+	font-weight: 600;
+}
+
+.bridge-layout__hint {
+	font-size: 0.72rem;
+	// Stays legible on both the resting and selected grounds.
+	opacity: 0.7;
+}
+
+.bridge-layouts__help {
+	margin: 0;
+	font-size: 0.75rem;
+	color: #646970;
+}
+
+// ---- Menu slots ----------------------------------------------------------
+
+.bridge-menu-slot {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.bridge-menu-slot__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+
+.bridge-options__hint {
+	margin: 0;
+	padding: 0.6rem 0.75rem;
+	border-radius: 4px;
+	background: #f6f7f7;
+	font-size: 0.8rem;
+	color: #50575e;
+}
+
+/**
+ * ---- Block library (Blocks tab) ------------------------------------------
+ *
+ * Seventy-odd switches, so the work is done by grouping and scanning rather
+ * than by reading: category headings carry a count, every row shows the block
+ * name under its title, and a switched-on card is tinted so the shape of
+ * what's available reads at a glance without checking each control.
+ */
+
+.bridge-blocks {
+	display: grid;
+	gap: 1.5rem;
+}
+
+.bridge-blocks__toolbar {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 1rem;
+	position: sticky;
+	top: 32px;
+	z-index: 2;
+	padding: 0.75rem 0;
+	background: #fff;
+
+	.components-base-control {
+		flex: 1 1 18rem;
+		max-width: 24rem;
+	}
+}
+
+.bridge-blocks__tally {
+	margin: 0 0 0.35rem;
+	font-size: 0.82rem;
+	color: #50575e;
+	font-variant-numeric: tabular-nums;
+}
+
+.bridge-blocks__group {
+	display: grid;
+	gap: 0.6rem;
+}
+
+.bridge-blocks__group-head {
+	display: flex;
+	align-items: baseline;
+	gap: 0.6rem;
+	border-bottom: 1px solid #e0e0e0;
+	padding-bottom: 0.4rem;
+}
+
+.bridge-blocks__group-title {
+	margin: 0;
+	font-size: 0.95rem;
+	font-weight: 600;
+}
+
+.bridge-blocks__group-tally {
+	font-size: 0.78rem;
+	color: #787c82;
+	font-variant-numeric: tabular-nums;
+}
+
+.bridge-blocks__group-actions {
+	margin-inline-start: auto;
+	display: flex;
+	gap: 0.5rem;
+
+	.components-button.is-link {
+		font-size: 0.78rem;
+	}
+}
+
+.bridge-blocks__grid {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+	gap: 0.5rem;
+}
+
+.bridge-block {
+	display: grid;
+	gap: 0.15rem;
+	padding: 0.6rem 0.75rem;
+	border: 1px solid #f0f0f1;
+	border-radius: 4px;
+	background: #fbfbfb;
+
+	&.is-on {
+		border-color: #dbe4ee;
+		background: #f6f9fc;
+	}
+
+	// A theme block is the theme's own work rather than core's, which is worth
+	// knowing before switching one off.
+	&.is-theme .bridge-block__name {
+		color: #2271b1;
+	}
+
+	.components-toggle-control .components-base-control__field {
+		margin-bottom: 0;
+	}
+}
+
+.bridge-block__name {
+	font-size: 0.72rem;
+	color: #787c82;
+	background: none;
+	padding: 0;
+}
+
+.bridge-block__note {
+	font-size: 0.72rem;
+	color: #787c82;
+}

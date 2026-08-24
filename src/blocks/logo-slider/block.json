@@ -1,0 +1,66 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/logo-slider",
+	"version": "1.0.0",
+	"title": "Logo Slider",
+	"category": "media",
+	"icon": "images-alt2",
+	"description": "A moving row of client or partner logos, with an optional second row.",
+	"textdomain": "bridge",
+	"keywords": ["logos", "clients", "partners", "marquee", "slider"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "wide"
+		},
+		"imageDisplay": {
+			"type": "string",
+			"default": "contain"
+		},
+		"images": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"secondRow": {
+			"type": "boolean",
+			"default": false
+		},
+		"imagesSecond": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		}
+	},
+	"example": {
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"textAlign": "center",
+					"content": "Trusted by"
+				}
+			}
+		]
+	},
+	"editorScript": "bridge-logo-slider-editor",
+	"style": "bridge-logo-slider-style",
+	"render": "file:./render.php"
+}

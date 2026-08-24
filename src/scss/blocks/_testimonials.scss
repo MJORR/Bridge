@@ -1,0 +1,171 @@
+/**
+ * Bridge — Testimonials block and its cards.
+ *
+ * One stylesheet for both blocks: a card only ever appears inside the set, so
+ * splitting them would ship two files that are never useful apart.
+ */
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+.bridge-testimonials {
+	// The content column. `narrow` is theme.json's `contentSize` — the same
+	// width the rest of the page runs at, so a band that paints edge to edge
+	// still lines its words up with everything above and below it.
+	&__inner {
+		@include section.container(narrow);
+
+		// container() spends its gutter inside the max-width, which would set
+		// the words one gutter in from the column every other block on the
+		// page lines up with. Widening the box by the two gutters puts the
+		// *content* box back on `contentSize` exactly, and keeps the gutter
+		// for the narrow screens it is there for.
+		// stylelint-disable scss/operator-no-newline-after -- prettier wraps
+		// this calc and leaves the operator at the end of the line; prettier
+		// is what runs on save, so it wins.
+		max-width: calc(
+			var(--wp--style--global--content-size) + 2 *
+				var(--wp--preset--spacing--40)
+		);
+		// stylelint-enable scss/operator-no-newline-after
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	// The wide setting. No gutter compensation here, unlike the narrow box
+	// above: `contentSize` is compensated so the words line up with the text
+	// column the rest of the page runs at, and there is no such column to line
+	// a wide band up with — every other wide band on the site spends its
+	// gutter inside `wideSize`, so this one does too.
+	&--wide &__inner {
+		@include section.container(wide);
+	}
+
+	// The cards. render.php puts them in a container of their own so the
+	// intro and outro are never part of the grid — and, in the swipe layout,
+	// never part of what scrolls.
+	&__track {
+		@include section.auto-grid(18rem, var(--wp--preset--spacing--50));
+	}
+
+	// ---- Swipe variant ---------------------------------------------------
+	// Scroll-snap rather than a slider library: it scrolls with a trackpad, a
+	// touch swipe, or the keyboard, needs no JavaScript, and is correct before
+	// any script has loaded. The old block shipped a carousel bundle for this.
+
+	// Not applied inside the editor. A horizontally scrolling row is awkward
+	// to author in — clicking a card scrolls it under the toolbar — so the
+	// editor previews the swipe layout as the wrapped one and the front end
+	// does what the setting says. A deliberate divergence, and the only one:
+	// every other rule here matches both.
+	&--carousel:not(.is-editor-preview) &__track {
+		@include section.snap-row(var(--wp--preset--spacing--50));
+
+		// The same track width the wrapped layout uses, so the two overflow
+		// styles show the same number of cards at the same container width —
+		// the setting means one thing, not two. The 80% cap rather than 100%
+		// is the one difference: on a phone a swipe row that stops just short
+		// of the edge shows the corner of the next card, which is how a reader
+		// learns there is one.
+		grid-auto-columns: #{section.track-width(
+				20rem,
+				var(--wp--preset--spacing--50),
+				80%
+			)};
+	}
+
+	// A focusable scroll container needs a visible focus ring, or keyboard
+	// users cannot tell they have reached it.
+	&__track:focus-visible {
+		outline: 2px solid currentcolor;
+		outline-offset: 4px;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Card
+// ---------------------------------------------------------------------------
+.bridge-testimonial {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20);
+	margin: 0;
+	padding: var(--wp--preset--spacing--40);
+	border-radius: var(--wp--custom--radius--medium);
+
+	&__quote {
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--10);
+		margin: 0;
+		padding: 0;
+		border: 0;
+		// Pushes the attribution to the foot of the card, so the names line up
+		// across a row of quotes of different lengths.
+		flex-grow: 1;
+	}
+
+	&__title {
+		margin: 0;
+		font-weight: 600;
+	}
+
+	&__text {
+		margin: 0;
+	}
+
+	&__attribution {
+		display: flex;
+		flex-direction: column;
+		font-size: var(--wp--preset--font-size--small);
+	}
+
+	&__name {
+		font-weight: 600;
+	}
+
+	&__company {
+		opacity: 0.8;
+	}
+
+	&__rating {
+		margin: 0;
+		display: flex;
+		gap: 0.1em;
+		line-height: 1;
+	}
+
+	// Filled and empty stars are the same colour at two strengths, never two
+	// colours. Naming the accent preset here painted accent stars onto the
+	// accent skin, where the rating disappeared into its own background;
+	// currentcolor is whatever the band is already legible in.
+	&__star {
+		color: currentcolor;
+		opacity: 0.25;
+	}
+
+	&__star.is-filled {
+		opacity: 1;
+	}
+}
+
+// ---- Card styles ----------------------------------------------------------
+// Both resolve to palette presets, so they restyle themselves with the brand
+// and stay legible inside whichever section skin the band is wearing. The
+// `is-card-*` classes are the editor's copy, set from block context.
+.bridge-testimonials--cards-solid .bridge-testimonial,
+.bridge-testimonial.is-card-solid {
+	background-color: var(--wp--preset--color--surface);
+}
+
+.bridge-testimonials--cards-outlined .bridge-testimonial,
+.bridge-testimonial.is-card-outlined {
+	// Not a colour of its own — the section's text colour at low strength,
+	// which stays visible on a light band and on a dark one without either
+	// being named here.
+	border: 1px solid color-mix(in srgb, currentcolor 25%, transparent);
+	background-color: transparent;
+}

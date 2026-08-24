@@ -1,0 +1,166 @@
+/**
+ * Bridge — Hero Banner component.
+ *
+ * The static counterpart to the Hero Slider: one core/cover, sized to the
+ * window, laid out in columns. Deliberately its own stylesheet rather than a
+ * layer shared with the slider — the two blocks size themselves differently
+ * (a floor here, a fixed height there) and sharing the rules would couple two
+ * things that are only superficially alike.
+ *
+ * Cover owns its own layout — background image, overlay, content positioning
+ * — so this file handles sizing and the header allowance only. No flex
+ * overrides that would fight Cover's own CSS.
+ *
+ * Compiles to dist/hero-banner.css, declared as the block's `style` (not
+ * `viewStyle`), so the editor and the front end are painted by one file.
+ */
+
+.bridge-hero-banner {
+	position: relative;
+
+	// A floor, not a fixed height. The slider has to pin every slide to the
+	// same box because Swiper animates between them; nothing here does, so
+	// content that outgrows the window makes the banner taller instead of
+	// being clipped by it. That is what keeps a two-column banner honest on a
+	// phone, where core stacks the columns and the content roughly doubles in
+	// height — the same arrangement in a fixed box would simply lose its
+	// lower half, with no scrollbar to admit it.
+
+	// Less whatever the header is already spending of the window: render.php
+	// decides what that is worth — it is the only place that knows whether
+	// the height was asked for in viewport units, and whether the header on
+	// this page occupies its own band or floats over this one — and publishes
+	// the answer as a length. Zero in every case where neither applies, so
+	// this stays one expression rather than a set of variants. The optional
+	// top bar needs no term of its own: both of the measures render.php
+	// chooses between already count it.
+	// stylelint-disable scss/operator-no-newline-after -- prettier wraps this
+	// calc and puts the operator at the end of the line; prettier is what runs
+	// on save, so it wins.
+	min-height: calc(
+		var(--bridge-hero-banner-height, 100dvh) - var(
+				--bridge-hero-banner-inset,
+				0px
+			)
+	);
+	// stylelint-enable scss/operator-no-newline-after
+
+	// The Cover follows the wrapper rather than setting its own floor, so the
+	// height control in the sidebar is the only thing deciding this.
+	> .wp-block-cover {
+		min-height: 100%;
+		margin: 0;
+	}
+
+	// Cover's flex centering only centers the inner-container *as a box* —
+	// the box itself is content-sized, so visually the content still hugs the
+	// top. Make the inner container fill the cover, then center its own
+	// children vertically inside it.
+	> .wp-block-cover > .wp-block-cover__inner-container {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		min-height: 100%;
+
+		// The scale, not a bespoke clamp: these presets are fluid, and a
+		// hand-rolled one here would taper on its own schedule.
+		padding-inline: var(--wp--preset--spacing--80);
+
+		// A transparent header covers the top of this box without shortening
+		// it, so centring here would centre against a strip the visitor
+		// cannot see into. Padding the covered part out of the box moves the
+		// middle down to where it looks like the middle. Zero whenever the
+		// header sits above the banner instead, where the floor already
+		// accounts for it.
+		padding-block-start: var(--bridge-hero-banner-lead, 0);
+
+		// Cover's inner container carries core's constrained layout, which
+		// centres each child with `margin-inline: auto` — declared
+		// `!important`, so it is not ours to remove. Auto cross-axis margins
+		// on a flex item outrank `align-items` and shrink the item to its own
+		// content, which turns every child into a text-width box sitting in
+		// the middle of the banner. A columns block would collapse to the
+		// width of its longest line, and a heading set to "left" would look
+		// centred: the class is on it and the rule applies, but the box is
+		// exactly as wide as the words, so there is nothing for the alignment
+		// to move it within.
+
+		// A definite width sends the free space back to the auto margins as
+		// margin instead of taking it out of the box: the child is the
+		// content column again, centred as core intends, and alignment inside
+		// it means what it says. Widths core sets on wide and full children
+		// still win — this is 100% of whatever their own max-width allows,
+		// which is how the template's `alignwide` columns reach wideSize.
+		> * {
+			width: 100%;
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Width
+// ---------------------------------------------------------------------------
+
+/**
+ * Force viewport-edge alignment. WP's `.has-global-padding > .alignfull`
+ * breakout only fires for direct children, and the banner is nested inside
+ * `wp-block-post-content` — so we take alignment into our own hands. Scoped to
+ * the full-width choice rather than applied to every banner: with the width
+ * toggle off the block keeps no width rule of its own, being an ordinary
+ * constrained child that the content width the page already uses sizes.
+ *
+ * The class is repeated to carry three of them, because core has a rule for
+ * exactly the arrangement a standard page puts this block in:
+ *
+ *   .has-global-padding :where(:not(.alignfull.is-layout-flow) >
+ *     .has-global-padding:not(.wp-block-block, .alignfull)) > .alignfull
+ *     { margin-left: 0; margin-right: 0; }
+ *
+ * A padded container inside another padded container: `main` in page.html,
+ * with post-content inside it. Core zeroes the breakout there because it
+ * expects the outer container to have done it — which it cannot, since the
+ * inner column is capped at the content width. The block would keep its 100vw
+ * and lose the pull, beginning at the text column and running off the right of
+ * the window. page-landing.html escapes this by accident: its `main` is
+ * `alignfull is-layout-flow`, the one shape that selector excludes.
+ *
+ * Core's selector carries two classes and lands after this file — this is a
+ * per-block stylesheet, printed well before the global styles — so matching
+ * its specificity would still lose on order. `!important` would win too, and
+ * would go on winning against the editor and against any width an operator
+ * sets on the block, which is not what this needs to beat.
+ */
+.bridge-hero-banner.bridge-hero-banner.alignfull {
+	width: 100vw;
+	max-width: 100vw;
+	margin-inline: calc(50% - 50vw);
+}
+
+// ---------------------------------------------------------------------------
+// Editor
+// ---------------------------------------------------------------------------
+
+/**
+ * Only the window-height terms need adjusting. Every selector above matches
+ * the editor unchanged, because nothing here depends on a class added at
+ * runtime — the front end and the editor render the same tree. (The slider
+ * cannot say that: its rules hang off `.swiper-slide`, which slider.js adds
+ * on the front end only, so its preview and its output disagree by
+ * construction.)
+ *
+ * What does differ is the frame. The canvas is not the window: it is inset by
+ * the editor chrome and, in a template, shows a header that is part of the
+ * document rather than fixed above it. A `100dvh` floor measured against the
+ * canvas therefore overshoots — so cap the preview at the canvas height and
+ * drop the header allowance, which the canvas has already made for itself.
+ */
+.bridge-hero-banner.is-editor-preview {
+	// stylelint-disable length-zero-no-unit -- both are subtracted inside a
+	// calc(), where a unitless zero is not a length and invalidates the whole
+	// expression.
+	--bridge-hero-banner-inset: 0px;
+	--bridge-hero-banner-lead: 0px;
+	// stylelint-enable length-zero-no-unit
+
+	min-height: min(var(--bridge-hero-banner-height, 100dvh), 100%);
+}

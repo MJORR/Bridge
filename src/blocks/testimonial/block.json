@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/testimonial",
+	"version": "1.0.0",
+	"title": "Testimonial",
+	"category": "design",
+	"icon": "format-quote",
+	"description": "One customer testimonial.",
+	"textdomain": "bridge",
+	"parent": ["bridge/testimonials"],
+	"supports": { "anchor": false, "html": false, "reusable": false },
+	"attributes": {
+		"title": { "type": "string", "default": "" },
+		"text": { "type": "string", "default": "" },
+		"rating": { "type": "number", "default": 0 },
+		"name": { "type": "string", "default": "" },
+		"company": { "type": "string", "default": "" }
+	},
+	"usesContext": ["bridge/cardStyle"],
+	"editorScript": "bridge-testimonial-editor",
+	"render": "file:./render.php"
+}

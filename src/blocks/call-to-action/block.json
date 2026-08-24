@@ -1,0 +1,76 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/call-to-action",
+	"version": "1.0.0",
+	"title": "Call to Action",
+	"category": "design",
+	"icon": "megaphone",
+	"description": "A banded prompt: a heading, a line of copy and up to two buttons. Use this one when the band is a photograph — for a flat coloured band, the Call to action patterns build the same thing from core blocks.",
+	"textdomain": "bridge",
+	"keywords": ["cta", "call to action", "banner", "prompt", "conversion"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "narrow"
+		},
+		"backgroundImage": {
+			"type": "number"
+		},
+		"backgroundImageUrl": {
+			"type": "string",
+			"default": ""
+		},
+		"dimRatio": {
+			"type": "number",
+			"default": 50
+		},
+		"graphic": {
+			"type": "number"
+		},
+		"graphicUrl": {
+			"type": "string",
+			"default": ""
+		},
+		"graphicAlt": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"example": {
+		"attributes": {
+			"dimRatio": 50
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"textAlign": "center",
+					"content": "Ready to start?"
+				}
+			},
+			{
+				"name": "core/paragraph",
+				"attributes": {
+					"align": "center",
+					"content": "One line on why now is the moment."
+				}
+			}
+		]
+	},
+	"editorScript": "bridge-call-to-action-editor",
+	"style": "bridge-call-to-action-style",
+	"render": "file:./render.php"
+}

@@ -1,0 +1,26 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/feature-block",
+	"version": "1.0.0",
+	"title": "Feature",
+	"category": "design",
+	"icon": "screenoptions",
+	"description": "One feature panel.",
+	"textdomain": "bridge",
+	"parent": ["bridge/feature-blocks"],
+	"supports": { "anchor": false, "html": false, "reusable": false },
+	"attributes": {
+		"title": { "type": "string", "default": "" },
+		"text": { "type": "string", "default": "" },
+		"graphicId": { "type": "number" },
+		"graphicUrl": { "type": "string", "default": "" },
+		"backgroundId": { "type": "number" },
+		"backgroundUrl": { "type": "string", "default": "" },
+		"linkUrl": { "type": "string", "default": "" },
+		"linkText": { "type": "string", "default": "" }
+	},
+	"usesContext": ["bridge/textAlignment", "bridge/alignImageTop"],
+	"editorScript": "bridge-feature-block-editor",
+	"render": "file:./render.php"
+}

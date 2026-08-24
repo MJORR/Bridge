@@ -1,0 +1,175 @@
+/**
+ * Bridge — Feature Blocks and their panels.
+ */
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+.bridge-features {
+	&__inner {
+		@include section.container(wide);
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	&--narrow &__inner {
+		@include section.container(narrow);
+	}
+
+	// The gap between panels is the global block gap, so the space in this grid
+	// is the space between blocks everywhere else on the site rather than a
+	// number chosen here. The toggle below still exists, because flush panels
+	// are a different design and not merely a smaller gap.
+	&__list {
+		@include section.auto-grid(
+			15rem,
+			var(--wp--style--block-gap, var(--wp--preset--spacing--40))
+		);
+
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	// Flush panels. The gap goes, and with it the rounded corners — a grid of
+	// touching cards that are still individually rounded reads as a mistake.
+	&--flush &__list {
+		gap: 0;
+	}
+
+	&--flush .bridge-feature {
+		border-radius: 0;
+	}
+
+	&--text-center .bridge-feature {
+		text-align: center;
+		align-items: center;
+	}
+}
+
+.bridge-feature {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+	overflow: hidden;
+	border-radius: var(--wp--custom--radius--medium);
+	background-color: var(--wp--preset--color--surface);
+
+	&__body {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--20);
+		padding: var(--wp--preset--spacing--40);
+		// Fills the panel so panels in a row are the same height and their
+		// links sit on one line.
+		height: 100%;
+	}
+
+	&__graphic {
+		display: block;
+		width: auto;
+		max-width: 3.5rem;
+		height: auto;
+	}
+
+	&__title {
+		margin: 0;
+		// The panel's own heading level. Set here rather than left to the
+		// theme's h3 rule so a feature title never outweighs the section
+		// headline above it.
+		font-size: var(--wp--preset--font-size--medium);
+	}
+
+	&__text {
+		margin: 0;
+		flex-grow: 1;
+	}
+
+	&__link {
+		align-self: flex-start;
+		font-weight: 600;
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+
+	// ---- Background image ------------------------------------------------
+	&__background {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		// Centre by default; the section's "align to top" setting moves the
+		// crop up for photographs whose subject sits high in the frame.
+		object-position: center;
+
+		&.is-aligned-top {
+			object-position: top;
+		}
+	}
+
+	&__scrim {
+		position: absolute;
+		inset: 0;
+		background-color: var(--wp--preset--color--primary);
+		opacity: 0.55;
+	}
+
+	&.has-background-image {
+		color: var(--wp--preset--color--background);
+		// The editor paints the same photograph through a custom property
+		// rather than duplicating render.php's <img> in JavaScript.
+		background-image: var(--bridge-feature-image, none);
+		background-size: cover;
+		background-position: center;
+
+		// The section's "align background images to the top" setting reaches
+		// the panel through block context. The front end spends it on the
+		// <img>'s object-position; this is the editor's half, which was
+		// missing — so the toggle appeared to do nothing until the page was
+		// saved and viewed.
+		&.is-image-top {
+			background-position: top;
+		}
+
+		:where(h1, h2, h3, h4, h5, h6) {
+			color: inherit;
+		}
+	}
+
+	// ---- Linked panel ----------------------------------------------------
+	// The click target is the whole panel; the accessible name is only the
+	// link's own text. A stretched pseudo-element does both — wrapping the
+	// panel in an anchor instead would make the link's name the entire
+	// contents, graphic and all.
+	&.is-linked {
+		.bridge-feature__link::after {
+			content: '';
+			position: absolute;
+			inset: 0;
+			z-index: 2;
+		}
+
+		&:hover .bridge-feature__link,
+		&:focus-within .bridge-feature__link {
+			text-decoration-thickness: 2px;
+		}
+
+		// The ring belongs on the panel, not on the few words of link text
+		// sitting at the bottom of it.
+		&:focus-within {
+			outline: 2px solid currentcolor;
+			outline-offset: 2px;
+		}
+
+		.bridge-feature__link:focus-visible {
+			outline: none;
+		}
+	}
+}

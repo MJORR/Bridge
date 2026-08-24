@@ -1,0 +1,72 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/split-content",
+	"version": "1.0.0",
+	"title": "Split Content",
+	"category": "design",
+	"icon": "columns",
+	"description": "Two columns of content side by side.",
+	"textdomain": "bridge",
+	"keywords": ["split", "two column", "contact", "side by side"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "wide"
+		},
+		"ratio": {
+			"type": "string",
+			"default": "even"
+		}
+	},
+	"example": {
+		"attributes": {
+			"width": "wide",
+			"ratio": "even"
+		},
+		"innerBlocks": [
+			{
+				"name": "core/group",
+				"attributes": { "className": "bridge-split__column" },
+				"innerBlocks": [
+					{
+						"name": "core/heading",
+						"attributes": { "level": 2, "content": "Left heading" }
+					},
+					{
+						"name": "core/paragraph",
+						"attributes": { "content": "Content" }
+					}
+				]
+			},
+			{
+				"name": "core/group",
+				"attributes": { "className": "bridge-split__column" },
+				"innerBlocks": [
+					{
+						"name": "core/heading",
+						"attributes": { "level": 2, "content": "Right heading" }
+					},
+					{
+						"name": "core/paragraph",
+						"attributes": { "content": "Content" }
+					}
+				]
+			}
+		]
+	},
+	"editorScript": "bridge-split-content-editor",
+	"style": "bridge-split-content-style",
+	"render": "file:./render.php"
+}

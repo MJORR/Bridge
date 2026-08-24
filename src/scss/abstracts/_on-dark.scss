@@ -1,0 +1,62 @@
+/**
+ * Bridge — the foreground of anything painted on a dark ground.
+ *
+ * Several places needed this and each had written its own: the inverted
+ * section skin and the call to action's photographic variant today, the main
+ * banner until it was removed. They agreed about headings and links and
+ * diverged on the hard part — buttons — so the call to action put a near-black
+ * filled button on a near-black scrim, where it vanished, while the skin two
+ * files away had already answered the same question correctly.
+ *
+ * A mixin rather than a class, in keeping with abstracts/section: it emits into
+ * the bundles that ask for it and nowhere else.
+ *
+ * @param $ground The colour behind the text, which is what a filled button's
+ *                label has to be legible against once the button itself turns
+ *                light. Defaults to the inverted skin's ground.
+ */
+@mixin on-dark($ground: var(--wp--preset--color--primary)) {
+	color: var(--wp--preset--color--background);
+
+	// theme.json colours headings and links from the light palette; on this
+	// ground they would sink into it.
+	:where(h1, h2, h3, h4, h5, h6) {
+		color: inherit;
+	}
+
+	:where(a:not(.wp-element-button)) {
+		color: inherit;
+		text-decoration: underline;
+		text-decoration-thickness: 2px;
+		text-underline-offset: 0.2em;
+	}
+
+	// The filled button is primary-on-background — a dark button on a dark
+	// ground. Inverted, it becomes the brightest thing in the band, which is
+	// what a primary action should be.
+	.wp-element-button,
+	.wp-block-button__link {
+		background-color: var(--wp--preset--color--background);
+		border-color: var(--wp--preset--color--background);
+		color: $ground;
+	}
+
+	// The secondary button needs nothing but permission: core paints it
+	// transparent with a `currentColor` border, which is already the light
+	// foreground set above, and that is exactly what makes one outline style
+	// legible on every ground the theme has. Named anyway — and after the rule
+	// above, at a specificity that beats it — because the rule it needs
+	// protecting from is the one directly overhead.
+	.wp-block-button.is-style-outline > .wp-block-button__link,
+	.wp-block-button .wp-block-button__link.is-style-outline {
+		background-color: transparent;
+		border-color: currentcolor;
+		color: inherit;
+
+		&:hover,
+		&:focus-visible {
+			background-color: var(--wp--preset--color--background);
+			color: $ground;
+		}
+	}
+}

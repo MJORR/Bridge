@@ -1,0 +1,50 @@
+/**
+ * Bridge — Split Content.
+ */
+@use "../abstracts/section" as section;
+
+.bridge-split {
+	&__inner {
+		@include section.container(wide);
+
+		display: grid;
+		// The global block gap, so the space between the two columns is the
+		// space between blocks everywhere else on the site rather than a
+		// number chosen here.
+		gap: var(--wp--style--block-gap, var(--wp--preset--spacing--60));
+		align-items: start;
+
+		// One column until there is room for two, and then the ratio. Both in
+		// one query — they answer the same question and were asked twice.
+		@include section.two-column {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+
+	&--narrow &__inner {
+		@include section.container(narrow);
+	}
+
+	// No breakpoint variants of the ratio: an uneven split on a narrow screen
+	// is two stacked columns either way.
+	@include section.two-column {
+		&--wide-left &__inner {
+			grid-template-columns: 2fr 1fr;
+		}
+
+		&--wide-right &__inner {
+			grid-template-columns: 1fr 2fr;
+		}
+	}
+
+	// The columns are core/group blocks with flow layout, and flow layout
+	// already spaces its children from the global block gap. This used to set
+	// that spacing again from a preset of its own — at a specificity that beat
+	// core's `:where(.is-layout-flow)`, so the Group's own Block-spacing
+	// control silently did nothing. Removing the rule is what makes it work.
+	// `min-width` stays: a grid child will not shrink below its content
+	// without it, and a long URL in one column would push the other off.
+	&__column {
+		min-width: 0;
+	}
+}

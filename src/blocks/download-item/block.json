@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/download-item",
+	"version": "1.0.0",
+	"title": "Download",
+	"category": "design",
+	"icon": "media-document",
+	"description": "One downloadable file.",
+	"textdomain": "bridge",
+	"parent": ["bridge/downloads"],
+	"supports": { "anchor": false, "html": false, "reusable": false },
+	"attributes": {
+		"title": { "type": "string", "default": "" },
+		"linkText": { "type": "string", "default": "" },
+		"fileId": { "type": "number" },
+		"fileUrl": { "type": "string", "default": "" },
+		"fileName": { "type": "string", "default": "" },
+		"previewId": { "type": "number" },
+		"previewUrl": { "type": "string", "default": "" }
+	},
+	"editorScript": "bridge-download-item-editor",
+	"render": "file:./render.php"
+}

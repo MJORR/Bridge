@@ -11,4 +11,4 @@ import save from './save.js';
 
 const { registerBlockType } = window.wp.blocks;
 
-registerBlockType( 'bridge/cards', { edit, save } );
+registerBlockType('bridge/cards', { edit, save });

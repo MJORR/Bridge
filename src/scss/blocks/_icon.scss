@@ -1,0 +1,21 @@
+/**
+ * Bridge — icons.
+ *
+ * Icons are inline SVG that inherit `currentColor`, so they pick up whatever
+ * colour the surrounding text or block has been given from the palette. There
+ * is deliberately no colour of their own here: an icon that sets its own fill
+ * is an icon that can go off-brand.
+ */
+
+.bridge-icon {
+	// Aligns the icon's optical centre with the text baseline rather than
+	// sitting it on the line, which is what makes an inline icon look dropped.
+	vertical-align: -0.15em;
+	flex-shrink: 0;
+}
+
+.bridge-icon-block {
+	display: inline-flex;
+	align-items: center;
+	line-height: 1;
+}

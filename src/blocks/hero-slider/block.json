@@ -8,9 +8,16 @@
 	"icon": "format-gallery",
 	"description": "Full-screen hero slider powered by Swiper. Drop Cover blocks inside to author slides.",
 	"textdomain": "bridge",
-	"keywords": ["slider", "hero", "swiper", "carousel"],
+	"keywords": [
+		"slider",
+		"hero",
+		"swiper",
+		"carousel"
+	],
 	"supports": {
-		"align": ["full"],
+		"align": [
+			"full"
+		],
 		"anchor": true,
 		"html": false,
 		"layout": false
@@ -55,6 +62,13 @@
 		"showNavigation": {
 			"type": "boolean",
 			"default": true
+		}
+	},
+	"example": {
+		"attributes": {
+			"align": "full",
+			"heightPreset": "medium",
+			"autoplay": false
 		}
 	},
 	"editorScript": "bridge-hero-slider-editor",

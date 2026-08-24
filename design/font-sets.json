@@ -1,0 +1,33 @@
+{
+	"$comment": "Curated font sets. A set supplies the actual font stacks for the theme's three fixed family slugs (sans / serif / mono). The slugs never change — post content references them as has-sans-font-family — so switching set restyles the whole site without touching a single block. Phase 4 adds self-hosted sets with fontFace declarations pointing at assets/fonts/; these first three are OS stacks and ship no files.",
+
+	"system": {
+		"name": "System",
+		"description": "The visitor's own UI font. Zero bytes, zero latency.",
+		"families": {
+			"sans": "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+			"serif": "Georgia, 'Times New Roman', Times, serif",
+			"mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+		}
+	},
+
+	"grotesk": {
+		"name": "Grotesk",
+		"description": "Neutral Swiss grotesque. Tight, corporate, unfussy.",
+		"families": {
+			"sans": "'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif",
+			"serif": "Georgia, 'Times New Roman', Times, serif",
+			"mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+		}
+	},
+
+	"editorial": {
+		"name": "Editorial",
+		"description": "Serif headings over a humanist sans body. Reads as considered and long-form.",
+		"families": {
+			"sans": "'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif",
+			"serif": "'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif",
+			"mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+		}
+	}
+}

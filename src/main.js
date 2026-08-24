@@ -2,3 +2,5 @@
 // Add page-wide JS here only when something actually needs it.
 
 import './scss/main.scss';
+
+import './js/header.js';

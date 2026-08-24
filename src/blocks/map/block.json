@@ -1,0 +1,55 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/map",
+	"version": "1.0.0",
+	"title": "Map",
+	"category": "embed",
+	"icon": "location-alt",
+	"description": "A location map. Enter an address or a set of coordinates.",
+	"textdomain": "bridge",
+	"keywords": ["map", "location", "address", "directions", "google"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "wide"
+		},
+		"address": {
+			"type": "string",
+			"default": ""
+		},
+		"zoom": {
+			"type": "number",
+			"default": 14
+		},
+		"height": {
+			"type": "number",
+			"default": 420
+		},
+		"label": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"example": {
+		"attributes": {
+			"address": "10 Downing St, London",
+			"label": "Our office",
+			"zoom": 14,
+			"height": 320
+		}
+	},
+	"editorScript": "bridge-map-editor",
+	"style": "bridge-map-style",
+	"render": "file:./render.php"
+}

@@ -1,6 +1,7 @@
 /**
  * Bridge — Feature Blocks and their panels.
  */
+@use "../abstracts/card" as card;
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
 
@@ -24,10 +25,7 @@
 	// number chosen here. The toggle below still exists, because flush panels
 	// are a different design and not merely a smaller gap.
 	&__list {
-		@include section.auto-grid(
-			15rem,
-			var(--wp--style--block-gap, var(--wp--preset--spacing--40))
-		);
+		@include section.auto-grid(15rem, section.$grid-gap);
 
 		list-style: none;
 		margin: 0;
@@ -40,8 +38,11 @@
 		gap: 0;
 	}
 
+	// Touching panels are one surface, so neither the corners nor the shadow
+	// that separate a card from the page belong to them.
 	&--flush .bridge-feature {
 		border-radius: 0;
+		box-shadow: none;
 	}
 
 	&--text-center .bridge-feature {
@@ -51,21 +52,24 @@
 }
 
 .bridge-feature {
+	// The panel's padding sits on `__body`, not here: a background photograph
+	// has to reach the edges of the panel.
+	@include card.surface;
+
 	position: relative;
 	display: flex;
 	flex-direction: column;
 	margin: 0;
 	overflow: hidden;
-	border-radius: var(--wp--custom--radius--medium);
-	background-color: var(--wp--preset--color--surface);
 
 	&__body {
+		@include card.padding;
+
 		position: relative;
 		z-index: 1;
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--20);
-		padding: var(--wp--preset--spacing--40);
 		// Fills the panel so panels in a row are the same height and their
 		// links sit on one line.
 		height: 100%;

@@ -25,6 +25,36 @@
 	);
 }
 
+/**
+ * The gap between the items of any section grid.
+ *
+ * One value, named once, spent by every band that lays items out in a row:
+ * cards, downloads, feature panels, price cards and testimonials. It is the
+ * site's own block gap, so a site opened up or tightened in Theme Options
+ * moves these grids with everything else on the page.
+ *
+ * It used to be per-block. Three bands read the block gap and two named a
+ * spacing preset outright, so changing the gap in Theme Options moved three
+ * grids and left two behind — which reads as a bug, not as a decision.
+ */
+$grid-gap: var(--wp--style--block-gap, var(--wp--preset--spacing--40));
+
+/**
+ * The widest an item carrying an image may be drawn.
+ *
+ * Cards and downloads both put a photograph at the top of a box that would
+ * otherwise take a whole share of the container. Two posts in a three-column
+ * grid is two half-width boxes, and a 16:9 image inside one of those is the
+ * size of a hero — bigger than anything else the page shows, for the least
+ * important thing on it.
+ *
+ * A ceiling, not a width: below it, items still take their share of the row as
+ * before, so a full row is unchanged. Only the sparse cases are caught.
+ * Testimonials has no image and no ceiling — a quote is text, and text is
+ * happy filling whatever room it is given.
+ */
+$item-max: 24rem;
+
 // The width at which a stacked pair of things has room to sit side by side.
 // One number, named once: it was written as a bare `48rem` in five media
 // queries across two components, which is five places to change and five
@@ -45,8 +75,26 @@ $two-column: 48rem;
 // with `@if`; a blank line between them would break the pair apart.
 @mixin container($width: wide) {
 	@if $width == narrow {
-		max-width: var(--wp--style--global--content-size);
+		// The gutter is added *outside* `contentSize` rather than spent inside
+		// it. Everything is `border-box`, so a bare `max-width: contentSize`
+		// with a gutter on the same element leaves a content box two gutters
+		// narrower than the text column core's constrained layout gives every
+		// other block on the page — the words in a band would sit a gutter in
+		// from the paragraphs above and below it. Widening the box by the two
+		// gutters lines the *content* up on `contentSize` exactly and keeps
+		// the gutter for the narrow screens it is there for.
+		// stylelint-disable scss/operator-no-newline-after -- prettier wraps
+		// this calc and leaves the operator at the end of the line; prettier
+		// is what runs on save, so it wins.
+		max-width: calc(
+			var(--wp--style--global--content-size) + 2 *
+				var(--wp--preset--spacing--40)
+		);
+		// stylelint-enable scss/operator-no-newline-after
 	} @else {
+		// No compensation here, unlike `narrow`: there is no page-wide column
+		// for a wide band to line up with, and every wide band on the site
+		// spends its gutter inside `wideSize`, so they stay consistent.
 		max-width: var(--wp--style--global--wide-size);
 	}
 
@@ -59,7 +107,7 @@ $two-column: 48rem;
 // breakpoint. `--columns` is the authored count and the most it will ever
 // place; `track-width()` is what stops a three-column grid from demanding
 // 3 × 16rem in a column that has no room for it.
-@mixin auto-grid($min: 16rem, $gap: var(--wp--preset--spacing--50)) {
+@mixin auto-grid($min: 16rem, $gap: $grid-gap) {
 	display: grid;
 	gap: $gap;
 	grid-template-columns: repeat(
@@ -81,8 +129,19 @@ $two-column: 48rem;
 // A horizontally scrolling row that snaps, for the "carousel" overflow style.
 // CSS scroll-snap rather than a slider library: it is keyboard-scrollable,
 // works before JavaScript arrives, and costs nothing to ship.
-@mixin snap-row($gap: var(--wp--preset--spacing--50)) {
+@mixin snap-row($gap: $grid-gap) {
 	display: grid;
+	// The explicit template `auto-grid` left behind, cleared.
+	//
+	// Every caller applies this over a track that was already an auto-grid,
+	// and `grid-template-columns: repeat(auto-fit, …)` survives being handed
+	// `grid-auto-flow: column` — the two describe different things. The items
+	// then fill the explicit columns first, at a share of the container each,
+	// and only the ones left over land in the implicit columns this mixin
+	// sizes. A row of ten cards came out as three that fitted the width and
+	// seven of a different size after them, which reads as the carousel not
+	// working at all.
+	grid-template-columns: none;
 	grid-auto-flow: column;
 	grid-auto-columns: minmax(min(20rem, 80%), 1fr);
 	gap: $gap;

@@ -83,5 +83,6 @@
 	},
 	"editorScript": "bridge-testimonials-editor",
 	"style": "bridge-testimonials-style",
+	"viewScript": "bridge-carousel",
 	"render": "file:./render.php"
 }

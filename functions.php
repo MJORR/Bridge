@@ -17,7 +17,7 @@ define('BRIDGE_VERSION', '1.0.0');
 /**
  * Client-facing name for this build.
  *
- * The only editor-visible use of the theme's name (the block-pattern
+ * The only editor-visible use of the theme's name (the admin menu
  * category label). Change this and `Theme Name:` in style.css to rebrand a
  * build; the `bridge` prefixes on functions, blocks, meta keys and CSS
  * classes are internal identifiers and must stay put — block namespaces and
@@ -38,6 +38,7 @@ define('BRIDGE_DIST_PATH', get_theme_file_path('dist'));
  * behind. Both files are side-effect-light — they register filters and
  * declare functions, nothing more.
  */
+require_once get_theme_file_path('inc/color.php');
 require_once get_theme_file_path('inc/tokens.php');
 require_once get_theme_file_path('inc/fonts.php');
 require_once get_theme_file_path('inc/theme-json.php');
@@ -219,24 +220,6 @@ function bridge_editor_script_deps(): array
 }
 
 /**
- * Register block-pattern category so custom patterns group cleanly in the inserter.
- */
-function bridge_register_pattern_categories(): void
-{
-	if (function_exists('register_block_pattern_category')) {
-		// Slug stays `bridge` — it's an internal identifier referenced by each
-		// pattern's `Categories:` header. Only the label is client-facing, and
-		// it's deliberately not wrapped in __() : a brand name is a proper noun
-		// and shouldn't be translated.
-		register_block_pattern_category(
-			'bridge',
-			array('label' => BRIDGE_BRAND)
-		);
-	}
-}
-add_action('init', 'bridge_register_pattern_categories');
-
-/**
  * Register custom blocks and their compiled Vite assets.
  *
  * Script and style handles are registered first so that the handles
@@ -248,6 +231,13 @@ function bridge_register_blocks(): void
 	// Blocks that render a preview of themselves through the REST block
 	// renderer need the store and the component that talks to it.
 	$previewed = array_merge(bridge_editor_script_deps(), array('wp-server-side-render'));
+
+	// The carousel runtime, shared by every block with a swipe layout. One
+	// handle, named by both block.json files as their `viewScript`, so WP
+	// enqueues it where one of those blocks renders and only once when a page
+	// carries both. Nothing needs it to scroll — the row does that in CSS —
+	// so it is deferred.
+	bridge_register_script('bridge-carousel', 'carousel.js', array(), true);
 
 	// --- Hero Slider -------------------------------------------------------
 	bridge_register_script('bridge-hero-slider-editor', 'hero-slider-editor.js', bridge_editor_script_deps());
@@ -268,6 +258,9 @@ function bridge_register_blocks(): void
 	// Converted from the old ACF flexible-content layouts. Each registers the
 	// same three things under the same three names, so they go through one
 	// helper rather than three lines apiece.
+	// No stylesheet of its own: its two rules live in main.css beside the
+	// section skins they belong with.
+	bridge_register_section_block('section', false);
 	bridge_register_section_block('map');
 	bridge_register_section_block('call-to-action');
 	bridge_register_section_block('testimonials');
@@ -508,3 +501,23 @@ function bridge_enqueue_page_editor_assets(): void
 	bridge_enqueue_script('bridge-banner-preview', 'banner-preview.js', array('wp-data', 'wp-block-editor'));
 }
 add_action('enqueue_block_editor_assets', 'bridge_enqueue_page_editor_assets');
+
+/**
+ * Editor scripts that belong to every screen with a block editor on it.
+ *
+ * Unlike the three above, this one is not about the Page screen: it takes the
+ * spacing and border controls off core/paragraph, so it has to run wherever a
+ * paragraph can be written, posts and the site editor included.
+ */
+function bridge_enqueue_editor_assets(): void
+{
+	bridge_enqueue_script(
+		'bridge-paragraph-lock',
+		'paragraph-lock.js',
+		array(
+			'wp-hooks',
+			'wp-blocks',
+		)
+	);
+}
+add_action('enqueue_block_editor_assets', 'bridge_enqueue_editor_assets');

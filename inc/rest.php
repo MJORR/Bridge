@@ -119,7 +119,19 @@ function bridge_rest_preview_tokens(WP_REST_Request $request): WP_REST_Response
 			'fontSizes'    => $compiled['settings']['typography']['fontSizes'],
 			'fontFamilies' => $compiled['settings']['typography']['fontFamilies'],
 			'layout'       => $compiled['settings']['layout'],
+			// The spacing presets and the custom properties, so the page can
+			// draw a card at the padding, radius and shadow being chosen
+			// rather than describing them. wp-admin prints no global styles of
+			// its own, so a preview that named `var(--wp--preset--spacing--40)`
+			// would resolve to nothing on this screen.
+			'spacingSizes' => $compiled['settings']['spacing']['spacingSizes'],
+			'custom'       => $compiled['settings']['custom'],
 			'styles'       => $compiled['styles'],
+			// Every button colour with the contrast ratio behind it. Computed
+			// here rather than in the page for the reason the type scale is:
+			// a second implementation of the WCAG formula would be the one the
+			// operator is looking at, and it would be the one that drifted.
+			'buttons'      => bridge_button_schemes($tokens),
 		)
 	);
 }
@@ -181,8 +193,20 @@ function bridge_rest_tokens_payload(): array
 		// what the theme ships on by default so the screen can say what a
 		// switch is changing rather than only what it is set to.
 		'blockLibrary'   => bridge_block_library(),
-		'patternFamilies' => bridge_pattern_families(),
 		'sectionSkins'   => bridge_section_skins(),
+		// The three button designs, each with the geometry behind it, so the
+		// options page can draw a real button in each skin rather than
+		// describing three of them in prose.
+		'buttonSkins'    => bridge_button_skin_choices(),
+		// The grounds a button sits on, each naming the palette slugs its band
+		// wears, so every scheme can be shown on its real background.
+		'buttonGrounds'  => bridge_button_ground_choices(),
+		// The named elevation steps, with the CSS behind each, so the card
+		// control can show the shadows rather than list four adjectives.
+		'cardShadows'    => bridge_card_shadow_choices(),
+		// The grounds a card sits on, each naming the palette slugs its band
+		// wears, so the page can draw every card on its real background.
+		'cardGrounds'    => bridge_card_ground_choices(),
 		'version'        => bridge_tokens_version(),
 	);
 }

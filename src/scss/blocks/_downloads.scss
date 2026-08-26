@@ -1,6 +1,7 @@
 /**
  * Bridge — Downloads block and its items.
  */
+@use "../abstracts/card" as card;
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
 
@@ -24,10 +25,7 @@
 	// too. The gallery keeps a tighter gap of its own on purpose — a mosaic of
 	// photographs is not a row of cards.
 	&__list {
-		@include section.auto-grid(
-			16rem,
-			var(--wp--style--block-gap, var(--wp--preset--spacing--40))
-		);
+		@include section.auto-grid(16rem, section.$grid-gap);
 
 		list-style: none;
 		margin: 0;
@@ -36,13 +34,18 @@
 }
 
 .bridge-download {
+	// The same ceiling the post cards keep, for the same reason: this card
+	// leads with a 4:3 preview image, and two downloads in a three-column grid
+	// would otherwise show that preview at half the width of the page.
+	max-width: section.$item-max;
+	margin-inline: auto;
+
+	@include card.base;
+
 	display: flex;
 	flex-direction: column;
 	gap: var(--wp--preset--spacing--20);
 	margin: 0;
-	padding: var(--wp--preset--spacing--30);
-	background-color: var(--wp--preset--color--surface);
-	border-radius: var(--wp--custom--radius--medium);
 
 	&__preview {
 		@include section.media-fill("4 / 3");

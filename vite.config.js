@@ -168,6 +168,10 @@ export default defineConfig(({ mode }) => ({
 				),
 				gallery: resolve(__dirname, 'src/scss/gallery.scss'),
 				'gallery-view': resolve(__dirname, 'src/js/gallery-view.js'),
+				// One carousel runtime for every block that offers a swipe
+				// layout — cards and testimonials — under one handle, so a
+				// page carrying both loads it once.
+				carousel: resolve(__dirname, 'src/js/carousel.js'),
 				'logo-slider-editor': resolve(
 					__dirname,
 					'src/blocks/logo-slider/index.js'
@@ -210,12 +214,19 @@ export default defineConfig(({ mode }) => ({
 					__dirname,
 					'src/editor/banner-preview.js'
 				),
+				'section-editor': resolve(
+					__dirname,
+					'src/blocks/section/index.js'
+				),
+				'paragraph-lock': resolve(
+					__dirname,
+					'src/editor/paragraph-lock.js'
+				),
 				'options-app': resolve(__dirname, 'src/admin/options-app.jsx'),
 				'header-editor': resolve(
 					__dirname,
 					'src/blocks/header/index.js'
 				),
-				'icon-editor': resolve(__dirname, 'src/blocks/icon/index.js'),
 			},
 			external: [/^@wordpress\//],
 			output: {

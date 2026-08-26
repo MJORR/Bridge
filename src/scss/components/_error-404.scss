@@ -1,0 +1,41 @@
+/**
+ * Bridge — 404 page layout.
+ *
+ * Pins the footer to the bottom of the viewport on short pages. WordPress puts
+ * `error404` on the body for the 404 template and nowhere else, so every rule
+ * here is scoped to that class: the rest of the site keeps the normal document
+ * flow, where the footer sits wherever the content ends.
+ *
+ * Block themes wrap the whole template in `.wp-site-blocks`, so the flex column
+ * has to be declared twice — once on the body so it can reach the viewport
+ * height, and again on that wrapper so the growth actually passes down to the
+ * main region between the header and footer parts.
+ *
+ * `100dvh` rather than `100vh` because mobile browsers grow and shrink the
+ * viewport as their toolbars slide away; `vh` is frozen at the tallest of
+ * those, which leaves the footer pushed a toolbar's height below the fold on
+ * first paint. `min-height`, not `height`, so a long message or a wrapped
+ * footer still scrolls instead of overflowing.
+ */
+body.error404 {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	min-height: 100dvh;
+
+	.wp-site-blocks {
+		display: flex;
+		flex: 1 0 auto;
+		flex-direction: column;
+	}
+
+	// The 404 body absorbs the slack. The header and footer parts keep their
+	// natural height, so only this region stretches, and its own centring is
+	// what keeps the message optically placed rather than pinned to the top.
+	main {
+		display: flex;
+		flex: 1 0 auto;
+		flex-direction: column;
+		justify-content: center;
+	}
+}

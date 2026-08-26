@@ -1,0 +1,91 @@
+/**
+ * Bridge — the shared card surface.
+ *
+ * Five blocks draw a card: cards, download-item, feature-block, price-card
+ * (the item inside price-table) and testimonial. Each was choosing its own
+ * padding, its own corner radius and — in one case out of five — its own
+ * shadow, so a page that stacked a downloads band over a pricing band showed
+ * two different ideas of what a card is. The three properties that decide that
+ * are settled here and nowhere else.
+ *
+ * The values themselves live in theme.json under `custom.card`, which is what
+ * makes them tokens rather than a second design system hiding in the
+ * stylesheets: they arrive as `--wp--custom--card--*` on the front end and in
+ * the editor, and a child theme or a Global Styles variation can move them
+ * without touching a line of Sass.
+ *
+ * Mixins rather than a partial of rules, for the reason `section` gives: each
+ * card block ships its own bundle, so a shared ruleset here would be shipped
+ * once per bundle. These emit only into the blocks that ask.
+ *
+ * The background *is* here, and it is one variable rather than a colour:
+ * `--bridge-card-bg`, which the section skins set on the band (see
+ * components/_sections.scss). A card cannot name its own background, because
+ * the right answer depends on what is behind it — the same surface panel that
+ * reads correctly on a white page disappears on a Surface band and turns
+ * white-on-white on an Inverted one, which is exactly what these blocks used
+ * to do. Custom properties inherit, so a band styled by main.css reaches a
+ * card styled by its own bundle without either knowing about the other.
+ *
+ * Text colour is deliberately *not* here: a card inherits it from the band, so
+ * an Inverted section's light foreground reaches the words inside the card
+ * rather than stopping at its edge. Nothing in a card may name a text colour
+ * that is not derived from `currentcolor`.
+ *
+ * Borders are left to the blocks. A border is what distinguishes one card from
+ * another — an outlined quote, a featured plan — where the surface is what
+ * they share.
+ */
+
+// The corner radius and the resting shadow. For the card element itself, when
+// its padding sits on a child — a card with an edge-to-edge image cannot pad
+// its own box.
+@mixin surface {
+	// The fallback chain is the whole mechanism: a card on a band with no skin
+	// gets the light ground, because nothing set the variable.
+	background-color: var(
+		--bridge-card-bg,
+		var(--wp--custom--card--on-light, #f5f5f4)
+	);
+	border-radius: var(--wp--custom--card--radius, 6px);
+	box-shadow: var(--wp--custom--card--shadow, none);
+}
+
+// The air inside a card, wherever it lands: on the card for the simple ones,
+// on the body for the ones whose image or background reaches the edge.
+@mixin padding {
+	padding: var(--wp--custom--card--padding, 1.5rem);
+}
+
+// The whole card, for the common case.
+@mixin base {
+	@include surface;
+	@include padding;
+}
+
+// The lift under the pointer, for cards that are themselves a link. Only the
+// shadow moves by default; `$translate` adds the nudge upwards that the post
+// cards had, and both stop under `prefers-reduced-motion`.
+@mixin raise($translate: false) {
+	transition:
+		box-shadow 200ms ease,
+		transform 200ms ease;
+
+	&:hover,
+	&:focus-within {
+		box-shadow: var(--wp--custom--card--shadow-hover, none);
+
+		@if $translate {
+			transform: translateY(-2px);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		transition: none;
+
+		&:hover,
+		&:focus-within {
+			transform: none;
+		}
+	}
+}

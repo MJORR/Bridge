@@ -79,9 +79,7 @@
 	// scrim beneath it is dark whatever the skin says — buttons included,
 	// which is the part this used to leave out.
 	&--image {
-		@include on-dark.on-dark(
-			var(--bridge-cta-scrim, var(--wp--preset--color--primary))
-		);
+		@include on-dark.on-dark;
 
 		// The editor paints the same photograph through a custom property
 		// rather than an <img>, so the preview matches without duplicating

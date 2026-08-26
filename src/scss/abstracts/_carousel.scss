@@ -1,0 +1,185 @@
+/**
+ * Bridge — the swipe row and its controls.
+ *
+ * The furniture shared by every band that offers a carousel: the scrollbar
+ * hiding and drag affordance on the track, and the chevron-dots-chevron strip
+ * beneath it. `abstracts/section`'s `snap-row` still does the scrolling; this
+ * is what sits on top of it.
+ *
+ * Mixins rather than rules, in keeping with the rest of abstracts/: each
+ * carousel block ships its own bundle, so a shared ruleset here would be
+ * shipped once per bundle. These emit only into the blocks that ask.
+ *
+ * The control classes are generic — `bridge-carousel__arrow`, `__dot` — rather
+ * than named after the block, because one script drives all of them and the
+ * script has to know what to build. A block supplies the markup and includes
+ * these two mixins; nothing else is per-block.
+ *
+ * Every colour is the band's own foreground at some strength, never a named
+ * one, so a single rule stays legible on the page background, on a Surface
+ * band and on an Inverted one, and follows a rebrand.
+ */
+
+/**
+ * The scrolling track.
+ *
+ * Applied to whichever element `snap-row` was applied to.
+ */
+@mixin track {
+	// No scrollbar under the row. It is an affordance, and normally worth
+	// keeping — but this row has two better ones directly beneath it, and a
+	// bar between the items and the controls reads as a stray rule rather than
+	// as something to drag.
+	//
+	// Two declarations for one job. `scrollbar-width` is the standard and is
+	// what Firefox and Chromium 121+ read; the pseudo-element is what older
+	// Blink and every WebKit read. Neither removes the *scrolling* — the row
+	// still takes a wheel, a swipe and the arrow keys.
+	scrollbar-width: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+
+	// The row can be dragged with a mouse, so it says so. Only on a device
+	// that has a pointer to change the shape of — a touch screen gets the
+	// native swipe and has no cursor at all.
+	@media (hover: hover) and (pointer: fine) {
+		cursor: grab;
+
+		&.is-dragging {
+			cursor: grabbing;
+			// A drag across the items would otherwise select their words, and
+			// the drag would end with half the row highlighted.
+			user-select: none;
+		}
+	}
+
+	// Mid-drag the pointer is over an item, but it is not pointing *at* it —
+	// hover states would follow the gesture across the row, which reads as the
+	// items reacting rather than moving.
+	&.is-dragging > * {
+		pointer-events: none;
+	}
+}
+
+/**
+ * The control strip: a chevron at each end, the dots between them.
+ *
+ * A flex row rather than three absolutely positioned things, so the strip
+ * takes its own space instead of overlapping the last row of items.
+ *
+ * Hidden until the script has measured the row: with every item in view there
+ * are no pages to step through, and a chevron that cannot move is worse than
+ * no chevron.
+ */
+@mixin controls {
+	.bridge-carousel__controls {
+		display: none;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--wp--preset--spacing--20);
+
+		&.is-usable {
+			display: flex;
+		}
+	}
+
+	// A 2.4rem circle with a small chevron in it — the shape the old ACF
+	// blocks used, which is what a client coming from one of those recognises.
+	.bridge-carousel__arrow {
+		// `display: grid` from an author stylesheet beats the `[hidden] {
+		// display: none }` in every user-agent sheet, whatever the
+		// specificity — author rules simply win that cascade. Without this the
+		// chevrons render before the script has run, and stay on screen when
+		// there is only one page, which is the one thing shipping them
+		// `hidden` was meant to prevent.
+		&[hidden] {
+			display: none;
+		}
+
+		display: grid;
+		place-items: center;
+		width: 2.4rem;
+		height: 2.4rem;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		color: inherit;
+		background-color: color-mix(in srgb, currentcolor 12%, transparent);
+		cursor: pointer;
+		transition: background-color 150ms ease;
+
+		&:hover {
+			background-color: color-mix(in srgb, currentcolor 22%, transparent);
+		}
+
+		&:focus-visible {
+			outline: 2px solid currentcolor;
+			outline-offset: 2px;
+		}
+
+		// At an end of the row. Kept in place rather than hidden, so the dots
+		// do not shuffle sideways every time the row reaches a stop.
+		&:disabled {
+			opacity: 0.35;
+			cursor: default;
+		}
+
+		.bridge-icon {
+			// Smaller than the icon scale's own steps: this one sits inside a
+			// 2.4rem button, which is furniture rather than content.
+			width: 1rem;
+			height: 1rem;
+		}
+	}
+
+	.bridge-carousel__dots {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.4rem;
+		// Takes the space between the chevrons, so the strip is the same shape
+		// whether there are three dots or thirty.
+		flex: 1;
+		flex-wrap: wrap;
+	}
+
+	// Filled and empty are one colour at two strengths, never two colours —
+	// the same rule the testimonial ratings follow.
+	.bridge-carousel__dot {
+		width: 0.5rem;
+		height: 0.5rem;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background-color: currentcolor;
+		opacity: 0.3;
+		cursor: pointer;
+		transition:
+			opacity 150ms ease,
+			transform 150ms ease;
+
+		&.is-active {
+			opacity: 1;
+			transform: scale(1.2);
+		}
+
+		&:focus-visible {
+			outline: 2px solid currentcolor;
+			outline-offset: 3px;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+
+		.bridge-carousel__arrow,
+		.bridge-carousel__dot {
+			transition: none;
+		}
+
+		.bridge-carousel__dot.is-active {
+			transform: none;
+		}
+	}
+}

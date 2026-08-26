@@ -126,6 +126,474 @@ function bridge_spacing_steps(): array
 }
 
 /**
+ * The grounds a card can sit on, and what it is painted when it does.
+ *
+ * A card has no single background, because the band behind it does not. The
+ * four entries here are the four grounds this theme actually paints — the page
+ * itself, and the three section skins — so "the card background" is four
+ * colours an operator sets once, not one colour that is wrong on three of
+ * them. A card resolves its own by inheriting `--bridge-card-bg`, which the
+ * skin sets; the default is `light`.
+ *
+ * `ground` and `text` name the palette slugs the band wears, which is what
+ * lets the options page draw each card on its real ground rather than on a
+ * guess. They mirror bridge_section_skins() and have to stay in step with it.
+ *
+ * Deliberately *not* palette slugs of their own. Adding these to the palette
+ * would put them in every colour picker in the editor, where a card colour is
+ * not a thing anyone should be painting a paragraph with — and palette slugs
+ * are written into post content as class names, so they could never be taken
+ * back. These are read only by abstracts/_card.scss.
+ *
+ * The defaults are literals rather than derived from the palette: a card is a
+ * step away from its ground in a direction only a designer can choose, and a
+ * formula that lightened every ground by a fixed amount would be wrong on at
+ * least one of them. They are a starting point, and every one is editable.
+ *
+ * @return array<string, array<string, string>>
+ */
+function bridge_card_grounds(): array
+{
+	return array(
+		'light'   => array(
+			'label'   => __('Light card', 'bridge'),
+			'ground'  => 'background',
+			'text'    => 'text',
+			'default' => '#f5f5f4',
+		),
+		'surface' => array(
+			'label'   => __('Surface card', 'bridge'),
+			'ground'  => 'surface',
+			'text'    => 'text',
+			'default' => '#ffffff',
+		),
+		'primary' => array(
+			'label'   => __('Primary card', 'bridge'),
+			'ground'  => 'primary',
+			// The Inverted skin's foreground. A card on this ground inherits
+			// it, which is the whole reason the card colour has to be dark.
+			'text'    => 'background',
+			'default' => '#1e293b',
+		),
+		'accent'  => array(
+			'label'   => __('Accent card', 'bridge'),
+			'ground'  => 'accent',
+			'text'    => 'text',
+			'default' => '#ffffff',
+		),
+	);
+}
+
+/**
+ * The card grounds as a list, for the options page.
+ *
+ * @return array<int, array<string, string>>
+ */
+function bridge_card_ground_choices(): array
+{
+	$choices = array();
+
+	foreach (bridge_card_grounds() as $key => $entry) {
+		$choices[] = array(
+			'key'    => (string) $key,
+			'label'  => (string) $entry['label'],
+			'ground' => (string) $entry['ground'],
+			'text'   => (string) $entry['text'],
+		);
+	}
+
+	return $choices;
+}
+
+/**
+ * The card shadow presets, slug to its two states.
+ *
+ * Named steps rather than a free-text box, for the same reason the spacing
+ * scale offers XS through 3XL: a box-shadow is four numbers and a colour, and
+ * an operator asked to type one produces either the default back or something
+ * that does not match the other five cards on the page. Four steps is the
+ * whole useful range — off, and three degrees of lift.
+ *
+ * `hover` is the raised state, spent by the one card that is itself a link.
+ * Kept beside the resting value rather than derived from it, because a shadow
+ * that lifts is not the resting one scaled — it moves further and softens.
+ *
+ * Filterable, so a client build with a house elevation scale can name its own
+ * without a theme edit. The slugs are what the token record stores, so a
+ * filter that renames one strands the sites already using it.
+ *
+ * @return array<string, array<string, string>>
+ */
+function bridge_card_shadows(): array
+{
+	return (array) apply_filters(
+		'bridge_card_shadows',
+		array(
+			'none'   => array(
+				'name'   => __('None', 'bridge'),
+				'shadow' => 'none',
+				'hover'  => 'none',
+			),
+			'soft'   => array(
+				'name'   => __('Soft', 'bridge'),
+				'shadow' => '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06)',
+				'hover'  => '0 4px 12px rgba(0, 0, 0, 0.1), 0 12px 24px rgba(0, 0, 0, 0.08)',
+			),
+			'medium' => array(
+				'name'   => __('Medium', 'bridge'),
+				'shadow' => '0 2px 6px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(0, 0, 0, 0.08)',
+				'hover'  => '0 6px 16px rgba(0, 0, 0, 0.12), 0 18px 36px rgba(0, 0, 0, 0.1)',
+			),
+			'strong' => array(
+				'name'   => __('Strong', 'bridge'),
+				'shadow' => '0 4px 10px rgba(0, 0, 0, 0.12), 0 14px 32px rgba(0, 0, 0, 0.12)',
+				'hover'  => '0 8px 20px rgba(0, 0, 0, 0.16), 0 24px 48px rgba(0, 0, 0, 0.14)',
+			),
+		)
+	);
+}
+
+/**
+ * The shadow presets as a list, for the options page.
+ *
+ * A list rather than the map above, because the order is the meaning — the
+ * control offers them from off to strongest — and JSON objects carry no
+ * promise of key order once they have been through a serialiser.
+ *
+ * @return array<int, array<string, string>>
+ */
+function bridge_card_shadow_choices(): array
+{
+	$choices = array();
+
+	foreach (bridge_card_shadows() as $slug => $entry) {
+		$choices[] = array(
+			'slug'   => (string) $slug,
+			'name'   => (string) ($entry['name'] ?? $slug),
+			'shadow' => (string) ($entry['shadow'] ?? 'none'),
+			'hover'  => (string) ($entry['hover'] ?? 'none'),
+		);
+	}
+
+	return $choices;
+}
+
+/**
+ * The three button skins, and the geometry each one is.
+ *
+ * A skin is the *shape* of every button on the site — corner, padding,
+ * tracking, how it answers a pointer — and it is one choice, not a set of
+ * them. Offering an operator eleven properties would produce a button no
+ * designer drew; offering three finished designs produces one of three that
+ * were.
+ *
+ * Colour is deliberately absent from this list. What a button is painted
+ * depends on the band it lands in, which is a separate question answered per
+ * ground in bridge_button_grounds() — so a skin can be swapped without
+ * revisiting four colour decisions, and a colour can be moved without
+ * redrawing the button.
+ *
+ * Every value is CSS, published as a `--wp--custom--button--*` property, so
+ * the front end, the editor and the options preview all draw the same button
+ * from the same numbers.
+ *
+ *   radius         Corner. `edge` is 0 on purpose: a squared button is the
+ *                  one shape the other two cannot be mistaken for.
+ *   paddingBlock   Air above and below the label. The floor under the tap
+ *                  target is enforced separately — see `minSize` in
+ *                  bridge_compile_theme_json().
+ *   paddingInline  Air either side.
+ *   weight         Label weight. 600 throughout: a button is an action, and
+ *                  500 reads as a link that happens to have a box.
+ *   transform      `uppercase` on `edge` alone, where the tracking is set to
+ *                  match — uppercase at normal tracking is a wall.
+ *   letterSpacing  Tracking. Positive only where the case demands it.
+ *   borderWidth    The boundary. Filled buttons carry one too, in their own
+ *                  fill colour, so the two styles are exactly the same size
+ *                  and a fill that needs a visible edge (WCAG 1.4.11) can be
+ *                  given one without the button changing dimensions.
+ *   shadow         Resting elevation.
+ *   shadowHover    Elevation under the pointer.
+ *   lift           Vertical nudge under the pointer. Suppressed under
+ *                  `prefers-reduced-motion`.
+ *   sweep          Height of the rule that draws itself under the label on
+ *                  hover. 0 on the skins that answer with fill and lift
+ *                  instead, which costs them nothing: a 0-height bar paints
+ *                  nothing.
+ *   fill           How far the fill shades on hover, 0–1 of the distance to
+ *                  black or white. Not CSS — the shading happens server-side
+ *                  so the hover colour is a known hex whose contrast can be
+ *                  measured. See bridge_button_schemes().
+ *
+ * Filterable so a client build can ship a fourth. The slugs are stored in the
+ * token record, so a filter that renames one strands the sites using it.
+ *
+ * @return array<string, array<string, string|float>>
+ */
+function bridge_button_skins(): array
+{
+	return (array) apply_filters(
+		'bridge_button_skins',
+		array(
+			'solid'   => array(
+				'name'          => __('Solid', 'bridge'),
+				'description'   => __('A softly rounded filled button that lifts and deepens under the pointer. The safe, contemporary default — at home on a corporate site and on a shop.', 'bridge'),
+				'radius'        => '6px',
+				'paddingBlock'  => '0.85rem',
+				'paddingInline' => '1.65rem',
+				'weight'        => '600',
+				'transform'     => 'none',
+				'letterSpacing' => '0',
+				'borderWidth'   => '2px',
+				'shadow'        => 'none',
+				'shadowHover'   => '0 6px 16px rgba(0, 0, 0, 0.16)',
+				'lift'          => '-2px',
+				'sweep'         => '0px',
+				'fill'          => 0.12,
+			),
+			'edge'    => array(
+				'name'          => __('Edge', 'bridge'),
+				'description'   => __('Square corners, small uppercase label, wide tracking. A rule draws itself under the label on hover as the fill deepens. Editorial and architectural — the skin for a brand that does not want a rounded anything.', 'bridge'),
+				// The one skin with no corner radius at all.
+				'radius'        => '0',
+				'paddingBlock'  => '0.9rem',
+				'paddingInline' => '1.75rem',
+				'weight'        => '600',
+				'transform'     => 'uppercase',
+				'letterSpacing' => '0.08em',
+				'borderWidth'   => '2px',
+				'shadow'        => 'none',
+				// Flat by design. A square button that lifts reads as a tile
+				// that came loose.
+				'shadowHover'   => 'none',
+				'lift'          => '0',
+				'sweep'         => '2px',
+				'fill'          => 0.18,
+			),
+			'pill'    => array(
+				'name'          => __('Pill', 'bridge'),
+				'description'   => __('Fully rounded with generous side padding and a resting shadow, rising under the pointer. Friendly and app-like — the skin for consumer and service brands.', 'bridge'),
+				// Far past half the height of any button this theme draws, so
+				// the ends stay true semicircles at every font size.
+				'radius'        => '999px',
+				'paddingBlock'  => '0.9rem',
+				'paddingInline' => '2rem',
+				'weight'        => '600',
+				'transform'     => 'none',
+				'letterSpacing' => '0.01em',
+				'shadow'        => '0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08)',
+				'borderWidth'   => '2px',
+				'shadowHover'   => '0 4px 10px rgba(0, 0, 0, 0.16), 0 12px 24px rgba(0, 0, 0, 0.12)',
+				'lift'          => '-3px',
+				'sweep'         => '0px',
+				'fill'          => 0.12,
+			),
+		)
+	);
+}
+
+/**
+ * The skins as a list, for the options page.
+ *
+ * A list rather than the map, for the reason bridge_card_shadow_choices()
+ * gives: the order is the meaning, and a serialised object does not promise to
+ * keep it.
+ *
+ * @return array<int, array<string, string|float>>
+ */
+function bridge_button_skin_choices(): array
+{
+	$choices = array();
+
+	foreach (bridge_button_skins() as $slug => $entry) {
+		$choices[] = array('slug' => (string) $slug) + $entry;
+	}
+
+	return $choices;
+}
+
+/**
+ * The grounds a button can sit on, and what fills it on each.
+ *
+ * The same four grounds cards answer for — the page itself and the three
+ * section skins — because they are the four backgrounds this theme actually
+ * paints. A button cannot name its own fill for the same reason a card cannot
+ * name its own surface: the primary-coloured button that anchors a white page
+ * is invisible on an Inverted band.
+ *
+ * `ground` and `text` are the palette slugs the band wears, and they mirror
+ * bridge_section_skins() and bridge_card_grounds() — all three have to stay in
+ * step. `fill` is the palette slug the filled button defaults to there.
+ *
+ * The operator picks the fill and nothing else. Every other colour in the
+ * scheme — the label, both hover colours, the boundary, the focus ring — is
+ * computed from that choice in bridge_button_schemes(), because each of them
+ * has one right answer given a fill and a ground, and a control that let
+ * someone choose the wrong one would be a control for failing an audit.
+ *
+ * @return array<string, array<string, string>>
+ */
+function bridge_button_grounds(): array
+{
+	return array(
+		'default'  => array(
+			'label'  => __('Default', 'bridge'),
+			'ground' => 'background',
+			'text'   => 'text',
+			'fill'   => 'primary',
+		),
+		'surface'  => array(
+			'label'  => __('Surface', 'bridge'),
+			'ground' => 'surface',
+			'text'   => 'text',
+			'fill'   => 'primary',
+		),
+		'accent'   => array(
+			'label'  => __('Accent', 'bridge'),
+			'ground' => 'accent',
+			'text'   => 'text',
+			// The accent band is already the loudest thing on the page, so its
+			// button answers with weight rather than more colour.
+			'fill'   => 'primary',
+		),
+		'inverted' => array(
+			'label'  => __('Inverted', 'bridge'),
+			'ground' => 'primary',
+			// The Inverted skin's foreground, which the band sets and
+			// everything inside it inherits.
+			'text'   => 'background',
+			// A dark button on a dark band is a hole. Inverted, it becomes the
+			// brightest thing in the section, which is what a primary action
+			// on a dark band should be.
+			'fill'   => 'background',
+		),
+	);
+}
+
+/**
+ * The grounds as a list, for the options page.
+ *
+ * @return array<int, array<string, string>>
+ */
+function bridge_button_ground_choices(): array
+{
+	$choices = array();
+
+	foreach (bridge_button_grounds() as $key => $entry) {
+		$choices[] = array('key' => (string) $key) + $entry;
+	}
+
+	return $choices;
+}
+
+/**
+ * Resolve every button colour, on every ground, from the four fill choices.
+ *
+ * One function, because these colours are a system rather than a list: the
+ * hover fill is the resting fill shaded, the label is whichever palette colour
+ * is legible on the fill, the hover label is re-checked against the shaded
+ * fill, and the boundary only appears when the fill is too close to the band
+ * behind it to have an edge of its own. Computed together, they cannot
+ * disagree; computed in four stylesheets, they did.
+ *
+ * What each scheme guarantees, and the criterion it is guaranteeing:
+ *
+ *   1.4.3  Contrast (minimum) — the label is picked by ratio against the fill
+ *          it sits on, from the palette first and black or white as a
+ *          backstop. Every colour reaches at least 4.58:1 against one of
+ *          those two, so a label that fails is not reachable from here.
+ *   1.4.11 Non-text contrast — a fill within 3:1 of its own band would have
+ *          no discernible edge, so it is given a border in the band's
+ *          foreground, which by construction contrasts with both.
+ *   2.4.11 Focus not obscured / focus appearance — the ring is the band's
+ *          foreground, offset far enough to clear the button's own boundary.
+ *
+ * The audit alongside each scheme is the arithmetic itself, so the options
+ * page can show the ratios rather than assert that they are fine, and so a
+ * client asking "does this pass" gets a number.
+ *
+ * @param array<string, mixed> $tokens A sanitised token set.
+ * @return array<string, array<string, mixed>> Ground key => colours + audit.
+ */
+function bridge_button_schemes(array $tokens): array
+{
+	$palette = $tokens['brand']['palette'];
+	$skins   = bridge_button_skins();
+	$skin    = $skins[$tokens['buttons']['skin']] ?? reset($skins);
+	$shade   = (float) ($skin['fill'] ?? 0.12);
+
+	$hex = static function (string $slug) use ($palette): string {
+		return (string) ($palette[$slug]['color'] ?? '#000000');
+	};
+
+	// The two palette colours a label is allowed to be, in preference order.
+	// Offered before black and white so a brand's own near-white beats #ffffff
+	// when both are legible.
+	$labels = array($hex('background'), $hex('text'));
+
+	$schemes = array();
+
+	foreach (bridge_button_grounds() as $key => $entry) {
+		$ground     = $hex($entry['ground']);
+		$foreground = $hex($entry['text']);
+		$fill       = $hex((string) ($tokens['buttons']['colors'][$key] ?? $entry['fill']));
+
+		$hover_fill  = bridge_shade_hex($fill, $shade);
+		$label       = bridge_readable_on($fill, $labels);
+		// The resting label first, so a hover state only changes colour when
+		// the shaded fill genuinely stopped carrying it.
+		$hover_label = bridge_readable_on($hover_fill, array_merge(array($label), $labels));
+
+		$edge       = bridge_contrast_ratio($fill, $ground);
+		$hover_edge = bridge_contrast_ratio($hover_fill, $ground);
+
+		// A boundary only where the fill has not got one. Drawn in the band's
+		// own foreground, which is the one colour known to stand off both the
+		// band and anything legible on it.
+		$border       = $edge >= 3.0 ? $fill : $foreground;
+		$hover_border = $hover_edge >= 3.0 ? $hover_fill : $foreground;
+
+		$schemes[$key] = array(
+			'bg'          => strtolower($fill),
+			'fg'          => strtolower($label),
+			'hoverBg'     => strtolower($hover_fill),
+			'hoverFg'     => strtolower($hover_label),
+			'border'      => strtolower($border),
+			'hoverBorder' => strtolower($hover_border),
+			// The secondary button. Transparent with the band's foreground as
+			// its label and boundary — the one treatment that is legible on
+			// all four grounds — and inverting into it on hover, which is a
+			// change of state no colour blindness can miss.
+			'ghost'       => strtolower($foreground),
+			'ghostHover'  => strtolower($ground),
+			// Focus. The band's foreground again, offset clear of the button's
+			// own edge so the ring is measured against the band.
+			'ring'        => strtolower($foreground),
+			// The arithmetic, for the options screen to show and for anyone
+			// who has to answer "does this pass" with a number rather than a
+			// reassurance. `fill` is the ratio of the button's own colour
+			// against its band and `boundary` the ratio of whatever actually
+			// draws its edge — the same figure until the fill is too close to
+			// the band to have an edge, at which point the border it was given
+			// is what 1.4.11 is measuring.
+			'audit'       => array(
+				'label'      => bridge_contrast_ratio($fill, $label),
+				'hoverLabel' => bridge_contrast_ratio($hover_fill, $hover_label),
+				'fill'       => $edge,
+				'boundary'   => $edge >= 3.0 ? $edge : bridge_contrast_ratio($border, $ground),
+				'ghost'      => bridge_contrast_ratio($ground, $foreground),
+				'ring'       => bridge_contrast_ratio($ground, $foreground),
+				// True when the fill could not be its own edge and was given
+				// one.
+				'bordered'   => $edge < 3.0,
+			),
+		);
+	}
+
+	return $schemes;
+}
+
+/**
  * The valid range or option set for every numeric and enumerated token.
  *
  * One source of truth, consumed by both the sanitiser and the REST route that
@@ -152,6 +620,25 @@ function bridge_token_constraints(): array
 		),
 		'icons'      => array(
 			'weight' => array('options' => array('regular', 'bold')),
+		),
+		'buttons'    => array(
+			'skin' => array('options' => array_keys(bridge_button_skins())),
+			// The fill an operator may choose per ground. The whole palette,
+			// because every slug in it is a legitimate button on some ground —
+			// and the ones that would be illegible are made legible by the
+			// scheme rather than forbidden here.
+			'fill' => array('options' => array_keys(bridge_palette_slugs())),
+		),
+		'cards'      => array(
+			// The same spacing vocabulary every other padding control speaks,
+			// so a site tightened a step tightens its cards with everything
+			// else rather than needing a number found by trial.
+			'padding' => array('options' => bridge_spacing_slugs()),
+			// 0 is a legitimate look — square cards are a design, not an
+			// error. Past about 32px the corner starts eating the content of
+			// a narrow card rather than framing it.
+			'radius'  => array('min' => 0, 'max' => 32, 'step' => 1, 'unit' => 'px'),
+			'shadow'  => array('options' => array_keys(bridge_card_shadows())),
 		),
 		'header'     => array(
 			// Every layout stacks or rows the same two elements; none puts the
@@ -206,6 +693,16 @@ function bridge_token_defaults(): array
 	$palette['surface']['color']    = '#F5F5F4';
 	$palette['text']['color']       = '#1F2937';
 
+	$card_colors = array();
+	foreach (bridge_card_grounds() as $key => $entry) {
+		$card_colors[$key] = $entry['default'];
+	}
+
+	$button_colors = array();
+	foreach (bridge_button_grounds() as $key => $entry) {
+		$button_colors[$key] = $entry['fill'];
+	}
+
 	return array(
 		'brand'      => array(
 			'palette' => $palette,
@@ -224,6 +721,25 @@ function bridge_token_defaults(): array
 		),
 		'icons'      => array(
 			'weight' => 'regular',
+		),
+		// One shape for every button on the site, and one fill per ground.
+		// The defaults are the skin closest to what the theme drew before this
+		// was a setting, and each ground's own preferred fill, so a site that
+		// never opens the control keeps the buttons it had.
+		'buttons'    => array(
+			'skin'   => 'solid',
+			'colors' => $button_colors,
+		),
+		// What every card block draws: the post cards, downloads, feature
+		// panels, price cards and testimonials. One set of three values rather
+		// than five stylesheets each choosing its own, which is what they did
+		// before this was a setting. The defaults are what they had settled
+		// on, so a site that never opens the control keeps the look it had.
+		'cards'      => array(
+			'padding' => '40',
+			'radius'  => 6,
+			'shadow'  => 'soft',
+			'colors'  => $card_colors,
 		),
 		'header'     => array(
 			'layout'          => 'left',
@@ -594,6 +1110,52 @@ function bridge_sanitize_tokens(array $raw): array
 		'weight' => bridge_pick_token('icons', 'weight', $raw_icons['weight'] ?? '', $defaults['icons']['weight']),
 	);
 
+	// ---- Buttons ----------------------------------------------------------
+	$raw_buttons = isset($raw['buttons']) && is_array($raw['buttons']) ? $raw['buttons'] : array();
+	$db          = $defaults['buttons'];
+
+	$raw_button_colors = isset($raw_buttons['colors']) && is_array($raw_buttons['colors']) ? $raw_buttons['colors'] : array();
+	$button_fills      = array();
+
+	// Palette slugs, not hex codes. A button fill has to be a colour the brand
+	// already has — that is what keeps it tracking a palette change instead of
+	// becoming a seventh colour hiding in a settings record. Keyed by ground
+	// for the reason the card colours are: a payload missing one gets the
+	// default, and one naming a ground this theme does not paint is dropped.
+	foreach (bridge_button_grounds() as $key => $entry) {
+		$button_fills[$key] = bridge_pick_token('buttons', 'fill', $raw_button_colors[$key] ?? '', $entry['fill']);
+	}
+
+	$buttons = array(
+		'skin'   => bridge_pick_token('buttons', 'skin', $raw_buttons['skin'] ?? '', $db['skin']),
+		'colors' => $button_fills,
+	);
+
+	// ---- Cards ------------------------------------------------------------
+	$raw_cards = isset($raw['cards']) && is_array($raw['cards']) ? $raw['cards'] : array();
+	$dc        = $defaults['cards'];
+
+	$raw_card_colors = isset($raw_cards['colors']) && is_array($raw_cards['colors']) ? $raw_cards['colors'] : array();
+	$card_colors     = array();
+
+	// Keyed by ground rather than accumulated from what was submitted, so a
+	// payload missing a ground gets the default for it and a payload naming a
+	// ground the theme does not paint is dropped.
+	foreach (bridge_card_grounds() as $key => $entry) {
+		$color = isset($raw_card_colors[$key]) ? sanitize_hex_color((string) $raw_card_colors[$key]) : null;
+
+		$card_colors[$key] = strtolower($color ?? $entry['default']);
+	}
+
+	$cards = array(
+		'padding' => bridge_pick_token('cards', 'padding', $raw_cards['padding'] ?? '', $dc['padding']),
+		// Stored as a whole number of pixels. A radius is read off a design at
+		// integer precision and nothing downstream wants 6.4px.
+		'radius'  => (int) round(bridge_clamp_token('cards', 'radius', $raw_cards['radius'] ?? null, (float) $dc['radius'])),
+		'shadow'  => bridge_pick_token('cards', 'shadow', $raw_cards['shadow'] ?? '', $dc['shadow']),
+		'colors'  => $card_colors,
+	);
+
 	// ---- Structure --------------------------------------------------------
 	$raw_header = isset($raw['header']) && is_array($raw['header']) ? $raw['header'] : array();
 	$raw_footer = isset($raw['footer']) && is_array($raw['footer']) ? $raw['footer'] : array();
@@ -726,6 +1288,8 @@ function bridge_sanitize_tokens(array $raw): array
 		'brand'      => array('palette' => $palette),
 		'typography' => $typography,
 		'icons'      => $icons,
+		'buttons'    => $buttons,
+		'cards'      => $cards,
 		'header'     => $header,
 		'footer'     => $footer,
 		'layout'     => $layout,

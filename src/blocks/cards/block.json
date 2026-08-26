@@ -10,12 +10,29 @@
 	"textdomain": "bridge",
 	"keywords": ["posts", "grid", "cards", "loop"],
 	"supports": {
-		"align": ["wide", "full"],
 		"anchor": true,
 		"html": false,
-		"layout": false
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
 	},
 	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "wide"
+		},
+		"overflowStyle": {
+			"type": "string",
+			"default": "wrap"
+		},
+		"isPreview": {
+			"type": "boolean",
+			"default": false
+		},
 		"postType": {
 			"type": "string",
 			"default": "post"
@@ -58,8 +75,18 @@
 		"attributes": {
 			"numberOfPosts": 3,
 			"columns": 3
-		}
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"content": "Latest news"
+				}
+			}
+		]
 	},
 	"editorScript": "bridge-cards-editor",
+	"viewScript": "bridge-carousel",
 	"render": "file:./render.php"
 }

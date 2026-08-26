@@ -6,7 +6,9 @@
  * moment the brand's primary colour changes, and there is no hex code in the
  * stylesheet to fall out of step with the design system.
  */
+@use "../abstracts/button" as button;
 @use "../abstracts/on-dark" as on-dark;
+@use "../abstracts/section" as section;
 
 // ---- Section skins -------------------------------------------------------
 
@@ -66,19 +68,49 @@
 	margin-block-start: calc(var(--wp--style--block-gap, var(--wp--preset--spacing--60)) + var(--wp--custom--section-padding, var(--wp--preset--spacing--70)));
 }
 
+/**
+ * What a card is painted inside each band.
+ *
+ * The skin sets the variable; abstracts/_card.scss reads it. A card cannot
+ * name its own background because the right colour depends on what is behind
+ * it — before this, every card block named `surface` outright, which is
+ * invisible on a Surface band and white-on-white text on an Inverted one.
+ *
+ * Set on the skin rather than on the cards, so this file needs to know nothing
+ * about which blocks draw cards, and a card block needs to know nothing about
+ * which band it has been dropped into. The default — a band wearing no skin —
+ * is the fallback in the mixin itself.
+ *
+ * Every value is an operator setting, from Theme Options → Card styling.
+ */
 .is-style-bridge-surface {
+	@include button.ground("surface");
+
+	--bridge-card-bg: var(--wp--custom--card--on-surface);
+
 	background-color: var(--wp--preset--color--surface);
 	padding-inline: var(--wp--preset--spacing--40);
 }
 
 .is-style-bridge-inverted {
-	@include on-dark.on-dark(var(--wp--preset--color--primary));
+	@include on-dark.on-dark;
+
+	--bridge-card-bg: var(--wp--custom--card--on-primary);
+	// The accent a card spends on its own furniture — a read-more line, a
+	// focus ring. Secondary is a mid blue chosen to sit on white; on this
+	// ground the band's own light foreground is the only safe answer, and it
+	// is the same one `on-dark` gives every link in the section.
+	--bridge-card-link: currentcolor;
 
 	background-color: var(--wp--preset--color--primary);
 	padding-inline: var(--wp--preset--spacing--40);
 }
 
 .is-style-bridge-accent {
+	@include button.ground("accent");
+
+	--bridge-card-bg: var(--wp--custom--card--on-accent);
+
 	background-color: var(--wp--preset--color--accent);
 	color: var(--wp--preset--color--text);
 	padding-inline: var(--wp--preset--spacing--40);
@@ -102,6 +134,26 @@
 ) {
 	padding-left: var(--wp--preset--spacing--40);
 	padding-right: var(--wp--preset--spacing--40);
+}
+
+/**
+ * The Section block's content column.
+ *
+ * `bridge/section` is the plain band — the one with nothing particular inside
+ * it — so all it needs is the column every other band holds its content in.
+ * The band itself, its background and its vertical padding come from the
+ * classes above, which it wears like any other section.
+ *
+ * These rules live here rather than in a bundle of their own because the block
+ * ships no other styles: two selectors is not worth a stylesheet, a build
+ * entry and a second request on most pages of the site.
+ */
+.bridge-section__inner {
+	@include section.container(narrow);
+}
+
+.bridge-section--wide > .bridge-section__inner {
+	@include section.container(wide);
 }
 
 // ---- Footer --------------------------------------------------------------

@@ -309,6 +309,27 @@ function bridge_header_scrolled_contrast(): string
 }
 
 /**
+ * The light logo's attachment ID, or 0 when the site has not uploaded one.
+ *
+ * The light variant only, never a fallback to the dark one. A caller asks for
+ * this because it has a dark ground to put a logo on, and the dark logo on a
+ * dark ground is not a degraded answer — it is an invisible one. A site with
+ * no light logo is better served by whatever neutral thing the caller draws
+ * instead, and by an operator uploading the light variant.
+ *
+ * Core's `custom_logo` is not consulted for the same reason: the Customizer
+ * stores one logo and says nothing about which ground it was drawn for.
+ *
+ * @return int Attachment ID, or 0.
+ */
+function bridge_light_logo_id(): int
+{
+	$tokens = bridge_get_tokens();
+
+	return max(0, (int) ($tokens['header']['logo']['lightId'] ?? 0));
+}
+
+/**
  * The header's site logo, or the site name when no logo is set.
  *
  * Two images of one wordmark: a dark logo drawn for a light ground and a light

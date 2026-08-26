@@ -15,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $columns  = max( 1, min( 4, (int) ( $attributes['columns'] ?? 3 ) ) );
 $overflow = 'carousel' === ( $attributes['overflowStyle'] ?? 'wrap' ) ? 'carousel' : 'wrap';
+// This file is the front end's alone — the editor builds its own preview from
+// inner blocks — so the setting is the whole test.
+$is_carousel = 'carousel' === $overflow;
 $card     = 'outlined' === ( $attributes['cardStyle'] ?? 'solid' ) ? 'outlined' : 'solid';
 $width    = 'wide' === ( $attributes['width'] ?? 'narrow' ) ? 'wide' : 'narrow';
 
@@ -44,7 +47,7 @@ echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.Out
 	$label_id
 );
 ?>
-	<div class="bridge-testimonials__inner">
+	<div class="bridge-testimonials__inner"<?php echo $is_carousel ? ' data-bridge-carousel' : ''; ?>>
 		<?php echo $intro_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
 		<?php if ( '' !== trim( $cards ) ) : ?>
@@ -55,12 +58,30 @@ echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.Out
 			// focusable content to tab through.
 			?>
 			<div class="bridge-testimonials__track"
-				<?php if ( 'carousel' === $overflow ) : ?>
-					tabindex="0" role="group"
-					aria-label="<?php esc_attr_e( 'Testimonials, scrollable', 'bridge' ); ?>"
-				<?php endif; ?>>
+				<?php
+				if ( $is_carousel ) {
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped inside.
+					echo ' ' . bridge_carousel_track_attrs( __( 'Testimonials, scrollable', 'bridge' ) );
+				}
+				?>>
 				<?php echo $cards; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			</div>
+
+			<?php
+			if ( $is_carousel ) {
+				// The same strip the cards band uses, driven by the same
+				// script. See bridge_carousel_controls().
+				echo bridge_carousel_controls( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts.
+					array(
+						'prev' => __( 'Previous testimonials', 'bridge' ),
+						'next' => __( 'Next testimonials', 'bridge' ),
+						'dots' => __( 'Testimonial pages', 'bridge' ),
+						/* translators: %d: page number. */
+						'dot'  => __( 'Page %d', 'bridge' ),
+					)
+				);
+			}
+			?>
 		<?php endif; ?>
 	</div>
 </section>

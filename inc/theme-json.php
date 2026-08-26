@@ -327,6 +327,60 @@ function bridge_compile_font_families(array $typography): array
 }
 
 /**
+ * The button half of `settings.custom`.
+ *
+ * Split out because it is two things joined: the geometry of the chosen skin,
+ * which is one set of values for the whole site, and the colour scheme of each
+ * of the four grounds, which is four. Published as custom properties for the
+ * reason the card values are — every surface that draws a button, the front
+ * end, the editor and the options preview, reads the same numbers, and a
+ * skin change is a change of eleven properties rather than a rebuild.
+ *
+ * `minSize` is not a skin value and not negotiable: WCAG 2.2 §2.5.8 puts the
+ * floor for a pointer target at 24×24 CSS pixels, and 44 is the size a thumb
+ * actually hits. It is a floor, not a height — a button with a long label or a
+ * large font size grows past it.
+ *
+ * @param array<string, mixed> $tokens Sanitised tokens.
+ * @return array<string, mixed>
+ */
+function bridge_compile_button_custom(array $tokens): array
+{
+	$skins = bridge_button_skins();
+	// The sanitiser guarantees the slug is one of these; a filter that removed
+	// a skin after a site had saved it would not, and a missing skin should be
+	// the first skin rather than a PHP notice.
+	$skin = $skins[$tokens['buttons']['skin']] ?? reset($skins);
+
+	$button = array(
+		'radius'        => (string) $skin['radius'],
+		'paddingBlock'  => (string) $skin['paddingBlock'],
+		'paddingInline' => (string) $skin['paddingInline'],
+		'weight'        => (string) $skin['weight'],
+		'transform'     => (string) $skin['transform'],
+		'letterSpacing' => (string) $skin['letterSpacing'],
+		'borderWidth'   => (string) $skin['borderWidth'],
+		'shadow'        => (string) $skin['shadow'],
+		'shadowHover'   => (string) $skin['shadowHover'],
+		'lift'          => (string) $skin['lift'],
+		'sweep'         => (string) $skin['sweep'],
+		'minSize'       => '44px',
+	);
+
+	// `default` => `onDefault` => `--wp--custom--button--on-default--bg`, the
+	// same shape the card grounds take. The audit travels with the scheme
+	// inside PHP but is dropped here: it is arithmetic for the options screen
+	// to show, not a value any stylesheet can spend.
+	foreach (bridge_button_schemes($tokens) as $key => $scheme) {
+		unset($scheme['audit']);
+
+		$button['on' . ucfirst($key)] = $scheme;
+	}
+
+	return $button;
+}
+
+/**
  * Compile a token set into a theme.json fragment.
  *
  * @param array<string, mixed> $tokens Sanitised tokens.
@@ -354,6 +408,35 @@ function bridge_compile_theme_json(array $tokens): array
 	// instead of each being regenerated whenever the setting moves.
 	$section_padding = sprintf('var(--wp--preset--spacing--%s)', $layout['sectionPadding']);
 
+	// The card surface. Published the same way and for the same reason: six
+	// blocks draw a card, each in its own stylesheet bundle, and a custom
+	// property lets all of them name one value. abstracts/_card.scss is the
+	// only thing that reads these, and every card block goes through it.
+	$cards    = $tokens['cards'];
+	$shadows  = bridge_card_shadows();
+	// The sanitiser guarantees the slug is one of these, but a filter that
+	// removed a preset after a site had saved it would not — and a missing
+	// shadow should be no shadow rather than a PHP notice.
+	$shadow   = $shadows[$cards['shadow']] ?? array('shadow' => 'none', 'hover' => 'none');
+
+	// One property per ground: `--wp--custom--card--on-primary` and friends.
+	// The card itself never names one of these — it reads `--bridge-card-bg`,
+	// which the section skin points at whichever of them belongs to the band.
+	$card = array(
+		'padding'     => sprintf('var(--wp--preset--spacing--%s)', $cards['padding']),
+		// A plain length, not a preset: the corner radius scale in the static
+		// theme.json is for the small furniture — buttons, thumbnails — and a
+		// card's corner is read off a design in pixels.
+		'radius'      => (int) $cards['radius'] . 'px',
+		'shadow'      => $shadow['shadow'],
+		'shadowHover' => $shadow['hover'],
+	);
+
+	foreach (bridge_card_grounds() as $key => $entry) {
+		// `light` => `onLight` => `--wp--custom--card--on-light`.
+		$card['on' . ucfirst($key)] = (string) ($cards['colors'][$key] ?? $entry['default']);
+	}
+
 	return array(
 		// Matches the static theme.json. If core's schema advances,
 		// WP_Theme_JSON migrates this forward — declaring the latest version
@@ -364,9 +447,15 @@ function bridge_compile_theme_json(array $tokens): array
 			'color'      => array(
 				'palette' => $palette,
 			),
-			// WordPress kebab-cases these into `--wp--custom--section-padding`.
+			// WordPress kebab-cases these into `--wp--custom--section-padding`
+			// and `--wp--custom--card--shadow-hover`.
 			'custom'     => array(
 				'sectionPadding' => $section_padding,
+				'card'           => $card,
+				// The chosen skin's geometry, and the colour scheme of each of
+				// the four grounds. components/_button.scss is the only thing
+				// that reads these; every button on the site goes through it.
+				'button'         => bridge_compile_button_custom($tokens),
 			),
 			'typography' => array(
 				'fontFamilies' => bridge_compile_font_families($type),
@@ -398,6 +487,36 @@ function bridge_compile_theme_json(array $tokens): array
 			'typography' => array(
 				'lineHeight' => bridge_css_number((float) $type['bodyLineHeight'], 2),
 			),
+			'blocks'     => array(
+				// The skin's geometry, restated as block styles so the editor
+				// canvas draws the right shape from global styles alone. The
+				// values are the same custom properties the stylesheet spends,
+				// so there is one place to change a skin and no chance of the
+				// two descriptions of a button disagreeing.
+				'core/button' => array(
+					'border'     => array(
+						'radius' => 'var(--wp--custom--button--radius)',
+						'width'  => 'var(--wp--custom--button--border-width)',
+						'style'  => 'solid',
+						'color'  => 'var(--wp--custom--button--on-default--border)',
+					),
+					'spacing'    => array(
+						'padding' => array(
+							'top'    => 'var(--wp--custom--button--padding-block)',
+							'right'  => 'var(--wp--custom--button--padding-inline)',
+							'bottom' => 'var(--wp--custom--button--padding-block)',
+							'left'   => 'var(--wp--custom--button--padding-inline)',
+						),
+					),
+					'typography' => array(
+						'fontSize'      => 'var(--wp--preset--font-size--medium)',
+						'fontWeight'    => 'var(--wp--custom--button--weight)',
+						'lineHeight'    => '1.2',
+						'letterSpacing' => 'var(--wp--custom--button--letter-spacing)',
+						'textTransform' => 'var(--wp--custom--button--transform)',
+					),
+				),
+			),
 			'spacing'    => array(
 				'blockGap' => $block_gap,
 				'padding'  => array(
@@ -408,6 +527,18 @@ function bridge_compile_theme_json(array $tokens): array
 				),
 			),
 			'elements'   => array(
+				// The resting fill of a button on the page's own ground.
+				// Named here rather than left to the stylesheet so a button
+				// looks right in the editor before main.css has been applied
+				// to the canvas, and so a block that draws a bare
+				// `.wp-element-button` — a login form, a comment reply —
+				// picks it up without knowing anything about the skins.
+				'button'  => array(
+					'color' => array(
+						'background' => 'var(--wp--custom--button--on-default--bg)',
+						'text'       => 'var(--wp--custom--button--on-default--fg)',
+					),
+				),
 				'heading' => array(
 					'typography' => array(
 						// Points at the `heading` family rather than `sans`,

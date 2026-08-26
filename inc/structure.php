@@ -148,41 +148,6 @@ function bridge_template_inventory(): array
 }
 
 /**
- * The theme's patterns, grouped into families.
- *
- * Families come from the `section-{family}-{n}` slug convention, so a new
- * pattern joins the right group simply by being named correctly.
- *
- * @return array<string, array<int, array<string, string>>>
- */
-function bridge_pattern_families(): array
-{
-	$families = array();
-
-	foreach (WP_Block_Patterns_Registry::get_instance()->get_all_registered() as $pattern) {
-		$name = (string) ($pattern['name'] ?? '');
-
-		if (! str_starts_with($name, 'bridge/')) {
-			continue;
-		}
-
-		$slug   = substr($name, strlen('bridge/'));
-		$family = preg_match('/^section-([a-z]+)-\d+$/', $slug, $m) ? $m[1] : 'other';
-
-		$families[$family][] = array(
-			'name'        => $name,
-			'title'       => (string) ($pattern['title'] ?? $slug),
-			'description' => (string) ($pattern['description'] ?? ''),
-			'locked'      => str_contains((string) ($pattern['content'] ?? ''), '"templateLock":"contentOnly"'),
-		);
-	}
-
-	ksort($families);
-
-	return $families;
-}
-
-/**
  * Section skins available to layout blocks.
  *
  * Named skins rather than a colour picker: the editor's decision is "this

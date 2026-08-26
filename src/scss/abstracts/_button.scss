@@ -1,0 +1,297 @@
+/**
+ * Bridge — the shared button.
+ *
+ * One button, three skins, four colour schemes, and none of them written here
+ * as a value. Everything this file spends arrives as a `--wp--custom--button--*`
+ * property compiled from the token record (inc/theme-json.php), so the skin an
+ * operator picks in Theme Options reaches the front end, the editor canvas and
+ * the options preview without a rebuild, and a fourth skin added by a filter
+ * needs no Sass at all.
+ *
+ * Mixins rather than a partial of rules, for the reason `card` gives: the
+ * options screen draws the same button from its own bundle, and a shared
+ * ruleset here would be shipped twice.
+ *
+ * ---- What makes the ground work -------------------------------------------
+ *
+ * A button cannot name its own fill: the near-black button that anchors a
+ * white page is a hole in an Inverted band, and the light one that reads there
+ * is invisible on the page. So every colour is read from a `--bridge-button-*`
+ * variable that the band sets — see `ground()` below and its callers in
+ * components/_sections.scss — with the page's own scheme as the fallback in
+ * each `var()`, which is what makes a button on an unskinned band correct
+ * without anything having set a variable at all.
+ *
+ * ---- What makes it accessible ---------------------------------------------
+ *
+ * The colours are computed and checked server-side in bridge_button_schemes();
+ * what this file owes WCAG 2.2 is the part that is geometry and behaviour:
+ *
+ *   2.5.8 Target size (minimum) — `min-height`/`min-width` hold every button
+ *         at 44px, comfortably past the 24px floor and at the size a thumb
+ *         actually hits. A floor, not a height: a long label grows the box.
+ *   2.4.11 Focus not obscured, 2.4.13 Focus appearance — a 3px ring offset 3px
+ *         clear of the button's own border, in the band's foreground, so it is
+ *         measured against the band and cannot merge with the button.
+ *   1.4.1 Use of colour — hover is never colour alone. Two skins move the
+ *         button and change its elevation; the third draws a rule under the
+ *         label. Every hover state is repeated on `:focus-visible`, so a
+ *         keyboard reaches everything a pointer does.
+ *   2.5.7 / motion — the lift and the sweep are transitions on `transform`,
+ *         both dropped under `prefers-reduced-motion`. Nothing is conveyed by
+ *         the movement itself; the colour change carries the state.
+ *
+ * The one thing not settled here is contrast, because it cannot be: the
+ * numbers depend on the palette, and they are computed against it in PHP.
+ */
+
+/**
+ * Point the button variables at one ground's compiled scheme.
+ *
+ * Emitted on the *band*, not on the button, so a block that draws its own
+ * button — the header's call to action, a card's read-more — needs to know
+ * nothing about where it has landed. Custom properties inherit; that is the
+ * whole mechanism.
+ *
+ * @param $name A ground key from bridge_button_grounds(): default, surface,
+ *              accent or inverted.
+ */
+@mixin ground($name) {
+	--bridge-button-bg: var(--wp--custom--button--on-#{$name}--bg);
+	--bridge-button-fg: var(--wp--custom--button--on-#{$name}--fg);
+	--bridge-button-hover-bg: var(--wp--custom--button--on-#{$name}--hover-bg);
+	--bridge-button-hover-fg: var(--wp--custom--button--on-#{$name}--hover-fg);
+	--bridge-button-border: var(--wp--custom--button--on-#{$name}--border);
+	--bridge-button-hover-border: var(
+		--wp--custom--button--on-#{$name}--hover-border
+	);
+	--bridge-button-ghost: var(--wp--custom--button--on-#{$name}--ghost);
+	--bridge-button-ghost-hover: var(
+		--wp--custom--button--on-#{$name}--ghost-hover
+	);
+	--bridge-button-ring: var(--wp--custom--button--on-#{$name}--ring);
+}
+
+/**
+ * The shape of a button: everything that is not its colour.
+ *
+ * Applied to every button whatever it is painted, including one an editor has
+ * given a colour of its own — the skin is the site's, the colour may not be.
+ */
+@mixin shape {
+	// The sweep bar is absolutely positioned against this.
+	position: relative;
+	// Flex rather than inline-block so the label centres against the 44px
+	// floor instead of sitting at the top of a box the padding did not fill.
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	box-sizing: border-box;
+	min-height: var(--wp--custom--button--min-size, 44px);
+	min-width: var(--wp--custom--button--min-size, 44px);
+	padding: var(--wp--custom--button--padding-block, 0.85rem)
+		var(--wp--custom--button--padding-inline, 1.65rem);
+	border-width: var(--wp--custom--button--border-width, 2px);
+	border-style: solid;
+	border-radius: var(--wp--custom--button--radius, 6px);
+	box-shadow: var(--wp--custom--button--shadow, none);
+	font-weight: var(--wp--custom--button--weight, 600);
+	letter-spacing: var(--wp--custom--button--letter-spacing, 0);
+	line-height: 1.2;
+	// A label that wraps is better than one that overflows its box or pushes
+	// the layout sideways on a 320px screen.
+	text-align: center;
+	text-decoration: none;
+	text-transform: var(--wp--custom--button--transform, none);
+	transition:
+		background-color 180ms ease,
+		border-color 180ms ease,
+		box-shadow 180ms ease,
+		color 180ms ease,
+		transform 180ms ease;
+
+	/**
+	 * The rule that draws itself under the label.
+	 *
+	 * The Edge skin's answer to a pointer, and nothing at all on the other
+	 * two: `--sweep` is 0px there, and a bar with no height paints nothing. So
+	 * this costs the skins that do not use it one empty pseudo-element rather
+	 * than a second set of rules.
+	 *
+	 * Inset by the button's own side padding so it underlines the label rather
+	 * than the box, and drawn in `currentcolor` so it is always exactly the
+	 * label's colour, in every scheme and on every ground.
+	 */
+	&::after {
+		content: "";
+		position: absolute;
+		right: var(--wp--custom--button--padding-inline, 1.65rem);
+		bottom: calc(var(--wp--custom--button--padding-block, 0.85rem) * 0.6);
+		left: var(--wp--custom--button--padding-inline, 1.65rem);
+		height: var(--wp--custom--button--sweep, 0);
+		background-color: currentcolor;
+		transform: scaleX(0);
+		transform-origin: left center;
+		transition: transform 220ms ease;
+		pointer-events: none;
+	}
+
+	&:hover::after,
+	&:focus-visible::after {
+		transform: scaleX(1);
+	}
+
+	/**
+	 * Focus.
+	 *
+	 * `outline` rather than a box-shadow ring: an outline follows the border
+	 * radius, survives a forced-colours mode, and cannot be clipped by an
+	 * ancestor's overflow. The offset is what keeps the ring measurable
+	 * against the band rather than against the button's own edge.
+	 */
+	&:focus-visible {
+		outline: 3px solid
+			var(
+				--bridge-button-ring,
+				var(--wp--custom--button--on-default--ring)
+			);
+		outline-offset: 3px;
+	}
+
+	&:active {
+		transform: translateY(1px);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		transition: none;
+
+		&::after {
+			transition: none;
+		}
+
+		&:hover,
+		&:focus-visible,
+		&:active {
+			transform: none;
+		}
+	}
+}
+
+/**
+ * The primary button's colours, and how they answer a pointer.
+ *
+ * Separate from `shape` so a caller can withhold it from a button an editor
+ * has painted by hand. Every value is the current ground's, with the page's
+ * own scheme as the fallback.
+ */
+@mixin fill {
+	background-color: var(
+		--bridge-button-bg,
+		var(--wp--custom--button--on-default--bg)
+	);
+	border-color: var(
+		--bridge-button-border,
+		var(--wp--custom--button--on-default--border)
+	);
+	color: var(--bridge-button-fg, var(--wp--custom--button--on-default--fg));
+
+	&:hover,
+	&:focus-visible {
+		background-color: var(
+			--bridge-button-hover-bg,
+			var(--wp--custom--button--on-default--hover-bg)
+		);
+		border-color: var(
+			--bridge-button-hover-border,
+			var(--wp--custom--button--on-default--hover-border)
+		);
+		box-shadow: var(--wp--custom--button--shadow-hover, none);
+		color: var(
+			--bridge-button-hover-fg,
+			var(--wp--custom--button--on-default--hover-fg)
+		);
+		transform: translateY(var(--wp--custom--button--lift, 0));
+	}
+}
+
+/**
+ * The hover state of a button whose colours an editor chose.
+ *
+ * The scheme cannot answer for this one — its fill is whatever was picked in
+ * the editor — but the skin still has to. A button that keeps its colour and
+ * loses its hover is a button the design system stopped governing halfway, and
+ * before this it was exactly that: the coloured button on a page was the only
+ * one on the site that did nothing under the pointer.
+ *
+ * The wash is mixed from `currentcolor`, which is the one colour known to
+ * contrast with the fill, whatever the fill turned out to be. So it darkens a
+ * light button and lightens a dark one without anything here knowing which it
+ * is — the same trick the secondary button's tint used, and the reason neither
+ * needs a colour of its own.
+ *
+ * A `background-image` rather than an inset shadow, because the resting
+ * elevation is already spent on `box-shadow` and `none` cannot be the first
+ * layer of a shadow list — the whole declaration would be dropped.
+ *
+ * 12%: enough to read as a state change, gentle enough that a label sitting at
+ * the 4.5:1 floor on its own fill is still above it once the fill has moved.
+ */
+@mixin wash {
+	&:hover,
+	&:focus-visible {
+		background-image: linear-gradient(
+			color-mix(in srgb, currentcolor 12%, transparent),
+			color-mix(in srgb, currentcolor 12%, transparent)
+		);
+		box-shadow: var(--wp--custom--button--shadow-hover, none);
+		transform: translateY(var(--wp--custom--button--lift, 0));
+	}
+}
+
+/**
+ * The secondary button: transparent, with the band's own foreground as its
+ * label and its boundary.
+ *
+ * One treatment that is legible on all four grounds, which is what a secondary
+ * action needs — it is the button that ends up on a photograph, a dimmed hero
+ * and an Inverted band, and any named colour would be right on some of those
+ * and wrong on the rest.
+ *
+ * Hover inverts it into the ground rather than tinting it. A tint is a change
+ * only a sighted user looking directly at the button will notice; an inversion
+ * is unmistakable, and both of its colours are ones the scheme has already
+ * measured.
+ */
+@mixin ghost {
+	background-color: transparent;
+	border-color: var(
+		--bridge-button-ghost,
+		var(--wp--custom--button--on-default--ghost)
+	);
+	// No resting elevation: a shadow under a transparent box is a shadow under
+	// nothing, and on the Pill skin it read as a dropped outline.
+	box-shadow: none;
+	color: var(
+		--bridge-button-ghost,
+		var(--wp--custom--button--on-default--ghost)
+	);
+
+	&:hover,
+	&:focus-visible {
+		background-color: var(
+			--bridge-button-ghost,
+			var(--wp--custom--button--on-default--ghost)
+		);
+		border-color: var(
+			--bridge-button-ghost,
+			var(--wp--custom--button--on-default--ghost)
+		);
+		box-shadow: var(--wp--custom--button--shadow-hover, none);
+		color: var(
+			--bridge-button-ghost-hover,
+			var(--wp--custom--button--on-default--ghost-hover)
+		);
+		transform: translateY(var(--wp--custom--button--lift, 0));
+	}
+}

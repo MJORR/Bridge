@@ -1,0 +1,1 @@
+(function(){"use strict";const{addFilter:r}=window.wp.hooks,t="core/paragraph";r("blocks.registerBlockType","bridge/paragraph-lock",(o,c)=>{if(c!==t)return o;const e={...o.supports};return delete e.spacing,delete e.__experimentalBorder,delete e.border,delete e.dimensions,delete e.shadow,{...o,supports:e}})})();

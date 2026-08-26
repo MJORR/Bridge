@@ -11,11 +11,23 @@
  * A mixin rather than a class, in keeping with abstracts/section: it emits into
  * the bundles that ask for it and nowhere else.
  *
- * @param $ground The colour behind the text, which is what a filled button's
- *                label has to be legible against once the button itself turns
- *                light. Defaults to the inverted skin's ground.
+ * It used to take the ground colour as an argument, because the filled button's
+ * label had to be legible against whatever the band turned out to be and the
+ * mixin was the only thing that knew. The button schemes answer that now, from
+ * the palette and in PHP, so there is nothing left for a caller to tell it.
  */
-@mixin on-dark($ground: var(--wp--preset--color--primary)) {
+@use "button" as button;
+
+@mixin on-dark {
+	// Buttons are the hard part, and they are no longer answered here: the
+	// Inverted colour scheme — a light fill with a dark label, and a secondary
+	// button that inverts into the band — is computed against the palette in
+	// bridge_button_schemes() and pointed at by this one include. A ground is
+	// nine custom properties and no rules, so a photographic call to action
+	// picks up the same buttons an Inverted band has without shipping a second
+	// copy of them in its own bundle.
+	@include button.ground("inverted");
+
 	color: var(--wp--preset--color--background);
 
 	// theme.json colours headings and links from the light palette; on this
@@ -29,34 +41,5 @@
 		text-decoration: underline;
 		text-decoration-thickness: 2px;
 		text-underline-offset: 0.2em;
-	}
-
-	// The filled button is primary-on-background — a dark button on a dark
-	// ground. Inverted, it becomes the brightest thing in the band, which is
-	// what a primary action should be.
-	.wp-element-button,
-	.wp-block-button__link {
-		background-color: var(--wp--preset--color--background);
-		border-color: var(--wp--preset--color--background);
-		color: $ground;
-	}
-
-	// The secondary button needs nothing but permission: core paints it
-	// transparent with a `currentColor` border, which is already the light
-	// foreground set above, and that is exactly what makes one outline style
-	// legible on every ground the theme has. Named anyway — and after the rule
-	// above, at a specificity that beats it — because the rule it needs
-	// protecting from is the one directly overhead.
-	.wp-block-button.is-style-outline > .wp-block-button__link,
-	.wp-block-button .wp-block-button__link.is-style-outline {
-		background-color: transparent;
-		border-color: currentcolor;
-		color: inherit;
-
-		&:hover,
-		&:focus-visible {
-			background-color: var(--wp--preset--color--background);
-			color: $ground;
-		}
 	}
 }

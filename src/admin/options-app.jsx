@@ -100,6 +100,125 @@ function Section({ title, description, children }) {
 }
 
 /**
+ * A colour: a swatch that opens a picker, joined to a hex field.
+ *
+ * One control rather than two on purpose. Separate, they read as "a colour"
+ * and "some text about a colour", and the picker goes unnoticed behind the
+ * smaller of them. Joined, the whole thing reads as a colour field — click the
+ * swatch to pick, or type into the field, which is what setting up a brand
+ * actually looks like, since a hex code is usually pasted from a spec rather
+ * than hunted for in a wheel.
+ *
+ * Shared by the palette slots and the card backgrounds; `name` is only ever
+ * spoken to a screen reader.
+ *
+ * @param {Object} props Component props.
+ */
+function ColorField({ color, name, onChange }) {
+	const [text, setText] = useState(color);
+	const valid = isValidHex(text);
+
+	// Keep the field in step when the value changes elsewhere — a save
+	// response, or a reset — without fighting the operator mid-typing.
+	useEffect(() => setText(color), [color]);
+
+	const commitText = (next) => {
+		// Tolerate a pasted code with no leading hash; brand specs write both.
+		const normalised = next && !next.startsWith('#') ? `#${next}` : next;
+
+		setText(normalised);
+
+		if (isValidHex(normalised)) {
+			onChange(normalised.toLowerCase());
+		}
+	};
+
+	return (
+		<div className={`bridge-slot__field${valid ? '' : ' is-invalid'}`}>
+			<Dropdown
+				popoverProps={{ placement: 'bottom-start' }}
+				renderToggle={({ isOpen, onToggle }) => (
+					<Button
+						onClick={onToggle}
+						aria-expanded={isOpen}
+						className="bridge-slot__swatch"
+						showTooltip
+						label={sprintf(
+							/* translators: %s: colour name, e.g. "primary". */
+							__('Pick the %s colour', 'bridge'),
+							name
+						)}
+					>
+						{/*
+						 * A plain span rather than <ColorIndicator>: that
+						 * component is a small circle with its own border,
+						 * which cannot be squared off into a flush well
+						 * without a specificity fight every time core
+						 * restyles it.
+						 */}
+						<span
+							className="bridge-slot__chip"
+							style={{ background: valid ? text : color }}
+						/>
+					</Button>
+				)}
+				renderContent={() => (
+					<div className="bridge-slot__picker">
+						<ColorPicker
+							color={color}
+							enableAlpha={false}
+							onChange={(value) => {
+								const hex = toHex(value);
+
+								if (isValidHex(hex)) {
+									onChange(hex.toLowerCase());
+								}
+							}}
+						/>
+					</div>
+				)}
+			/>
+
+			<input
+				type="text"
+				className="bridge-slot__hex"
+				value={text}
+				spellCheck="false"
+				autoComplete="off"
+				onChange={(event) => commitText(event.target.value)}
+				// Snap a half-typed value back to the last good one rather
+				// than leaving the field showing something the site isn't.
+				onBlur={() => setText(color)}
+				aria-label={sprintf(
+					/* translators: %s: colour name, e.g. "primary". */
+					__('%s hex code', 'bridge'),
+					name
+				)}
+				aria-invalid={!valid}
+			/>
+		</div>
+	);
+}
+
+/**
+ * One card background, for one of the grounds a card sits on.
+ *
+ * No name field, unlike a palette slot: these are not offered to editors and
+ * have no label anyone but an operator ever sees, so the label is the theme's
+ * and only the colour is the client's.
+ *
+ * @param {Object} props Component props.
+ */
+function CardColorSlot({ label, color, onChange }) {
+	return (
+		<div className="bridge-slot bridge-slot--fixed">
+			<span className="bridge-slot__slug">{label}</span>
+			<ColorField color={color} name={label} onChange={onChange} />
+		</div>
+	);
+}
+
+/**
  * One palette slot.
  *
  * The swatch and the hex field are a single joined control on purpose. Two
@@ -112,24 +231,6 @@ function Section({ title, description, children }) {
  * @param {Object} props Component props.
  */
 function ColorSlot({ slug, entry, defaultName, onChange }) {
-	const [text, setText] = useState(entry.color);
-	const valid = isValidHex(text);
-
-	// Keep the field in step when the value changes elsewhere — a save
-	// response, or a reset — without fighting the operator mid-typing.
-	useEffect(() => setText(entry.color), [entry.color]);
-
-	const commitText = (next) => {
-		// Tolerate a pasted code with no leading hash; brand specs write both.
-		const normalised = next && !next.startsWith('#') ? `#${next}` : next;
-
-		setText(normalised);
-
-		if (isValidHex(normalised)) {
-			onChange({ color: normalised.toLowerCase() });
-		}
-	};
-
 	return (
 		<div className="bridge-slot">
 			<span className="bridge-slot__slug">{slug}</span>
@@ -155,71 +256,11 @@ function ColorSlot({ slug, entry, defaultName, onChange }) {
 				__next40pxDefaultSize
 			/>
 
-			<div className={`bridge-slot__field${valid ? '' : ' is-invalid'}`}>
-				<Dropdown
-					popoverProps={{ placement: 'bottom-start' }}
-					renderToggle={({ isOpen, onToggle }) => (
-						<Button
-							onClick={onToggle}
-							aria-expanded={isOpen}
-							className="bridge-slot__swatch"
-							showTooltip
-							label={sprintf(
-								/* translators: %s: palette slot, e.g. "primary". */
-								__('Pick the %s colour', 'bridge'),
-								slug
-							)}
-						>
-							{/*
-							 * A plain span rather than <ColorIndicator>: that
-							 * component is a small circle with its own border,
-							 * which cannot be squared off into a flush well
-							 * without a specificity fight every time core
-							 * restyles it.
-							 */}
-							<span
-								className="bridge-slot__chip"
-								style={{
-									background: valid ? text : entry.color,
-								}}
-							/>
-						</Button>
-					)}
-					renderContent={() => (
-						<div className="bridge-slot__picker">
-							<ColorPicker
-								color={entry.color}
-								enableAlpha={false}
-								onChange={(value) => {
-									const hex = toHex(value);
-
-									if (isValidHex(hex)) {
-										onChange({ color: hex.toLowerCase() });
-									}
-								}}
-							/>
-						</div>
-					)}
-				/>
-
-				<input
-					type="text"
-					className="bridge-slot__hex"
-					value={text}
-					spellCheck="false"
-					autoComplete="off"
-					onChange={(event) => commitText(event.target.value)}
-					// Snap a half-typed value back to the last good one rather
-					// than leaving the field showing something the site isn't.
-					onBlur={() => setText(entry.color)}
-					aria-label={sprintf(
-						/* translators: %s: palette slot, e.g. "primary". */
-						__('%s hex code', 'bridge'),
-						slug
-					)}
-					aria-invalid={!valid}
-				/>
-			</div>
+			<ColorField
+				color={entry.color}
+				name={slug}
+				onChange={(color) => onChange({ color })}
+			/>
 		</div>
 	);
 }
@@ -414,7 +455,7 @@ function BrandPreview({ palette, fontFamilies }) {
 					{__('A heading in Primary', 'bridge')}
 				</strong>
 				<p>
-					{__('Body copy in Text, with', 'bridge')}
+					{__('Body copy in Text, with ', 'bridge')}
 					<a
 						href="#0"
 						style={{ color: color('secondary') }}
@@ -557,6 +598,302 @@ function LayoutPreview({ layout }) {
 }
 
 /**
+ * A card, drawn at the padding, radius and shadow currently chosen.
+ *
+ * Drawn rather than described, because "Medium" is not a shadow and no
+ * operator can picture 10px of corner. The values are the compiled ones — the
+ * spacing preset resolved to the clamp it becomes, not the slug — so what is
+ * on screen here is what a downloads card looks like on the site.
+ *
+ * One card per ground, because that is the shape of the decision: the same
+ * card is drawn four times, on the page's own background and on each of the
+ * three section skins, and each has its own colour. Shown together rather than
+ * one at a time so a colour that vanishes into its band — or takes the band's
+ * text down with it — is obvious while it is being picked.
+ *
+ * @param {Object} props Component props.
+ */
+function CardPreview({ cards, grounds, spacingSizes, shadows, palette }) {
+	const color = (slug) => palette?.find((c) => c.slug === slug)?.color;
+	const padding =
+		spacingSizes?.find((s) => String(s.slug) === String(cards.padding))
+			?.size || '1.5rem';
+	const shadow =
+		shadows?.find((s) => s.slug === cards.shadow)?.shadow || 'none';
+	const radius = `${cards.radius}px`;
+
+	return (
+		<div className="bridge-preview__cards">
+			{(grounds || []).map((entry) => (
+				<div
+					key={entry.key}
+					className="bridge-preview__card-band"
+					style={{
+						background: color(entry.ground),
+						// The band's foreground, which the card inherits
+						// rather than naming — the same arrangement the site
+						// uses, so a card colour that swallows its own text
+						// is visible here before it is saved.
+						color: color(entry.text),
+					}}
+				>
+					<span className="bridge-preview__card-band-label">
+						{entry.label}
+					</span>
+					<div
+						className="bridge-preview__card-sample"
+						style={{
+							padding,
+							borderRadius: radius,
+							boxShadow: shadow,
+							background: cards.colors?.[entry.key],
+						}}
+					>
+						<span
+							className="bridge-preview__card-media"
+							style={{
+								borderRadius: `max(0px, calc(${radius} - 2px))`,
+								background:
+									'color-mix(in srgb, currentcolor 8%, transparent)',
+							}}
+						/>
+						<strong>{__('Card title', 'bridge')}</strong>
+						<p>
+							{__(
+								'The words a card carries take the colour of the band around them.',
+								'bridge'
+							)}
+						</p>
+					</div>
+				</div>
+			))}
+		</div>
+	);
+}
+
+/**
+ * A skin's geometry as the custom properties the button stylesheet spends.
+ *
+ * wp-admin prints no global styles, so `--wp--custom--button--radius` resolves
+ * to nothing on this screen. Setting the same properties inline is what lets
+ * the preview share abstracts/_button.scss with the front end rather than
+ * carry a second description of a button that would drift from it.
+ *
+ * Takes either a skin from the payload or the compiled `custom.button` from a
+ * preview response — the keys are the same by design, so the skin picker can
+ * draw three skins at once while the preview draws the chosen one.
+ *
+ * @param {Object} skin Skin geometry.
+ * @return {Object} Inline style object.
+ */
+function skinVars(skin) {
+	return {
+		'--wp--custom--button--radius': skin?.radius,
+		'--wp--custom--button--padding-block': skin?.paddingBlock,
+		'--wp--custom--button--padding-inline': skin?.paddingInline,
+		'--wp--custom--button--weight': skin?.weight,
+		'--wp--custom--button--transform': skin?.transform,
+		'--wp--custom--button--letter-spacing': skin?.letterSpacing,
+		'--wp--custom--button--border-width': skin?.borderWidth,
+		'--wp--custom--button--shadow': skin?.shadow,
+		'--wp--custom--button--shadow-hover': skin?.shadowHover,
+		'--wp--custom--button--lift': skin?.lift,
+		'--wp--custom--button--sweep': skin?.sweep,
+		// Not a skin value — the tap-target floor is the same on all three.
+		'--wp--custom--button--min-size': skin?.minSize || '44px',
+	};
+}
+
+/**
+ * One ground's colour scheme, as the variables a band sets on the site.
+ *
+ * @param {Object} scheme A scheme from the preview response.
+ * @return {Object} Inline style object.
+ */
+function groundVars(scheme) {
+	return {
+		'--bridge-button-bg': scheme?.bg,
+		'--bridge-button-fg': scheme?.fg,
+		'--bridge-button-hover-bg': scheme?.hoverBg,
+		'--bridge-button-hover-fg': scheme?.hoverFg,
+		'--bridge-button-border': scheme?.border,
+		'--bridge-button-hover-border': scheme?.hoverBorder,
+		'--bridge-button-ghost': scheme?.ghost,
+		'--bridge-button-ghost-hover': scheme?.ghostHover,
+		'--bridge-button-ring': scheme?.ring,
+	};
+}
+
+/**
+ * A measured contrast ratio, with the threshold it had to clear.
+ *
+ * The number is the point. "Accessible" is a claim; 7.4:1 against a 4.5
+ * minimum is the evidence for it, and it is what an operator can paste into a
+ * reply when a client's auditor asks.
+ *
+ * @param {Object} props Component props.
+ */
+function Ratio({ label, value, min }) {
+	const ratio = Number(value) || 0;
+	const passes = ratio >= min;
+
+	return (
+		<span
+			className={`bridge-ratio${passes ? ' is-pass' : ' is-fail'}`}
+			title={sprintf(
+				/* translators: 1: measured contrast ratio, 2: required minimum. */
+				__('%1$s:1, against a minimum of %2$s:1', 'bridge'),
+				ratio.toFixed(2),
+				min
+			)}
+		>
+			<span className="bridge-ratio__label">{label}</span>
+			<strong>{ratio.toFixed(1)}</strong>
+		</span>
+	);
+}
+
+/**
+ * The three skins, each drawn as the buttons it actually produces.
+ *
+ * A radio group of samples rather than a select. The choice is "which of these
+ * three do I want", and that is a question no list of adjectives can ask —
+ * "Edge" means nothing until the square button with the rule under its label
+ * is on screen, hoverable, next to the other two.
+ *
+ * Every sample is live: the geometry is the skin's own, the colours are the
+ * page's ground, and the hover state is the same CSS the site runs, so what is
+ * being pointed at here is what a visitor points at.
+ *
+ * @param {Object} props Component props.
+ */
+function ButtonSkinPicker({ skins, active, scheme, onChange }) {
+	return (
+		<div className="bridge-button-skins">
+			{(skins || []).map((skin) => (
+				<label
+					key={skin.slug}
+					htmlFor={`bridge-button-skin-${skin.slug}`}
+					className={`bridge-button-skin${skin.slug === active ? ' is-active' : ''}`}
+				>
+					<span className="bridge-button-skin__head">
+						<input
+							id={`bridge-button-skin-${skin.slug}`}
+							type="radio"
+							name="bridge-button-skin"
+							value={skin.slug}
+							checked={skin.slug === active}
+							onChange={() => onChange(skin.slug)}
+						/>
+						<strong>{skin.name}</strong>
+					</span>
+
+					<span
+						className="bridge-button-skin__sample"
+						style={{ ...skinVars(skin), ...groundVars(scheme) }}
+					>
+						<span className="bridge-button-sample">
+							{__('Get in touch', 'bridge')}
+						</span>
+						<span className="bridge-button-sample bridge-button-sample--ghost">
+							{__('Learn more', 'bridge')}
+						</span>
+					</span>
+
+					<span className="bridge-button-skin__description">
+						{skin.description}
+					</span>
+				</label>
+			))}
+		</div>
+	);
+}
+
+/**
+ * The chosen skin drawn on all four grounds, with the contrast behind each.
+ *
+ * Four bands rather than one, for the reason the card preview gives: the same
+ * button is drawn on the page's own background and on each of the three
+ * section skins, and each has its own scheme. Shown together so a fill that
+ * disappears into its band is obvious while it is being picked rather than
+ * after it has shipped.
+ *
+ * The ratios come from the server with the colours, so the number under a
+ * button is the one an audit of the rendered page will produce.
+ *
+ * @param {Object} props Component props.
+ */
+function ButtonPreview({ grounds, schemes, custom, palette }) {
+	const color = (slug) => palette?.find((c) => c.slug === slug)?.color;
+
+	return (
+		<div className="bridge-preview__buttons" style={skinVars(custom)}>
+			{(grounds || []).map((entry) => {
+				const scheme = schemes?.[entry.key];
+
+				if (!scheme) {
+					return null;
+				}
+
+				const audit = scheme.audit || {};
+
+				return (
+					<div
+						key={entry.key}
+						className="bridge-preview__button-band"
+						style={{
+							background: color(entry.ground),
+							color: color(entry.text),
+							...groundVars(scheme),
+						}}
+					>
+						<span className="bridge-preview__card-band-label">
+							{entry.label}
+						</span>
+
+						<span className="bridge-preview__button-row">
+							<span className="bridge-button-sample">
+								{__('Primary', 'bridge')}
+							</span>
+							<span className="bridge-button-sample bridge-button-sample--ghost">
+								{__('Secondary', 'bridge')}
+							</span>
+						</span>
+
+						<span className="bridge-preview__ratios">
+							<Ratio
+								label={__('Label', 'bridge')}
+								value={audit.label}
+								min={4.5}
+							/>
+							<Ratio
+								label={__('Hover', 'bridge')}
+								value={audit.hoverLabel}
+								min={4.5}
+							/>
+							<Ratio
+								label={
+									audit.bordered
+										? __('Border', 'bridge')
+										: __('Edge', 'bridge')
+								}
+								value={audit.boundary}
+								min={3}
+							/>
+							<Ratio
+								label={__('Secondary', 'bridge')}
+								value={audit.ghost}
+								min={4.5}
+							/>
+						</span>
+					</div>
+				);
+			})}
+		</div>
+	);
+}
+
+/**
  * What each template renders, after the header/footer swap.
  *
  * Read-only on purpose: templates are a developer artefact. The useful thing
@@ -595,52 +932,6 @@ function TemplateList({ templates }) {
 				</li>
 			))}
 		</ul>
-	);
-}
-
-/**
- * The curated pattern library, grouped into families.
- *
- * @param {Object} props Component props.
- */
-function PatternList({ families }) {
-	const entries = Object.entries(families || {});
-
-	if (!entries.length) {
-		return (
-			<p className="bridge-empty">
-				{__('No patterns registered yet.', 'bridge')}
-			</p>
-		);
-	}
-
-	return (
-		<div className="bridge-families">
-			{entries.map(([family, patterns]) => (
-				<div key={family} className="bridge-family">
-					<h3 className="bridge-family__name">{family}</h3>
-					<ul className="bridge-inventory">
-						{patterns.map((pattern) => (
-							<li key={pattern.name}>
-								<span className="bridge-inventory__head">
-									<strong>{pattern.title}</strong>
-									<span
-										className={`bridge-lock${pattern.locked ? ' is-locked' : ''}`}
-									>
-										{pattern.locked
-											? __('Content only', 'bridge')
-											: __('Unlocked', 'bridge')}
-									</span>
-								</span>
-								<span className="bridge-inventory__desc">
-									{pattern.description}
-								</span>
-							</li>
-						))}
-					</ul>
-				</div>
-			))}
-		</div>
 	);
 }
 
@@ -1145,6 +1436,26 @@ function OptionsApp() {
 		}));
 	}, []);
 
+	const setButtonFill = useCallback((key, slug) => {
+		setDraft((current) => ({
+			...current,
+			buttons: {
+				...current.buttons,
+				colors: { ...current.buttons.colors, [key]: slug },
+			},
+		}));
+	}, []);
+
+	const setCardColor = useCallback((key, color) => {
+		setDraft((current) => ({
+			...current,
+			cards: {
+				...current.cards,
+				colors: { ...current.cards.colors, [key]: color },
+			},
+		}));
+	}, []);
+
 	const setHeader = useCallback((path, value) => {
 		setDraft((current) => {
 			const header = { ...current.header };
@@ -1277,8 +1588,11 @@ function OptionsApp() {
 		icons,
 		iconWeights,
 		templates,
-		patternFamilies,
 		sectionSkins,
+		buttonSkins,
+		buttonGrounds,
+		cardShadows,
+		cardGrounds,
 		menus,
 		blockLibrary,
 	} = payload;
@@ -1331,6 +1645,7 @@ function OptionsApp() {
 			className="bridge-options__tabs"
 			tabs={[
 				{ name: 'design', title: __('Design', 'bridge') },
+				{ name: 'buttons', title: __('Buttons', 'bridge') },
 				{ name: 'blocks', title: __('Blocks', 'bridge') },
 				{ name: 'templates', title: __('Templates', 'bridge') },
 			]}
@@ -1422,6 +1737,37 @@ function OptionsApp() {
 														}
 														onChange={(patch) =>
 															setSlot(slug, patch)
+														}
+													/>
+												)
+											)}
+										</div>
+
+										<h3 className="bridge-options__subhead">
+											{__('Card backgrounds', 'bridge')}
+										</h3>
+										<p className="bridge-options__subhelp">
+											{__(
+												'What a card is painted on each of the four grounds this theme puts one on — the page itself, and the three section skins. A card takes its text colour from the band it sits in, so these only have to answer one question: what does a card look like on that background. Not offered to editors; nothing can be painted one of these by hand.',
+												'bridge'
+											)}
+										</p>
+										<div className="bridge-options__slots">
+											{(cardGrounds || []).map(
+												(entry) => (
+													<CardColorSlot
+														key={entry.key}
+														label={entry.label}
+														color={
+															draft.cards.colors[
+																entry.key
+															]
+														}
+														onChange={(color) =>
+															setCardColor(
+																entry.key,
+																color
+															)
 														}
 													/>
 												)
@@ -1759,6 +2105,213 @@ function OptionsApp() {
 											__next40pxDefaultSize
 										/>
 									</Section>
+
+									<Section
+										title={__('Card styling', 'bridge')}
+										description={__(
+											'One card surface, drawn by every block that has cards — the post cards, downloads, feature panels, price cards and testimonials. These three values are what they share, so a change here reaches all of them and none of them can drift.',
+											'bridge'
+										)}
+									>
+										<SelectControl
+											label={__(
+												'Padding inside a card',
+												'bridge'
+											)}
+											value={draft.cards.padding}
+											options={spacingOptions}
+											onChange={(value) =>
+												setGroup(
+													'cards',
+													'padding',
+													value
+												)
+											}
+											help={__(
+												'From the same scale as the spacing above, so cards tighten and open up with the rest of the page rather than needing a number of their own.',
+												'bridge'
+											)}
+											__nextHasNoMarginBottom
+											__next40pxDefaultSize
+										/>
+
+										{range(
+											'cards',
+											'radius',
+											__('Corner radius (px)', 'bridge'),
+											__(
+												'0 is a square card, which is a design rather than a mistake. Panels set flush against each other keep their square corners whatever this says.',
+												'bridge'
+											)
+										)}
+
+										<SelectControl
+											label={__('Shadow', 'bridge')}
+											value={draft.cards.shadow}
+											options={(cardShadows || []).map(
+												(entry) => ({
+													label: entry.name,
+													value: entry.slug,
+												})
+											)}
+											onChange={(value) =>
+												setGroup(
+													'cards',
+													'shadow',
+													value
+												)
+											}
+											help={__(
+												'How far a card lifts off the page. Outlined testimonials draw a border instead and are left flat — an outline and a shadow are two answers to the same question.',
+												'bridge'
+											)}
+											__nextHasNoMarginBottom
+											__next40pxDefaultSize
+										/>
+									</Section>
+								</>
+							)}
+
+							{tab.name === 'buttons' && (
+								<>
+									<Section
+										title={__('Button skin', 'bridge')}
+										description={__(
+											'One of three finished designs, applied to every button on the site — the block, the header’s call to action and anything a plugin renders as one. Pick the shape; the colours are answered separately below, per band, so a skin can be swapped without revisiting them.',
+											'bridge'
+										)}
+									>
+										<ButtonSkinPicker
+											skins={buttonSkins}
+											active={draft.buttons.skin}
+											scheme={preview?.buttons?.default}
+											onChange={(slug) =>
+												setGroup(
+													'buttons',
+													'skin',
+													slug
+												)
+											}
+										/>
+									</Section>
+
+									<Section
+										title={__('Colour schemes', 'bridge')}
+										description={__(
+											'What fills a button on each of the four grounds this theme puts one on — the page itself, and the three section skins. A palette slug rather than a colour, so the buttons follow the brand when it changes.',
+											'bridge'
+										)}
+									>
+										<p className="bridge-options__subhelp">
+											{__(
+												'The fill is the only choice here, and it is the only one there is: the label, both hover colours, the boundary and the focus ring are computed from it and from the band behind it, each with one right answer. The label is whichever palette colour clears 4.5:1 on the fill, falling back to black or white — so a button that fails WCAG 1.4.3 is not reachable from this control. A fill within 3:1 of its own band is given a border, which is 1.4.11 answered. Every ratio is measured and shown in the preview.',
+												'bridge'
+											)}
+										</p>
+
+										<div className="bridge-options__slots">
+											{(buttonGrounds || []).map(
+												(entry) => (
+													<SelectControl
+														key={entry.key}
+														label={entry.label}
+														value={
+															draft.buttons
+																.colors[
+																entry.key
+															]
+														}
+														options={Object.entries(
+															paletteSlugs
+														).map(
+															([
+																slug,
+																defaultName,
+															]) => ({
+																label:
+																	draft.brand
+																		.palette[
+																		slug
+																	]?.name ||
+																	defaultName,
+																value: slug,
+															})
+														)}
+														onChange={(slug) =>
+															setButtonFill(
+																entry.key,
+																slug
+															)
+														}
+														__nextHasNoMarginBottom
+														__next40pxDefaultSize
+													/>
+												)
+											)}
+										</div>
+									</Section>
+
+									<Section
+										title={__(
+											'What every skin guarantees',
+											'bridge'
+										)}
+										description={__(
+											'These are properties of the button itself rather than settings, so they hold whichever skin is chosen and whatever the palette becomes. They are listed because a client asking whether the site meets WCAG 2.2 deserves the specifics rather than a yes.',
+											'bridge'
+										)}
+									>
+										<ul className="bridge-guarantees">
+											<li>
+												<strong>
+													{__(
+														'Target size',
+														'bridge'
+													)}
+												</strong>
+												{__(
+													'Every button is at least 44×44px — WCAG 2.2 §2.5.8 asks for 24, and 44 is the size a thumb hits. A long label grows the box rather than shrinking the target.',
+													'bridge'
+												)}
+											</li>
+											<li>
+												<strong>
+													{__('Focus', 'bridge')}
+												</strong>
+												{__(
+													'A 3px ring in the band’s own foreground, offset clear of the button’s edge so it is measured against the band — §2.4.11 and §2.4.13. Keyboard focus shows every state a pointer does.',
+													'bridge'
+												)}
+											</li>
+											<li>
+												<strong>
+													{__('Hover', 'bridge')}
+												</strong>
+												{__(
+													'CSS only, no JavaScript, and never colour alone — §1.4.1. Solid and Pill move and change elevation; Edge draws a rule under the label. All three also change fill, and all three answer a keyboard the same way.',
+													'bridge'
+												)}
+											</li>
+											<li>
+												<strong>
+													{__('Motion', 'bridge')}
+												</strong>
+												{__(
+													'The lift and the sweep are transitions, and both stop under prefers-reduced-motion. Nothing is conveyed by the movement itself.',
+													'bridge'
+												)}
+											</li>
+											<li>
+												<strong>
+													{__('Mobile', 'bridge')}
+												</strong>
+												{__(
+													'Labels wrap rather than overflow, a row of buttons wraps rather than scrolls the page sideways, and the tap target holds at 44px on the narrowest screen.',
+													'bridge'
+												)}
+											</li>
+										</ul>
+									</Section>
 								</>
 							)}
 
@@ -1776,18 +2329,6 @@ function OptionsApp() {
 											enabled={draft.blocks.enabled}
 											disabled={draft.blocks.disabled}
 											onChange={setBlocks}
-										/>
-									</Section>
-
-									<Section
-										title={__('Pattern library', 'bridge')}
-										description={__(
-											'What editors can insert when building a page. Content-only patterns let them replace words and images inside a fixed structure \u2014 they cannot restructure the section or reach for a colour.',
-											'bridge'
-										)}
-									>
-										<PatternList
-											families={patternFamilies}
 										/>
 									</Section>
 
@@ -2285,6 +2826,33 @@ function OptionsApp() {
 									 */}
 									{actions}
 
+									{tab.name === 'buttons' &&
+										(preview ? (
+											<>
+												<h3>
+													{__('Buttons', 'bridge')}
+												</h3>
+												<p className="bridge-options__subhelp">
+													{__(
+														'Hover a sample. This is the site\u2019s own stylesheet, not a drawing of it.',
+														'bridge'
+													)}
+												</p>
+												<ButtonPreview
+													grounds={buttonGrounds}
+													schemes={preview.buttons}
+													custom={
+														preview.custom?.button
+													}
+													palette={preview.palette}
+												/>
+											</>
+										) : (
+											<div className="bridge-options__loading">
+												<Spinner />
+											</div>
+										))}
+
 									{tab.name === 'design' &&
 										(preview ? (
 											<>
@@ -2314,6 +2882,17 @@ function OptionsApp() {
 													icons={icons}
 													weights={iconWeights}
 													active={draft.icons.weight}
+												/>
+
+												<h3>{__('Cards', 'bridge')}</h3>
+												<CardPreview
+													cards={draft.cards}
+													grounds={cardGrounds}
+													spacingSizes={
+														preview.spacingSizes
+													}
+													shadows={cardShadows}
+													palette={preview.palette}
 												/>
 
 												<h3>

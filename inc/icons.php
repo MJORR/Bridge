@@ -128,24 +128,3 @@ function bridge_render_icon(string $name, array $args = array()): string
 		$library[$name] // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — build output from theme source.
 	);
 }
-
-/**
- * Register the icon block.
- */
-function bridge_register_icon_block(): void
-{
-	if (bridge_register_script('bridge-icon-editor', 'icon-editor.js', bridge_editor_script_deps())) {
-		// The picker offers exactly the compiled library and nothing else —
-		// an editor can place an icon but can never introduce one.
-		wp_add_inline_script(
-			'bridge-icon-editor',
-			'window.bridgeIcons = ' . wp_json_encode(bridge_icon_library()) . ';',
-			'before'
-		);
-	}
-
-	bridge_register_style('bridge-icon-editor-style', 'icon-editor.css');
-
-	bridge_register_block('icon');
-}
-add_action('init', 'bridge_register_icon_block');

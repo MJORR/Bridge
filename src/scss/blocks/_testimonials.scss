@@ -4,6 +4,8 @@
  * One stylesheet for both blocks: a card only ever appears inside the set, so
  * splitting them would ship two files that are never useful apart.
  */
+@use "../abstracts/card" as card;
+@use "../abstracts/carousel" as carousel;
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
 
@@ -16,30 +18,12 @@
 	&__inner {
 		@include section.container(narrow);
 
-		// container() spends its gutter inside the max-width, which would set
-		// the words one gutter in from the column every other block on the
-		// page lines up with. Widening the box by the two gutters puts the
-		// *content* box back on `contentSize` exactly, and keeps the gutter
-		// for the narrow screens it is there for.
-		// stylelint-disable scss/operator-no-newline-after -- prettier wraps
-		// this calc and leaves the operator at the end of the line; prettier
-		// is what runs on save, so it wins.
-		max-width: calc(
-			var(--wp--style--global--content-size) + 2 *
-				var(--wp--preset--spacing--40)
-		);
-		// stylelint-enable scss/operator-no-newline-after
-
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--50);
 	}
 
-	// The wide setting. No gutter compensation here, unlike the narrow box
-	// above: `contentSize` is compensated so the words line up with the text
-	// column the rest of the page runs at, and there is no such column to line
-	// a wide band up with — every other wide band on the site spends its
-	// gutter inside `wideSize`, so this one does too.
+	// The wide setting.
 	&--wide &__inner {
 		@include section.container(wide);
 	}
@@ -48,7 +32,7 @@
 	// intro and outro are never part of the grid — and, in the swipe layout,
 	// never part of what scrolls.
 	&__track {
-		@include section.auto-grid(18rem, var(--wp--preset--spacing--50));
+		@include section.auto-grid(18rem, section.$grid-gap);
 	}
 
 	// ---- Swipe variant ---------------------------------------------------
@@ -62,7 +46,8 @@
 	// does what the setting says. A deliberate divergence, and the only one:
 	// every other rule here matches both.
 	&--carousel:not(.is-editor-preview) &__track {
-		@include section.snap-row(var(--wp--preset--spacing--50));
+		@include section.snap-row;
+		@include carousel.track;
 
 		// The same track width the wrapped layout uses, so the two overflow
 		// styles show the same number of cards at the same container width —
@@ -70,11 +55,16 @@
 		// is the one difference: on a phone a swipe row that stops just short
 		// of the edge shows the corner of the next card, which is how a reader
 		// learns there is one.
-		grid-auto-columns: #{section.track-width(
-				20rem,
-				var(--wp--preset--spacing--50),
-				80%
-			)};
+		// 18rem, the same minimum the wrapped layout uses — the comment above
+		// has always claimed the two agree, and until now they did not: the
+		// swipe row asked for 20rem, which was `snap-row`'s own default left
+		// in place rather than replaced. A band switched from Rows to
+		// Carousel changed its card width for no reason anyone chose.
+		//
+		// No ceiling, unlike cards and downloads. A testimonial is a quote and
+		// an attribution with no image in it, so a wide one is a comfortable
+		// measure rather than an oversized picture.
+		grid-auto-columns: #{section.track-width(18rem, section.$grid-gap, 80%)};
 	}
 
 	// A focusable scroll container needs a visible focus ring, or keyboard
@@ -83,18 +73,22 @@
 		outline: 2px solid currentcolor;
 		outline-offset: 4px;
 	}
+
+	// The chevrons and dots under the row — the same strip, the same script
+	// and the same stylesheet as the cards band.
+	@include carousel.controls;
 }
 
 // ---------------------------------------------------------------------------
 // Card
 // ---------------------------------------------------------------------------
 .bridge-testimonial {
+	@include card.base;
+
 	display: flex;
 	flex-direction: column;
 	gap: var(--wp--preset--spacing--20);
 	margin: 0;
-	padding: var(--wp--preset--spacing--40);
-	border-radius: var(--wp--custom--radius--medium);
 
 	&__quote {
 		display: flex;
@@ -153,14 +147,10 @@
 }
 
 // ---- Card styles ----------------------------------------------------------
-// Both resolve to palette presets, so they restyle themselves with the brand
-// and stay legible inside whichever section skin the band is wearing. The
-// `is-card-*` classes are the editor's copy, set from block context.
-.bridge-testimonials--cards-solid .bridge-testimonial,
-.bridge-testimonial.is-card-solid {
-	background-color: var(--wp--preset--color--surface);
-}
-
+// Solid needs no rule of its own: `card.base` already paints the shared card
+// surface, which is what solid means. Only the outlined variant is a
+// departure. The `is-card-*` classes are the editor's copy of the setting, set
+// from block context.
 .bridge-testimonials--cards-outlined .bridge-testimonial,
 .bridge-testimonial.is-card-outlined {
 	// Not a colour of its own — the section's text colour at low strength,
@@ -168,4 +158,8 @@
 	// being named here.
 	border: 1px solid color-mix(in srgb, currentcolor 25%, transparent);
 	background-color: transparent;
+	// The shared card shadow goes with the fill it was lifting. An outline
+	// and a shadow are two answers to the same question — where the card
+	// ends — and a shadow under a transparent card lifts nothing.
+	box-shadow: none;
 }

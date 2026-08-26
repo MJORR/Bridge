@@ -4,7 +4,13 @@
  * Layout only. Colour and control styling come from wp-components, so the
  * screen keeps looking like WordPress across core updates instead of drifting
  * into a bespoke admin theme we would have to maintain.
+ *
+ * The one exception is the button preview, which shares abstracts/_button.scss
+ * with the front end on purpose: a drawing of a button would be a second
+ * description of one, and the operator would be choosing between three of them
+ * on the strength of the copy that drifted.
  */
+@use "../abstracts/button" as button;
 
 .bridge-options {
 	display: grid;
@@ -74,6 +80,15 @@ $slot-error: #d63638;
 	font-size: 0.6875rem;
 	letter-spacing: 0.04em;
 	color: #787c82;
+}
+
+// A card background has a fixed label instead of an editable name, so its slug
+// line is prose rather than a slug.
+.bridge-slot--fixed .bridge-slot__slug {
+	font-family: inherit;
+	font-size: 0.75rem;
+	letter-spacing: 0;
+	color: #1e1e1e;
 }
 
 // The name field sits above the colour field and should read as its equal:
@@ -320,6 +335,73 @@ $slot-error: #d63638;
 	border-radius: 4px;
 	font-size: 0.8rem;
 	margin-right: 0.4rem;
+}
+
+// ---- Card preview --------------------------------------------------------
+//
+// Each sample sits on its own ground rather than on the sidebar's, because a
+// card shown against the admin's grey is not the card that lands on the site's
+// own backgrounds — and the whole point of four colours is comparing them.
+
+.bridge-preview__cards {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.bridge-preview__card-band {
+	padding: 0.75rem;
+	border-radius: 4px;
+	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+}
+
+.bridge-preview__card-band-label {
+	display: block;
+	margin-bottom: 0.5rem;
+	font-size: 0.6875rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	// The band's own foreground at reduced strength, so the label stays
+	// legible on a dark ground as well as a light one.
+	opacity: 0.7;
+}
+
+.bridge-preview__card-sample {
+	font-size: 0.8rem;
+
+	strong {
+		display: block;
+		font-size: 0.95rem;
+	}
+
+	p {
+		margin: 0.3rem 0 0;
+	}
+}
+
+.bridge-preview__card-media {
+	display: block;
+	// Stands in for the image or graphic a card carries, so the padding is
+	// read as the inset around the *contents* rather than around a paragraph.
+	height: 3rem;
+	margin-bottom: 0.6rem;
+	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
+}
+
+// A heading inside a section, for a group of controls that belongs to it
+// rather than to a section of its own.
+.bridge-options__subhead {
+	margin: 1.25rem 0 0.25rem;
+	font-size: 0.8125rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #50575e;
+}
+
+.bridge-options__subhelp {
+	margin: 0 0 0.75rem;
+	max-width: 46rem;
+	font-size: 0.8125rem;
+	color: #50575e;
 }
 
 // ---- Type scale ----------------------------------------------------------
@@ -1059,4 +1141,172 @@ $slot-error: #d63638;
 .bridge-block__note {
 	font-size: 0.72rem;
 	color: #787c82;
+}
+
+// ---- Buttons tab -----------------------------------------------------------
+
+/**
+ * The skin picker.
+ *
+ * Three cards, each carrying the real thing: the sample inside is the site's
+ * own button stylesheet with that skin's geometry set inline, so hovering one
+ * here does exactly what hovering one on the site does. Choosing between
+ * finished designs is the whole interaction, and it is not a thing a select
+ * can offer.
+ */
+.bridge-button-skins {
+	display: grid;
+	gap: 0.75rem;
+	grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.bridge-button-skin {
+	display: grid;
+	gap: 0.6rem;
+	align-content: start;
+	padding: 0.9rem 1rem 1rem;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #fbfbfb;
+	cursor: pointer;
+
+	&.is-active {
+		border-color: #2271b1;
+		box-shadow: 0 0 0 1px #2271b1;
+		background: #f6f9fc;
+	}
+}
+
+.bridge-button-skin__head {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.bridge-button-skin__description {
+	font-size: 0.78rem;
+	line-height: 1.5;
+	color: #50575e;
+}
+
+/**
+ * The ground a sample sits on.
+ *
+ * White, because the picker is about shape rather than colour — the four
+ * grounds are the preview panel's job, and a picker that answered both
+ * questions at once would be answering neither clearly.
+ */
+.bridge-button-skin__sample {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	align-items: center;
+	padding: 1.35rem 1.25rem;
+	border-radius: 4px;
+	background: #fff;
+	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
+}
+
+/**
+ * A preview button.
+ *
+ * The mixins, not a copy of them. `shape` and `fill` are the same declarations
+ * the front end emits for `.wp-block-button__link`; the only thing this screen
+ * adds is a smaller type size, because the sidebar is 26rem wide and a preview
+ * at body size would wrap every label.
+ */
+.bridge-button-sample {
+	@include button.shape;
+	@include button.fill;
+
+	font-size: 0.8rem;
+	// The 44px floor is real on the site and would dominate a preview column,
+	// so the samples are drawn to the same proportions at a smaller scale. It
+	// is the one number here that is not the site's — see the note in the
+	// Buttons tab, which states the guarantee in words.
+	min-height: 2.25rem;
+	min-width: 0;
+}
+
+.bridge-button-sample--ghost {
+	@include button.ghost;
+}
+
+// One band per ground, each holding a pair of buttons and the ratios measured
+// from them. The class names are the JSX's — a preview whose stylesheet and
+// markup disagree renders as unstyled markup, which is how this panel first
+// shipped: no padding, no gap, and two buttons welded together.
+.bridge-preview__buttons {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.bridge-preview__button-band {
+	padding: 0.85rem 0.9rem 0.9rem;
+	border-radius: 4px;
+	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+}
+
+/**
+ * The pair.
+ *
+ * Wraps rather than shrinks: the sidebar is 26rem, and the Edge skin's
+ * uppercase tracking makes two buttons wider than that on its own. A pair that
+ * wrapped onto two lines is a pair drawn at its real size; a pair squeezed onto
+ * one is a button this skin does not produce.
+ */
+.bridge-preview__button-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6rem;
+	align-items: center;
+}
+
+// The measured ratios, under the buttons they were measured from.
+.bridge-preview__ratios {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+	margin-top: 0.9rem;
+}
+
+.bridge-ratio {
+	display: inline-flex;
+	gap: 0.3rem;
+	align-items: baseline;
+	padding: 0.15rem 0.4rem;
+	border-radius: 3px;
+	font-size: 0.68rem;
+	// Tinted from the band's own foreground rather than a fixed grey, so the
+	// readout stays legible on all four grounds without naming four colours.
+	background: color-mix(in srgb, currentcolor 12%, transparent);
+
+	&.is-fail {
+		background: #d63638;
+		color: #fff;
+	}
+}
+
+.bridge-ratio__label {
+	opacity: 0.75;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+// What holds whichever skin is chosen. Prose rather than controls, because
+// none of it is a setting.
+.bridge-guarantees {
+	display: grid;
+	gap: 0.6rem;
+	margin: 0;
+	font-size: 0.82rem;
+	line-height: 1.5;
+
+	li {
+		margin: 0;
+	}
+
+	strong {
+		display: block;
+	}
 }

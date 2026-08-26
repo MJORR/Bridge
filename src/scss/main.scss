@@ -59,11 +59,13 @@
 @use "base/reset";
 @use "base/a11y";
 @use "components/button";
+@use "components/paragraph";
 @use "components/primary-nav";
 @use "blocks/cards";
 @use "blocks/page-title";
 @use "blocks/icon";
 @use "components/sections";
+@use "components/error-404";
 @use "blocks/header";
 @use "editor/landing-mode";
 @use "editor/media-field";

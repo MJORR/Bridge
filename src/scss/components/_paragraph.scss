@@ -1,0 +1,38 @@
+/**
+ * Bridge — core/paragraph.
+ *
+ * A paragraph given a background colour is a small panel, and the theme has
+ * one idea of what the inside of a panel looks like. Core has another:
+ *
+ *   :root :where(p.has-background) { padding: 1.25em 2.375em }
+ *
+ * Two problems with that value, and neither is the number itself.
+ *
+ * It is in `em`, so it is measured against the paragraph's own font size
+ * rather than against the site's spacing scale. A paragraph set at Large pays
+ * half again as much padding as one set at Medium, and a Huge one pays twice —
+ * the same block, coloured the same way, inset differently depending on how
+ * big the words are.
+ *
+ * And it is nobody else's number. Every other box on this site that holds
+ * words on a colour — a card, a downloads panel, a price card, a testimonial,
+ * a skinned section — spends the same spacing preset. A coloured paragraph
+ * sitting beside any of them was the one thing on the page inset by a
+ * different amount.
+ *
+ * So it takes the card padding: the same token, moving with the same Theme
+ * Options control. Uneven vertical and horizontal padding goes with it — a
+ * card is inset equally on all four sides, and this is a card with one
+ * paragraph in it.
+ *
+ * `:root p.has-background` rather than matching core's `:root :where(…)`:
+ * `:where()` contributes no specificity, so core's rule weighs exactly one
+ * class and ours would tie with it. Ties are broken by source order, and the
+ * global styles are printed inline in <head> *before* this stylesheet is
+ * linked — so a tie would in fact win today. It would stop winning the moment
+ * anything reordered the two, which is not a thing to leave to luck.
+ */
+
+:root p.has-background {
+	padding: var(--wp--custom--card--padding, var(--wp--preset--spacing--40));
+}

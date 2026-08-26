@@ -13,6 +13,7 @@
  * are positional rather than cosmetic: sticky and transparent headers have to
  * escape the template-part wrapper, which is a box the theme does not emit.
  */
+@use "../abstracts/button" as button;
 
 .bridge-header {
 	position: relative;
@@ -401,6 +402,12 @@
 // Contrast is a class rather than a colour so the same rule serves a palette
 // ground and a photograph.
 .bridge-header--contrast-light {
+	// A header light enough to need light text is a dark ground, so its call
+	// to action wants the Inverted scheme — the same light-on-dark button an
+	// Inverted band draws. Without this the header's button is the page's
+	// button: a near-black fill on a near-black bar.
+	@include button.ground("inverted");
+
 	color: var(--wp--preset--color--background);
 
 	a:where(:not(.wp-element-button)) {
@@ -550,8 +557,11 @@ html:has(.bridge-header--sticky) {
 // ---- Call to action --------------------------------------------------------
 
 .bridge-header__cta .wp-element-button {
+	// Flex, matching every other button: the shared shape centres the label
+	// against the 44px tap-target floor, and an inline-block here would sit it
+	// at the top of a box the padding did not fill.
+	display: inline-flex;
 	white-space: nowrap;
-	display: inline-block;
 }
 
 // The stacked layouts collapse earlier than the single-row one: two rows of

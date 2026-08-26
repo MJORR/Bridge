@@ -1,0 +1,45 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/section",
+	"version": "1.0.0",
+	"title": "Section",
+	"category": "design",
+	"icon": "align-wide",
+	"description": "A band of the page: full window width, with its content held in a column. Put anything inside it.",
+	"textdomain": "bridge",
+	"keywords": ["section", "band", "container", "row", "group"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true,
+			"gradients": false
+		}
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "narrow"
+		}
+	},
+	"example": {
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": { "level": 2, "content": "A section heading" }
+			},
+			{
+				"name": "core/paragraph",
+				"attributes": {
+					"content": "The words this band carries, held in the same column as the rest of the page."
+				}
+			}
+		]
+	},
+	"editorScript": "bridge-section-editor",
+	"render": "file:./render.php"
+}

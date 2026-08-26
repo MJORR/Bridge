@@ -1,63 +1,123 @@
 /**
  * Bridge — Cards block (bridge/cards) styles.
  *
- * Scoped under .bridge-cards-grid (added in render.php) rather than the
- * auto-generated .wp-block-bridge-cards class, because the editor wraps the
- * block twice — outer .wp-block-bridge-cards from useBlockProps and inner
- * .wp-block-bridge-cards from our render.php. Targeting only our explicit
- * class avoids that double-wrap collision.
+ * Two parts: the band, which is the shell every section block wears, and the
+ * grid of post cards inside it.
+ *
+ * The grid is scoped under .bridge-cards-grid (added in render.php) rather
+ * than the auto-generated .wp-block-bridge-cards class, because the editor
+ * wraps the block twice — outer .wp-block-bridge-cards from useBlockProps and
+ * inner .wp-block-bridge-cards from our render.php. Targeting only our
+ * explicit class avoids that double-wrap collision.
  */
+@use "../abstracts/card" as card;
+@use "../abstracts/carousel" as carousel;
 @use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+/**
+ * The band.
+ *
+ * The same shell every section block has: a full-width strip that paints its
+ * own background, with the content held in a container inside it. The grid
+ * below is what this one holds instead of authored items.
+ */
+.bridge-cards {
+	&__inner {
+		@include section.container(wide);
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	&--narrow &__inner {
+		@include section.container(narrow);
+	}
+
+	// ---- Carousel --------------------------------------------------------
+	// Scroll-snap rather than a slider library, as the testimonials band
+	// already does: it scrolls with a trackpad, a swipe or the keyboard, it is
+	// correct before any script has loaded, and it costs nothing to ship. The
+	// old block loaded a carousel bundle to do this.
+	//
+	// Not applied inside the editor. A horizontally scrolling row is awkward
+	// to author in, so the editor previews the carousel as the wrapped layout
+	// and the front end does what the setting says.
+	&--carousel:not(.is-editor-preview) .bridge-cards-grid {
+		@include section.snap-row;
+		@include carousel.track;
+
+		// The same track width the wrapped layout uses, so the two overflow
+		// styles show the same number of cards at the same container width.
+		// The 80% cap rather than 100% is the difference: on a phone a row
+		// that stops just short of the edge shows the corner of the next card,
+		// which is how a reader learns there is one.
+		// Capped like the wrapped layout below, so a row of two or three cards
+		// on a wide screen is a row of cards rather than a row of billboards.
+		grid-auto-columns: min(
+			#{section.track-width(16rem, section.$grid-gap, 80%)},
+			#{section.$item-max}
+		);
+	}
+
+	// A focusable scroll container needs a visible focus ring, or a keyboard
+	// user cannot tell they have reached it.
+	&--carousel .bridge-cards-grid:focus-visible {
+		outline: 2px solid currentcolor;
+		outline-offset: 4px;
+	}
+
+	@include carousel.controls;
+}
 
 .bridge-cards-grid {
-	--post-card-radius: var(--wp--custom--radius--large);
-	--post-card-shadow:
-		0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
-	--post-card-shadow-hover:
-		0 4px 12px rgba(0, 0, 0, 0.1), 0 12px 24px rgba(0, 0, 0, 0.08);
-	--post-card-bg: var(--wp--preset--color--background, #fff);
-	--post-card-text: var(--wp--preset--color--text, #1f2937);
-	--post-card-muted: color-mix(
-		in srgb,
-		var(--post-card-text) 65%,
-		transparent
+	// Everything here is derived from whatever the band is already legible in,
+	// never named outright. A post card sits in the same bands as every other
+	// card block, and a card that fixed its own foreground would carry dark
+	// text onto an Inverted section.
+	--post-card-muted: color-mix(in srgb, currentcolor 65%, transparent);
+	// The ground behind an image while it loads, and behind the empty state.
+	--post-card-well: color-mix(in srgb, currentcolor 8%, transparent);
+	// A read-more line and the focus ring. The Inverted skin repoints this at
+	// `currentcolor`; on every other ground it is the link colour.
+	--post-card-accent: var(
+		--bridge-card-link,
+		var(--wp--preset--color--secondary, #2563eb)
 	);
-	--post-card-surface: var(--wp--preset--color--surface, #f5f5f4);
-	--post-card-accent: var(--wp--preset--color--secondary, #2563eb);
-	--post-card-padding: var(--wp--preset--spacing--30);
 
 	// The theme's own grid, rather than two max-width breakpoints of this
 	// block's own. `auto-grid` asks how much room the *container* has instead
 	// of how wide the window is — which is the right question once a card grid
 	// can sit inside a column — and it collapses on its own, so `--columns`
 	// becomes a ceiling rather than a promise the layout cannot keep.
-	@include section.auto-grid(
-		16rem,
-		var(--wp--style--block-gap, var(--wp--preset--spacing--40))
-	);
+	@include section.auto-grid(16rem, section.$grid-gap);
 
 	width: 100%;
 
 	// ---- Card -----------------------------------------------------------
 	.post-card {
+		// The ceiling, and the reason for it: this card leads with a 16:9
+		// photograph, and a card given half the page is a photograph given
+		// half the page. Centred in whatever track it was handed, so a sparse
+		// row stays balanced rather than hugging the left. A full row is
+		// narrower than the cap and is untouched by both declarations.
+		max-width: section.$item-max;
+		margin-inline: auto;
+
+		@include card.surface;
+		// The whole card is a link, so it lifts under the pointer.
+		@include card.raise($translate: true);
+
 		// The stretched link below is positioned against this.
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		background: var(--post-card-bg);
-		color: var(--post-card-text);
-		border-radius: var(--post-card-radius);
-		box-shadow: var(--post-card-shadow);
+		// No colour of its own: `card.surface` paints the background the band
+		// asks for, and the text is the band's own foreground, inherited.
 		overflow: hidden;
-		transition:
-			box-shadow 200ms ease,
-			transform 200ms ease;
-
-		&:hover,
-		&:focus-within {
-			box-shadow: var(--post-card-shadow-hover);
-			transform: translateY(-2px);
-		}
 
 		// The ring belongs on the card, not on the few words of title that
 		// happen to carry the link.
@@ -69,11 +129,17 @@
 
 	.post-card__image {
 		margin: 0;
+		// The frame the logo stand-in below is measured against.
+		position: relative;
 		aspect-ratio: 16 / 9;
 		overflow: hidden;
-		background: var(--post-card-surface);
+		background: var(--post-card-well);
 
-		img {
+		// The direct child only. The logo stand-in below puts an <img> inside
+		// a wrapper of its own, and it wants none of this: it is contained
+		// rather than cropped, and a brand mark that grew by 4% under the
+		// pointer would read as a mistake.
+		> img {
 			width: 100%;
 			height: 100%;
 			object-fit: cover;
@@ -82,7 +148,7 @@
 		}
 	}
 
-	.post-card:hover .post-card__image img {
+	.post-card:hover .post-card__image > img {
 		transform: scale(1.04);
 	}
 
@@ -107,8 +173,63 @@
 		opacity: 0.08;
 	}
 
+	// ---- Logo stand-in --------------------------------------------------
+	// A post with no featured image shows the site's light logo on the brand's
+	// primary colour, which is a deliberate tile rather than a missing photo.
+	// Both colours are palette presets, so the tile follows a rebrand.
+	.post-card__image-placeholder--logo {
+		// The most of the tile the mark may ever occupy, on either axis. What
+		// is left is the gap: 70% leaves a seventh of the tile clear on all
+		// four sides.
+		--post-card-logo-max: 70%;
+
+		// Pinned to the tile rather than sized at 100% of it, so the height
+		// the cap below is a percentage *of* is definite in every case. A
+		// percentage max-height against an indeterminate height is dropped,
+		// and a dropped cap is a logo running to the top and bottom edges.
+		position: absolute;
+		inset: 0;
+		// Centres the mark in both directions. The mark is smaller than the
+		// box it sits in — that is what the cap guarantees — so there is
+		// always something for this to centre.
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background-color: var(--wp--preset--color--primary);
+		// The pattern's diagonals belong to the plain placeholder.
+		background-image: none;
+		opacity: 1;
+	}
+
+	// The mark is capped, never sized, and never cropped.
+	//
+	// `max-width` and `max-height` rather than `width`/`height`, and rather
+	// than the two things tried before them:
+	//
+	//   padding on the tile — percentage padding resolves against the box's
+	//   width on all four sides, so 10% was a tenth of the width at the sides
+	//   but nearly a fifth of the height above and below;
+	//
+	//   `inset` on the image — an <img> is a replaced element, and `width:
+	//   auto` on one resolves to its *intrinsic* width, not to the rectangle
+	//   the offsets describe. The mark was laid out at its natural size and
+	//   the tile's `overflow: hidden` cut off whatever did not fit.
+	//
+	// A cap has neither failure. Both dimensions stay `auto`, so the browser
+	// keeps the artwork's own proportions and the whole mark is visible;
+	// whichever axis reaches 80% first stops the growth, and the other has
+	// more room to spare. There is no shape a logo can be that reaches an edge.
+	.post-card__placeholder-logo {
+		display: block;
+		width: auto;
+		height: auto;
+		max-width: var(--post-card-logo-max);
+		max-height: var(--post-card-logo-max);
+	}
+
 	.post-card__body {
-		padding: var(--post-card-padding);
+		@include card.padding;
+
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--20);
@@ -177,20 +298,19 @@
 		padding: var(--wp--preset--spacing--40);
 		text-align: center;
 		color: var(--post-card-muted);
-		background: var(--post-card-surface);
-		border-radius: var(--post-card-radius);
+		background: var(--post-card-well);
+		border-radius: var(--wp--custom--card--radius);
 	}
 
+	// The card's own transition and lift are stilled by `card.raise`; this is
+	// the image zoom, which is this block's alone.
 	@media (prefers-reduced-motion: reduce) {
 
-		.post-card,
-		.post-card__image img {
+		.post-card__image > img {
 			transition: none;
 		}
 
-		.post-card:hover,
-		.post-card:focus-within,
-		.post-card:hover .post-card__image img {
+		.post-card:hover .post-card__image > img {
 			transform: none;
 		}
 	}

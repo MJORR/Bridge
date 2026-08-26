@@ -34,6 +34,8 @@ function bridge_section_block_names(): array
 		'bridge/alternating-content',
 		'bridge/feature-blocks',
 		'bridge/call-to-action',
+		'bridge/cards',
+		'bridge/section',
 		'bridge/downloads',
 		'bridge/gallery',
 		'bridge/logo-slider',
@@ -153,6 +155,72 @@ function bridge_register_section_block(string $slug, bool $style = true, bool $v
 	}
 
 	bridge_register_block($slug);
+}
+
+/**
+ * The attributes a carousel's scrolling track wears.
+ *
+ * `tabindex` so the row can be reached and scrolled with a keyboard: the items
+ * hold a link each, so tabbing already walks the row — this is for the space
+ * bar and the arrow keys, which act on the container rather than on a link.
+ * The data attribute is what carousel.js finds it by.
+ *
+ * @param string $label Accessible name for the scrolling region.
+ * @return string Ready-to-print attributes.
+ */
+function bridge_carousel_track_attrs(string $label): string
+{
+	return sprintf(
+		'tabindex="0" role="group" aria-label="%s" data-bridge-carousel-track',
+		esc_attr($label)
+	);
+}
+
+/**
+ * The control strip under a carousel: a chevron at each end, dots between.
+ *
+ * Shared by every block with a swipe layout, so the markup the one script
+ * drives is written once. A block prints this after its track and includes
+ * `carousel.controls` in its stylesheet; nothing else is needed.
+ *
+ * The controls are an enhancement over a row that already scrolls: a trackpad,
+ * a swipe and the keyboard all work with no script at all. So the buttons ship
+ * `hidden` and the dots ship empty, and carousel.js takes the attribute off and
+ * fills the strip once it has measured the row. Nothing here is a control that
+ * does nothing.
+ *
+ * The icons are drawn here rather than in JavaScript so there is one icon
+ * library, in PHP, wearing the stroke weight set in Theme Options. The dot
+ * label is passed as a `%d` pattern for the same reason — the script carries no
+ * translations and needs no wp-i18n.
+ *
+ * @param array<string, string> $labels Accessible names: `prev`, `next`,
+ *                                      `dots` and `dot` (a `%d` pattern).
+ * @return string Ready-to-print markup.
+ */
+function bridge_carousel_controls(array $labels = array()): string
+{
+	$prev = $labels['prev'] ?? __('Previous', 'bridge');
+	$next = $labels['next'] ?? __('Next', 'bridge');
+	$dots = $labels['dots'] ?? __('Pages', 'bridge');
+	/* translators: %d: page number. */
+	$dot = $labels['dot'] ?? __('Page %d', 'bridge');
+
+	$button = static function (string $direction, string $icon, string $label): string {
+		return sprintf(
+			'<button type="button" class="bridge-carousel__arrow bridge-carousel__arrow--%1$s" data-bridge-carousel-%1$s hidden>%2$s</button>',
+			esc_attr($direction),
+			bridge_render_icon($icon, array('label' => $label))
+		);
+	};
+
+	return sprintf(
+		'<div class="bridge-carousel__controls" data-bridge-carousel-controls>%1$s<div class="bridge-carousel__dots" role="group" aria-label="%2$s" data-dot-label="%3$s" data-bridge-carousel-dots></div>%4$s</div>',
+		$button('prev', 'chevron-left', $prev),
+		esc_attr($dots),
+		esc_attr($dot),
+		$button('next', 'chevron-right', $next)
+	);
 }
 
 /**

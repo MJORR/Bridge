@@ -12,13 +12,7 @@
 	"supports": {
 		"anchor": true,
 		"html": false,
-		"layout": false,
-		"color": {
-			"background": true,
-			"text": true,
-			"link": true,
-			"gradients": false
-		}
+		"layout": false
 	},
 	"attributes": {
 		"width": {

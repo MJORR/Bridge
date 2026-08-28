@@ -19,7 +19,7 @@
 	position: relative;
 
 	// A floor, not a fixed height. The slider has to pin every slide to the
-	// same box because Swiper animates between them; nothing here does, so
+	// same box because it fades one into another; nothing here does, so
 	// content that outgrows the window makes the banner taller instead of
 	// being clipped by it. That is what keeps a two-column banner honest on a
 	// phone, where core stacks the columns and the content roughly doubles in
@@ -144,9 +144,9 @@
  * Only the window-height terms need adjusting. Every selector above matches
  * the editor unchanged, because nothing here depends on a class added at
  * runtime — the front end and the editor render the same tree. (The slider
- * cannot say that: its rules hang off `.swiper-slide`, which slider.js adds
- * on the front end only, so its preview and its output disagree by
- * construction.)
+ * cannot say that: its rules hang off the track element render.php wraps the
+ * slides in, which the editor does not print, so its preview and its output
+ * disagree by construction.)
  *
  * What does differ is the frame. The canvas is not the window: it is inset by
  * the editor chrome and, in a template, shows a header that is part of the

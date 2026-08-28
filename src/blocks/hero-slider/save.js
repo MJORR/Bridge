@@ -1,7 +1,7 @@
 /**
  * Save callback for `bridge/hero-slider`.
  *
- * The block is dynamic (render.php wraps the inner content with the Swiper
+ * The block is dynamic (render.php wraps the inner content with the slider
  * scaffold), so save only needs to serialize the inner blocks. Returning
  * `<InnerBlocks.Content />` keeps the authored covers in post HTML and lets
  * the PHP renderer apply the slider markup at output time.

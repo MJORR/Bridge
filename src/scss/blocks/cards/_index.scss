@@ -1,0 +1,23 @@
+/**
+ * Bridge — Cards block (bridge/cards).
+ *
+ * The entry point `main.scss` loads as `blocks/cards`. It exists to fix one
+ * thing: the order the four files below are emitted in.
+ *
+ * The base rules in _band.scss are nested under `.bridge-cards-grid`, and so
+ * are the style modifiers, which means all of them carry the same specificity
+ * and the cascade is settled by source order alone. That is deliberate — a
+ * modifier that had to out-specify the thing it modifies would need an extra
+ * class on every declaration, and the next style added would need two. Here the
+ * rule is simply "the base first, then the styles", and this file is where that
+ * is stated rather than implied by the order someone happened to type the
+ * `@use` lines in a stylesheet about something else.
+ *
+ * All three styles ship together, in main.css, however many the page uses. They
+ * are one block: the editor switches between them live, so a bundle split by
+ * style would mean a preview that could not draw what it had just been set to.
+ */
+@use "band";
+@use "card-summary";
+@use "card-tile";
+@use "card-portrait";

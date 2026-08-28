@@ -140,6 +140,15 @@ add_filter('should_load_remote_block_patterns', 'bridge_disable_remote_patterns'
  *                   random and the two treatments drift apart.
  *   core/code, core/preformatted
  *                   Developer blocks on sites that publish prose.
+ *   core/verse      Poetry formatting, whose whole feature is preserving the
+ *                   line breaks you typed. Prose sites never ask for it.
+ *   core/nextpage   The legacy paginated-post splitter, which cuts one post
+ *                   across several URLs. Scrolling and archive templates
+ *                   replaced it.
+ *   core/calendar   The dated post-calendar widget, which brings its own
+ *                   markup and matches no custom theme.
+ *   core/tag-cloud  An archaic taxonomy display: clutter in the inserter, and
+ *                   clutter on the page wherever it lands.
  *   core/more       The legacy teaser tag. Block themes read excerpts, so it
  *                   changes nothing an editor can see.
  *   core/video, core/audio
@@ -189,7 +198,6 @@ function bridge_allowed_blocks(): array
 		'core/buttons',
 		'core/button',
 		'core/separator',
-		'core/nextpage',
 
 		// Site furniture, used by templates and parts.
 		'core/template-part',
@@ -213,13 +221,18 @@ function bridge_allowed_blocks(): array
 		'core/post-terms',
 		'core/post-author',
 		'core/query',
-		'core/query-title',
 		'core/query-no-results',
 		'core/post-template',
 		'core/query-pagination',
 		'core/query-pagination-previous',
 		'core/query-pagination-numbers',
 		'core/query-pagination-next',
+		// Used by the archive, search and single templates. Insertable as well
+		// as renderable, so an operator who deletes one while editing a
+		// template can put it back.
+		'core/query-title',
+		'core/term-description',
+		'core/post-navigation-link',
 
 		// Insertion plumbing. Patterns and synced patterns render through
 		// these two; omitting them breaks the curated library itself.
@@ -286,6 +299,76 @@ function bridge_child_blocks(): array
 }
 
 /**
+ * Blocks a fresh install starts with switched off.
+ *
+ * The curated set in bridge_allowed_blocks() already leaves these out, but
+ * that list is only in force while lockdown is on — and lockdown is off until
+ * a site names an operator, which is exactly the window a freshly activated
+ * theme sits in. Writing them to `blocks.disabled` on activation closes that
+ * gap: `disabled` is honoured in both lockdown states, and it is the value the
+ * Blocks tab reads, so the switches show the same answer the inserter gives.
+ *
+ * Each is legacy or single-purpose furniture that clutters the inserter
+ * without earning its place in a block-built site:
+ *
+ *   core/freeform      The classic TinyMCE editor, which predates every
+ *                      constraint here and emits unstyled legacy markup.
+ *   core/verse         Poetry formatting with preserved line breaks.
+ *   core/preformatted  Fixed-width raw text, superseded by core/code.
+ *   core/nextpage      Legacy pagination that splits one post across URLs.
+ *   core/calendar      The native post calendar widget.
+ *   core/tag-cloud     An archaic taxonomy display.
+ *
+ * A default, not a rule: an operator who wants one back flips its switch, and
+ * nothing here reaches into an existing site — only theme activation writes.
+ *
+ * @return string[]
+ */
+function bridge_decluttered_blocks(): array
+{
+	/**
+	 * Filters the blocks switched off when the theme is activated.
+	 *
+	 * @param string[] $blocks Block names.
+	 */
+	return (array) apply_filters(
+		'bridge_decluttered_blocks',
+		array(
+			'core/freeform',
+			'core/verse',
+			'core/preformatted',
+			'core/nextpage',
+			'core/calendar',
+			'core/tag-cloud',
+		)
+	);
+}
+
+/**
+ * Switch the decluttered blocks off when the theme is activated.
+ *
+ * Merged into whatever `disabled` already holds rather than assigned over it:
+ * a site re-activating the theme keeps the blocks its operator switched off by
+ * hand. Nothing is written when the list is already a subset of the stored
+ * one, so a re-activation that changes nothing does not bump the token
+ * fingerprint and invalidate every token-derived asset.
+ */
+function bridge_disable_decluttered_blocks(): void
+{
+	$disabled = bridge_get_tokens()['blocks']['disabled'];
+	$merged   = array_values(array_unique(array_merge($disabled, bridge_decluttered_blocks())));
+
+	sort($merged);
+
+	if ($merged === $disabled) {
+		return;
+	}
+
+	bridge_patch_tokens(array('blocks' => array('disabled' => $merged)));
+}
+add_action('after_switch_theme', 'bridge_disable_decluttered_blocks');
+
+/**
  * Every insertable block, grouped into its editor category.
  *
  * What the options page draws. Each entry carries whether the theme ships it
@@ -299,6 +382,7 @@ function bridge_block_library(): array
 {
 	$defaults = bridge_allowed_blocks();
 	$required = bridge_required_blocks();
+	$disabled = bridge_get_tokens()['blocks']['disabled'];
 	$groups   = array();
 
 	foreach (WP_Block_Type_Registry::get_instance()->get_all_registered() as $name => $type) {
@@ -311,7 +395,10 @@ function bridge_block_library(): array
 			continue;
 		}
 
-		if (! empty($type->parent) || ! empty($type->ancestor)) {
+		// Child blocks are hidden — until one is switched off. A switch that is
+		// never drawn is a switch that cannot be flipped back, and every off
+		// state on this screen has to be reversible from this screen.
+		if ((! empty($type->parent) || ! empty($type->ancestor)) && ! in_array($name, $disabled, true)) {
 			continue;
 		}
 
@@ -384,10 +471,17 @@ function bridge_effective_blocks(): array
 {
 	$blocks = bridge_get_tokens()['blocks'];
 
-	$allowed = array_merge(bridge_allowed_blocks(), $blocks['enabled']);
-	$allowed = array_diff($allowed, $blocks['disabled']);
+	$allowed = array_unique(
+		array_merge(bridge_allowed_blocks(), $blocks['enabled'], bridge_child_blocks())
+	);
 
-	return array_values(array_unique(array_merge($allowed, bridge_child_blocks())));
+	// `disabled` is subtracted last, after the child blocks are folded in, so
+	// an explicit switch-off wins over the blanket allowance they get. Doing it
+	// the other way round silently handed a disabled child block straight back
+	// — which is how core/nextpage stayed insertable: it declares
+	// `parent: core/post-content`, so it counts as a child block, and the page
+	// content area is exactly where someone reaches for a page break.
+	return array_values(array_diff($allowed, $blocks['disabled']));
 }
 
 /**

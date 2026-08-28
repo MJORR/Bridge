@@ -1,8 +1,15 @@
 /**
- * Bridge — Cards block (bridge/cards) styles.
+ * Bridge — Cards block (bridge/cards): the band, the grid, and the card every
+ * style starts from.
  *
- * Two parts: the band, which is the shell every section block wears, and the
- * grid of post cards inside it.
+ * Three parts: the band, which is the shell every section block wears; the grid
+ * of post cards inside it; and `.post-card` itself — the surface, the image
+ * frame, the stretched link and the focus ring, which are the same whichever
+ * style the block was set to.
+ *
+ * What each style then *does* with that lives in its own file beside this one,
+ * loaded after it by _index.scss so a modifier of equal specificity wins on
+ * order. See _card-summary.scss, _card-tile.scss and _card-portrait.scss.
  *
  * The grid is scoped under .bridge-cards-grid (added in render.php) rather
  * than the auto-generated .wp-block-bridge-cards class, because the editor
@@ -10,10 +17,10 @@
  * inner .wp-block-bridge-cards from our render.php. Targeting only our
  * explicit class avoids that double-wrap collision.
  */
-@use "../abstracts/card" as card;
-@use "../abstracts/carousel" as carousel;
-@use "../abstracts/section" as section;
-@use "../abstracts/section-intro" as intro;
+@use "../../abstracts/card" as card;
+@use "../../abstracts/carousel" as carousel;
+@use "../../abstracts/section" as section;
+@use "../../abstracts/section-intro" as intro;
 
 @include intro.section-intro;
 
@@ -131,7 +138,11 @@
 		margin: 0;
 		// The frame the logo stand-in below is measured against.
 		position: relative;
-		aspect-ratio: 16 / 9;
+		// The crop, set per style from Theme Options and defaulted here so the
+		// frame is correct before any token has been saved. Each style points
+		// `--post-card-ratio` at its own compiled property; see the modifier
+		// files. Portrait ignores this and squares the frame itself.
+		aspect-ratio: var(--post-card-ratio, 16 / 9);
 		overflow: hidden;
 		background: var(--post-card-well);
 
@@ -148,7 +159,10 @@
 		}
 	}
 
-	.post-card:hover .post-card__image > img {
+	// Portrait is excluded: its image is a face in a circle, not a landscape
+	// cropped to a frame, and a photograph of a person that grows under the
+	// pointer reads as a glitch rather than as an invitation.
+	.post-card:not(.post-card--portrait):hover .post-card__image > img {
 		transform: scale(1.04);
 	}
 
@@ -238,7 +252,15 @@
 
 	.post-card__title {
 		margin: 0;
-		font-size: var(--wp--preset--font-size--large);
+		// A step on the site's own type scale, chosen per style in Theme
+		// Options. The fallback is a preset rather than a length, so a card
+		// whose token has never been saved is still on the scale — there is no
+		// state in which a card heading is a size the type system did not
+		// compile.
+		font-size: var(
+			--post-card-heading,
+			var(--wp--preset--font-size--large)
+		);
 		font-weight: 600;
 		line-height: 1.3;
 		color: inherit;
@@ -278,20 +300,6 @@
 		flex: 1;
 	}
 
-	.post-card__read-more {
-		font-size: var(--wp--preset--font-size--small);
-		font-weight: 500;
-		color: var(--post-card-accent);
-		margin-top: var(--wp--preset--spacing--20);
-		align-self: flex-start;
-
-		// The arrow used to be typed into the block's default text, where no
-		// translator could reach it. It is decoration, so it lives here.
-		&::after {
-			content: " \2192";
-		}
-	}
-
 	// ---- Empty state ----------------------------------------------------
 	.bridge-cards__empty {
 		grid-column: 1 / -1;
@@ -310,8 +318,84 @@
 			transition: none;
 		}
 
-		.post-card:hover .post-card__image > img {
+		// Matching the `:not()` on the rule it is stilling, so the two carry the
+		// same specificity and this one wins on order. Written as `:hover`
+		// alone it lost, and a reader who had asked for less motion got the
+		// zoom anyway.
+		.post-card:not(.post-card--portrait):hover .post-card__image > img {
 			transform: none;
+		}
+	}
+}
+
+/**
+ * Pagination.
+ *
+ * Printed only when the grid is filled from the main query — an archive, a
+ * category, a page of search results — so it lives with the grid rather than
+ * in a stylesheet of its own. It sits inside `.bridge-cards__inner`, which is
+ * a flex column with a gap, so the space above it is the band's and not
+ * something this rule has to invent.
+ *
+ * Every target is 44px, the same floor the buttons hold to. A row of page
+ * numbers is the densest set of small links a site has, and the one place a
+ * thumb most often lands on the wrong one.
+ */
+.bridge-cards__pagination {
+	ul {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		align-items: center;
+		justify-content: center;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	a,
+	span {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		min-width: 44px;
+		min-height: 44px;
+		padding-inline: 0.75rem;
+		// The same corner as a card, because these sit directly beneath one.
+		border-radius: var(--wp--custom--card--radius, 6px);
+		color: inherit;
+		font-size: var(--wp--preset--font-size--small);
+		text-decoration: none;
+		transition: background-color 150ms ease;
+	}
+
+	// Derived from the band's own foreground rather than named, so a listing
+	// dropped on an Inverted ground pages in light instead of disappearing.
+	a:hover,
+	a:focus-visible {
+		background-color: color-mix(in srgb, currentcolor 12%, transparent);
+	}
+
+	// Where you are. Weight as well as fill, so the current page is not
+	// distinguished by colour alone.
+	.current {
+		background-color: color-mix(in srgb, currentcolor 16%, transparent);
+		font-weight: 600;
+	}
+
+	// The gap core prints between distant page numbers is not a link and has
+	// no target to be.
+	.dots {
+		min-width: 0;
+		padding-inline: 0.25rem;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+
+		a,
+		span {
+			transition: none;
 		}
 	}
 }

@@ -11,7 +11,13 @@
  * editor padding, margin, border, radius and its own layout controls, and a
  * band whose inset can be typed in by hand is a band that stops matching the
  * one above it. Here the only decisions are the two that should be decisions —
- * how wide the content runs, and what colour the band is.
+ * how wide the content runs, and which skin the band wears.
+ *
+ * The skin is the whole of the colour story: core's own colour support is off
+ * on this block, so there is no Typography, Background or Elements panel to
+ * type a one-off text, background or link colour into. Background and text
+ * come as a pair from the section skins registered in structure.php, which is
+ * what keeps one band matching the next.
  *
  * @package Bridge
  *

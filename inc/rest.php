@@ -132,6 +132,13 @@ function bridge_rest_preview_tokens(WP_REST_Request $request): WP_REST_Response
 			// a second implementation of the WCAG formula would be the one the
 			// operator is looking at, and it would be the one that drifted.
 			'buttons'      => bridge_button_schemes($tokens),
+			// The same arithmetic pointed at the palette and the card surfaces,
+			// so the Design tab can show what a brand colour costs before it is
+			// saved rather than after a client's auditor finds it.
+			'audits'       => array(
+				'palette' => bridge_palette_audit($tokens),
+				'cards'   => bridge_card_audit($tokens),
+			),
 		)
 	);
 }
@@ -207,6 +214,17 @@ function bridge_rest_tokens_payload(): array
 		// The grounds a card sits on, each naming the palette slugs its band
 		// wears, so the page can draw every card on its real background.
 		'cardGrounds'    => bridge_card_ground_choices(),
+		// The three card shapes, each naming the fields it takes, so the Cards
+		// tab draws the controls a style has rather than a fixed set with two
+		// of them hidden.
+		'cardStyles'     => bridge_card_style_choices(),
+		// The option lists those fields are chosen from.
+		'cardRatios'     => bridge_card_ratio_choices(),
+		'cardAvatars'    => bridge_card_avatar_size_choices(),
+		// The font-size slugs a card heading may be, which are the site's own
+		// scale — so the control can never offer a size the type system has
+		// not compiled.
+		'fontSizeSlugs'  => bridge_font_size_slugs(),
 		'version'        => bridge_tokens_version(),
 	);
 }

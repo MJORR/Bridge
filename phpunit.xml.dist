@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+	bootstrap="tests/bootstrap.php"
+	colors="true"
+	beStrictAboutOutputDuringTests="true"
+	failOnRisky="true"
+	failOnWarning="true"
+	cacheResultFile=".phpunit.result.cache"
+>
+	<testsuites>
+		<testsuite name="bridge">
+			<directory suffix="Test.php">tests</directory>
+		</testsuite>
+	</testsuites>
+
+	<coverage>
+		<include>
+			<file>inc/color.php</file>
+			<file>inc/tokens.php</file>
+			<file>inc/theme-json.php</file>
+		</include>
+	</coverage>
+</phpunit>

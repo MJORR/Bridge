@@ -1,0 +1,47 @@
+/**
+ * Bridge — Summary card.
+ *
+ * The block's original card, and the smallest of the three files: almost all of
+ * what a Summary card is already lives in _band.scss, because it *was* the card
+ * before there were three. What is left here is the one element only this style
+ * draws — the read-more cue under the excerpt.
+ *
+ * Scoped under `.bridge-cards-grid` to match the specificity of the base rules
+ * it sits beside, so the cascade is decided by source order (see _index.scss)
+ * rather than by a specificity race between a modifier and the thing it
+ * modifies.
+ */
+.bridge-cards-grid {
+
+	// What Theme Options set for this style. Two lines rather than two rules
+	// in the base, because the base draws every style and only this one knows
+	// which compiled group belongs to it. Each `var()` carries the same
+	// fallback the base does, so an unsaved token changes nothing.
+	.post-card--summary {
+		--post-card-heading: var(
+			--wp--custom--card--summary--heading,
+			var(--wp--preset--font-size--large)
+		);
+		--post-card-ratio: var(--wp--custom--card--summary--ratio, 16 / 9);
+	}
+
+	// Not a link, and deliberately not shaped like a button. The title above is
+	// the link; this is the line that says the card is clickable, and giving it
+	// a button's fill would promise a second, separate action.
+	.post-card--summary .post-card__read-more {
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 500;
+		// The one accent on the card, and skin-aware: `--post-card-accent` is
+		// the link colour on a light band and the band's own foreground on an
+		// Inverted one, so this never becomes a dark blue on a dark blue.
+		color: var(--post-card-accent);
+		margin-top: var(--wp--preset--spacing--20);
+		align-self: flex-start;
+
+		// The arrow used to be typed into the block's default text, where no
+		// translator could reach it. It is decoration, so it lives here.
+		&::after {
+			content: " \2192";
+		}
+	}
+}

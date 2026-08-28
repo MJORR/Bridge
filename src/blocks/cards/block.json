@@ -12,15 +12,13 @@
 	"supports": {
 		"anchor": true,
 		"html": false,
-		"layout": false,
-		"color": {
-			"background": true,
-			"text": true,
-			"link": true,
-			"gradients": false
-		}
+		"layout": false
 	},
 	"attributes": {
+		"source": {
+			"type": "string",
+			"default": "self"
+		},
 		"width": {
 			"type": "string",
 			"default": "wide"
@@ -28,6 +26,11 @@
 		"overflowStyle": {
 			"type": "string",
 			"default": "wrap"
+		},
+		"cardStyle": {
+			"type": "string",
+			"enum": ["summary", "tile", "portrait"],
+			"default": "summary"
 		},
 		"isPreview": {
 			"type": "boolean",
@@ -60,13 +63,17 @@
 		},
 		"excerptLength": {
 			"type": "number",
-			"default": 20
+			"default": 0
 		},
 		"showReadMore": {
 			"type": "boolean",
 			"default": true
 		},
 		"readMoreText": {
+			"type": "string",
+			"default": ""
+		},
+		"buttonText": {
 			"type": "string",
 			"default": ""
 		}

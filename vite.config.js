@@ -49,7 +49,7 @@ function iconLibrary() {
  *
  * Entries:
  *   - main                  Global frontend JS + bundled global SCSS.
- *   - slider                Hero-slider viewScript + viewStyle (Swiper + component SCSS).
+ *   - slider                Hero-slider viewScript + viewStyle (runtime + component SCSS).
  *   - hero-slider-editor    Block registration script loaded in the editor.
  *   - hero-banner-editor    Hero Banner block registration script (editor only).
  *   - hero-banner           Hero Banner stylesheet (CSS-only entry).
@@ -221,6 +221,10 @@ export default defineConfig(({ mode }) => ({
 				'paragraph-lock': resolve(
 					__dirname,
 					'src/editor/paragraph-lock.js'
+				),
+				'button-lock': resolve(
+					__dirname,
+					'src/editor/button-lock.js'
 				),
 				'options-app': resolve(__dirname, 'src/admin/options-app.jsx'),
 				'header-editor': resolve(

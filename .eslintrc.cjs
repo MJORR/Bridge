@@ -51,11 +51,6 @@ module.exports = {
 		// required to document them.
 		'jsdoc/require-param': ['error', { checkDestructured: false }],
 		'jsdoc/check-param-names': ['error', { checkDestructured: false }],
-
-		// Swiper 11 publishes its subpaths through an `exports` map, which
-		// eslint-plugin-import's resolver does not read. The paths are real —
-		// the build resolves them and the bundle works.
-		'import/no-unresolved': ['error', { ignore: ['^swiper/'] }],
 	},
 
 	// Build output is generated, minified and not ours to lint.

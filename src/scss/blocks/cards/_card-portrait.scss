@@ -1,0 +1,175 @@
+/**
+ * Bridge — Portrait card.
+ *
+ * A circular photograph that overhangs the panel beneath it, so the panel
+ * appears to arch up and around the face.
+ *
+ * ---- How the arch is drawn -------------------------------------------------
+ *
+ * Not with a mask, a clip-path or an SVG. The circle behind the avatar and the
+ * rectangle below it are two boxes painted the same colour, overlapping: give
+ * the image slot a ring of panel-coloured padding and a 50% radius, pull it
+ * down into the body with a negative margin, and the union of the two shapes is
+ * the arch. There is one silhouette because there is one colour, and it follows
+ * `--bridge-card-bg` — so an operator who reskins the band gets an arch in the
+ * new colour without a line of this file changing.
+ *
+ * The card itself paints nothing. That is the inversion this style needs and
+ * the one place it departs from the shared surface: `card.surface` puts the
+ * background on the card, which would draw a rectangle behind the circle and
+ * flatten the arch into a box. So the background moves onto the two children,
+ * and the card is left transparent.
+ *
+ * ---- Why the sizes are all one variable ------------------------------------
+ *
+ * `--post-card-avatar` is a `min()` of a percentage and a fixed cap, and the
+ * overlap and the body's top padding are both computed from it. That works
+ * because percentage margins and percentage padding both resolve against the
+ * containing block's *inline* size — the card's width — which is the same base
+ * the avatar's own `width` resolves against. So the three stay locked together
+ * at every card width, and the arch cannot drift apart from the circle sitting
+ * in it. Changing the avatar size is changing one number.
+ *
+ * The same fraction is spent again in render.php, as the image's `sizes` hint.
+ * Both now read the one place the size is chosen — `bridge_card_avatar_sizes()`
+ * publishes `width` for this file and `fraction` for that one — so an operator
+ * moving the avatar from Medium to Large moves the request size with it and
+ * neither can drift from the other.
+ *
+ * ---- What is deliberately absent -------------------------------------------
+ *
+ * No excerpt: a biography cut to twenty words stops mid-clause under someone's
+ * name. The role line is the authored one-liner that belongs there instead.
+ *
+ * No colour named anywhere. The style is drawn on a dark band in the design it
+ * came from, but nothing here assumes that — the text is the band's own
+ * foreground and the button reads the `--bridge-button-*` variables the band
+ * sets, so the same card is correct on a white page.
+ */
+.bridge-cards-grid {
+
+	.post-card--portrait {
+		// What Theme Options set for this style.
+		--post-card-heading: var(
+			--wp--custom--card--portrait--heading,
+			var(--wp--preset--font-size--large)
+		);
+
+		// The avatar's width, and with it the whole geometry of the card —
+		// Small, Medium or Large in Theme Options, each a `min()` of a
+		// percentage and a ceiling. The cap is the half that stops a single
+		// card in a one-column grid from becoming a portrait the height of the
+		// viewport, which is why the setting moves both numbers together
+		// rather than offering a slider for one of them.
+		--post-card-avatar: var(
+			--wp--custom--card--portrait--avatar,
+			min(72%, 14rem)
+		);
+		// How much of the circle sits inside the panel. Below about 0.3 the
+		// arch stops reading as an arch and becomes a circle resting on a box;
+		// above about 0.5 the panel swallows the face.
+		--post-card-avatar-sink: 0.42;
+		// The ring of panel colour between the photograph and the open air.
+		// A length rather than a percentage: it is the visual weight of the
+		// arch's edge, and it should not thin out on a narrow card.
+		--post-card-avatar-ring: 0.75rem;
+
+		// The card paints nothing — see the note above. Both properties come
+		// from `card.surface` in the base and both have to go, or the arch is
+		// drawn on top of a rectangle with its own shadow.
+		background: none;
+		box-shadow: none;
+		// Centres the avatar over the panel. The body sets its own width below.
+		align-items: center;
+		// Nothing escapes the card box — the negative margin pulls the body
+		// *up*, it does not push the image out — so the base's `overflow:
+		// hidden` is harmless here and is left alone.
+	}
+
+	// ---- The avatar, and the top of the arch ----------------------------
+	.post-card--portrait .post-card__image {
+		width: var(--post-card-avatar);
+		// Square, so the 50% radius below is a circle rather than an ellipse.
+		// The base crops every other style to 16:9.
+		aspect-ratio: 1;
+		padding: var(--post-card-avatar-ring);
+		border-radius: 50%;
+		background: var(
+			--bridge-card-bg,
+			var(--wp--custom--card--on-light, #f5f5f4)
+		);
+		// The overlap that makes the two boxes one shape. Percentage margins
+		// resolve against the card's width, which is what `--post-card-avatar`
+		// is a fraction of — so this is exactly that fraction of the circle.
+		margin-block-end: calc(var(--post-card-avatar) * var(--post-card-avatar-sink) * -1);
+		// Above the panel, so the ring reads as the arch's edge rather than
+		// being covered by the rectangle it overlaps.
+		position: relative;
+		z-index: 1;
+		// The base clips its 16:9 frame; here the circle is drawn by the
+		// radius on the image itself, and clipping would eat the ring.
+		overflow: visible;
+	}
+
+	.post-card--portrait .post-card__image > img {
+		border-radius: 50%;
+	}
+
+	// The stand-in, on the same circle. Inset by the ring rather than pinned to
+	// the padding box, so the site's mark sits inside the arch's edge exactly
+	// where a photograph would.
+	.post-card--portrait .post-card__image-placeholder {
+		position: absolute;
+		inset: var(--post-card-avatar-ring);
+		width: auto;
+		height: auto;
+		border-radius: 50%;
+	}
+
+	// ---- The panel ------------------------------------------------------
+	.post-card--portrait .post-card__body {
+		width: 100%;
+		background: var(
+			--bridge-card-bg,
+			var(--wp--custom--card--on-light, #f5f5f4)
+		);
+		// The card is transparent, so the corners belong to the panel — and
+		// only the bottom two: the top two are underneath the circle.
+		border-radius: 0 0 var(--wp--custom--card--radius, 6px)
+			var(--wp--custom--card--radius, 6px);
+		// Clears the sunken half of the circle, then the card's usual air. The
+		// first term is the mirror of the negative margin above.
+		padding-block-start: calc(var(--post-card-avatar) * var(--post-card-avatar-sink) + var(--wp--custom--card--padding, 1.5rem));
+		text-align: center;
+		// The name, the role and the button are a stack of three centred
+		// things, not a column with the button pushed to the bottom. The gap
+		// between them is the base's, which is already the tightest step the
+		// spacing scale has.
+		align-items: center;
+	}
+
+	.post-card--portrait .post-card__title {
+		font-weight: 700;
+	}
+
+	// The role. Muted like an excerpt, because it is supporting text — but it
+	// is one authored line, so it never grows to fill the card.
+	.post-card--portrait .post-card__subtitle {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--small);
+		line-height: 1.4;
+		color: var(--post-card-muted);
+	}
+
+	// A span wearing `wp-element-button`, so components/_button.scss gives it
+	// the site's shape and the band gives it its ground. Nothing is added here
+	// except the space above it and the reminder that it is not a target: the
+	// stretched link covers the whole card, and a pointer landing on this
+	// follows the card's own link.
+	.post-card--portrait .post-card__cta {
+		margin-block-start: var(--wp--preset--spacing--20);
+		// The card is the click target; this must not claim to be one of its
+		// own, or a pointer over it reads as hovering something else.
+		cursor: inherit;
+	}
+}

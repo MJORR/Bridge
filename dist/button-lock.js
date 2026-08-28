@@ -1,0 +1,1 @@
+(function(){"use strict";const{addFilter:t}=window.wp.hooks,r="core/button";t("blocks.registerBlockType","bridge/button-lock",(o,l)=>{if(l!==r)return o;const e={...o.supports};return delete e.typography,delete e.color,delete e.dimensions,delete e.spacing,delete e.__experimentalBorder,delete e.border,delete e.shadow,{...o,supports:e,styles:[]}})})();

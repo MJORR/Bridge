@@ -1,0 +1,118 @@
+/**
+ * Bridge — the single post, and the head of a listing.
+ *
+ * Two small layers over templates built almost entirely from core blocks.
+ * Everything structural — the column, the vertical rhythm, the type scale — is
+ * already the design system's, arriving through theme.json and the constrained
+ * layout, so what is left here is the handful of relationships core has no
+ * opinion about: how close the byline sits under the title, what separates the
+ * previous/next pair from the article above it, how wide a search field runs.
+ *
+ * No colour is named. The muted tones are `currentcolor` at reduced strength,
+ * which is the same trick the post cards use and for the same reason: an
+ * archive can be dropped on a dark ground, and a grey typed in here would stay
+ * grey when everything around it turned light.
+ */
+
+// ---- The article -----------------------------------------------------------
+
+/**
+ * The byline.
+ *
+ * Pulled up under the title rather than spaced from it by the block gap: it is
+ * part of the heading, not the first thing after it, and at a full gap's
+ * distance it read as an orphaned line of small print.
+ */
+.bridge-article__meta {
+	gap: 0.35rem 1.25rem;
+	margin-block: calc(var(--wp--preset--spacing--20) * -0.5)
+		var(--wp--preset--spacing--30);
+	color: color-mix(in srgb, currentcolor 70%, transparent);
+	font-size: var(--wp--preset--font-size--small);
+
+	// The date is a fact; the categories are somewhere to go. Only one of them
+	// should look clickable, so the links keep the site's link colour while
+	// the line around them stays muted.
+	a {
+		color: inherit;
+
+		&:hover {
+			color: var(--wp--preset--color--secondary);
+		}
+	}
+}
+
+// The lead image takes the corner every other image on the site has, so a post
+// does not introduce a second idea of what a picture looks like.
+.bridge-article__media img {
+	border-radius: var(--wp--custom--card--radius, 6px);
+}
+
+/**
+ * Previous and next.
+ *
+ * A rule above rather than a band of its own: the pair belongs to the article
+ * it follows, and giving it a background would make it a section of the page
+ * competing with the footer directly beneath.
+ *
+ * Each link is capped at a share of the width so a long headline wraps inside
+ * its own half instead of pushing its neighbour off the row, and the pair
+ * stacks on a narrow screen rather than shrinking to two columns of one word.
+ */
+.bridge-article__nav {
+	gap: var(--wp--preset--spacing--30);
+	margin-block-start: var(--wp--preset--spacing--50);
+	border-top: 1px solid color-mix(in srgb, currentcolor 15%, transparent);
+	padding-block-start: var(--wp--preset--spacing--30);
+
+	.wp-block-post-navigation-link {
+		max-width: 22rem;
+	}
+
+	// The second of the pair points forward, so it reads from the right edge.
+	.post-navigation-link-next {
+		text-align: right;
+		margin-inline-start: auto;
+	}
+
+	a {
+		text-decoration: none;
+
+		&:hover {
+			text-decoration: underline;
+			text-underline-offset: 0.2em;
+		}
+	}
+}
+
+// ---- The head of a listing -------------------------------------------------
+
+/**
+ * The title band of an archive or a search page.
+ *
+ * Not a `bridge-section`: it is the opening of the listing rather than a band
+ * in its own right, and two bands butted together would spend the section
+ * padding twice between the title and the first card. It takes the top padding
+ * only, and the cards band below supplies the gap with its own.
+ */
+.bridge-listing__head {
+	.wp-block-query-title {
+		margin: 0;
+	}
+
+	// A category's description, where one has been written. Set narrower than
+	// the title and quieter, so it reads as a standfirst rather than as the
+	// first paragraph of the archive.
+	.wp-block-term-description {
+		margin-block-start: var(--wp--preset--spacing--20);
+		max-width: 44rem;
+		color: color-mix(in srgb, currentcolor 75%, transparent);
+	}
+}
+
+// Wide enough for a real phrase, capped short of the text column so it reads
+// as a control rather than as a block of content.
+.bridge-listing__search {
+	margin-block-start: var(--wp--preset--spacing--30);
+	max-width: 28rem;
+}

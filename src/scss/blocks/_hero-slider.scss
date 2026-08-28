@@ -4,8 +4,20 @@
  * The slider sits in page content — full window width by default, inside the
  * content column when the width toggle is off. Each slide is a core/cover
  * block; Cover owns its own layout (background image, overlay, content
- * positioning), so this layer only handles sizing and Swiper UI chrome — no
- * flex overrides that would fight Cover's CSS.
+ * positioning), so this layer only handles sizing, the transition between
+ * slides and the chrome over them — no flex overrides that would fight
+ * Cover's CSS.
+ *
+ * The transition is here rather than in JavaScript. slider.js keeps one
+ * number — which slide is showing — and writes it as a class on that slide and
+ * as `--bridge-slider-index` on the track; everything the visitor actually
+ * sees happens in the two rulesets below. That split is why the block needs no
+ * slider library: a cross-fade is two elements in the same place at different
+ * opacities, which is a CSS transition, and a sideways step is a transform.
+ *
+ * Both are written against the track's *children* rather than a class the
+ * script adds, so the first slide is on screen in the first paint and stays
+ * readable if the script never arrives.
  */
 
 // The transparent header that overlays this slider is styled in
@@ -18,14 +30,9 @@
 // Slider
 // ---------------------------------------------------------------------------
 .bridge-hero-slider {
-	--swiper-theme-color: var(--wp--preset--color--background);
-	--swiper-navigation-size: 1.75rem;
-	--swiper-pagination-color: var(--wp--preset--color--background);
-	--swiper-pagination-bullet-inactive-color: var(
-		--wp--preset--color--background
-	);
-	--swiper-pagination-bullet-inactive-opacity: 0.5;
-	--swiper-pagination-bullet-size: 0.5rem;
+	// How long a slide takes to give way to the next one. One number for both
+	// effects, so a fade and a step feel like the same slider.
+	--bridge-slider-speed: 800ms;
 
 	position: relative;
 	// Height is driven by --bridge-slider-height set inline from render.php
@@ -43,21 +50,22 @@
 	overflow: hidden;
 	color: var(--wp--preset--color--background);
 
-	.swiper-wrapper {
+	&__track {
+		position: relative;
 		height: 100%;
 	}
 
-	.swiper-slide {
-		position: relative;
-		width: 100%;
-		height: 100%;
+	// Every direct child of the track is a slide, whatever block made it.
+	// Selected as children rather than by class because the class arrives with
+	// the script and these rules have to hold before it does.
+	&__track > * {
+		margin: 0;
 	}
 
 	// Each slide is a Cover. Override its per-slide minHeight so it always
-	// fills the slider — Swiper sizes the slide; let Cover follow.
-	.swiper-slide.wp-block-cover {
+	// fills the slider — the slider sizes the slide; let Cover follow.
+	&__track > .wp-block-cover {
 		min-height: 100% !important;
-		margin: 0;
 	}
 
 	// Cover's flex centering only centers the inner-container *as a box* —
@@ -65,7 +73,7 @@
 	// the top. Make the inner-container fill the cover, then center its
 	// own children (the title/subtitle) vertically inside it. Inline padding
 	// keeps content clear of the prev/next buttons at the slide edges.
-	.swiper-slide.wp-block-cover > .wp-block-cover__inner-container {
+	&__track > .wp-block-cover > .wp-block-cover__inner-container {
 		min-height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -89,9 +97,7 @@
 		// the middle of the slide. A heading set to "left" then looks centred:
 		// the class is on it and the rule applies, but the box is exactly as
 		// wide as the words, so there is nothing for the alignment to move it
-		// within. The editor never showed it because `swiper-slide` is added
-		// by slider.js at runtime — the selector above only matches once the
-		// page is published, so the two views disagreed.
+		// within.
 		// A definite width sends the free space back to the auto margins as
 		// margin instead of taking it out of the box: the child is the content
 		// column again, centred as core intends, and alignment inside it means
@@ -101,33 +107,203 @@
 			width: 100%;
 		}
 	}
+}
 
-	.swiper-button-prev,
-	.swiper-button-next {
-		background: transparent;
-		border: 0;
-		padding: 0;
-		cursor: pointer;
-		color: var(--wp--preset--color--background);
+// ---------------------------------------------------------------------------
+// Fade — the default, and the reason the block has no slider library.
+//
+// Every slide is in the same place, and only the showing one is opaque.
+// `visibility` rides along with the opacity so a faded-out slide is not a
+// focus trap for a keyboard or a duplicate reading for a screen reader; it is
+// transitioned rather than switched so it holds until the fade has finished.
+// ---------------------------------------------------------------------------
+.bridge-hero-slider.is-effect-fade {
 
-		&::after {
-			font-weight: 600;
-		}
-
-		&:focus-visible {
-			outline: 2px solid var(--wp--preset--color--background);
-			outline-offset: 4px;
-		}
-	}
-
-	.swiper-pagination-bullet {
+	.bridge-hero-slider__track > * {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		visibility: hidden;
 		transition:
-			opacity 150ms ease,
-			transform 150ms ease;
+			opacity var(--bridge-slider-speed) ease-in-out,
+			visibility var(--bridge-slider-speed) ease-in-out;
 	}
 
-	.swiper-pagination-bullet-active {
+	.bridge-hero-slider__track > .is-active {
+		opacity: 1;
+		visibility: visible;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Slide — the whole strip moves, one slide's width at a time.
+//
+// A step from the last slide back to the first travels the length of the strip
+// rather than wrapping, because there are no cloned slides here: looping is
+// honest about where the slides are. It is the reason fade is the default.
+// ---------------------------------------------------------------------------
+.bridge-hero-slider.is-effect-slide {
+
+	.bridge-hero-slider__track {
+		display: flex;
+		// The track is one slide wide, so a whole-number translation of its
+		// own width is exactly one step.
+		transform: translate3d(
+			calc(var(--bridge-slider-index, 0) * -100%),
+			0,
+			0
+		);
+		transition: transform var(--bridge-slider-speed) ease-in-out;
+	}
+
+	.bridge-hero-slider__track > * {
+		flex: 0 0 100%;
+		width: 100%;
+	}
+}
+
+// Before the script: the first slide, and nothing that moves. The rule stops
+// matching the moment `is-ready` lands, so it never argues with `is-active`.
+.bridge-hero-slider:not(.is-ready).is-effect-fade
+	.bridge-hero-slider__track
+	> :first-child {
+	opacity: 1;
+	visibility: visible;
+}
+
+// ---------------------------------------------------------------------------
+// Chrome — a chevron at each edge, a dot per slide along the bottom.
+//
+// The same shapes as the carousel strip in abstracts/_carousel.scss, laid over
+// the slide instead of under it: a 2.4rem circle and a 0.5rem dot, drawn in
+// the slider's own foreground at two strengths rather than in a named colour,
+// so they stay legible over any slide and follow a rebrand.
+// ---------------------------------------------------------------------------
+.bridge-hero-slider__arrow {
+	// `display: grid` from an author stylesheet beats the `[hidden] {
+	// display: none }` in every user-agent sheet, whatever the
+	// specificity — author rules simply win that cascade. Without this the
+	// chevrons render before the script has run, and stay on screen when
+	// there is only one slide, which is the one thing shipping them
+	// `hidden` was meant to prevent.
+	&[hidden] {
+		display: none;
+	}
+
+	position: absolute;
+	inset-block-start: 50%;
+	transform: translateY(-50%);
+	z-index: 2;
+	display: grid;
+	place-items: center;
+	width: 2.4rem;
+	height: 2.4rem;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	color: inherit;
+	background-color: color-mix(in srgb, currentcolor 12%, transparent);
+	cursor: pointer;
+	transition: background-color 150ms ease;
+
+	&:hover {
+		background-color: color-mix(in srgb, currentcolor 22%, transparent);
+	}
+
+	&:focus-visible {
+		outline: 2px solid currentcolor;
+		outline-offset: 2px;
+	}
+
+	// At an end of a slider that does not loop. Kept in place rather than
+	// hidden, so the slide does not reflow around a control coming and
+	// going.
+	&:disabled {
+		opacity: 0.35;
+		cursor: default;
+	}
+
+	.bridge-icon {
+		// Smaller than the icon scale's own steps: this one sits inside a
+		// 2.4rem button, which is furniture rather than content.
+		width: 1rem;
+		height: 1rem;
+	}
+
+	&--prev {
+		inset-inline-start: var(--wp--preset--spacing--30, 1rem);
+	}
+
+	&--next {
+		inset-inline-end: var(--wp--preset--spacing--30, 1rem);
+	}
+}
+
+.bridge-hero-slider__dots {
+	position: absolute;
+	inset-block-end: var(--wp--preset--spacing--30, 1rem);
+	inset-inline: 0;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	flex-wrap: wrap;
+}
+
+// Filled and empty are one colour at two strengths, never two colours —
+// the same rule the carousel dots and the testimonial ratings follow.
+.bridge-hero-slider__dot {
+	width: 0.5rem;
+	height: 0.5rem;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	// A button does not inherit its colour — every user-agent sheet gives it
+	// `buttontext`, which is near-black. Without this the dots were drawn in
+	// the system colour over the slide instead of in the slider's own
+	// foreground, and vanished against a dark photograph.
+	color: inherit;
+	background-color: currentcolor;
+	opacity: 0.5;
+	cursor: pointer;
+	transition:
+		opacity 150ms ease,
+		transform 150ms ease;
+
+	&.is-active {
+		opacity: 1;
 		transform: scale(1.2);
+	}
+
+	&:focus-visible {
+		outline: 2px solid currentcolor;
+		outline-offset: 3px;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Reduced motion
+//
+// The slides still change — the chevrons and the dots have to do something —
+// but they change at once rather than travelling. slider.js has already
+// switched autoplay off, so every change from here is one the visitor asked
+// for, and an instant answer is the right one.
+// ---------------------------------------------------------------------------
+@media (prefers-reduced-motion: reduce) {
+
+	.bridge-hero-slider {
+
+		&.is-effect-fade .bridge-hero-slider__track > *,
+		&.is-effect-slide .bridge-hero-slider__track,
+		.bridge-hero-slider__arrow,
+		.bridge-hero-slider__dot {
+			transition: none;
+		}
+
+		.bridge-hero-slider__dot.is-active {
+			transform: none;
+		}
 	}
 }
 
@@ -182,15 +358,13 @@
 	height: auto;
 	overflow: visible;
 
-	.swiper-button-prev,
-	.swiper-button-next,
-	.swiper-pagination {
-		display: none;
-	}
-
-	// In editor, let each Cover use a realistic preview height instead of
-	// trying to fill the slider container (which is auto-height here).
-	.swiper-slide.wp-block-cover {
+	// In the editor each Cover is a block being written, not a slide being
+	// shown: stacked, at a realistic preview height, with none of the
+	// positioning or fading the front end applies.
+	.wp-block-cover {
+		position: static;
+		opacity: 1;
+		visibility: visible;
 		min-height: 60vh !important;
 	}
 }

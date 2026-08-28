@@ -26,6 +26,21 @@
 .wp-block-button__link,
 .wp-element-button {
 	@include button.shape;
+
+	/**
+	 * Breathing room above and below, on every button.
+	 *
+	 * A button is a target, not a line of text: butted straight against the
+	 * paragraph above it — or against a second button that wrapped onto the
+	 * next line — it reads as part of the block it is sitting in. S is a step
+	 * on the site's spacing scale and is already a fluid clamp, so this
+	 * shrinks with everything else on a phone rather than holding a desktop
+	 * gap open on a 320px screen.
+	 *
+	 * Block, not inline: side margins would break the gap `.wp-block-buttons`
+	 * sets between buttons in a row, which is the editor's to choose.
+	 */
+	margin-block: var(--wp--preset--spacing--30);
 }
 
 .wp-block-button__link:not(.has-background, .has-text-color),

@@ -45,6 +45,7 @@ require_once get_theme_file_path('inc/theme-json.php');
 require_once get_theme_file_path('inc/icons.php');
 require_once get_theme_file_path('inc/structure.php');
 require_once get_theme_file_path('inc/section-blocks.php');
+require_once get_theme_file_path('inc/card-data.php');
 require_once get_theme_file_path('inc/hero-blocks.php');
 require_once get_theme_file_path('inc/header.php');
 
@@ -290,6 +291,26 @@ function bridge_register_blocks(): void
 
 	// --- Cards -------------------------------------------------------------
 	bridge_register_script('bridge-cards-editor', 'cards-editor.js', $previewed);
+
+	/**
+	 * The site's excerpt length, for the block's own inspector.
+	 *
+	 * The block stores 0 for "use the site default", and a control that says
+	 * only "site default" leaves an editor guessing what that is. The number
+	 * comes from the token record, which is where the operator set it.
+	 *
+	 * Printed as data rather than fetched: the alternative was a REST round
+	 * trip on every editor load for one integer that is already in memory.
+	 */
+	$card_tokens = bridge_get_tokens();
+	wp_add_inline_script(
+		'bridge-cards-editor',
+		'window.bridgeCards = ' . wp_json_encode(
+			array('excerptLength' => (int) ($card_tokens['cards']['excerpt'] ?? 20))
+		) . ';',
+		'before'
+	);
+
 	bridge_register_block('cards');
 
 	// --- Page Title --------------------------------------------------------
@@ -505,15 +526,25 @@ add_action('enqueue_block_editor_assets', 'bridge_enqueue_page_editor_assets');
 /**
  * Editor scripts that belong to every screen with a block editor on it.
  *
- * Unlike the three above, this one is not about the Page screen: it takes the
- * spacing and border controls off core/paragraph, so it has to run wherever a
- * paragraph can be written, posts and the site editor included.
+ * Unlike the three above, these are not about the Page screen: they take the
+ * spacing and border controls off core/paragraph and the styling controls off
+ * core/button, so they have to run wherever either block can be written —
+ * posts, patterns and the site editor included.
  */
 function bridge_enqueue_editor_assets(): void
 {
 	bridge_enqueue_script(
 		'bridge-paragraph-lock',
 		'paragraph-lock.js',
+		array(
+			'wp-hooks',
+			'wp-blocks',
+		)
+	);
+
+	bridge_enqueue_script(
+		'bridge-button-lock',
+		'button-lock.js',
 		array(
 			'wp-hooks',
 			'wp-blocks',

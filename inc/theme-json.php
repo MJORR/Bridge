@@ -437,6 +437,58 @@ function bridge_compile_theme_json(array $tokens): array
 		$card['on' . ucfirst($key)] = (string) ($cards['colors'][$key] ?? $entry['default']);
 	}
 
+	/**
+	 * The per-style settings, one nested group per style.
+	 *
+	 * WordPress turns nesting into `--` and camelCase into `-`, so
+	 * `card.portrait.avatar` arrives as `--wp--custom--card--portrait--avatar`.
+	 * The Cards block's stylesheet reads these and nothing else does; each
+	 * style points its own `--post-card-*` variable at the group that belongs
+	 * to it, so the base rules stay written once.
+	 *
+	 * Every value is resolved here rather than in Sass. A heading becomes a
+	 * `var()` at the site's own font-size preset — so the card follows the type
+	 * scale rather than carrying a length of its own — and a ratio and an
+	 * avatar width become the literal the browser needs.
+	 */
+	$ratios  = bridge_card_ratios();
+	$avatars = bridge_card_avatar_sizes();
+
+	foreach (bridge_card_styles() as $slug => $entry) {
+		$saved = (array) ($cards['styles'][$slug] ?? array());
+		$group = array();
+
+		foreach ((array) ($entry['fields'] ?? array()) as $field) {
+			$value = (string) ($saved[$field] ?? ($entry[$field] ?? ''));
+
+			// The sanitiser guarantees each of these is a slug the theme
+			// knows, but a filter that dropped a preset after a site had saved
+			// it would not — and a missing preset should fall back to the
+			// style's own default rather than publish an empty property.
+			switch ($field) {
+				case 'heading':
+					$group['heading'] = sprintf('var(--wp--preset--font-size--%s)', $value);
+					break;
+
+				case 'ratio':
+					$group['ratio'] = (string) (
+						$ratios[$value]['value'] ?? $ratios[$entry['ratio'] ?? '16-9']['value'] ?? '16 / 9'
+					);
+					break;
+
+				case 'avatar':
+					$group['avatar'] = (string) (
+						$avatars[$value]['width'] ?? $avatars[$entry['avatar'] ?? 'm']['width'] ?? 'min(72%, 14rem)'
+					);
+					break;
+			}
+		}
+
+		if ($group) {
+			$card[$slug] = $group;
+		}
+	}
+
 	return array(
 		// Matches the static theme.json. If core's schema advances,
 		// WP_Theme_JSON migrates this forward — declaring the latest version

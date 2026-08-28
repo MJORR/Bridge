@@ -1,0 +1,116 @@
+/**
+ * Bridge — Tile card.
+ *
+ * Ported from the previous theme's `.card-3`, which is worth saying because
+ * almost none of its declarations survived intact. That version spent `$primary`,
+ * `$secondary`, `$black`, `$shadow`, `$step-1` and a pair of `min-width` media
+ * queries — a design system this theme does not have, and one that assumed a
+ * white page. Everything below is the same design expressed in this theme's
+ * terms: the band's own foreground, the `--post-card-*` variables _band.scss
+ * publishes, and the container-query grid that already knows how to collapse.
+ *
+ * The two rules that are simply gone:
+ *
+ *   the 50%/25% flex widths — `--columns` and `section.auto-grid` do that job,
+ *   and they do it against the container rather than the window, so a Tile grid
+ *   dropped into a narrow column collapses instead of overflowing it;
+ *
+ *   `h3 { color: $primary }` — Primary is the *background* of an Inverted band,
+ *   so a heading painted with it disappears there. The title inherits the
+ *   band's foreground, which is correct on every skin, and the accent moved to
+ *   the rule and the hover, where `--post-card-accent` already handles it.
+ */
+.bridge-cards-grid {
+
+	.post-card--tile {
+		// What Theme Options set for this style. The heading fallback is
+		// x-large rather than the base's large: a Tile is read at a glance
+		// across a grid, and that is the size it was drawn at.
+		--post-card-heading: var(
+			--wp--custom--card--tile--heading,
+			var(--wp--preset--font-size--x-large)
+		);
+		--post-card-ratio: var(--wp--custom--card--tile--ratio, 16 / 9);
+
+		// The rule along the bottom edge is positioned against the card. The
+		// base already sets `position: relative` for the stretched link; this
+		// is the second thing that depends on it.
+		//
+		// Room for the rule under the body, so a long excerpt cannot run into
+		// it. The value is the rule's own height, named once below.
+		--post-card-rule-height: 0.625rem;
+		// How far in the rule sits at rest, and the width it starts at. Both
+		// are spacing steps rather than the old theme's fixed `$space-2xl`, so
+		// the resting rule shrinks with everything else on a phone.
+		--post-card-rule-inset: var(--wp--preset--spacing--20);
+		--post-card-rule-width: var(--wp--preset--spacing--60);
+
+		padding-bottom: var(--post-card-rule-height);
+	}
+
+	// ---- The chip -------------------------------------------------------
+	// Bottom-right of the photograph, overlapping its lower edge. The old
+	// theme floated it and pulled it up with a negative margin, which only
+	// worked because it followed the image in source order; this is positioned
+	// against the figure, so it stays put whatever else the figure holds.
+	.post-card--tile .post-card__badge {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		// Above the image, below the stretched link — the chip is decoration,
+		// and a click on it must still open the card.
+		z-index: 0;
+		padding: 0.25rem 1.125rem;
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 700;
+		line-height: 1.4;
+		// Accent rather than Secondary, which is what the old theme used: on
+		// this palette Secondary is the link colour, and a chip in the link
+		// colour reads as something to click. Accent is the palette's
+		// attention slot and is the only colour on the card that is not
+		// derived from the band.
+		color: var(--wp--preset--color--text);
+		background-color: var(--wp--preset--color--accent);
+	}
+
+	// ---- The title ------------------------------------------------------
+	// The size itself comes from `--post-card-heading` in the base; what is
+	// left here is the air under it, which a Tile needs more of than the other
+	// two because its heading is the largest thing on the card.
+	.post-card--tile .post-card__title {
+		margin-bottom: var(--wp--preset--spacing--20);
+	}
+
+	// ---- The rule -------------------------------------------------------
+	// The hover state, and the reason this style needs no colour change to
+	// signal one: the rule runs from its resting inset to the full width of
+	// the card, which is a movement a reader who cannot distinguish the brand
+	// colours still sees. WCAG 1.4.1 — hover is never colour alone.
+	.post-card--tile .post-card__rule {
+		position: absolute;
+		bottom: 0;
+		left: var(--post-card-rule-inset);
+		display: block;
+		width: var(--post-card-rule-width);
+		height: var(--post-card-rule-height);
+		background-color: var(--post-card-accent);
+		transition:
+			left 300ms ease,
+			width 300ms ease;
+	}
+
+	// `:focus-within` alongside the pointer states, so a keyboard reaches
+	// everything a mouse does.
+	.post-card--tile:hover .post-card__rule,
+	.post-card--tile:focus-within .post-card__rule {
+		left: 0;
+		width: 100%;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+
+		.post-card--tile .post-card__rule {
+			transition: none;
+		}
+	}
+}

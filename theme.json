@@ -217,7 +217,19 @@
         "padding": "var(--wp--preset--spacing--40)",
         "radius": "var(--wp--custom--radius--medium)",
         "shadow": "0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06)",
-        "shadowHover": "0 4px 12px rgba(0, 0, 0, 0.1), 0 12px 24px rgba(0, 0, 0, 0.08)"
+        "shadowHover": "0 4px 12px rgba(0, 0, 0, 0.1), 0 12px 24px rgba(0, 0, 0, 0.08)",
+        "summary": {
+          "heading": "var(--wp--preset--font-size--large)",
+          "ratio": "16 / 9"
+        },
+        "tile": {
+          "heading": "var(--wp--preset--font-size--x-large)",
+          "ratio": "16 / 9"
+        },
+        "portrait": {
+          "heading": "var(--wp--preset--font-size--large)",
+          "avatar": "min(72%, 14rem)"
+        }
       }
     }
   },

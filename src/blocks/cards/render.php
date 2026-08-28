@@ -38,20 +38,84 @@ $columns         = max( 1, min( 6,  (int) ( $attributes['columns'] ?? 3 ) ) );
 $order_by        = sanitize_key( $attributes['orderBy'] ?? 'date' );
 $order           = strtoupper( sanitize_key( $attributes['order'] ?? 'desc' ) );
 $categories      = array_filter( array_map( 'absint', (array) ( $attributes['categories'] ?? array() ) ) );
-$excerpt_length  = max( 10, min( 100, (int) ( $attributes['excerptLength'] ?? 20 ) ) );
+/**
+ * How many words of the post a card carries.
+ *
+ * 0 means "whatever the site says", which is the default and what an untouched
+ * block saves — so a client who decides their cards are too wordy changes one
+ * number in Theme Options and every band on the site follows, rather than
+ * opening forty pages. A block that was given a length of its own keeps it:
+ * the setting is a default, not an override.
+ *
+ * The token is read through `bridge_get_tokens()`, which memoises and reads an
+ * autoloaded option, so this costs no query however many Cards blocks a page
+ * has.
+ */
+$excerpt_length  = (int) ( $attributes['excerptLength'] ?? 0 );
+
+if ( $excerpt_length <= 0 ) {
+	$tokens         = function_exists( 'bridge_get_tokens' ) ? bridge_get_tokens() : array();
+	$excerpt_length = (int) ( $tokens['cards']['excerpt'] ?? 20 );
+}
+
+$excerpt_length  = max( 10, min( 100, $excerpt_length ) );
 $show_read_more  = ! empty( $attributes['showReadMore'] );
 $width           = 'narrow' === ( $attributes['width'] ?? 'wide' ) ? 'narrow' : 'wide';
 // Set only by the editor's preview request, never saved on the block.
 $is_preview      = ! empty( $attributes['isPreview'] );
 $overflow        = 'carousel' === ( $attributes['overflowStyle'] ?? 'wrap' ) ? 'carousel' : 'wrap';
+
+/**
+ * Which of the three card styles the grid draws.
+ *
+ * A named attribute rather than a `register_block_style()` entry, even though
+ * this theme reaches for those elsewhere. The Styles list on this block is
+ * already spent on the section skins — Surface, Inverted, Accent — and those
+ * answer "what colour is the band", which is a different question from "what
+ * shape is a card". Three more entries in the same list would read as six
+ * variants of one thing.
+ *
+ * Checked against the allowlist here as well as in block.json's enum, because
+ * an attribute arrives from the saved post content and from the REST preview
+ * request, and neither is validated by the editor that wrote it.
+ */
+$card_styles     = array( 'summary', 'tile', 'portrait' );
+$card_style      = sanitize_key( $attributes['cardStyle'] ?? 'summary' );
+$card_style      = in_array( $card_style, $card_styles, true ) ? $card_style : 'summary';
+
+/**
+ * Which query fills the grid.
+ *
+ * `self` is the block as it has always worked: its own WP_Query, built from
+ * the attributes above, dropped into a page wherever an editor wants a row of
+ * posts. `main` hands the grid the query WordPress has already run for this
+ * request — the archive, the category, the search results — which is what the
+ * archive templates need and what an authored band must never do.
+ *
+ * The alternative was a second card: core/query + core/post-template in the
+ * templates, styled to match. That is two implementations of one card, and the
+ * second one drifts. This is one card, filled from either end.
+ *
+ * Never in the editor. A ServerSideRender request runs inside the REST API,
+ * where the main query is the REST controller's, not the archive's — so a
+ * preview asking for it would draw whatever that happened to be. The editor
+ * gets the block's own query instead, which shows a real row of real posts and
+ * is the honest answer to "what does this look like".
+ */
+$use_main = 'main' === ( $attributes['source'] ?? 'self' ) && ! $is_preview;
 // The editor previews a carousel as rows, so it gets neither the track
-// attributes nor the controls.
-$is_carousel     = 'carousel' === $overflow && ! $is_preview;
+// attributes nor the controls. Neither does an archive: a paginated listing
+// that scrolls sideways hides the posts the pagination is counting.
+$is_carousel     = 'carousel' === $overflow && ! $is_preview && ! $use_main;
 // Empty means "use the theme's wording", which is the only wording that can be
 // translated: a default written into block.json is a literal string that never
 // reaches a .po file, so every site in every language got the English one.
 $read_more_text  = trim( (string) ( $attributes['readMoreText'] ?? '' ) );
 $read_more_text  = '' !== $read_more_text ? $read_more_text : __( 'Read more', 'bridge' );
+
+// Portrait's button, on the same terms and for the same reason.
+$button_text     = trim( (string) ( $attributes['buttonText'] ?? '' ) );
+$button_text     = '' !== $button_text ? $button_text : __( 'View profile', 'bridge' );
 
 $orderby_map = array(
 	'date'          => 'date',
@@ -68,9 +132,22 @@ $order       = in_array( $order, array( 'ASC', 'DESC' ), true ) ? $order : 'DESC
 // block wrapper and our output here — styling that class made a double grid.
 //
 // `bridge_section_wrapper()` is what every other section block opens with: it
-// adds the band classes, the colour support classes an editor picked, and the
-// aria-labelledby that names the landmark. In preview mode there is no band —
-// the editor has already drawn one — so neither is called.
+// adds the band classes and the aria-labelledby that names the landmark. In
+// preview mode there is no band — the editor has already drawn one — so
+// neither is called.
+//
+// No colour classes among them. The block declares no `color` support, so
+// there is nothing for `get_block_wrapper_attributes()` to add: a band's
+// colour is a *skin* — Surface, Inverted, Accent, registered as block styles
+// in inc/section-blocks.php — and not a colour picked per band.
+//
+// That is the whole reason the support came off. A skin resolves to palette
+// slugs, so it follows a rebrand and it points `--bridge-card-bg` at the card
+// colour that belongs on that ground; a hex an editor chose does neither, and
+// a card sitting on one is a card the contrast audit never saw. On WordPress 7
+// the single `color` support was also producing four panels in the Styles tab
+// — Text moved into Typography, Background into a panel of its own, and Link
+// into Elements — which read as four ways to overrule the design system.
 $grid_style = sprintf( '--columns:%d;', $columns );
 
 list( $intro_html, $label_id ) = $is_preview
@@ -115,7 +192,11 @@ if ( 'post' === $post_type && ! empty( $categories ) ) {
 	$query_args['category__in'] = $categories;
 }
 
-$query = new WP_Query( $query_args );
+// The main query is taken as it stands — its post type, its ordering, its
+// posts-per-page are the site's Reading settings and the archive being viewed,
+// none of which is this block's to overrule. `$query_args` is left built but
+// unused in that case, which is the price of one branch instead of two.
+$query = $use_main ? $GLOBALS['wp_query'] : new WP_Query( $query_args );
 
 // A band with a headline and no posts yet is still a band worth printing: the
 // heading is the editor's, and dropping the whole section because a query came
@@ -126,7 +207,17 @@ if ( ! $query->have_posts() ) {
 	?>
 	<div class="bridge-cards-grid" style="<?php echo esc_attr( $grid_style ); ?>">
 		<p class="bridge-cards__empty">
-			<?php esc_html_e( 'No posts found.', 'bridge' ); ?>
+			<?php
+			// A search that found nothing is a different sentence from a band
+			// whose category is empty, and the visitor reading it is in a
+			// different situation — one of them mistyped something and can fix
+			// it, which is worth saying.
+			if ( $use_main && is_search() ) {
+				esc_html_e( 'No results. Try a different search term.', 'bridge' );
+			} else {
+				esc_html_e( 'No posts found.', 'bridge' );
+			}
+			?>
 		</p>
 	</div>
 	<?php
@@ -160,9 +251,29 @@ $placeholder_logo_id = function_exists( 'bridge_light_logo_id' ) ? bridge_light_
 // the container has rather than how wide the window is — so this is the browser's
 // hint rather than a description of fixed breakpoints: full width on a phone,
 // half on a tablet, and the authored column share above that.
+//
+// Portrait is the exception, and the only place the style reaches this far into
+// the PHP: its avatar is a circle a fraction of the width of the column, not a
+// photograph spanning the whole of it, so the same hint would have every
+// browser fetch a file far wider than the slot it lands in.
+//
+// The fraction is read from the same record that sets the CSS width —
+// `bridge_card_avatar_sizes()` publishes `width` for the stylesheet and
+// `fraction` for this line — so an operator moving the avatar to Large moves
+// the requested file size with it, and the two cannot drift apart.
+$card_width_share = 1.0;
+
+if ( 'portrait' === $card_style && function_exists( 'bridge_card_avatar_sizes' ) ) {
+	$card_tokens   = function_exists( 'bridge_get_tokens' ) ? bridge_get_tokens() : array();
+	$avatar_slug   = (string) ( $card_tokens['cards']['styles']['portrait']['avatar'] ?? 'm' );
+	$avatar_sizes  = bridge_card_avatar_sizes();
+	$card_width_share = (float) ( $avatar_sizes[ $avatar_slug ]['fraction'] ?? 0.72 );
+}
 $card_image_sizes = sprintf(
-	'(max-width: 480px) 100vw, (max-width: 768px) 50vw, %dvw',
-	max( 1, (int) round( 100 / $columns ) )
+	'(max-width: 480px) %1$dvw, (max-width: 768px) %2$dvw, %3$dvw',
+	max( 1, (int) round( 100 * $card_width_share ) ),
+	max( 1, (int) round( 50 * $card_width_share ) ),
+	max( 1, (int) round( 100 / $columns * $card_width_share ) )
 );
 /**
  * How many cards can be on screen before the rest are certainly not.
@@ -202,16 +313,21 @@ echo $section_open, $inner_open, $intro_html;
 	while ( $query->have_posts() ) :
 		$query->the_post();
 
-		$thumbnail_id = get_post_thumbnail_id();
 		// Empty for the first row, so core keeps its say over those.
 		$card_loading = $card_index >= $eager_cards ? 'lazy' : '';
 		$card_index++;
-		$permalink    = get_permalink();
-		$title        = get_the_title();
-		$excerpt      = wp_trim_words(
-			wp_strip_all_tags( get_the_excerpt() ),
-			$excerpt_length,
-			'…'
+
+		// One record per post, built the same way whatever the post type and
+		// whatever the style — the styles differ in which of these fields they
+		// draw, never in how the fields are found. See inc/card-data.php.
+		$card = bridge_card_data(
+			array(
+				'excerpt_length'      => $excerpt_length,
+				'cta_text'            => $button_text,
+				'image_sizes'         => $card_image_sizes,
+				'loading'             => $card_loading,
+				'placeholder_logo_id' => $placeholder_logo_id,
+			)
 		);
 
 		include __DIR__ . '/card.php';
@@ -234,5 +350,54 @@ if ( $is_carousel ) {
 	);
 }
 
+/**
+ * Pagination, for a grid filled from the main query.
+ *
+ * Only there: a band an editor dropped onto a page shows the number of posts
+ * they asked for, and paging it would take the visitor away from the page it
+ * sits on. An archive is the page.
+ *
+ * `paginate_links()` rather than the block editor's pagination blocks, because
+ * the grid is one block rather than a query wrapping a template — and because
+ * this way the markup, and so the styling, is the same on every listing the
+ * theme has.
+ */
+if ( $use_main && $query->max_num_pages > 1 ) {
+	$links = paginate_links(
+		array(
+			'total'     => (int) $query->max_num_pages,
+			'current'   => max( 1, get_query_var( 'paged' ) ),
+			'mid_size'  => 1,
+			'type'      => 'array',
+			'prev_text' => __( 'Previous', 'bridge' ),
+			'next_text' => __( 'Next', 'bridge' ),
+		)
+	);
+
+	if ( $links ) {
+		printf(
+			'<nav class="bridge-cards__pagination" aria-label="%s"><ul>',
+			esc_attr__( 'Posts', 'bridge' )
+		);
+
+		foreach ( $links as $link ) {
+			// Pre-escaped by core: paginate_links() builds anchors and spans
+			// from esc_url()'d hrefs and esc_html()'d labels.
+			echo '<li>', $link, '</li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+
+		echo '</ul></nav>';
+	}
+}
+
 echo $inner_close, $section_close; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+
+// Looping the main query consumes it. Nothing in the archive templates reads
+// it again today, but a second block that did would find it exhausted and
+// render nothing — a bug that would look like the block being broken rather
+// than like this loop having eaten the posts.
+if ( $use_main ) {
+	$query->rewind_posts();
+}
+
 wp_reset_postdata();

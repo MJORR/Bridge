@@ -29,8 +29,17 @@ const {
 	Spinner,
 } = window.wp.components;
 const { useSelect } = window.wp.data;
-const { __ } = window.wp.i18n;
+const { __, sprintf } = window.wp.i18n;
 const ServerSideRender = window.wp.serverSideRender;
+
+/**
+ * The site's excerpt length, printed by functions.php.
+ *
+ * Only used to tell an editor what "site default" means. The fallback matches
+ * the token's own default, so a stale cached script shows a plausible number
+ * rather than "undefined words".
+ */
+const SITE_EXCERPT_LENGTH = window.bridgeCards?.excerptLength ?? 20;
 
 const BLOCK_NAME = 'bridge/cards';
 
@@ -63,10 +72,57 @@ const POST_TYPE_FALLBACK = [
 	{ label: 'Page', value: 'page' },
 ];
 
+/**
+ * The three card styles, and which of the card-content controls each one has.
+ *
+ * The table is here rather than spelled out in conditions further down because
+ * it is the thing that goes stale: a fourth style is a row, and the panel that
+ * draws the controls does not have to be reread to add one. `fields` names the
+ * attributes the style actually draws — everything else is hidden rather than
+ * disabled, for the reason the source control gives: a control that cannot
+ * change anything is still a control someone will try.
+ */
+const CARD_STYLES = [
+	{
+		value: 'summary',
+		label: __('Summary', 'bridge'),
+		help: __(
+			'A photograph, a heading and a few lines of the post itself. The right choice for a list of things to read.',
+			'bridge'
+		),
+		fields: ['excerpt', 'readMore'],
+	},
+	{
+		value: 'tile',
+		label: __('Tile', 'bridge'),
+		help: __(
+			'A large heading over a photograph, with a chip in the corner carrying the post’s “distance” field. For places rather than articles.',
+			'bridge'
+		),
+		fields: ['excerpt'],
+	},
+	{
+		value: 'portrait',
+		label: __('Portrait', 'bridge'),
+		help: __(
+			'A circular photograph, a name, the post’s “subtitle” field as a role line, and a button. For people.',
+			'bridge'
+		),
+		fields: ['button'],
+	},
+];
+
+const cardStyleHas = (style, field) =>
+	(
+		CARD_STYLES.find((s) => s.value === style) ?? CARD_STYLES[0]
+	).fields.includes(field);
+
 const Edit = ({ attributes, setAttributes }) => {
 	const {
+		source,
 		width,
 		overflowStyle,
+		cardStyle,
 		postType,
 		numberOfPosts,
 		columns,
@@ -76,7 +132,12 @@ const Edit = ({ attributes, setAttributes }) => {
 		excerptLength,
 		showReadMore,
 		readMoreText,
+		buttonText,
 	} = attributes;
+
+	const style = CARD_STYLES.find((s) => s.value === cardStyle)
+		? cardStyle
+		: 'summary';
 
 	// Public, viewable post types. Falls back to post/page while loading.
 	const postTypeOptions = useSelect((select) => {
@@ -169,32 +230,66 @@ const Edit = ({ attributes, setAttributes }) => {
 			PanelBody,
 			{ title: __('Query', 'bridge'), initialOpen: true },
 			el(SelectControl, {
-				label: __('Post type', 'bridge'),
-				value: postType,
-				options: postTypeOptions,
-				onChange: (value) =>
-					setAttributes({ postType: value, categories: [] }),
+				label: __('Posts to show', 'bridge'),
+				help:
+					source === 'main'
+						? __(
+								'The posts this page is already showing — the archive, the category or the search results. Everything below is decided by the page and by Settings → Reading, so it is not offered here. This is the setting the archive templates use; a band on a page should not.',
+								'bridge'
+							)
+						: __(
+								'A query of this block’s own, set below. The right choice anywhere except an archive template.',
+								'bridge'
+							),
+				value: source || 'self',
+				options: [
+					{
+						label: __('Chosen here', 'bridge'),
+						value: 'self',
+					},
+					{
+						label: __('This page’s own posts', 'bridge'),
+						value: 'main',
+					},
+				],
+				onChange: (value) => setAttributes({ source: value }),
 			}),
-			el(RangeControl, {
-				label: __('Number of posts', 'bridge'),
-				value: numberOfPosts,
-				min: 1,
-				max: 24,
-				onChange: (value) => setAttributes({ numberOfPosts: value }),
-			}),
-			el(SelectControl, {
-				label: __('Order by', 'bridge'),
-				value: orderBy,
-				options: ORDERBY_OPTIONS,
-				onChange: (value) => setAttributes({ orderBy: value }),
-			}),
-			el(SelectControl, {
-				label: __('Order', 'bridge'),
-				value: order,
-				options: ORDER_OPTIONS,
-				onChange: (value) => setAttributes({ order: value }),
-			}),
-			postType === 'post' &&
+			// Hidden rather than disabled when the page owns the query: a
+			// control that cannot change anything is still a control someone
+			// will try, and four of them read as a form that is broken.
+			source !== 'main' &&
+				el(SelectControl, {
+					label: __('Post type', 'bridge'),
+					value: postType,
+					options: postTypeOptions,
+					onChange: (value) =>
+						setAttributes({ postType: value, categories: [] }),
+				}),
+			source !== 'main' &&
+				el(RangeControl, {
+					label: __('Number of posts', 'bridge'),
+					value: numberOfPosts,
+					min: 1,
+					max: 24,
+					onChange: (value) =>
+						setAttributes({ numberOfPosts: value }),
+				}),
+			source !== 'main' &&
+				el(SelectControl, {
+					label: __('Order by', 'bridge'),
+					value: orderBy,
+					options: ORDERBY_OPTIONS,
+					onChange: (value) => setAttributes({ orderBy: value }),
+				}),
+			source !== 'main' &&
+				el(SelectControl, {
+					label: __('Order', 'bridge'),
+					value: order,
+					options: ORDER_OPTIONS,
+					onChange: (value) => setAttributes({ order: value }),
+				}),
+			source !== 'main' &&
+				postType === 'post' &&
 				el(FormTokenField, {
 					label: __('Filter by categories', 'bridge'),
 					value: selectedCategoryNames,
@@ -205,6 +300,19 @@ const Edit = ({ attributes, setAttributes }) => {
 		el(
 			PanelBody,
 			{ title: __('Layout', 'bridge') },
+			// First in the panel, because it is the setting the others read
+			// differently: how many columns suit a grid depends on whether the
+			// cards are articles or faces.
+			el(SelectControl, {
+				label: __('Card style', 'bridge'),
+				help: CARD_STYLES.find((s) => s.value === style)?.help,
+				value: style,
+				options: CARD_STYLES.map(({ value, label }) => ({
+					value,
+					label,
+				})),
+				onChange: (value) => setAttributes({ cardStyle: value }),
+			}),
 			el(SelectControl, {
 				label: __('Width', 'bridge'),
 				help: __(
@@ -239,22 +347,49 @@ const Edit = ({ attributes, setAttributes }) => {
 				onChange: (value) => setAttributes({ overflowStyle: value }),
 			})
 		),
+		// Which controls belong here is the style's decision — see CARD_STYLES.
+		// Portrait draws no excerpt and Tile no read-more, and a panel offering
+		// settings that change nothing on screen is worse than a shorter panel.
 		el(
 			PanelBody,
 			{ title: __('Card content', 'bridge') },
-			el(RangeControl, {
-				label: __('Excerpt length (words)', 'bridge'),
-				value: excerptLength,
-				min: 10,
-				max: 100,
-				onChange: (value) => setAttributes({ excerptLength: value }),
-			}),
-			el(ToggleControl, {
-				label: __('Show read more link', 'bridge'),
-				checked: !!showReadMore,
-				onChange: (value) => setAttributes({ showReadMore: value }),
-			}),
-			showReadMore &&
+			cardStyleHas(style, 'excerpt') &&
+				el(RangeControl, {
+					label: __('Excerpt length (words)', 'bridge'),
+					help: excerptLength
+						? __(
+								'This band only. Reset it to follow the site default set in Theme Options → Cards.',
+								'bridge'
+							)
+						: sprintf(
+								/* translators: %d: number of words. */
+								__(
+									'Following the site default of %d words, set in Theme Options → Cards.',
+									'bridge'
+								),
+								SITE_EXCERPT_LENGTH
+							),
+					// `undefined` rather than 0 is what draws the slider as
+					// unset: 0 would put the handle at the far left and read as
+					// "no excerpt" rather than "not decided here".
+					value: excerptLength || undefined,
+					min: 10,
+					max: 100,
+					allowReset: true,
+					// What Reset writes. 0 is the block saying nothing, which
+					// is what render.php reads as "ask the site".
+					resetFallbackValue: 0,
+					onChange: (value) =>
+						setAttributes({ excerptLength: value ?? 0 }),
+				}),
+			cardStyleHas(style, 'readMore') &&
+				el(ToggleControl, {
+					label: __('Show read more link', 'bridge'),
+					checked: !!showReadMore,
+					onChange: (value) => setAttributes({ showReadMore: value }),
+				}),
+			cardStyleHas(style, 'readMore') &&
+				showReadMore &&
 				el(TextControl, {
 					label: __('Read more text', 'bridge'),
 					// Empty uses the theme's own wording, which is the only
@@ -262,6 +397,17 @@ const Edit = ({ attributes, setAttributes }) => {
 					placeholder: __('Read more', 'bridge'),
 					value: readMoreText,
 					onChange: (value) => setAttributes({ readMoreText: value }),
+				}),
+			cardStyleHas(style, 'button') &&
+				el(TextControl, {
+					label: __('Button text', 'bridge'),
+					help: __(
+						'The same on every card. It is the visual cue, not a second link — the card’s name already carries the link.',
+						'bridge'
+					),
+					placeholder: __('View profile', 'bridge'),
+					value: buttonText,
+					onChange: (value) => setAttributes({ buttonText: value }),
 				})
 		)
 	);

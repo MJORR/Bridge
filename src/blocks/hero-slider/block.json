@@ -6,12 +6,11 @@
 	"title": "Hero Slider",
 	"category": "media",
 	"icon": "format-gallery",
-	"description": "Full-screen hero slider powered by Swiper. Drop Cover blocks inside to author slides.",
+	"description": "Full-screen hero slider. Drop Cover blocks inside to author slides.",
 	"textdomain": "bridge",
 	"keywords": [
 		"slider",
 		"hero",
-		"swiper",
 		"carousel"
 	],
 	"supports": {

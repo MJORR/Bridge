@@ -43,8 +43,13 @@
 }
 
 // The header spans the viewport; its contents line up with the page.
+//
+// `wideSize`, not `contentSize`: the header is a wide band, the same as every
+// section that runs its content to the wide width. Held at `contentSize` it
+// was the site's one narrow band — logo and menu pulled into the middle of a
+// window whose sections below reached much further out.
 .bridge-header__inner {
-	max-width: var(--wp--style--global--content-size);
+	max-width: var(--wp--style--global--wide-size);
 	margin-inline: auto;
 }
 

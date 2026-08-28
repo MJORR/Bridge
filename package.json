@@ -1,7 +1,7 @@
 {
   "name": "bridge-theme",
   "version": "1.0.0",
-  "description": "Bridge \u2014 a modern WordPress block theme with a Vite build pipeline.",
+  "description": "Bridge — a modern WordPress block theme with a Vite build pipeline.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,9 +12,6 @@
     "lint:css": "stylelint \"src/**/*.scss\"",
     "lint": "npm run lint:js && npm run lint:css",
     "format": "prettier --write \"src/**/*.{js,jsx,scss,json}\""
-  },
-  "dependencies": {
-    "swiper": "^11.1.14"
   },
   "devDependencies": {
     "@wordpress/eslint-plugin": "^21.0.0",

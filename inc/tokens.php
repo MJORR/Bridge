@@ -254,6 +254,229 @@ function bridge_card_shadows(): array
 }
 
 /**
+ * The font-size slugs a card heading may be set to.
+ *
+ * The site's own scale, not a list of lengths. `bridge_compile_font_sizes()`
+ * builds five fluid steps from the base size and the scale ratio, and a card
+ * heading is one of them — so a client who picks a more dramatic ratio moves
+ * their card headings with everything else, and a card can never be the one
+ * piece of type on the site that is off the scale.
+ *
+ * Ordered small to large, because the control offers them in that order and a
+ * serialised JSON object carries no promise of key order.
+ *
+ * @return array<int, string>
+ */
+function bridge_font_size_slugs(): array
+{
+	return array('small', 'medium', 'large', 'x-large', 'xx-large');
+}
+
+/**
+ * The crops a card's image may be cut to.
+ *
+ * Named ratios rather than a free-text `aspect-ratio`, for the reason the
+ * shadow presets give: an operator asked to type one produces either the
+ * default back or a number that makes every photograph on the site a different
+ * shape. These four are the crops photography is actually shot and delivered
+ * in.
+ *
+ * `value` is a CSS `aspect-ratio`, published as a custom property and read by
+ * the card's image frame. Portrait is absent on purpose — its image is a
+ * circle, and a circle has one ratio.
+ *
+ * @return array<string, array<string, string>>
+ */
+function bridge_card_ratios(): array
+{
+	return (array) apply_filters(
+		'bridge_card_ratios',
+		array(
+			'16-9' => array('name' => __('Widescreen (16:9)', 'bridge'), 'value' => '16 / 9'),
+			'3-2'  => array('name' => __('Photograph (3:2)', 'bridge'), 'value' => '3 / 2'),
+			'4-3'  => array('name' => __('Classic (4:3)', 'bridge'), 'value' => '4 / 3'),
+			'1-1'  => array('name' => __('Square (1:1)', 'bridge'), 'value' => '1 / 1'),
+		)
+	);
+}
+
+/**
+ * The ratios as a list, for the options page.
+ *
+ * @return array<int, array<string, string>>
+ */
+function bridge_card_ratio_choices(): array
+{
+	$choices = array();
+
+	foreach (bridge_card_ratios() as $slug => $entry) {
+		$choices[] = array(
+			'slug'  => (string) $slug,
+			'name'  => (string) ($entry['name'] ?? $slug),
+			'value' => (string) ($entry['value'] ?? '16 / 9'),
+		);
+	}
+
+	return $choices;
+}
+
+/**
+ * How large a Portrait card's avatar is drawn.
+ *
+ * Three steps rather than a slider, because the number is not one number: the
+ * avatar's width is a `min()` of a percentage of the card and a fixed ceiling,
+ * and the two have to move together. Set only the percentage and a single card
+ * in a one-column grid becomes a portrait the height of the viewport; set only
+ * the ceiling and the avatar stops filling a wide card.
+ *
+ * `fraction` is the same percentage as a number, and it is not decoration: it
+ * is what the block spends on the image's `sizes` attribute, so the browser
+ * fetches a file the size of the slot rather than the size of the column. The
+ * two must stay in step — see the note in the Cards block's render.php.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function bridge_card_avatar_sizes(): array
+{
+	return (array) apply_filters(
+		'bridge_card_avatar_sizes',
+		array(
+			's' => array(
+				'name'     => __('Small', 'bridge'),
+				'width'    => 'min(56%, 11rem)',
+				'fraction' => 0.56,
+			),
+			'm' => array(
+				'name'     => __('Medium', 'bridge'),
+				'width'    => 'min(72%, 14rem)',
+				'fraction' => 0.72,
+			),
+			'l' => array(
+				'name'     => __('Large', 'bridge'),
+				'width'    => 'min(88%, 17rem)',
+				'fraction' => 0.88,
+			),
+		)
+	);
+}
+
+/**
+ * The avatar sizes as a list, for the options page.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function bridge_card_avatar_size_choices(): array
+{
+	$choices = array();
+
+	foreach (bridge_card_avatar_sizes() as $slug => $entry) {
+		$choices[] = array(
+			'slug'  => (string) $slug,
+			'name'  => (string) ($entry['name'] ?? $slug),
+			'width' => (string) ($entry['width'] ?? 'min(72%, 14rem)'),
+		);
+	}
+
+	return $choices;
+}
+
+/**
+ * The three card styles, and which settings each one has.
+ *
+ * The `bridge/cards` block draws one of three shapes, and they do not take the
+ * same settings: Summary and Tile crop a photograph to a ratio, Portrait draws
+ * a circle and takes a size instead. Rather than give every style every field
+ * and hide two of them, each style declares the fields it has and the
+ * sanitiser, the compiler and the options page all walk this list.
+ *
+ * That is what makes a fourth style an entry here rather than an edit in five
+ * files.
+ *
+ * ---- Why these are per style and not per ground ----------------------------
+ *
+ * Cards already have a per-ground setting — their background, which has to
+ * change with the band because contrast does. Nothing here does. A heading is
+ * the same size on a white page and a dark one, because size is hierarchy and
+ * ground is contrast; splitting them per ground would give one card four
+ * heading sizes with no design reason for any of them.
+ *
+ * The other half of that rule is the one abstracts/_card.scss states: a card
+ * never names its own text colour, it inherits the band's. So the grounds get
+ * colour and the styles get everything else, and neither list has to grow when
+ * the other does.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function bridge_card_styles(): array
+{
+	return (array) apply_filters(
+		'bridge_card_styles',
+		array(
+			'summary'  => array(
+				'name'        => __('Summary', 'bridge'),
+				'description' => __('A photograph, a heading and a few lines of the post itself. For a list of things to read.', 'bridge'),
+				'fields'      => array('heading', 'ratio'),
+				'heading'     => 'large',
+				'ratio'       => '16-9',
+			),
+			'tile'     => array(
+				'name'        => __('Tile', 'bridge'),
+				'description' => __('A large heading over a photograph, with a chip carrying the post’s “distance” field. For places rather than articles.', 'bridge'),
+				'fields'      => array('heading', 'ratio'),
+				'heading'     => 'x-large',
+				'ratio'       => '16-9',
+			),
+			'portrait' => array(
+				'name'        => __('Portrait', 'bridge'),
+				'description' => __('A circular photograph arching over a panel, a name, the post’s “subtitle” field, and a button. For people.', 'bridge'),
+				'fields'      => array('heading', 'avatar'),
+				'heading'     => 'large',
+				'avatar'      => 'm',
+			),
+		)
+	);
+}
+
+/**
+ * Which option list a card-style field is chosen from.
+ *
+ * One map so the sanitiser, the REST payload and the options page cannot
+ * disagree about what a field may hold. Keyed by field name; every field named
+ * in a style's `fields` must appear here or it is dropped.
+ *
+ * @return array<string, array<int, string>>
+ */
+function bridge_card_style_options(): array
+{
+	return array(
+		'heading' => bridge_font_size_slugs(),
+		'ratio'   => array_keys(bridge_card_ratios()),
+		'avatar'  => array_keys(bridge_card_avatar_sizes()),
+	);
+}
+
+/**
+ * The card styles as a list, for the options page.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function bridge_card_style_choices(): array
+{
+	$choices = array();
+
+	foreach (bridge_card_styles() as $slug => $entry) {
+		$choices[] = array(
+			'slug'        => (string) $slug,
+			'name'        => (string) ($entry['name'] ?? $slug),
+			'description' => (string) ($entry['description'] ?? ''),
+			'fields'      => array_values((array) ($entry['fields'] ?? array())),
+		);
+	}
+
+	return $choices;
+}
+
+/**
  * The shadow presets as a list, for the options page.
  *
  * A list rather than the map above, because the order is the meaning — the
@@ -547,11 +770,33 @@ function bridge_button_schemes(array $tokens): array
 		$edge       = bridge_contrast_ratio($fill, $ground);
 		$hover_edge = bridge_contrast_ratio($hover_fill, $ground);
 
-		// A boundary only where the fill has not got one. Drawn in the band's
-		// own foreground, which is the one colour known to stand off both the
-		// band and anything legible on it.
-		$border       = $edge >= 3.0 ? $fill : $foreground;
-		$hover_border = $hover_edge >= 3.0 ? $hover_fill : $foreground;
+		/**
+		 * The band's own foreground, promoted if it cannot do the job.
+		 *
+		 * These three — the border a fill is given when it has no edge of its
+		 * own, the focus ring, and the secondary button — were the band's
+		 * foreground outright, on the reasoning that a colour legible enough
+		 * to be the band's text is legible enough to draw a line in.
+		 *
+		 * That holds for a palette anyone would design and fails for one the
+		 * sanitiser will nonetheless accept. A brand of mid-greys puts its
+		 * text at 1.01:1 against its own background; a brand that recolours
+		 * `text` for a dark background leaves it at 1.95:1 on the Accent band.
+		 * In both, the border drawn to satisfy 1.4.11 was as invisible as the
+		 * fill it was covering for, and the focus ring with it.
+		 *
+		 * So each is asked for at the threshold it actually has to meet — 3:1
+		 * for a boundary, 4.5:1 for the secondary button's label — and falls
+		 * back to black or white when the palette cannot supply it, which
+		 * always clears both. On a palette that was already fine, every one of
+		 * these is the foreground, unchanged.
+		 */
+		$boundary = bridge_readable_on($ground, array($foreground), 3.0);
+		$ghost    = bridge_readable_on($ground, array($foreground), 4.5);
+
+		// A boundary only where the fill has not got one.
+		$border       = $edge >= 3.0 ? $fill : $boundary;
+		$hover_border = $hover_edge >= 3.0 ? $hover_fill : $boundary;
 
 		$schemes[$key] = array(
 			'bg'          => strtolower($fill),
@@ -560,15 +805,15 @@ function bridge_button_schemes(array $tokens): array
 			'hoverFg'     => strtolower($hover_label),
 			'border'      => strtolower($border),
 			'hoverBorder' => strtolower($hover_border),
-			// The secondary button. Transparent with the band's foreground as
-			// its label and boundary — the one treatment that is legible on
-			// all four grounds — and inverting into it on hover, which is a
-			// change of state no colour blindness can miss.
-			'ghost'       => strtolower($foreground),
+			// The secondary button. Transparent, carrying the band's own
+			// foreground as its label and boundary — the one treatment legible
+			// on all four grounds — and inverting into the band on hover,
+			// which is a change of state no colour blindness can miss.
+			'ghost'       => strtolower($ghost),
 			'ghostHover'  => strtolower($ground),
-			// Focus. The band's foreground again, offset clear of the button's
-			// own edge so the ring is measured against the band.
-			'ring'        => strtolower($foreground),
+			// Focus. Offset clear of the button's own edge, so the ring is
+			// measured against the band rather than against the button.
+			'ring'        => strtolower($boundary),
 			// The arithmetic, for the options screen to show and for anyone
 			// who has to answer "does this pass" with a number rather than a
 			// reassurance. `fill` is the ratio of the button's own colour
@@ -581,8 +826,8 @@ function bridge_button_schemes(array $tokens): array
 				'hoverLabel' => bridge_contrast_ratio($hover_fill, $hover_label),
 				'fill'       => $edge,
 				'boundary'   => $edge >= 3.0 ? $edge : bridge_contrast_ratio($border, $ground),
-				'ghost'      => bridge_contrast_ratio($ground, $foreground),
-				'ring'       => bridge_contrast_ratio($ground, $foreground),
+				'ghost'      => bridge_contrast_ratio($ground, $ghost),
+				'ring'       => bridge_contrast_ratio($ground, $boundary),
 				// True when the fill could not be its own edge and was given
 				// one.
 				'bordered'   => $edge < 3.0,
@@ -639,6 +884,12 @@ function bridge_token_constraints(): array
 			// a narrow card rather than framing it.
 			'radius'  => array('min' => 0, 'max' => 32, 'step' => 1, 'unit' => 'px'),
 			'shadow'  => array('options' => array_keys(bridge_card_shadows())),
+			// The site's default excerpt length, in words, for every Cards
+			// block that has not been given one of its own. Ten is about the
+			// shortest run of prose that still reads as a sentence rather than
+			// a fragment; past a hundred the card has stopped summarising and
+			// started reproducing.
+			'excerpt' => array('min' => 10, 'max' => 100, 'step' => 1),
 		),
 		'header'     => array(
 			// Every layout stacks or rows the same two elements; none puts the
@@ -693,6 +944,22 @@ function bridge_token_defaults(): array
 	$palette['surface']['color']    = '#F5F5F4';
 	$palette['text']['color']       = '#1F2937';
 
+	// Each style's own defaults, taken from the style list rather than repeated
+	// here — the list is where a style says what it is, and a second copy of
+	// the same three values is a second copy to forget to update.
+	$card_styles = array();
+	foreach (bridge_card_styles() as $slug => $entry) {
+		$style = array();
+
+		foreach ((array) ($entry['fields'] ?? array()) as $field) {
+			if (isset($entry[$field])) {
+				$style[$field] = $entry[$field];
+			}
+		}
+
+		$card_styles[$slug] = $style;
+	}
+
 	$card_colors = array();
 	foreach (bridge_card_grounds() as $key => $entry) {
 		$card_colors[$key] = $entry['default'];
@@ -740,6 +1007,11 @@ function bridge_token_defaults(): array
 			'radius'  => 6,
 			'shadow'  => 'soft',
 			'colors'  => $card_colors,
+			// The excerpt length a Cards block uses when it has not been given
+			// one. Twenty is what the block's own default was, so a site that
+			// never opens the control keeps the cards it had.
+			'excerpt' => 20,
+			'styles'  => $card_styles,
 		),
 		'header'     => array(
 			'layout'          => 'left',
@@ -1004,6 +1276,211 @@ function bridge_pick_token(string $group, string $key, $value, string $fallback)
 }
 
 /**
+ * The colour pairs the theme actually draws, and what each has to clear.
+ *
+ * A palette is not six independent choices. Six slugs produce a fixed set of
+ * combinations, because the theme decides where each one lands: `text` on
+ * `background` is every paragraph on the site, `background` on `primary` is
+ * every word in an Inverted band, `secondary` on `background` is every link.
+ * An operator picking a brand colour is picking one side of several pairs at
+ * once, and until this existed the screen said nothing about the other side.
+ *
+ * Only pairs the theme genuinely renders are listed. `accent` on `surface`
+ * would be a number about nothing — no rule in the stylesheet puts them
+ * together — and a screen full of ratios for combinations that never happen
+ * teaches an operator to ignore all of them.
+ *
+ * Every threshold here is 4.5:1, because every pair is body-sized text
+ * (WCAG 2.2 §1.4.3). Headings are large text and would pass at 3:1, but they
+ * are drawn in the same colour as the body on every one of these grounds, so
+ * the stricter figure is the one that matters.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function bridge_palette_pairs(): array
+{
+	return array(
+		array(
+			'fg'    => 'text',
+			'bg'    => 'background',
+			'label' => __('Body text', 'bridge'),
+			'on'    => __('on Background', 'bridge'),
+			'min'   => 4.5,
+			'note'  => __('Every paragraph on the site.', 'bridge'),
+		),
+		array(
+			'fg'    => 'text',
+			'bg'    => 'surface',
+			'label' => __('Body text', 'bridge'),
+			'on'    => __('on Surface', 'bridge'),
+			'min'   => 4.5,
+			'note'  => __('The Surface section skin, and any band painted with it.', 'bridge'),
+		),
+		array(
+			'fg'    => 'text',
+			'bg'    => 'accent',
+			'label' => __('Body text', 'bridge'),
+			'on'    => __('on Accent', 'bridge'),
+			'min'   => 4.5,
+			'note'  => __('The Accent skin keeps the dark foreground rather than inverting.', 'bridge'),
+		),
+		array(
+			'fg'    => 'background',
+			'bg'    => 'primary',
+			'label' => __('Inverted text', 'bridge'),
+			'on'    => __('on Primary', 'bridge'),
+			'min'   => 4.5,
+			'note'  => __('The Inverted skin: the light foreground on the brand’s dark ground.', 'bridge'),
+		),
+		array(
+			'fg'    => 'secondary',
+			'bg'    => 'background',
+			'label' => __('Links', 'bridge'),
+			'on'    => __('on Background', 'bridge'),
+			'min'   => 4.5,
+			'note'  => __('Every link in running text.', 'bridge'),
+		),
+		array(
+			'fg'    => 'secondary',
+			'bg'    => 'surface',
+			'label' => __('Links', 'bridge'),
+			'on'    => __('on Surface', 'bridge'),
+			'min'   => 4.5,
+			'note'  => __('The same links, inside a Surface band.', 'bridge'),
+		),
+	);
+}
+
+/**
+ * Measure every pair the palette produces.
+ *
+ * The same arithmetic the buttons already report, pointed at the palette that
+ * feeds them — which is where an inaccessible site actually starts. A button
+ * scheme can rescue itself by picking a different label; body text cannot,
+ * because the two colours in the pair are both the operator's choice.
+ *
+ * So this reports rather than repairs. There is no safe automatic fix: the
+ * theme cannot darken a brand colour on the client's behalf, and a design
+ * system that silently overrode the palette would be worse than one that says
+ * plainly which pair fails and by how much.
+ *
+ * @param array<string, mixed> $tokens A sanitised token set.
+ * @return array<int, array<string, mixed>>
+ */
+function bridge_palette_audit(array $tokens): array
+{
+	$palette = $tokens['brand']['palette'];
+	$checks  = array();
+
+	foreach (bridge_palette_pairs() as $pair) {
+		$fg    = (string) ($palette[$pair['fg']]['color'] ?? '#000000');
+		$bg    = (string) ($palette[$pair['bg']]['color'] ?? '#ffffff');
+		$ratio = bridge_contrast_ratio($fg, $bg);
+
+		$checks[] = array(
+			'label' => $pair['label'],
+			'on'    => $pair['on'],
+			'note'  => $pair['note'],
+			'fg'    => strtolower($fg),
+			'bg'    => strtolower($bg),
+			'ratio' => $ratio,
+			'min'   => $pair['min'],
+			'pass'  => $ratio >= $pair['min'],
+		);
+	}
+
+	return $checks;
+}
+
+/**
+ * Measure each card surface against the band it is painted on.
+ *
+ * Two questions per ground, and only one of them is a success criterion:
+ *
+ *   `text`  The band's foreground against the card, at 4.5:1. A card inherits
+ *           its text from the band rather than naming its own, so this is
+ *           1.4.3 for every word inside a card — and it is the check that
+ *           catches the classic failure, a light card colour chosen on a light
+ *           band while the words stay in the band's dark foreground.
+ *
+ *   `band`  The card against the band behind it. Reported as a number and
+ *           deliberately *not* graded, because there is no threshold to grade
+ *           it against: a card is meant to be a quiet step from its ground —
+ *           the shipped Light card is 1.09:1 — and the shadow and the corner
+ *           are what make it a card. Held to the 3:1 a control would owe, all
+ *           four defaults fail, which would put four red badges on a design
+ *           nothing is wrong with and teach an operator to ignore the two that
+ *           mean something.
+ *
+ *           `flat` is the case that does mean something: a card the same
+ *           colour as its band *and* carrying no shadow is not a quiet step,
+ *           it is nothing at all.
+ *
+ * @param array<string, mixed> $tokens A sanitised token set.
+ * @return array<int, array<string, mixed>>
+ */
+function bridge_card_audit(array $tokens): array
+{
+	$palette = $tokens['brand']['palette'];
+	$colors  = $tokens['cards']['colors'];
+	$lifted  = 'none' !== $tokens['cards']['shadow'];
+	$checks  = array();
+
+	foreach (bridge_card_grounds() as $key => $entry) {
+		$card   = (string) ($colors[$key] ?? $entry['default']);
+		$ground = (string) ($palette[$entry['ground']]['color'] ?? '#ffffff');
+		$text   = (string) ($palette[$entry['text']]['color'] ?? '#000000');
+
+		$on_card = bridge_contrast_ratio($card, $text);
+		$on_band = bridge_contrast_ratio($card, $ground);
+
+		$checks[] = array(
+			'key'   => (string) $key,
+			'label' => $entry['label'],
+			'card'  => strtolower($card),
+			'text'  => array(
+				'ratio' => $on_card,
+				'min'   => 4.5,
+				'pass'  => $on_card >= 4.5,
+			),
+			'band'  => array(
+				'ratio' => $on_band,
+				// Indistinguishable from its ground, with nothing lifting it.
+				'flat'  => $on_band < 1.05 && ! $lifted,
+			),
+		);
+	}
+
+	return $checks;
+}
+
+/**
+ * A hex colour, or the fallback — for input that may be neither.
+ *
+ * `sanitize_hex_color()` has two ways of saying no, and only one of them is
+ * `null`: an empty string it treats as "no colour" and hands straight back. A
+ * plain `??` catches the null and not the empty string, so `{"color": ""}` —
+ * which is what a cleared field, a hand-edited option or a partial import
+ * produces — survived into the palette as an empty string. That compiles to a
+ * custom property with no value, and reads as black to the contrast maths, so
+ * the failure showed up as a button whose measured contrast was a fiction.
+ *
+ * Non-scalars are rejected before the cast rather than after: `(string)` on an
+ * array is the literal "Array", which is not a colour and is not an error
+ * either.
+ *
+ * @param mixed  $value    Candidate colour.
+ * @param string $fallback Used when the candidate is not a usable colour.
+ * @return string A `#rgb` or `#rrggbb` value.
+ */
+function bridge_hex_or($value, string $fallback): string
+{
+	$hex = is_scalar($value) ? sanitize_hex_color((string) $value) : null;
+
+	return (is_string($hex) && '' !== $hex) ? $hex : $fallback;
+}
+
+/**
  * Reduce arbitrary input to a complete, valid token set.
  *
  * Total by design: anything missing, malformed or out of range is replaced
@@ -1027,15 +1504,18 @@ function bridge_sanitize_tokens(array $raw): array
 	foreach (bridge_palette_slugs() as $slug => $default_name) {
 		$entry = isset($raw_palette[$slug]) && is_array($raw_palette[$slug]) ? $raw_palette[$slug] : array();
 
-		// sanitize_hex_color() requires a leading # and 3 or 6 hex digits, and
-		// returns null for anything else — exactly the guarantee downstream
-		// contrast maths and CSS output need.
-		$color = isset($entry['color']) ? sanitize_hex_color((string) $entry['color']) : null;
-
-		$name = isset($entry['name']) ? sanitize_text_field((string) $entry['name']) : '';
+		$name = isset($entry['name']) && is_scalar($entry['name'])
+			? sanitize_text_field((string) $entry['name'])
+			: '';
 
 		$palette[$slug] = array(
-			'color' => $color ?? $defaults['brand']['palette'][$slug]['color'],
+			// A leading # and 3 or 6 hex digits, or the default — which is the
+			// guarantee every piece of downstream contrast maths and every
+			// line of compiled CSS is written against.
+			'color' => bridge_hex_or(
+				$entry['color'] ?? null,
+				$defaults['brand']['palette'][$slug]['color']
+			),
 			'name'  => '' !== $name ? $name : $default_name,
 		);
 	}
@@ -1142,9 +1622,48 @@ function bridge_sanitize_tokens(array $raw): array
 	// payload missing a ground gets the default for it and a payload naming a
 	// ground the theme does not paint is dropped.
 	foreach (bridge_card_grounds() as $key => $entry) {
-		$color = isset($raw_card_colors[$key]) ? sanitize_hex_color((string) $raw_card_colors[$key]) : null;
+		$card_colors[$key] = strtolower(
+			bridge_hex_or($raw_card_colors[$key] ?? null, $entry['default'])
+		);
+	}
 
-		$card_colors[$key] = strtolower($color ?? $entry['default']);
+	/**
+	 * The per-style settings.
+	 *
+	 * Walked from `bridge_card_styles()` rather than from what was submitted,
+	 * the same way the grounds above are: a payload missing a style gets that
+	 * style's defaults, a payload naming a style the theme does not draw is
+	 * dropped, and a field a style does not have is dropped even if the style
+	 * is real. So a saved record can only ever describe styles that exist,
+	 * with fields those styles actually take.
+	 */
+	$raw_card_styles = isset($raw_cards['styles']) && is_array($raw_cards['styles']) ? $raw_cards['styles'] : array();
+	$style_options   = bridge_card_style_options();
+	$card_styles     = array();
+
+	foreach (bridge_card_styles() as $slug => $entry) {
+		$submitted = isset($raw_card_styles[$slug]) && is_array($raw_card_styles[$slug])
+			? $raw_card_styles[$slug]
+			: array();
+
+		$style = array();
+
+		foreach ((array) ($entry['fields'] ?? array()) as $field) {
+			$allowed = $style_options[$field] ?? array();
+			$default = (string) ($entry[$field] ?? '');
+
+			// A field with no option list is a field the theme cannot check,
+			// and an unchecked string is what the sanitiser exists to prevent.
+			if (! $allowed) {
+				continue;
+			}
+
+			$value = is_scalar($submitted[$field] ?? null) ? (string) $submitted[$field] : '';
+
+			$style[$field] = in_array($value, $allowed, true) ? $value : $default;
+		}
+
+		$card_styles[$slug] = $style;
 	}
 
 	$cards = array(
@@ -1153,7 +1672,11 @@ function bridge_sanitize_tokens(array $raw): array
 		// integer precision and nothing downstream wants 6.4px.
 		'radius'  => (int) round(bridge_clamp_token('cards', 'radius', $raw_cards['radius'] ?? null, (float) $dc['radius'])),
 		'shadow'  => bridge_pick_token('cards', 'shadow', $raw_cards['shadow'] ?? '', $dc['shadow']),
+		// Words, so a whole number: wp_trim_words() counts them and half a
+		// word is not a length.
+		'excerpt' => (int) round(bridge_clamp_token('cards', 'excerpt', $raw_cards['excerpt'] ?? null, (float) $dc['excerpt'])),
 		'colors'  => $card_colors,
+		'styles'  => $card_styles,
 	);
 
 	// ---- Structure --------------------------------------------------------

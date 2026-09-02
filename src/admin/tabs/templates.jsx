@@ -29,6 +29,12 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 		})),
 	];
 
+	// The footer's two slots live one level deeper than setGroup() reaches, so
+	// the map is rebuilt here rather than given a writer of its own in the
+	// shell — two call sites in one file is not a setter.
+	const setFooterMenu = (slot, id) =>
+		setGroup('footer', 'menus', { ...draft.footer.menus, [slot]: id });
+
 	return (
 		<>
 			<Section
@@ -107,6 +113,17 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						__next40pxDefaultSize
 					/>
 				)}
+
+				<ToggleControl
+					label={__('Search icon', 'bridge')}
+					checked={Boolean(header.search)}
+					onChange={(on) => setHeader('search', on)}
+					help={__(
+						'A search icon at the end of the main menu, opening a field in the header itself.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+				/>
 
 				<ToggleControl
 					label={__('CTA button', 'bridge')}
@@ -251,6 +268,23 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					)}
 				/>
 
+				{/*
+				 * Stored on `brand` rather than on `header`, though the control
+				 * stands here: it is a shape belonging to the site's identity,
+				 * not to the header, and nothing has been built on it yet. A
+				 * general home can serve a specific use later; a home under
+				 * `header` could not have served a general one.
+				 */}
+				<LogoPicker
+					label={__('Mask shape', 'bridge')}
+					value={draft.brand.maskShapeId}
+					onChange={(id) => setGroup('brand', 'maskShapeId', id)}
+					help={__(
+						'A shape imagery can be clipped to. Nothing draws it yet — it is here so the site has one place to set it.',
+						'bridge'
+					)}
+				/>
+
 				<RangeControl
 					label={__('Logo height (px)', 'bridge')}
 					value={header.logo.height}
@@ -281,7 +315,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 			<Section
 				title={__('Footer', 'bridge')}
 				description={__(
-					'Which footer layout every template resolves to.',
+					'Which footer layout every template resolves to, and what goes in it.',
 					'bridge'
 				)}
 			>
@@ -298,10 +332,62 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						{
 							value: 'columns',
 							label: __('Columns', 'bridge'),
-							hint: __('Links and contact details', 'bridge'),
+							hint: __('Logo, social and two menus', 'bridge'),
 						},
 					]}
 				/>
+
+				<SelectControl
+					label={__('Background', 'bridge')}
+					value={draft.footer.backgroundColor}
+					options={Object.entries(paletteSlugs).map(([slug]) => ({
+						label: draft.brand.palette[slug].name,
+						value: slug,
+					}))}
+					onChange={(value) =>
+						setGroup('footer', 'backgroundColor', value)
+					}
+					help={__(
+						'Text, links and icons take a light or dark colour to suit it, and the light logo is used on a dark ground.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+
+				{draft.footer.style === 'columns' && (
+					<>
+						<SelectControl
+							label={__('Legal menu', 'bridge')}
+							value={String(draft.footer.menus.legal)}
+							options={menuOptions(
+								__('None — hide the column', 'bridge')
+							)}
+							onChange={(value) =>
+								setFooterMenu('legal', Number(value))
+							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<SelectControl
+							label={__('Quick Links menu', 'bridge')}
+							value={String(draft.footer.menus.quick)}
+							options={menuOptions(
+								__('None — hide the column', 'bridge')
+							)}
+							onChange={(value) =>
+								setFooterMenu('quick', Number(value))
+							}
+							help={__(
+								'A column with no menu is not drawn: a heading with nothing under it is worse than two columns. Menus themselves are still built in the Site Editor.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+					</>
+				)}
 			</Section>
 
 			<Section

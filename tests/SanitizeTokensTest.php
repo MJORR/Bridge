@@ -27,10 +27,12 @@ final class SanitizeTokensTest extends BridgeTestCase
 		'icons',
 		'buttons',
 		'cards',
+		'posts',
 		'header',
 		'footer',
 		'layout',
 		'blocks',
+		'postTypes',
 		'site',
 	);
 
@@ -187,6 +189,55 @@ final class SanitizeTokensTest extends BridgeTestCase
 		$tokens = bridge_sanitize_tokens(array('cards' => array('radius' => 6.4)));
 
 		$this->assertSame(6, $tokens['cards']['radius']);
+	}
+
+	/**
+	 * The cut's size survives the cut being switched off.
+	 *
+	 * An operator turning the corner off to look at the card without it, and
+	 * back on, has to find the notch the size they left it — so the size is
+	 * clamped and stored on its own rather than being conditional on the flag.
+	 */
+	public function test_the_cut_corner_size_is_clamped_and_kept_while_the_cut_is_off(): void
+	{
+		$constraint = bridge_token_constraints()['cards']['cutSize'];
+
+		$tokens = bridge_sanitize_tokens(
+			array('cards' => array('cutCorner' => false, 'cutSize' => 9999))
+		);
+
+		$this->assertFalse($tokens['cards']['cutCorner']);
+		$this->assertSame($constraint['max'], $tokens['cards']['cutSize']);
+
+		$this->assertSame(
+			$constraint['min'],
+			bridge_sanitize_tokens(
+				array('cards' => array('cutSize' => -5))
+			)['cards']['cutSize']
+		);
+	}
+
+	/**
+	 * Every shadow preset reaches the options screen intact.
+	 *
+	 * The preview draws the shadow rather than naming it, so a preset that
+	 * arrives without its CSS is a control that shows four identical cards.
+	 */
+	public function test_every_shadow_preset_reaches_the_options_screen(): void
+	{
+		$choices = bridge_card_shadow_choices();
+
+		$this->assertCount(count(bridge_card_shadows()), $choices);
+
+		foreach ($choices as $choice) {
+			foreach (array('slug', 'name', 'shadow', 'hover') as $key) {
+				$this->assertArrayHasKey(
+					$key,
+					$choice,
+					"shadow preset {$choice['slug']} is missing {$key}"
+				);
+			}
+		}
 	}
 
 	// ---- Enumerations ----------------------------------------------------
@@ -423,6 +474,20 @@ final class SanitizeTokensTest extends BridgeTestCase
 		$this->assertSame(array('core/table'), $tokens['blocks']['disabled']);
 	}
 
+	/**
+	 * The search icon is a switch, so anything truthy switches it on and an
+	 * absent key leaves it off — a site that has never opened the control does
+	 * not grow an icon at its next save.
+	 */
+	public function test_the_search_icon_defaults_to_off_and_reads_any_truthy_value(): void
+	{
+		$this->assertFalse(bridge_sanitize_tokens(array())['header']['search']);
+
+		$tokens = bridge_sanitize_tokens(array('header' => array('search' => '1')));
+
+		$this->assertTrue($tokens['header']['search']);
+	}
+
 	// ---- Back-compatibility ----------------------------------------------
 
 	/**
@@ -615,5 +680,130 @@ final class SanitizeTokensTest extends BridgeTestCase
 				array('cards' => array('excerpt' => -5))
 			)['cards']['excerpt']
 		);
+	}
+
+	// ---- Posts -----------------------------------------------------------
+
+	/**
+	 * An unknown article layout falls back to Classic.
+	 *
+	 * The slug becomes a class on <body> and nothing else decides which of the
+	 * three grids is drawn — so a value the stylesheet has no rule for is an
+	 * article with no head layout at all, which is worse than the wrong one.
+	 */
+	public function test_an_unknown_post_template_falls_back_to_the_default(): void
+	{
+		$this->assertSame(
+			'classic',
+			bridge_sanitize_tokens(
+				array('posts' => array('template' => 'broadsheet'))
+			)['posts']['template']
+		);
+	}
+
+	/** A layout the theme does draw is kept. */
+	public function test_a_known_post_template_is_kept(): void
+	{
+		foreach (array_keys(bridge_post_templates()) as $slug) {
+			$this->assertSame(
+				$slug,
+                bridge_sanitize_tokens(
+					array('posts' => array('template' => $slug))
+				)['posts']['template']
+			);
+		}
+	}
+
+	// ---- Footer ----------------------------------------------------------
+
+	/** The ground the footer sits on is a palette slug, never free text. */
+	public function test_an_unknown_footer_background_falls_back_to_the_default(): void
+	{
+		$this->assertSame(
+			'surface',
+			bridge_sanitize_tokens(
+				array('footer' => array('backgroundColor' => 'rebeccapurple'))
+			)['footer']['backgroundColor']
+		);
+	}
+
+	/** Every slug the palette offers is a footer a site may have. */
+	public function test_every_palette_slug_is_a_valid_footer_background(): void
+	{
+		foreach (array_keys(bridge_palette_slugs()) as $slug) {
+			$this->assertSame(
+				$slug,
+				bridge_sanitize_tokens(
+					array('footer' => array('backgroundColor' => $slug))
+				)['footer']['backgroundColor'],
+				"Rejected palette slug: {$slug}"
+			);
+		}
+	}
+
+	/**
+	 * Both footer menu slots always exist, as integers.
+	 *
+	 * bridge_footer_menu_id() reads them without checking the shape, because
+	 * the sanitiser's contract is that it does not have to.
+	 *
+	 * @dataProvider provide_malformed_footer_menus
+	 */
+	public function test_the_footer_menu_slots_are_always_integers($given): void
+	{
+		$menus = bridge_sanitize_tokens(
+			array('footer' => array('menus' => $given))
+		)['footer']['menus'];
+
+		$this->assertSame(array('quick', 'legal'), array_keys($menus));
+		$this->assertIsInt($menus['quick']);
+		$this->assertIsInt($menus['legal']);
+	}
+
+	/**
+	 * @return array<string, array{0:mixed}>
+	 */
+	public static function provide_malformed_footer_menus(): array
+	{
+		return array(
+			'missing'         => array(null),
+			'a string'        => array('primary'),
+			'a list'          => array(array(3, 4)),
+			'half a map'      => array(array('quick' => 7)),
+			'strings for ids' => array(array('quick' => '7', 'legal' => 'x')),
+		);
+	}
+
+	/**
+	 * A negative id is 0, not a negative post.
+	 *
+	 * 0 is the value both callers read as "nothing chosen"; a negative number
+	 * would pass that test and then fail to load a post, which is the same
+	 * outcome reached less obviously.
+	 */
+	public function test_a_negative_menu_id_becomes_none(): void
+	{
+		$menus = bridge_sanitize_tokens(
+			array('footer' => array('menus' => array('quick' => -12, 'legal' => 3)))
+		)['footer']['menus'];
+
+		$this->assertSame(0, $menus['quick']);
+		$this->assertSame(3, $menus['legal']);
+	}
+
+	/**
+	 * Every layout offered has the sentence the options page prints.
+	 *
+	 * The name alone does not carry the decision — what separates these three
+	 * is what each asks of a photograph, and Cover is the one that crops. A
+	 * layout added by filter with no description would put an operator in front
+	 * of a drawing and nothing else.
+	 */
+	public function test_every_post_template_offers_a_name_and_a_description(): void
+	{
+		foreach (bridge_post_template_choices() as $choice) {
+			$this->assertNotSame('', $choice['name'], $choice['slug']);
+			$this->assertNotSame('', $choice['description'], $choice['slug']);
+		}
 	}
 }

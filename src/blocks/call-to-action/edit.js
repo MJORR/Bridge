@@ -56,14 +56,8 @@ const TEMPLATE = [
 ];
 
 const Edit = ({ attributes, setAttributes }) => {
-	const {
-		width,
-		backgroundImage,
-		backgroundImageUrl,
-		dimRatio,
-		backgroundColor,
-		graphicUrl,
-	} = attributes;
+	const { width, backgroundImage, backgroundImageUrl, dimRatio, graphicUrl } =
+		attributes;
 
 	// The same question render.php asks, asked the same way: is there an
 	// image. The two used to disagree — this read the URL, that read the id.
@@ -84,12 +78,11 @@ const Edit = ({ attributes, setAttributes }) => {
 					'--bridge-cta-image': backgroundImageUrl
 						? `url(${backgroundImageUrl})`
 						: undefined,
-					// The Background colour an editor picks in the Styles tab
-					// is invisible under a photograph, so it names the wash
-					// over it instead.
-					'--bridge-cta-scrim': backgroundColor
-						? `var(--wp--preset--color--${backgroundColor})`
-						: undefined,
+					// Primary, and not a per-block choice — see render.php.
+					// Named here rather than left to the stylesheet's own
+					// fallback so the editor and the front end are reading the
+					// same declaration.
+					'--bridge-cta-scrim': 'var(--wp--preset--color--primary)',
 				}
 			: undefined,
 	});

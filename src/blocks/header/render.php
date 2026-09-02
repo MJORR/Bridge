@@ -2,7 +2,7 @@
 /**
  * Server-side render for `bridge/header`.
  *
- * The whole header: top bar, logo, menu and button, arranged by the layout
+ * The whole header: top bar, logo, menu, search and button, arranged by the layout
  * chosen in Theme Options. The template part that holds this block is a single
  * line, and the editor previews this same file — so there is exactly one
  * description of what the header is, and no way for the canvas and the front
@@ -86,22 +86,29 @@ $bridge_menu_bg = 'transparent' === $bridge_background
 	? ( 'light' === $bridge_contrast ? 'var(--wp--preset--color--text)' : 'var(--wp--preset--color--background)' )
 	: $bridge_solid;
 
-// The mobile panel is the brand's second colour, and the type on it is
-// whichever half of the palette that colour can carry. Worked out here, the
-// same way the header decides its own contrast, because CSS cannot ask whether
-// a colour is light — and a menu whose labels have gone invisible is worse than
-// one that ignored the brand.
-$bridge_panel_hex = (string) ( bridge_get_tokens()['brand']['palette']['secondary']['color'] ?? '#2563eb' );
+// The mobile panel is the brand's first colour and its call to action the
+// second, so the one row in the sheet that is an action is the one row not
+// painted in the sheet's own colour. The type on each is whichever half of the
+// palette that ground can carry, worked out here — the same way the header
+// decides its own contrast — because CSS cannot ask whether a colour is light,
+// and a menu whose labels have gone invisible is worse than one that ignored
+// the brand.
+$bridge_palette   = bridge_get_tokens()['brand']['palette'];
+$bridge_panel_hex = (string) ( $bridge_palette['primary']['color'] ?? '#0f172a' );
 $bridge_panel_fg  = bridge_is_light_color( $bridge_panel_hex ) ? 'text' : 'background';
+$bridge_cta_hex   = (string) ( $bridge_palette['secondary']['color'] ?? '#2563eb' );
+$bridge_cta_fg    = bridge_is_light_color( $bridge_cta_hex ) ? 'text' : 'background';
 
 $bridge_style = sprintf(
-	'--bridge-header-logo-height:%dpx;--bridge-header-padding:%s;--bridge-header-bg:%s;--bridge-header-menu-bg:%s;--bridge-nav-panel-bg:%s;--bridge-nav-panel-fg:%s;',
+	'--bridge-header-logo-height:%dpx;--bridge-header-padding:%s;--bridge-header-bg:%s;--bridge-header-menu-bg:%s;--bridge-nav-panel-bg:%s;--bridge-nav-panel-fg:%s;--bridge-nav-cta-bg:%s;--bridge-nav-cta-fg:%s;',
 	(int) $bridge_header['logo']['height'],
 	bridge_header_padding_block( (int) $bridge_header['paddingBlock'] ),
 	'transparent' === $bridge_background ? 'transparent' : $bridge_solid,
 	$bridge_menu_bg,
+	'var(--wp--preset--color--primary)',
+	sprintf( 'var(--wp--preset--color--%s)', $bridge_panel_fg ),
 	'var(--wp--preset--color--secondary)',
-	sprintf( 'var(--wp--preset--color--%s)', $bridge_panel_fg )
+	sprintf( 'var(--wp--preset--color--%s)', $bridge_cta_fg )
 );
 
 $bridge_logo = bridge_header_logo( $bridge_header, $bridge_background );
@@ -115,10 +122,53 @@ if ( ! empty( $bridge_header['topBar'] ) ) {
 	$bridge_top = bridge_header_menu_id( 'utility' );
 }
 
+// The search field belongs to this instance of the header — the editor can
+// render the block twice on one screen — so the button and the panel it
+// controls are tied together by an id nothing else can collide with.
+$bridge_search    = ! empty( $bridge_header['search'] );
+$bridge_search_id = wp_unique_id( 'bridge-header-search-' );
+
+/**
+ * The one page that opens with the panel already down.
+ *
+ * A visitor on a results page has just searched, and the commonest next thing
+ * they do is search again — so the field they would have to go looking for is
+ * put in front of them, holding the term they used. Everywhere else the panel
+ * stays shut, because everywhere else the field is not what the page is about.
+ *
+ * Decided here rather than by header.js so the panel is open in the first
+ * paint: a script that opened it afterwards would drop the results down the
+ * page a moment after the visitor started reading them. The three things that
+ * make it open — the class the stylesheet reads, the button's state, and the
+ * `hidden` attribute coming off — are all set below from this one answer, so
+ * the markup that arrives is already the state header.js would have produced.
+ *
+ * `is_search()` is false in the editor's REST preview, which is the honest
+ * answer there: the canvas is not a results page, and a header drawn with its
+ * search open would be showing an operator a state their site is not in.
+ */
+$bridge_search_open = $bridge_search && is_search();
+
 $bridge_cta   = $bridge_header['cta'];
 $bridge_label = trim( (string) $bridge_cta['label'] );
 $bridge_url   = (string) $bridge_cta['url'];
 $bridge_button = ! empty( $bridge_cta['enabled'] ) && '' !== $bridge_label && '' !== $bridge_url;
+
+// The same button, once more, as the last row of the mobile menu — the panel
+// is a dialog and the header's copy sits outside it, so on a phone the call to
+// action is either in the list or nowhere. Only one of the two is ever on
+// screen: the header hides its own below 600px and the stylesheet hides this
+// one above 599px.
+if ( $bridge_button ) {
+	$bridge_nav = bridge_header_nav_cta( $bridge_nav, $bridge_label, $bridge_url );
+}
+
+// The same class header.js toggles, written into the markup instead. The
+// stylesheet has one rule for an open panel and does not care which of the two
+// put the class there.
+if ( $bridge_search_open ) {
+	$bridge_classes[] = 'is-search-open';
+}
 
 $bridge_wrapper = get_block_wrapper_attributes(
 	array(
@@ -157,6 +207,18 @@ $bridge_body_class = 'left' === $bridge_layout ? 'bridge-header__row' : 'bridge-
 		<div class="bridge-header__end">
 			<?php echo $bridge_nav; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — rendered by core. ?>
 
+			<?php if ( $bridge_search ) : ?>
+				<button
+					class="bridge-header__search-toggle"
+					type="button"
+					aria-expanded="<?php echo $bridge_search_open ? 'true' : 'false'; ?>"
+					aria-controls="<?php echo esc_attr( $bridge_search_id ); ?>"
+				>
+					<?php echo bridge_render_icon( 'search' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from the compiled icon library. ?>
+					<span class="screen-reader-text"><?php esc_html_e( 'Search', 'bridge' ); ?></span>
+				</button>
+			<?php endif; ?>
+
 			<?php if ( $bridge_button ) : ?>
 				<div class="bridge-header__cta">
 					<a class="wp-element-button" href="<?php echo esc_url( $bridge_url ); ?>">
@@ -166,4 +228,56 @@ $bridge_body_class = 'left' === $bridge_layout ? 'bridge-header__row' : 'bridge-
 			<?php endif; ?>
 		</div>
 	</div>
+
+	<?php if ( $bridge_search ) : ?>
+		<?php
+		// A sibling of the header's row rather than a child of it: the panel is
+		// a full-width band under the whole header, and it is in the flow, so
+		// opening it moves the page down instead of covering the top of it.
+		//
+		// `hidden` rather than a class: with JavaScript off the panel is never
+		// opened, and a field a visitor can tab into but not see is worse than
+		// no field. header.js takes the attribute off as soon as it runs, and
+		// the closed state after that is the stylesheet's.
+		//
+		// The results page is the exception, and it is the case that proves the
+		// rule: there the panel is open from the first paint, so the attribute
+		// would be hiding a field the page is deliberately showing — and it
+		// stays off with JavaScript disabled, which is the one configuration
+		// where a visitor can still search without a script to open anything.
+		?>
+		<div class="bridge-header__search-panel" id="<?php echo esc_attr( $bridge_search_id ); ?>" <?php echo $bridge_search_open ? '' : 'hidden'; ?>>
+			<div class="bridge-header__search-panel-inner">
+				<div class="bridge-header__inner">
+					<form role="search" method="get" class="bridge-header__search-form" action="<?php echo esc_url( home_url( '/' ) ); ?>">
+						<label class="screen-reader-text" for="<?php echo esc_attr( $bridge_search_id . '-field' ); ?>">
+							<?php esc_html_e( 'Search this site', 'bridge' ); ?>
+						</label>
+						<div class="bridge-header__search-control">
+							<?php echo bridge_render_icon( 'search' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from the compiled icon library. ?>
+							<input
+								class="bridge-header__search-field"
+								id="<?php echo esc_attr( $bridge_search_id . '-field' ); ?>"
+								type="search"
+								name="s"
+								<?php
+								// `false` because the escaping is done on the
+								// next line. `get_search_query()` runs esc_attr()
+								// itself by default, and the two together turn a
+								// search for `A & B` into a field reading
+								// `A &amp; B` — visible on the results page,
+								// where this field is open and holding the term.
+								?>
+								value="<?php echo esc_attr( get_search_query( false ) ); ?>"
+								placeholder="<?php esc_attr_e( 'Search…', 'bridge' ); ?>"
+							/>
+						</div>
+						<button class="bridge-header__search-submit" type="submit">
+							<?php esc_html_e( 'Search', 'bridge' ); ?>
+						</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	<?php endif; ?>
 </div>

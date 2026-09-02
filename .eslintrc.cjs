@@ -51,6 +51,25 @@ module.exports = {
 		// required to document them.
 		'jsdoc/require-param': ['error', { checkDestructured: false }],
 		'jsdoc/check-param-names': ['error', { checkDestructured: false }],
+
+		/*
+		 * Reading a `const` above its declaration.
+		 *
+		 * Not a build error and not a parse error — the bundle is valid
+		 * JavaScript and `node --check` passes. It throws a ReferenceError on
+		 * the first render instead, which in a block editor takes the whole
+		 * block down and shows nothing but an error boundary. This has cost a
+		 * live block once already.
+		 *
+		 * Functions are exempt because hoisted declarations are how helpers
+		 * are written above the component that uses them throughout this
+		 * codebase; classes and variables are not hoisted the same way, so
+		 * they stay checked.
+		 */
+		'no-use-before-define': [
+			'error',
+			{ functions: false, classes: true, variables: true },
+		],
 	},
 
 	// Build output is generated, minified and not ours to lint.

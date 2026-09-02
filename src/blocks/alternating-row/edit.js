@@ -13,8 +13,43 @@ const {
 	MediaUploadCheck,
 } = window.wp.blockEditor;
 const { createElement: el, Fragment } = window.wp.element;
-const { PanelBody, SelectControl, Button, TextControl } = window.wp.components;
+const { useSelect } = window.wp.data;
+const {
+	PanelBody,
+	SelectControl,
+	Button,
+	TextControl,
+	ToggleControl,
+	RangeControl,
+	ExternalLink,
+} = window.wp.components;
 const { __, sprintf } = window.wp.i18n;
+
+// Printed by functions.php: the one mask shape the site has, set in Theme
+// Options. Empty when nobody has chosen one, which is what the inspector
+// reports instead of offering a switch that would do nothing.
+const SETTINGS = window.bridgeAlternatingRow || {};
+const MASK_URL = SETTINGS.maskUrl || '';
+
+/**
+ * What may go in the copy beside the media.
+ *
+ * A heading, body copy, a list, and a row of buttons. Without this list the
+ * area accepted every block the site's curated set holds — ninety-nine of
+ * them, including images, galleries and other bands — inside a column that is
+ * half a row wide and is styled for running text. These four are the ones that
+ * fit it.
+ *
+ * Neither `core/button` nor `core/list-item` is named: each declares its
+ * container as its parent, so the container manages its own children. This
+ * list only governs what sits directly in the copy area.
+ */
+const ALLOWED_BLOCKS = [
+	'core/heading',
+	'core/paragraph',
+	'core/list',
+	'core/buttons',
+];
 
 const TEMPLATE = [
 	['core/heading', { level: 3, placeholder: __('Row heading', 'bridge') }],
@@ -90,15 +125,58 @@ const placeholderLabel = ({ mediaType, videoUrl, youtubeId }) => {
 	return __('No image chosen', 'bridge');
 };
 
-const Edit = ({ attributes, setAttributes }) => {
-	const { mediaType, imageId, imageUrl, alt, videoUrl, youtubeId } =
-		attributes;
+const Edit = ({ attributes, setAttributes, clientId }) => {
+	const {
+		mediaType,
+		imageId,
+		imageUrl,
+		alt,
+		videoUrl,
+		youtubeId,
+		mask,
+		maskSize,
+		cropCorner,
+	} = attributes;
+
+	// The band this row sits in decides whether a cut corner means anything:
+	// on a full-window band the picture is already flush to the glass. Read
+	// from the parent rather than duplicated onto the row, so the two cannot
+	// disagree — and so changing the band's width updates every row at once.
+	const bandIsFull = useSelect(
+		(select) => {
+			const store = select('core/block-editor');
+			const parent = store.getBlockRootClientId(clientId);
+
+			return parent
+				? store.getBlockAttributes(parent)?.width === 'full'
+				: false;
+		},
+		[clientId]
+	);
+
+	// The same two values render.php writes onto the wrapper, so the editor
+	// and the front end draw the shape from one source and one stylesheet
+	// rule rather than from two implementations that can drift.
+	const masked = !!mask && !!MASK_URL;
+	const maskStyle = masked
+		? {
+				'--bridge-mask-image': `url(${MASK_URL})`,
+				'--bridge-mask-scale': (maskSize || 100) / 100,
+			}
+		: undefined;
 
 	const blockProps = useBlockProps({ className: 'bridge-alternating__row' });
 
 	const innerBlocksProps = useInnerBlocksProps(
 		{ className: 'bridge-alternating__copy' },
-		{ template: TEMPLATE, templateLock: false }
+		{
+			allowedBlocks: ALLOWED_BLOCKS,
+			template: TEMPLATE,
+			// Unlocked, so a row can drop the heading, add a second paragraph
+			// or reorder the three. The list above is what may be added, not
+			// how many of each or in what order.
+			templateLock: false,
+		}
 	);
 
 	const imageLabel =
@@ -140,80 +218,88 @@ const Edit = ({ attributes, setAttributes }) => {
 					}),
 				mediaType === 'video' &&
 					el(
+						'div',
+						{ className: 'bridge-media-field' },
+						el(
+							MediaUploadCheck,
+							null,
+							el(MediaUpload, {
+								allowedTypes: ['video'],
+								onSelect: (media) =>
+									setAttributes({ videoUrl: media.url }),
+								render: ({ open }) =>
+									el(
+										Button,
+										{ variant: 'secondary', onClick: open },
+										videoUrl
+											? __('Replace video', 'bridge')
+											: __('Choose video', 'bridge')
+									),
+							})
+						),
+						!!videoUrl &&
+							el(
+								Button,
+								{
+									variant: 'link',
+									isDestructive: true,
+									onClick: () =>
+										setAttributes({ videoUrl: '' }),
+								},
+								__('Remove video', 'bridge')
+							)
+					),
+				el(
+					'div',
+					{ className: 'bridge-media-field' },
+					el(
 						MediaUploadCheck,
 						null,
 						el(MediaUpload, {
-							allowedTypes: ['video'],
+							allowedTypes: ['image'],
+							// So the library opens on the image the row already
+							// has, rather than making the editor find it again.
+							value: imageId,
 							onSelect: (media) =>
-								setAttributes({ videoUrl: media.url }),
+								setAttributes({
+									imageId: media.id,
+									// The size the front end renders, not the
+									// original: a 4000px original as a preview is
+									// a slow editor and a different crop.
+									imageUrl:
+										media.sizes?.large?.url ||
+										media.sizes?.full?.url ||
+										media.url,
+									alt: media.alt || '',
+								}),
 							render: ({ open }) =>
 								el(
 									Button,
 									{ variant: 'secondary', onClick: open },
-									videoUrl
-										? __('Replace video', 'bridge')
-										: __('Choose video', 'bridge')
+									imageUrl
+										? __('Replace image', 'bridge')
+										: imageLabel
 								),
 						})
 					),
-				mediaType === 'video' &&
-					!!videoUrl &&
-					el(
-						Button,
-						{
-							variant: 'link',
-							isDestructive: true,
-							onClick: () => setAttributes({ videoUrl: '' }),
-						},
-						__('Remove video', 'bridge')
-					),
-				el(
-					MediaUploadCheck,
-					null,
-					el(MediaUpload, {
-						allowedTypes: ['image'],
-						// So the library opens on the image the row already
-						// has, rather than making the editor find it again.
-						value: imageId,
-						onSelect: (media) =>
-							setAttributes({
-								imageId: media.id,
-								// The size the front end renders, not the
-								// original: a 4000px original as a preview is
-								// a slow editor and a different crop.
-								imageUrl:
-									media.sizes?.large?.url ||
-									media.sizes?.full?.url ||
-									media.url,
-								alt: media.alt || '',
-							}),
-						render: ({ open }) =>
-							el(
-								Button,
-								{ variant: 'secondary', onClick: open },
-								imageUrl
-									? __('Replace image', 'bridge')
-									: imageLabel
-							),
-					})
+					!!imageUrl &&
+						el(
+							Button,
+							{
+								variant: 'link',
+								isDestructive: true,
+								onClick: () =>
+									setAttributes({
+										imageId: undefined,
+										imageUrl: '',
+										alt: '',
+									}),
+							},
+							mediaType === 'image'
+								? __('Remove image', 'bridge')
+								: __('Remove poster image', 'bridge')
+						)
 				),
-				!!imageUrl &&
-					el(
-						Button,
-						{
-							variant: 'link',
-							isDestructive: true,
-							onClick: () =>
-								setAttributes({
-									imageId: undefined,
-									imageUrl: '',
-									alt: '',
-								}),
-						},
-						mediaType === 'image'
-							? __('Remove image', 'bridge')
-							: __('Remove poster image', 'bridge')
-					),
 				mediaType === 'image' &&
 					el(TextControl, {
 						label: __('Alt text', 'bridge'),
@@ -224,6 +310,68 @@ const Edit = ({ attributes, setAttributes }) => {
 						value: alt,
 						onChange: (value) => setAttributes({ alt: value }),
 						__nextHasNoMarginBottom: true,
+					}),
+				mediaType === 'image' &&
+					el(ToggleControl, {
+						label: __('Cut the corner', 'bridge'),
+						help: bandIsFull
+							? __(
+									'Not available while the band is set to full window — the picture already reaches the edge of the screen there.',
+									'bridge'
+								)
+							: __(
+									'Takes a diagonal off the top left of the picture, in place of the rounded corners — the same corner the cards cut.',
+									'bridge'
+								),
+						checked: !!cropCorner && !bandIsFull,
+						disabled: bandIsFull,
+						onChange: (value) =>
+							setAttributes({ cropCorner: value }),
+						__nextHasNoMarginBottom: true,
+					}),
+				mediaType === 'image' &&
+					el(ToggleControl, {
+						label: __('Cut out with the mask shape', 'bridge'),
+						help: MASK_URL
+							? __(
+									'The picture is clipped to the shape set in Theme Options instead of filling a rectangle.',
+									'bridge'
+								)
+							: el(
+									Fragment,
+									null,
+									__(
+										'No mask shape has been set for this site yet.',
+										'bridge'
+									),
+									SETTINGS.optionsUrl && ' ',
+									SETTINGS.optionsUrl &&
+										el(
+											ExternalLink,
+											{ href: SETTINGS.optionsUrl },
+											__('Theme Options', 'bridge')
+										)
+								),
+						checked: !!mask,
+						disabled: !MASK_URL,
+						onChange: (value) => setAttributes({ mask: value }),
+						__nextHasNoMarginBottom: true,
+					}),
+				mediaType === 'image' &&
+					masked &&
+					el(RangeControl, {
+						label: __('Mask size (percent)', 'bridge'),
+						help: __(
+							'At 100 the shape is as tall as the image area and centred. Larger grows it past the area, and the edges crop it.',
+							'bridge'
+						),
+						value: maskSize || 100,
+						min: 50,
+						max: 300,
+						step: 5,
+						onChange: (value) =>
+							setAttributes({ maskSize: value || 100 }),
+						__nextHasNoMarginBottom: true,
 					})
 			)
 		),
@@ -232,7 +380,16 @@ const Edit = ({ attributes, setAttributes }) => {
 			blockProps,
 			el(
 				'div',
-				{ className: 'bridge-alternating__media' },
+				{
+					className: [
+						'bridge-alternating__media',
+						masked ? 'has-mask' : '',
+						cropCorner && !bandIsFull ? 'has-crop' : '',
+					]
+						.filter(Boolean)
+						.join(' '),
+					style: maskStyle,
+				},
 				imageUrl
 					? el('img', {
 							className: 'bridge-alternating__image',

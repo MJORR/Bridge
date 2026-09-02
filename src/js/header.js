@@ -27,6 +27,8 @@ const HEIGHT = '--bridge-header-height';
 const PRIMARY_NAV = '.bridge-header .bridge-nav--primary';
 const HAS_CHILD = '.wp-block-navigation-item.has-child';
 const DISMISSED = 'is-hover-dismissed';
+const SEARCH_TOGGLE = '.bridge-header__search-toggle';
+const SEARCH_OPEN = 'is-search-open';
 
 function initStickyHeader() {
 	const header = document.querySelector(HEADER);
@@ -153,10 +155,75 @@ function initHoverDismiss() {
 	nav.addEventListener('focusin', release);
 }
 
+/**
+ * The search icon opens a field under the header.
+ *
+ * The panel ships with `hidden` on it, so a visitor without JavaScript never
+ * meets a field they cannot see: the attribute comes off here, once there is
+ * something able to open and close it. Everything after that is the disclosure
+ * pattern — `aria-expanded` on the button is the state, and the class is only
+ * how the stylesheet hears about it.
+ *
+ * The class goes on the header rather than on the panel because the toggle and
+ * the panel are no longer siblings: the panel is a full-width band under the
+ * whole header, and the header is the one element that contains both.
+ *
+ * Escape closes it and returns focus to the icon, because the field is the
+ * only thing that took focus away; a press outside closes it silently, since
+ * the visitor has already moved their attention somewhere else.
+ */
+function initHeaderSearch() {
+	const header = document.querySelector(ANY_HEADER);
+	const toggle = header?.querySelector(SEARCH_TOGGLE);
+	const panel = toggle
+		? document.getElementById(toggle.getAttribute('aria-controls'))
+		: null;
+
+	if (!header || !toggle || !panel) {
+		return;
+	}
+
+	panel.hidden = false;
+
+	const setOpen = (open) => {
+		toggle.setAttribute('aria-expanded', String(open));
+		header.classList.toggle(SEARCH_OPEN, open);
+
+		if (open) {
+			// Without preventScroll the browser scrolls the page to a field
+			// that is still a few pixels tall, mid-animation, and the header
+			// it belongs to slides out from under the visitor.
+			panel
+				.querySelector('input[type="search"]')
+				?.focus({ preventScroll: true });
+		}
+	};
+
+	toggle.addEventListener('click', () => {
+		setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+	});
+
+	document.addEventListener('keydown', (event) => {
+		if (event.key !== 'Escape' || !header.classList.contains(SEARCH_OPEN)) {
+			return;
+		}
+
+		setOpen(false);
+		toggle.focus();
+	});
+
+	document.addEventListener('pointerdown', (event) => {
+		if (!panel.contains(event.target) && !toggle.contains(event.target)) {
+			setOpen(false);
+		}
+	});
+}
+
 function initHeader() {
 	initStickyHeader();
 	publishHeaderHeight();
 	initHoverDismiss();
+	initHeaderSearch();
 }
 
 if (document.readyState === 'loading') {

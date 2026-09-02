@@ -18,7 +18,7 @@
  * still the whole card: the title's link stretches over it with a
  * pseudo-element, the same technique `bridge/feature-block` uses.
  *
- * That is why Tile's badge and Portrait's button are `aria-hidden` spans rather
+ * That is why Tile's badge and Team's button are `aria-hidden` spans rather
  * than links. They are the visual cue that the card is clickable, not a second
  * destination; a real anchor under a stretched link is unreachable by pointer
  * and a duplicate tab stop for a keyboard.
@@ -36,7 +36,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // The attribute is sanitized in render.php and again in block.json's enum, but
 // this is the line that turns a string into a filesystem path, so it is the one
 // that has to be an allowlist rather than a check.
-$bridge_card_styles = array( 'summary', 'tile', 'portrait' );
+$bridge_card_styles = array( 'summary', 'tile', 'cover', 'team' );
 $bridge_card_style  = in_array( $card_style ?? '', $bridge_card_styles, true )
 	? $card_style
 	: 'summary';

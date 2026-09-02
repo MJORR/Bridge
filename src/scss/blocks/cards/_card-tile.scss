@@ -21,7 +21,6 @@
  *   the rule and the hover, where `--post-card-accent` already handles it.
  */
 .bridge-cards-grid {
-
 	.post-card--tile {
 		// What Theme Options set for this style. The heading fallback is
 		// x-large rather than the base's large: a Tile is read at a glance
@@ -108,7 +107,6 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-
 		.post-card--tile .post-card__rule {
 			transition: none;
 		}

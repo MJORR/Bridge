@@ -20,7 +20,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $display = 'cover' === ( $attributes['imageDisplay'] ?? 'contain' ) ? 'cover' : 'contain';
-$width   = 'narrow' === ( $attributes['width'] ?? 'wide' ) ? 'narrow' : 'wide';
+/*
+ * Two widths, and anything else is `wide`. The block used to offer `narrow`
+ * as well; a block still carrying it comes back as `wide` rather than as an
+ * unstyled row, which is what an unrecognised value would draw.
+ */
+$width   = 'full' === ( $attributes['width'] ?? 'full' ) ? 'full' : 'wide';
 $rows    = array();
 
 foreach ( array( 'images', 'imagesSecond' ) as $key ) {

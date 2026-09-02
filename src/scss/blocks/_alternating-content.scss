@@ -2,9 +2,6 @@
  * Bridge — Alternating Content and its rows.
  */
 @use "../abstracts/section" as section;
-@use "../abstracts/section-intro" as intro;
-
-@include intro.section-intro;
 
 .bridge-alternating {
 	// One shape for every row's media. An image cropped to 4/3 beside a 16/9
@@ -47,12 +44,6 @@
 
 	&__inner > * + * {
 		margin-block-start: var(--bridge-alternating-gap);
-	}
-
-	&__inner
-		> :is(h1, h2, h3, h4, h5, h6, p)
-		+ :is(h1, h2, h3, h4, h5, h6, p) {
-		margin-block-start: var(--wp--style--block-gap, var(--wp--preset--spacing--30));
 	}
 
 	&__row {
@@ -112,6 +103,101 @@
 		border-radius: var(--wp--custom--radius--medium);
 	}
 
+	/**
+	 * ---- The mask --------------------------------------------------------
+	 *
+	 * A cut-out of the picture in the shape of the site's mask, set once in
+	 * Theme Options. The image still fills its box and is still cropped by
+	 * `object-fit: cover`; the mask decides which of it survives.
+	 *
+	 * `--bridge-mask-image` and `--bridge-mask-scale` are written onto the
+	 * media wrapper by render.php and by the editor, so both draw the same
+	 * shape from the same two values.
+	 *
+	 * ---- What the size control means -------------------------------------
+	 *
+	 * `mask-size: auto <n>` — the height is given, the width follows the
+	 * shape's own proportions, so the shape is never stretched to the box. At
+	 * 100% the shape is exactly as tall as the image area and centred in it,
+	 * which is the size a shape should be drawn for. Above that it grows past
+	 * the area and the box crops it, top and bottom first because that is the
+	 * dimension being set.
+	 *
+	 * A shape wider than the image area is cropped at the sides even at 100%.
+	 * That is the trade for never distorting it: the two cannot both be true
+	 * for an arbitrary shape in an arbitrary box.
+	 *
+	 * The radius goes: a rounded rectangle clipping a shape that no longer has
+	 * corners takes bites out of it at four points and reads as a rendering
+	 * fault.
+	 */
+	/**
+	 * ---- The cut corner --------------------------------------------------
+	 *
+	 * A chamfer in place of the rounded corners, top left, on every row that
+	 * asks for one — whichever side its picture is on.
+	 *
+	 * It counted rows once, to put the cut on the corner facing the words: top
+	 * right when the picture was on the left, top left when it was on the
+	 * right. That mirrored the shape down the page, and mirroring is what was
+	 * wrong with it — the cut stopped reading as the theme's corner and
+	 * started reading as a property of the row. One corner, always the same
+	 * one, is the same decision the cards make.
+	 *
+	 * So there is no counting here, and nothing that depends on `order` or on
+	 * `is-first-right`. If the two sides should ever differ again, the
+	 * selectors to copy are the ones on the `order` rule above.
+	 *
+	 * ---- Why `cqw` -------------------------------------------------------
+	 *
+	 * A 45° line needs the same distance along both axes, and a percentage in
+	 * a polygon resolves per axis — `10%` on a 540×304 box is 54px across and
+	 * 30px down, which is a 29° line. `cqw` is 1% of the element's own inline
+	 * size, so both legs are cut from one measurement and the angle is true.
+	 * The media makes itself the query container to supply it, and only when
+	 * something is going to read it: `inline-size` containment is not free.
+	 *
+	 * The same idiom, and the same corner, as the cards' cut — see
+	 * abstracts/_card.scss.
+	 *
+	 * ---- Not on a full-window band ---------------------------------------
+	 *
+	 * There the picture is flush to the window, and a chamfer would read as a
+	 * bite out of the page rather than a shape. The switch is greyed out in
+	 * the editor when the band is set that way, and this is the other half of
+	 * that: a row carried over from a band that was later set to full width
+	 * quietly stops cutting instead of cutting the corner off the window.
+	 */
+	&:not(&--full) &__media.has-crop {
+		// How much of the corner goes, as a share of the media's own width.
+		// The cards' own default, so a site using both reads as one hand.
+		--bridge-alternating-cut: 10cqw;
+
+		container-type: inline-size;
+	}
+
+	&:not(&--full) &__media.has-crop &__image,
+	&:not(&--full) &__media.has-crop &__video,
+	&:not(&--full) &__media.has-crop &__video-file,
+	&:not(&--full) &__media.has-crop &__placeholder {
+		border-radius: 0;
+		clip-path: polygon(
+			0 var(--bridge-alternating-cut),
+			var(--bridge-alternating-cut) 0,
+			100% 0,
+			100% 100%,
+			0 100%
+		);
+	}
+
+	&__media.has-mask &__image {
+		mask-image: var(--bridge-mask-image);
+		mask-repeat: no-repeat;
+		mask-position: center;
+		mask-size: auto calc(var(--bridge-mask-scale, 1) * 100%);
+		border-radius: 0;
+	}
+
 	&__video {
 		position: relative;
 		aspect-ratio: var(--bridge-alternating-ratio);
@@ -145,7 +231,10 @@
 		// the gap between them is named here — as the global one, so a site
 		// that widens its rhythm widens this too.
 		> * + * {
-			margin-block-start: var(--wp--style--block-gap, var(--wp--preset--spacing--30));
+			margin-block-start: var(
+				--wp--style--block-gap,
+				var(--wp--preset--spacing--30)
+			);
 		}
 	}
 
@@ -158,5 +247,176 @@
 		border-radius: var(--wp--custom--radius--medium);
 		font-size: var(--wp--preset--font-size--small);
 		text-align: center;
+	}
+
+	/**
+	 * ---- Full window ------------------------------------------------------
+	 *
+	 * The second layout. Rows run the whole width of the window and the media
+	 * takes half of it, flush to the glass: a row whose picture is on the right
+	 * starts that picture at the middle of the window and runs it to the right
+	 * edge, with nothing between it and the edge. The words opposite it are not
+	 * full width — they line up with the wide container, so a heading in this
+	 * band starts on the same vertical as every other wide block on the page.
+	 *
+	 * That alignment is the whole difficulty, and it is one measurement: the
+	 * distance from the window's edge in to the wide container's edge. Below
+	 * `wideSize` there is no such distance, so it falls back to the page gutter
+	 * — without that, the copy would touch the glass on a laptop.
+	 */
+	&--full {
+		--bridge-alternating-edge: max(
+			var(--wp--preset--spacing--40),
+			calc((100vw - var(--wp--style--global--wide-size)) / 2)
+		);
+	}
+
+	/**
+	 * The band itself takes no gutter.
+	 *
+	 * A band wearing a skin is given a page gutter by the section rules, so a
+	 * coloured stripe does not run its text into the glass. That is right for
+	 * every other band and wrong for this one: the pictures are meant to reach
+	 * the window. `bridge-band--flush` is how a band says it insets its own
+	 * content — render.php and the editor both add it in this layout — and the
+	 * two rules in components/_sections.scss stand down for it.
+	 *
+	 * A class rather than a heavier selector because the rule to beat is worth
+	 * exactly two classes and lives in main.css, which is printed after every
+	 * block bundle. Matching it ties, and a tie goes to whoever is printed
+	 * last, which is never this file.
+	 */
+
+	// The rows are the full width of the band, so the container comes off the
+	// wrapper they sit in.
+	&--full &__inner {
+		max-width: none;
+		padding-inline: 0;
+	}
+
+	&--full &__row {
+		// The two halves of the window. `gap: 0` only once there are two
+		// columns — stacked, the picture and the words still need air between
+		// them, and that is what the row gap is for.
+		@include section.two-column {
+			grid-template-columns: 1fr 1fr;
+			gap: 0;
+
+			/**
+			 * The media fills the row's height, whatever sets it.
+			 *
+			 * `center` — what every other layout here uses — leaves a band of
+			 * background above and below the picture whenever the words beside
+			 * it are taller. In a contained row that reads as breathing space;
+			 * in a full-bleed one it reads as the image having failed to reach
+			 * the edge, because every other edge it has does.
+			 *
+			 * The ratio does not disappear, it stops being a ceiling: see the
+			 * media rule below.
+			 */
+			align-items: stretch;
+		}
+	}
+
+	/**
+	 * What decides how tall a full-width row is.
+	 *
+	 * The media keeps its aspect ratio *as its contribution* to the row's
+	 * height — a grid track sized from content asks each item how tall it
+	 * wants to be, and 16/9 across half the window is this one's answer. So a
+	 * row with one line of copy still gets a picture-shaped picture rather
+	 * than a letterbox slot.
+	 *
+	 * Then `align-items: stretch` above hands it the row's final height, which
+	 * is the larger of that and the words. With both dimensions settled the
+	 * ratio stops applying, which is exactly the point at which it should: the
+	 * image is being asked to fill a box, not to keep a shape.
+	 */
+	&--full &__media {
+		@include section.two-column {
+			aspect-ratio: var(--bridge-alternating-ratio);
+		}
+	}
+
+	// `aspect-ratio: auto` because the wrapper above owns the shape now —
+	// left on, media-fill's ratio would fight the height it is being given.
+	&--full :is(&__image, &__video, &__video-file) {
+		@include section.two-column {
+			block-size: 100%;
+			aspect-ratio: auto;
+		}
+	}
+
+	/**
+	 * Row against row, with nothing between them.
+	 *
+	 * `__inner > * + *` gives every child the section's row gap. Here that gap
+	 * was the last thing keeping the pictures apart: one row's media is on the
+	 * right and the next row's is on the left, so with the gap gone they meet
+	 * along one horizontal line and touch at the corner where the two halves
+	 * cross — which is the whole shape this layout is for.
+	 *
+	 * Only between two rows. The gap under the heading stays, because a
+	 * headline sitting directly on the first picture is not the same idea.
+	 *
+	 * Only once there are two columns, too. Stacked, there is no checkerboard
+	 * to make — just a picture, its words, and the next picture — and running
+	 * those together would put a paragraph hard against the image below it.
+	 */
+	@include section.two-column {
+		&--full &__inner > &__row + &__row {
+			margin-block-start: 0;
+		}
+	}
+
+	// Flush means flush: a rounded corner against the edge of the window reads
+	// as a mistake rather than as a detail.
+	&--full :is(&__image, &__video, &__video-file, &__placeholder) {
+		border-radius: 0;
+	}
+
+	// Stacked, the copy takes the ordinary page gutter. The two rules below
+	// replace the padding the moment there is room for two columns.
+	&--full &__copy {
+		padding-inline: var(--wp--preset--spacing--40);
+
+		// The words stay optically centred against a picture that may now be
+		// considerably taller than they are — `stretch` on the row is for the
+		// media, not for a paragraph pinned to the top of a tall cell.
+		@include section.two-column {
+			align-self: center;
+		}
+	}
+
+	@include section.two-column {
+		/**
+		 * Which edge the copy lines up with follows which side the media is
+		 * on, so these two rules count rows exactly the way the `order` rule
+		 * above does — same selectors, same `of` clause, opposite padding.
+		 *
+		 * Media on the right, so the copy is on the left: its left edge is the
+		 * wide container's left edge, and its right edge stops a row gap short
+		 * of the picture.
+		 */
+		&--full:not(.is-first-right)
+			&__row:nth-child(even of .bridge-alternating__row)
+			&__copy,
+		&--full.is-first-right
+			&__row:nth-child(odd of .bridge-alternating__row)
+			&__copy {
+			padding-inline: var(--bridge-alternating-edge)
+				var(--bridge-alternating-row-gap);
+		}
+
+		// Media on the left, so the copy is on the right — the mirror of it.
+		&--full:not(.is-first-right)
+			&__row:nth-child(odd of .bridge-alternating__row)
+			&__copy,
+		&--full.is-first-right
+			&__row:nth-child(even of .bridge-alternating__row)
+			&__copy {
+			padding-inline: var(--bridge-alternating-row-gap)
+				var(--bridge-alternating-edge);
+		}
 	}
 }

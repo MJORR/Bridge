@@ -35,7 +35,10 @@
 	 */
 	// stylelint-disable-next-line length-zero-no-unit -- read inside a calc().
 	--bridge-header-pad: var(--bridge-header-padding, 0px);
-	--bridge-header-icon: max(var(--bridge-header-logo-height, 2.5rem), 2.75rem);
+	--bridge-header-icon: max(
+		var(--bridge-header-logo-height, 2.5rem),
+		2.75rem
+	);
 	--bridge-header-size: var(
 		--bridge-header-height,
 		calc(var(--bridge-header-icon) + 2 * var(--bridge-header-pad))
@@ -156,7 +159,6 @@
 }
 
 .bridge-header--contrast-light .bridge-header__logo--dual {
-
 	.bridge-header__logo-img {
 		display: none;
 	}
@@ -170,7 +172,6 @@
 // sat on at the top of the page. `--scrolled-contrast-*` carries which logo
 // that ground wants, decided server-side where the palette is known.
 .is-scrolled.bridge-header--scrolled-contrast-dark .bridge-header__logo--dual {
-
 	.bridge-header__logo-img {
 		display: block;
 	}
@@ -181,7 +182,6 @@
 }
 
 .is-scrolled.bridge-header--scrolled-contrast-light .bridge-header__logo--dual {
-
 	.bridge-header__logo-img {
 		display: none;
 	}
@@ -214,13 +214,14 @@
  * to place — the submenu is flattened into the modal.
  */
 @media (min-width: 600px) {
-
 	// The height has to be handed down every wrapper core renders between the
 	// <nav> and the <li>. A percentage height against an auto-height ancestor
 	// resolves to auto, so one gap anywhere breaks the whole run.
 	.bridge-header__row > .bridge-header__end,
 	.bridge-header .bridge-nav--primary,
-	.bridge-header .bridge-nav--primary .wp-block-navigation__responsive-container,
+	.bridge-header
+		.bridge-nav--primary
+		.wp-block-navigation__responsive-container,
 	.bridge-header .bridge-nav--primary .wp-block-navigation__container,
 	.bridge-header .bridge-nav--primary .wp-block-navigation-item {
 		align-self: stretch;
@@ -229,7 +230,6 @@
 	// These three are block boxes rather than flex items, so they take the
 	// height rather than the stretch.
 	.bridge-header .bridge-nav--primary {
-
 		.wp-block-navigation__responsive-close,
 		.wp-block-navigation__responsive-dialog,
 		.wp-block-navigation__responsive-container-content {
@@ -295,7 +295,6 @@
 		.bridge-nav--primary
 		.wp-block-navigation__container
 		.wp-block-navigation__submenu-container {
-
 		/**
 		 * The header's own ground, published by the block, lifted one step.
 		 *
@@ -366,7 +365,6 @@
 	}
 
 	@media (prefers-reduced-motion: no-preference) {
-
 		.bridge-header
 			.bridge-nav--primary
 			.wp-block-navigation__submenu-container {
@@ -460,9 +458,25 @@
 	position: fixed;
 }
 
-// The overlay is positioned from the page, so the page has to be a containing
-// block for it.
-body:has(.bridge-header--transparent) {
+/**
+ * The overlay is positioned from the page, so the page has to be a containing
+ * block for it.
+ *
+ * `.wp-site-blocks` rather than <body>, and the difference is only visible to
+ * a logged-in visitor on a phone. Below 600px WordPress switches `#wpadminbar`
+ * to `position: absolute`, so the toolbar scrolls away with the page instead
+ * of covering it. Absolute against what, though, is decided by whatever
+ * positioned ancestor it finds — and the toolbar is a child of <body>. A
+ * positioned <body> therefore becomes the toolbar's containing block, and
+ * <body> starts below the margin <html> reserved for the toolbar: the bar
+ * lands one toolbar-height too low, over the header, leaving an empty strip
+ * the colour of the page where it should have been.
+ *
+ * The wrapper starts exactly where <body> does and holds the header part, so
+ * the header is positioned identically and the toolbar goes back to measuring
+ * itself against the viewport, which is what core intends.
+ */
+body:has(.bridge-header--transparent) .wp-site-blocks {
 	position: relative;
 }
 
@@ -479,7 +493,6 @@ body:has(.bridge-header--transparent) .wp-site-blocks > main {
 // hover reads as damage over a busy image, where the pill from the nav
 // component does the job on its own.
 .bridge-header--transparent {
-
 	a,
 	.wp-block-navigation .wp-block-navigation-item__content {
 		text-decoration: none;
@@ -547,7 +560,6 @@ html:has(.bridge-header--sticky) {
 }
 
 @media screen and (max-width: 782px) {
-
 	.admin-bar :where(.wp-block-template-part):has(> .bridge-header--sticky) {
 		top: 46px;
 	}
@@ -559,7 +571,196 @@ html:has(.bridge-header--sticky) {
 	border-bottom: 1px solid color-mix(in srgb, currentcolor 15%, transparent);
 }
 
+// ---- Search ----------------------------------------------------------------
+
+.bridge-header__search-toggle,
+.bridge-header__search-submit {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	// The 44px tap-target floor every other control in the header keeps. The
+	// icon sits well inside it; the rest of the square is the target.
+	min-width: 2.75rem;
+	min-height: 2.75rem;
+	padding: 0;
+	border: 0;
+	background: none;
+	// Inherited, not stated: the header decides its own contrast, and an icon
+	// that named a colour would go invisible over a transparent header.
+	color: inherit;
+	cursor: pointer;
+}
+
+// The one icon in the header that is not sitting beside a label saying what it
+// is, so it carries the weight a label would have: heavier than the library's
+// bold, stated here rather than switched on site-wide. A hairline magnifier
+// next to a set of menu links reads as a stray mark rather than a control.
+.bridge-header__search-toggle .bridge-icon,
+.bridge-header__search-control .bridge-icon {
+	// A fixed length rather than the library's em sizes: this icon is sized
+	// against the header, not against the text it happens to sit beside.
+	width: 1.25rem;
+	height: 1.25rem;
+	// The stroke is in viewBox units, so it thins as the icon shrinks — at
+	// this size it takes a number above the two the design system offers to
+	// read as bold at all.
+	stroke-width: 2.8;
+	flex-shrink: 0;
+}
+
+/**
+ * The panel that opens under the header.
+ *
+ * A grid whose single row animates from 0fr to 1fr, rather than a height or a
+ * transform. Height cannot be animated to `auto`, and a transform would slide
+ * the panel over the page instead of moving the page out of its way — the
+ * whole point of this treatment is that nothing is covered up. The row is a
+ * real box in the flow, so the header genuinely gets taller and everything
+ * below it travels down with the same animation.
+ *
+ * `visibility` rather than `display`, because `display` cannot be transitioned
+ * and something has to take the closed field out of the tab order: a field
+ * reachable by keyboard inside a band that has collapsed to nothing is a
+ * keyboard trap on a header that looks shut. Its transition is discrete, so it
+ * flips at the end of the close and at the start of the open, which is exactly
+ * when the panel stops and starts being usable.
+ */
+.bridge-header__search-panel {
+	display: grid;
+	grid-template-rows: 0fr;
+	visibility: hidden;
+	// The header carries the site's root padding, so a band drawn inside it
+	// would stop short of both gutters. Pulled out by that padding and given
+	// it back inside, the colour reaches the window while the field stays on
+	// the same grid as the logo above it.
+	margin-inline: calc(var(--wp--style--root--padding-left, 1.5rem) * -1)
+		calc(var(--wp--style--root--padding-right, 1.5rem) * -1);
+	padding-inline: var(--wp--style--root--padding-left, 1.5rem)
+		var(--wp--style--root--padding-right, 1.5rem);
+	// The brand's own colour: this band is a deliberate break in the header's
+	// ground rather than a surface floating on it.
+	background: var(--wp--preset--color--primary);
+	// White on the brand colour, and a field lifted ten per cent towards white
+	// out of the same value — one source for both, so a palette change carries
+	// the whole band with it.
+	--bridge-search-fg: #fff;
+	--bridge-search-field: color-mix(
+		in srgb,
+		#fff 10%,
+		var(--wp--preset--color--primary)
+	);
+
+	color: var(--bridge-search-fg);
+
+	@media (prefers-reduced-motion: no-preference) {
+		transition:
+			grid-template-rows 0.28s ease,
+			visibility 0.28s;
+	}
+}
+
+.bridge-header.is-search-open .bridge-header__search-panel {
+	grid-template-rows: 1fr;
+	visibility: visible;
+}
+
+// The clipping box the 0fr row needs: without `min-height: 0` a grid item
+// refuses to shrink below its content and the row never closes at all.
+.bridge-header__search-panel-inner {
+	overflow: hidden;
+	min-height: 0;
+}
+
+.bridge-header__search-form {
+	display: flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--20);
+	padding-block: var(--wp--preset--spacing--30);
+}
+
+// The icon lives inside the field's surface rather than beside it, so the two
+// read as one control — which is what stops the field needing a border to say
+// where it begins.
+.bridge-header__search-control {
+	display: flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--20);
+	flex: 1;
+	padding-inline: var(--wp--preset--spacing--30);
+	border-radius: 6px;
+	background: var(--bridge-search-field);
+}
+
+.bridge-header__search-field {
+	flex: 1;
+	// The field's ground is the control around it, and the control is already
+	// drawn — a border here would draw the same edge twice.
+	border: 0;
+	background: none;
+	padding-block: 0.75rem;
+	padding-inline: 0;
+	color: inherit;
+	font-size: var(--wp--preset--font-size--small);
+	line-height: 1.5;
+
+	&::placeholder {
+		color: currentcolor;
+		opacity: 0.65;
+	}
+
+	// Safari draws a focus ring on the input; the ring belongs on the control,
+	// which is the shape a visitor sees.
+	&:focus {
+		outline: none;
+	}
+
+	/**
+	 * The clear button a search input draws for itself.
+	 *
+	 * WebKit paints it as a fixed dark glyph that takes no colour from the
+	 * field, so on this band it is a black cross on the brand colour. The
+	 * native one is switched off and the same X the icon library draws is
+	 * painted back in `currentcolor` — a mask rather than an image, because an
+	 * image would have to name white and would then be wrong the moment this
+	 * band is anything other than dark.
+	 */
+	&::-webkit-search-cancel-button {
+		appearance: none;
+		width: 0.75rem;
+		height: 0.75rem;
+		background-color: currentcolor;
+		mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.8" stroke-linecap="round"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>')
+			center / contain no-repeat;
+		cursor: pointer;
+	}
+}
+
+.bridge-header__search-control:focus-within {
+	outline: 2px solid currentcolor;
+	outline-offset: 2px;
+}
+
+.bridge-header__search-submit {
+	// A word, not an icon: the icon is already inside the field saying what
+	// the control is for, and repeating it would leave the visitor choosing
+	// between two magnifiers.
+	padding-inline: var(--wp--preset--spacing--30);
+	border-radius: 6px;
+	background: var(--bridge-search-field);
+	color: inherit;
+	font-size: var(--wp--preset--font-size--small);
+	font-weight: 600;
+}
+
 // ---- Call to action --------------------------------------------------------
+
+// A flex item that centres its own child, so the button is placed against the
+// row rather than against the line box a text baseline would give it — which
+// is what puts its label on the menu's line.
+.bridge-header__cta {
+	display: flex;
+	align-items: center;
+}
 
 .bridge-header__cta .wp-element-button {
 	// Flex, matching every other button: the shared shape centres the label
@@ -567,13 +768,60 @@ html:has(.bridge-header--sticky) {
 	// at the top of a box the padding did not fill.
 	display: inline-flex;
 	white-space: nowrap;
+
+	/**
+	 * The one thing the site's button carries that the header cannot use.
+	 *
+	 * components/_button.scss gives every button a block margin, because in
+	 * running content a button butted against the paragraph above it reads as
+	 * part of that paragraph. In a header row there is nothing above or below
+	 * it — the margin only makes the header taller, and it does it by a
+	 * spacing step that grows with the viewport, so the header's height stops
+	 * being the height the operator set.
+	 *
+	 * Everything else about the button is left exactly as the site's skin drew
+	 * it: the fill, the radius, the weight and the 44px floor all arrive from
+	 * abstracts/_button.scss through `.wp-element-button`, and the header only
+	 * says which ground they are being drawn on.
+	 */
+	margin-block: 0;
+
+	// The menu's own size, so the label reads as part of the same row of type
+	// rather than a second, larger voice beside it. The skin decides the
+	// button's weight and its case; the header decides how big the row is.
+	font-size: inherit;
 }
 
 // The stacked layouts collapse earlier than the single-row one: two rows of
 // centred content runs out of width long before a logo and a menu side by side.
-@media (max-width: 600px) {
-
+//
+// 599 rather than 600, so this is the exact complement of core's `min-width:
+// 600px` menu-bar query and of the `.bridge-nav__cta` rule that hides the
+// button's copy inside the menu. At 600 the two queries both matched and the
+// call to action vanished on the one width where neither half claimed it.
+@media (max-width: 599px) {
 	.bridge-header__cta {
 		display: none;
+	}
+
+	/**
+	 * Search first, then the menu toggle.
+	 *
+	 * 600px is where core stops drawing the navigation as a menu bar and
+	 * starts drawing it as a single hamburger button, and the two orders belong
+	 * to those two things: beside a row of links the icon follows the menu it
+	 * searches, but beside one button it is the toggle that should be nearest
+	 * the edge — that is the corner a thumb reaches, and it is where a menu
+	 * button is looked for.
+	 *
+	 * `order` rather than a second copy of the markup, so there is one button
+	 * with one state for header.js to drive. It leaves these two controls
+	 * reachable in the order they are written, which is the toggle and then
+	 * the icon; two adjacent buttons, both labelled, is a sequence a keyboard
+	 * can live with, and duplicating the search control to fix it would be a
+	 * worse trade.
+	 */
+	.bridge-header__search-toggle {
+		order: -1;
 	}
 }

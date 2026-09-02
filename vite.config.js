@@ -189,6 +189,16 @@ export default defineConfig(({ mode }) => ({
 					__dirname,
 					'src/scss/alternating-content.scss'
 				),
+				'faqs-editor': resolve(__dirname, 'src/blocks/faqs/index.js'),
+				faqs: resolve(__dirname, 'src/scss/faqs.scss'),
+				'goals-editor': resolve(
+					__dirname,
+					'src/blocks/goals/index.js'
+				),
+				'goal-editor': resolve(__dirname, 'src/blocks/goal/index.js'),
+				goals: resolve(__dirname, 'src/scss/goals.scss'),
+				'goals-view': resolve(__dirname, 'src/js/goals-view.js'),
+				'map-view': resolve(__dirname, 'src/js/map-view.js'),
 				'split-content-editor': resolve(
 					__dirname,
 					'src/blocks/split-content/index.js'
@@ -196,6 +206,18 @@ export default defineConfig(({ mode }) => ({
 				'split-content': resolve(
 					__dirname,
 					'src/scss/split-content.scss'
+				),
+				'contact-form-editor': resolve(
+					__dirname,
+					'src/blocks/contact-form/index.js'
+				),
+				'contact-form': resolve(
+					__dirname,
+					'src/scss/contact-form.scss'
+				),
+				'contact-form-view': resolve(
+					__dirname,
+					'src/js/contact-form-view.js'
 				),
 				'cards-editor': resolve(__dirname, 'src/blocks/cards/index.js'),
 				'page-title-editor': resolve(
@@ -226,10 +248,28 @@ export default defineConfig(({ mode }) => ({
 					__dirname,
 					'src/editor/button-lock.js'
 				),
+				'top-level-only': resolve(
+					__dirname,
+					'src/editor/top-level-only.js'
+				),
+				'band-mask': resolve(__dirname, 'src/editor/band-mask.js'),
+				inspector: resolve(__dirname, 'src/scss/inspector.scss'),
 				'options-app': resolve(__dirname, 'src/admin/options-app.jsx'),
+				'simple-editor': resolve(
+					__dirname,
+					'src/scss/simple-editor.scss'
+				),
+				'answer-editor': resolve(
+					__dirname,
+					'src/scss/answer-editor.scss'
+				),
 				'header-editor': resolve(
 					__dirname,
 					'src/blocks/header/index.js'
+				),
+				'footer-editor': resolve(
+					__dirname,
+					'src/blocks/footer/index.js'
 				),
 			},
 			external: [/^@wordpress\//],

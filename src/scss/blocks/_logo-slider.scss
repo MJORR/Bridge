@@ -12,15 +12,25 @@
 
 .bridge-logos {
 	&__inner {
-		@include section.container(wide);
-
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--50);
 	}
 
-	&--narrow &__inner {
-		@include section.container(narrow);
+	// `wide` holds the whole band — words and logos alike — to the same column
+	// every other band uses.
+	&--wide &__inner {
+		@include section.container(wide);
+	}
+
+	// `full` runs the rows to the window instead. A marquee reads as
+	// travelling *through* the section, which it only does if it reaches both
+	// edges; stopped at `wideSize` it reads as a box of logos that happens to
+	// be moving. The heading is the exception either way — it has a measure
+	// and a column to line up with — so in this width the intro carries the
+	// container the inner has given up.
+	&--full &__intro {
+		@include section.container(wide);
 	}
 
 	&__row {
@@ -38,9 +48,11 @@
 	}
 
 	&__track {
+		--bridge-logo-gap: var(--wp--preset--spacing--50);
+
 		display: flex;
 		align-items: center;
-		gap: var(--wp--preset--spacing--50);
+		gap: var(--bridge-logo-gap);
 		list-style: none;
 		margin: 0;
 		padding: 0;
@@ -49,6 +61,16 @@
 		// the row longer rather than faster.
 		animation: bridge-logos-scroll calc(var(--bridge-logo-count, 6) * 3s)
 			linear infinite;
+	}
+
+	// `cover` gives every logo the same 8rem tile, and the crop leaves each
+	// one filling its box edge to edge. `contain` does the opposite: a wide
+	// wordmark and a square badge sit at their own widths, and two marks that
+	// both run to the edge of their artwork end up almost touching. The wider
+	// gap is what keeps a contained row reading as separate logos rather than
+	// one continuous strip.
+	&__row.is-contain &__track {
+		--bridge-logo-gap: var(--wp--preset--spacing--60);
 	}
 
 	&__row.is-reverse &__track {
@@ -97,8 +119,12 @@
 	}
 
 	to {
-		// Half the track, which is one full set of logos.
-		transform: translateX(-50%);
+		// Half the track, plus half a gap. The track carries a gap between
+		// every adjacent pair, so it holds one fewer gap than it does logos —
+		// and 50% of its width therefore lands half a gap short of where the
+		// second set begins, jumping by that much on every loop. Invisible at
+		// a tight gap; not at a wide one.
+		transform: translateX(calc(-50% - var(--bridge-logo-gap, 0px) / 2));
 	}
 }
 

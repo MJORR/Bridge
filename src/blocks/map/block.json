@@ -11,13 +11,7 @@
 	"keywords": ["map", "location", "address", "directions", "google"],
 	"supports": {
 		"anchor": true,
-		"html": false,
-		"color": {
-			"background": true,
-			"text": true,
-			"link": true,
-			"gradients": false
-		}
+		"html": false
 	},
 	"attributes": {
 		"width": {
@@ -25,6 +19,16 @@
 			"default": "wide"
 		},
 		"address": {
+			"type": "string",
+			"default": ""
+		},
+		"lat": {
+			"type": "number"
+		},
+		"lng": {
+			"type": "number"
+		},
+		"placeId": {
 			"type": "string",
 			"default": ""
 		},
@@ -51,5 +55,6 @@
 	},
 	"editorScript": "bridge-map-editor",
 	"style": "bridge-map-style",
+	"viewScript": "bridge-map-view",
 	"render": "file:./render.php"
 }

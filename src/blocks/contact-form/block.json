@@ -1,0 +1,64 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/contact-form",
+	"version": "1.0.0",
+	"title": "Contact Form",
+	"category": "design",
+	"icon": "email-alt",
+	"description": "A banded contact form — name, phone, email and message. Every submission is filed under Enquiries, the sender is thanked by email and the site is notified.",
+	"textdomain": "bridge",
+	"keywords": ["contact", "form", "enquiry", "enquiries", "email", "message"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false,
+		"multiple": true
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "narrow"
+		},
+		"panel": {
+			"type": "boolean",
+			"default": true
+		},
+		"requirePhone": {
+			"type": "boolean",
+			"default": true
+		},
+		"buttonLabel": {
+			"type": "string",
+			"default": ""
+		},
+		"successMessage": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"example": {
+		"attributes": {
+			"panel": true
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"content": "Get in touch"
+				}
+			},
+			{
+				"name": "core/paragraph",
+				"attributes": {
+					"content": "Tell us what you need and we will come back to you."
+				}
+			}
+		]
+	},
+	"editorScript": "bridge-contact-form-editor",
+	"viewScript": "bridge-contact-form-view",
+	"style": "bridge-contact-form-style",
+	"render": "file:./render.php"
+}

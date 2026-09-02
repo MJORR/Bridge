@@ -38,6 +38,10 @@ $bridge_theme_dir = dirname(__DIR__);
 
 require_once $bridge_theme_dir . '/inc/color.php';
 require_once $bridge_theme_dir . '/inc/tokens.php';
+// bridge_sanitize_tokens() asks this file which post type slugs are reserved
+// and how many types are allowed, so the real lists are used rather than a
+// double — a test that accepted `page` as a slug would prove nothing.
+require_once $bridge_theme_dir . '/inc/post-types.php';
 // bridge_sanitize_tokens() validates the font set against the real catalogue
 // and the block lists against the real required-blocks list, so both files are
 // loaded rather than stubbed — a test that accepted a font set the site would
@@ -45,5 +49,16 @@ require_once $bridge_theme_dir . '/inc/tokens.php';
 require_once $bridge_theme_dir . '/inc/fonts.php';
 require_once $bridge_theme_dir . '/inc/lockdown.php';
 require_once $bridge_theme_dir . '/inc/theme-json.php';
+// The activation seeds. Loaded for bridge_seed_post_types(), which is pure
+// token arithmetic — the menu seeding beside it talks to the database and is
+// not called from a test.
+require_once $bridge_theme_dir . '/inc/activation.php';
+
+// The contact form's server half. Loaded for the three pure pieces of it —
+// the validator, the spam score and the signed clock — which are the parts a
+// regression would ship as either a form nobody can submit or a form every
+// script can. The rest of the file talks to the database and is not called
+// from a test.
+require_once $bridge_theme_dir . '/inc/enquiries.php';
 
 require_once __DIR__ . '/BridgeTestCase.php';

@@ -12,18 +12,32 @@
 	"supports": {
 		"anchor": true,
 		"html": false,
-		"layout": false,
-		"color": {
-			"background": true,
-			"text": true,
-			"link": true,
-			"gradients": false
-		}
+		"layout": false
 	},
 	"attributes": {
 		"width": {
 			"type": "string",
 			"default": "wide"
+		},
+		"mask": {
+			"type": "boolean",
+			"default": false
+		},
+		"maskColor": {
+			"type": "string",
+			"default": "accent"
+		},
+		"maskSize": {
+			"type": "number",
+			"default": 60
+		},
+		"maskInset": {
+			"type": "number",
+			"default": 0
+		},
+		"cardStyle": {
+			"type": "string",
+			"default": "summary"
 		},
 		"columns": {
 			"type": "number",

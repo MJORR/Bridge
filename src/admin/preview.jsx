@@ -272,9 +272,12 @@ export function CardPreview({
 	const padding =
 		spacingSizes?.find((s) => String(s.slug) === String(cards.padding))
 			?.size || '1.5rem';
-	const shadow =
-		shadows?.find((s) => s.slug === cards.shadow)?.shadow || 'none';
-	const radius = `${cards.radius}px`;
+	// Squared by the cut, and wearing the shadow in whichever form that mode
+	// can use — exactly as in CardStylePreview and in the compiler.
+	const preset = shadows?.find((s) => s.slug === cards.shadow);
+	const cut = Boolean(cards.cutCorner);
+	const shadow = cut ? 'none' : preset?.shadow || 'none';
+	const radius = cut ? '0px' : `${cards.radius}px`;
 
 	return (
 		<div className="bridge-preview__cards">
@@ -330,7 +333,7 @@ export function CardPreview({
  *
  * Twelve cards, which is the number that matters. The three styles differ in
  * the things that collide with a background — a Tile's chip is the palette's
- * Accent, a Portrait's arch *is* the card colour, a Summary's read-more is the
+ * Accent, a Team's arch *is* the card colour, a Summary's read-more is the
  * link colour — and each of the four grounds paints a different card. A row of
  * one style on one ground cannot show any of that; a grid can, before it is
  * saved rather than after a client builds the page.
@@ -356,6 +359,7 @@ export function CardStylePreview({
 	spacingSizes,
 	fontSizes,
 	palette,
+	custom,
 }) {
 	const color = (slug) => palette?.find((c) => c.slug === slug)?.color;
 
@@ -390,9 +394,29 @@ export function CardStylePreview({
 		spacingSizes?.find((s) => String(s.slug) === String(cards.padding))
 			?.size || '1.5rem'
 	);
-	const shadow =
-		shadows?.find((s) => s.slug === cards.shadow)?.shadow || 'none';
-	const radius = scaled(`${cards.radius}px`);
+	const preset = shadows?.find((s) => s.slug === cards.shadow);
+
+	// A card can have a cut corner or a rounded one, not both, so the cut
+	// squares the card here exactly as it does in the compiler — see the
+	// `$cut` branch in bridge_compile_theme_json(). Resolved once, at the top,
+	// because the radius is spent in three places below and a preview that
+	// squared the card but not the panel inside it would be showing a card the
+	// site never draws.
+	const cut = Boolean(cards.cutCorner);
+	const radius = scaled(cut ? '0px' : `${cards.radius}px`);
+
+	// And the shadow goes with it, for the reason the compiler gives: a box
+	// shadow is drawn around the card's box and would trace the square corner
+	// the cut just removed. A preview that drew one would be showing a card the
+	// site never renders.
+	const shadow = cut ? 'none' : preset?.shadow || 'none';
+
+	// The polygon the compiler publishes, in the preview's own terms:
+	// percentages of the sample rather than `cqw`, since these samples are
+	// square-ish and there is no container to query on this screen.
+	const clip = cut
+		? `polygon(0 ${cards.cutSize}%, ${cards.cutSize}% 0, 100% 0, 100% 100%, 0 100%)`
+		: 'none';
 
 	const settings = (slug) => cards.styles?.[slug] || {};
 
@@ -430,11 +454,34 @@ export function CardStylePreview({
 								display: 'block',
 							};
 
-							// Portrait paints its children rather than itself,
+							// Team paints its children rather than itself,
 							// so the arch and the panel are one colour and the
-							// card behind them is nothing. The other two are a
-							// single filled box.
-							const isPortrait = 'portrait' === style.slug;
+							// card behind them is nothing.
+							const isTeam = 'team' === style.slug;
+
+							// Cover paints the photograph across the whole
+							// card and washes it in the Inverted colour, so
+							// its ground is Primary rather than the card
+							// surface this ground would otherwise give it.
+							const isCover = 'cover' === style.slug;
+
+							// One lookup rather than a chain of conditionals:
+							// three styles, three answers, and a fourth is a
+							// line here rather than another nested branch.
+							// The chosen wash, and the ink the compiler derived
+							// from it — read out of the preview response rather
+							// than recomputed here, so the contrast shown is the
+							// contrast the server checked.
+							const washFor = (slug) =>
+								color(slug) || color('primary');
+							const coverInk =
+								custom?.card?.cover?.ink || color('background');
+
+							const groundFor = (slug) =>
+								({
+									team: 'transparent',
+									cover: washFor(set.wash),
+								})[slug] ?? surface;
 
 							return (
 								<div
@@ -442,13 +489,72 @@ export function CardStylePreview({
 									className="bridge-preview__cardstyle"
 									style={{
 										borderRadius: radius,
-										boxShadow: isPortrait ? 'none' : shadow,
-										background: isPortrait
+										boxShadow: isTeam ? 'none' : shadow,
+										// The surface below is placed against
+										// the card, and has to stay inside it:
+										// it sits at z-index -1, which only
+										// stays put in an element that
+										// establishes a stacking context. The
+										// card's own stylesheet isolates for
+										// the same reason.
+										position: 'relative',
+										isolation: 'isolate',
+										aspectRatio: isCover
+											? ratioValue(set.ratio)
+											: undefined,
+										// Team paints nothing of its own,
+										// Cover paints the Inverted ground the
+										// wash resolves to, and the rest take
+										// this ground's card surface. Once the
+										// corner is cut this moves to the
+										// layer below, which is the thing that
+										// can be clipped.
+										background: cut
 											? 'transparent'
-											: surface,
+											: groundFor(style.slug),
 									}}
 								>
-									{isPortrait ? (
+									{/* eslint-disable-next-line no-nested-ternary -- three sibling branches of one switch; a lookup here would mean building three trees eagerly. */}
+									{isCover ? (
+										<div
+											className="bridge-preview__cardstyle-cover"
+											style={{ clipPath: clip }}
+										>
+											{/*
+											 * The wash, drawn with the same
+											 * stops the stylesheet uses so the
+											 * contrast under the title here is
+											 * the contrast on the page.
+											 */}
+											<span
+												className="bridge-preview__cardstyle-wash"
+												style={{
+													background: `linear-gradient(to top, ${washFor(set.wash)} 0%, color-mix(in srgb, ${washFor(set.wash)} 88%, transparent) 28%, color-mix(in srgb, ${washFor(set.wash)} 45%, transparent) 55%, color-mix(in srgb, ${washFor(set.wash)} 12%, transparent) 78%, transparent 100%)`,
+												}}
+											/>
+											<div
+												className="bridge-preview__cardstyle-coverbody"
+												style={{
+													padding,
+													// Derived from the wash by
+													// the compiler; see the
+													// `wash` case in
+													// bridge_compile_theme_json().
+													color: coverInk,
+												}}
+											>
+												<strong style={heading}>
+													{style.name}
+												</strong>
+												<span
+													className="bridge-preview__cardstyle-go"
+													aria-hidden="true"
+												>
+													{'\u2192'}
+												</span>
+											</div>
+										</div>
+									) : isTeam ? (
 										<>
 											{/*
 											 * The same arithmetic the card
@@ -506,6 +612,11 @@ export function CardStylePreview({
 													aspectRatio: ratioValue(
 														set.ratio
 													),
+													// Cut to match the surface
+													// under it — the same job
+													// `card.cut-corner-child`
+													// does on the real card.
+													clipPath: clip,
 												}}
 											>
 												{'tile' === style.slug && (
@@ -578,12 +689,177 @@ export function CardStylePreview({
 											)}
 										</>
 									)}
+
+									{/*
+									 * The surface, clipped to the cut — the
+									 * card's `::before` on the site. Behind the
+									 * content and in front of the card's own
+									 * (now clear) background, which is where a
+									 * negative index puts it. Not on Team,
+									 * which paints no rectangle for a corner to
+									 * be taken off: the same exemption
+									 * blocks/cards/_card-team.scss makes.
+									 */}
+									{cut && !isTeam && (
+										<span
+											aria-hidden="true"
+											style={{
+												position: 'absolute',
+												inset: 0,
+												zIndex: -1,
+												background: groundFor(
+													style.slug
+												),
+												clipPath: clip,
+											}}
+										/>
+									)}
 								</div>
 							);
 						})}
 					</div>
 				</div>
 			))}
+		</div>
+	);
+}
+
+/**
+ * A single post, in the chosen layout.
+ *
+ * Drawn from the compiled palette, type scale and faces rather than from a
+ * fixed grey mock, so what an operator sees is their own brand's article —
+ * the headline in the heading face at the real h1 size, the byline at the
+ * `small` preset, the corner at the card radius.
+ *
+ * The photograph is a flat swatch rather than a stock image. A photograph in a
+ * preview is a photograph an operator judges the layout by, and every real one
+ * will be different; the block says where the picture goes, which is the whole
+ * of the decision. Cover is the exception and has to be: the scrim over it is
+ * the thing that makes the layout legible or not, so the swatch is darkened
+ * there exactly as the stylesheet darkens the real image.
+ *
+ * @param {Object} props Component props.
+ */
+export function PostTemplatePreview({
+	template,
+	palette,
+	fontSizes,
+	fontFamilies,
+	styles,
+	custom,
+}) {
+	const color = (slug) => palette?.find((c) => c.slug === slug)?.color;
+	const size = (slug) => fontSizes?.find((f) => f.slug === slug)?.size;
+
+	const body = stackFor(fontFamilies, 'sans');
+	const heading = stackFor(fontFamilies, 'heading') || body;
+	const radius = custom?.card?.radius || '6px';
+
+	// The h1 is the top of the scale. Scaled down like the card preview's, and
+	// for the same reason: a 3.5rem headline in a 30rem sidebar is one word.
+	const zoom = 0.42;
+	const scaled = (length) => `calc(${length} * ${zoom})`;
+
+	const title = {
+		fontFamily: heading,
+		fontSize: scaled(size('xx-large') || '3.5rem'),
+		fontWeight: styles?.elements?.heading?.typography?.fontWeight || '600',
+		textTransform:
+			styles?.elements?.heading?.typography?.textTransform || 'none',
+		lineHeight: 1.15,
+		margin: 0,
+	};
+
+	const meta = {
+		fontSize: scaled(size('small') || '0.875rem'),
+		// The same 70% of the band's foreground the stylesheet uses.
+		opacity: 0.7,
+		marginTop: '0.35rem',
+	};
+
+	// Stands in for the photograph. Surface rather than a mid grey, so it is a
+	// colour from the palette like everything else on screen.
+	const photo = {
+		background: color('surface'),
+		boxShadow: 'inset 0 0 0 1px rgb(0 0 0 / 10%)',
+	};
+
+	const lines = (
+		<div className="bridge-preview__post-lines" aria-hidden="true">
+			<span />
+			<span />
+			<span />
+		</div>
+	);
+
+	return (
+		<div
+			className={`bridge-preview__post bridge-preview__post--${template}`}
+			style={{
+				fontFamily: body,
+				background: color('background'),
+				color: color('text'),
+			}}
+		>
+			{'cover' === template ? (
+				<>
+					<div className="bridge-preview__post-cover">
+						<span
+							className="bridge-preview__post-photo"
+							style={photo}
+						/>
+						{/* The scrim, matching the stylesheet's gradient. */}
+						<span
+							className="bridge-preview__post-scrim"
+							aria-hidden="true"
+						/>
+						<div className="bridge-preview__post-over">
+							{/*
+							 * `background` is the palette's light slug, which is
+							 * what `on-dark` resolves the foreground to on the
+							 * real page — so a brand whose light colour is not
+							 * white shows that here too.
+							 */}
+							<h4
+								style={{
+									...title,
+									color: color('background'),
+								}}
+							>
+								{__('The headline of a post', 'bridge')}
+							</h4>
+							<p
+								style={{
+									...meta,
+									color: color('background'),
+								}}
+							>
+								{__('12 August · Category', 'bridge')}
+							</p>
+						</div>
+					</div>
+					<div className="bridge-preview__post-body">{lines}</div>
+				</>
+			) : (
+				<div className="bridge-preview__post-body">
+					<div className="bridge-preview__post-head">
+						<div>
+							<h4 style={title}>
+								{__('The headline of a post', 'bridge')}
+							</h4>
+							<p style={meta}>
+								{__('12 August · Category', 'bridge')}
+							</p>
+						</div>
+						<span
+							className="bridge-preview__post-photo"
+							style={{ ...photo, borderRadius: radius }}
+						/>
+					</div>
+					{lines}
+				</div>
+			)}
 		</div>
 	);
 }

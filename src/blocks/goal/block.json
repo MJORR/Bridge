@@ -1,0 +1,20 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/goal",
+	"version": "1.0.0",
+	"title": "Goal",
+	"category": "design",
+	"icon": "chart-bar",
+	"description": "One figure: a number, its unit and a label.",
+	"textdomain": "bridge",
+	"parent": ["bridge/goals"],
+	"supports": { "anchor": false, "html": false, "reusable": false },
+	"attributes": {
+		"number": { "type": "string", "default": "" },
+		"unit": { "type": "string", "default": "" },
+		"label": { "type": "string", "default": "" }
+	},
+	"editorScript": "bridge-goal-editor",
+	"render": "file:./render.php"
+}

@@ -9,7 +9,7 @@
  *
  * What each style then *does* with that lives in its own file beside this one,
  * loaded after it by _index.scss so a modifier of equal specificity wins on
- * order. See _card-summary.scss, _card-tile.scss and _card-portrait.scss.
+ * order. See _card-summary.scss, _card-tile.scss and _card-team.scss.
  *
  * The grid is scoped under .bridge-cards-grid (added in render.php) rather
  * than the auto-generated .wp-block-bridge-cards class, because the editor
@@ -17,6 +17,7 @@
  * inner .wp-block-bridge-cards from our render.php. Targeting only our
  * explicit class avoids that double-wrap collision.
  */
+@use "../../abstracts/band-mask" as mask;
 @use "../../abstracts/card" as card;
 @use "../../abstracts/carousel" as carousel;
 @use "../../abstracts/section" as section;
@@ -32,12 +33,20 @@
  * below is what this one holds instead of authored items.
  */
 .bridge-cards {
+	// The decorative mask shape, when the block asks for one. Everything about
+	// where it lands is in the mixin, shared with the other bands that carry
+	// it — see abstracts/_band-mask.scss.
+	@include mask.band-mask;
+
 	&__inner {
 		@include section.container(wide);
 
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--50);
+
+		// Above the shape — see the mixin for why no z-index is involved.
+		@include mask.band-mask-content;
 	}
 
 	&--narrow &__inner {
@@ -135,13 +144,18 @@
 	}
 
 	.post-card__image {
+		// The photograph runs to the top edge, so it covers the corner the
+		// card's surface just had cut out of it. Cut to match; `none` while
+		// the setting is off.
+		@include card.cut-corner-child;
+
 		margin: 0;
 		// The frame the logo stand-in below is measured against.
 		position: relative;
 		// The crop, set per style from Theme Options and defaulted here so the
 		// frame is correct before any token has been saved. Each style points
 		// `--post-card-ratio` at its own compiled property; see the modifier
-		// files. Portrait ignores this and squares the frame itself.
+		// files. Team ignores this and squares the frame itself.
 		aspect-ratio: var(--post-card-ratio, 16 / 9);
 		overflow: hidden;
 		background: var(--post-card-well);
@@ -159,10 +173,10 @@
 		}
 	}
 
-	// Portrait is excluded: its image is a face in a circle, not a landscape
+	// Team is excluded: its image is a face in a circle, not a landscape
 	// cropped to a frame, and a photograph of a person that grows under the
 	// pointer reads as a glitch rather than as an invitation.
-	.post-card:not(.post-card--portrait):hover .post-card__image > img {
+	.post-card:not(.post-card--team):hover .post-card__image > img {
 		transform: scale(1.04);
 	}
 
@@ -313,7 +327,6 @@
 	// The card's own transition and lift are stilled by `card.raise`; this is
 	// the image zoom, which is this block's alone.
 	@media (prefers-reduced-motion: reduce) {
-
 		.post-card__image > img {
 			transition: none;
 		}
@@ -322,7 +335,7 @@
 		// same specificity and this one wins on order. Written as `:hover`
 		// alone it lost, and a reader who had asked for less motion got the
 		// zoom anyway.
-		.post-card:not(.post-card--portrait):hover .post-card__image > img {
+		.post-card:not(.post-card--team):hover .post-card__image > img {
 			transform: none;
 		}
 	}
@@ -392,7 +405,6 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-
 		a,
 		span {
 			transition: none;

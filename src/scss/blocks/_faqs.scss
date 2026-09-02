@@ -1,0 +1,198 @@
+/**
+ * Bridge — FAQs block and its questions.
+ *
+ * Every rule here hangs on a class, never on `details` or `summary`, because
+ * the same classes are worn by the editor's read-only preview of the
+ * questions, which is divs — a <summary> swallows the clicks that have to
+ * reach the block toolbar. The two
+ * exceptions are the rules that are *about* the element: the marker CSS turns
+ * off the browser's own triangle, and the open/close animation runs on
+ * `::details-content`, which exists only on the front end. Both are inert in
+ * the editor rather than wrong there.
+ */
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+// A hairline derived from the text colour, so a row of questions keeps its
+// dividers on a white band, a Surface band and an Inverted one alike. No
+// colour literal can do that.
+$rule: 1px solid color-mix(in srgb, currentcolor 15%, transparent);
+
+.bridge-faqs {
+	&__inner {
+		@include section.container(narrow);
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	&--wide &__inner {
+		@include section.container(wide);
+	}
+
+	// A stack, not a grid: a question is a full-width row whatever the band is
+	// doing, and an answer that opened into one cell of a three-column grid
+	// would push the two beside it down with it.
+	&__list {
+		display: flex;
+		flex-direction: column;
+	}
+}
+
+.bridge-faq {
+	// Lets the height transition below interpolate to `auto` — a keyword CSS
+	// otherwise refuses to animate towards, which is the whole reason
+	// accordions were written in JavaScript for twenty years. Set on the row
+	// rather than on `:root`, so a block bundle does not change how the rest
+	// of the page animates.
+	interpolate-size: allow-keywords;
+
+	// A ruled list, and the only shape this block has. The card variant that
+	// used to sit beside it was a second way to draw the same accordion, and
+	// two of those is a decision on every page for a difference nobody reads —
+	// the rules are what make a set of questions scan as a set.
+	border-block-end: $rule;
+
+	// The rule above the first row, so a list reads as a set with edges rather
+	// than as rows that trail off at the top.
+	&:first-child {
+		border-block-start: $rule;
+	}
+
+	&__question {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--wp--preset--spacing--20);
+		padding-block: var(--wp--preset--spacing--30);
+		font-size: var(--wp--preset--font-size--medium);
+		font-weight: 600;
+		cursor: pointer;
+		text-wrap: pretty;
+		transition: color 200ms ease;
+
+		// The browser's own disclosure triangle, in both dialects. The block
+		// draws its own marker from the icon library, at the theme's stroke
+		// weight and on the correct side for a right-to-left locale.
+		list-style: none;
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+
+		&:hover {
+			color: var(--wp--preset--color--primary, currentcolor);
+		}
+
+		// The focus ring belongs on the whole row: the summary is the control,
+		// and a ring around the words alone leaves a keyboard user guessing
+		// how far the click target reaches.
+		&:focus-visible {
+			outline: 2px solid currentcolor;
+			outline-offset: 2px;
+		}
+	}
+
+	&__marker {
+		flex: none;
+		// Optical, not geometric: the chevron sits on the cap height of the
+		// first line rather than on its baseline.
+		margin-block-start: 0.25em;
+		transition: transform 200ms ease;
+	}
+
+	&[open] &__marker {
+		transform: rotate(180deg);
+	}
+
+	&__answer {
+		padding-block-end: var(--wp--preset--spacing--30);
+
+		> :first-child {
+			margin-block-start: 0;
+		}
+
+		> :last-child {
+			margin-block-end: 0;
+		}
+	}
+
+	// --- The open/close animation ------------------------------------------
+	//
+	// Done to the element itself rather than to a wrapper inside it. A
+	// `grid-template-rows: 0fr → 1fr` trick on a child animates the box but
+	// not the disclosure: the browser still flips `open` instantly, so the
+	// answer is in the accessibility tree a frame before it is visible, and
+	// find-in-page lands on text that is still sliding. `::details-content`
+	// is the browser's own box for this, and `allow-discrete` is what holds
+	// the content visible for the length of the closing transition instead of
+	// snapping it away on the first frame.
+	//
+	// Its own rule, so a browser that does not know the pseudo-element drops
+	// this and nothing else: there, the answer opens and closes instantly,
+	// which is what a <details> has always done.
+	&::details-content {
+		block-size: 0;
+		overflow: hidden;
+		transition:
+			block-size 250ms ease,
+			content-visibility 250ms ease allow-discrete;
+	}
+
+	&[open]::details-content {
+		block-size: auto;
+	}
+}
+
+// The editor's preview rows are not controls: the questions are edited on
+// their own admin screen, so a pointer and a hover colour here would be
+// promising a click that does nothing.
+.bridge-faq.is-editing .bridge-faq__question {
+	cursor: default;
+
+	&:hover {
+		color: inherit;
+	}
+}
+
+/**
+ * The line in the inspector saying where the questions come from.
+ *
+ * Editor-only, and here rather than in an editor bundle for the reason the
+ * `is-editing` rules above are: this stylesheet is the block's, it is already
+ * loaded in both places, and three rules do not earn a second file.
+ *
+ * Styled as help text because that is what it is — the panel's other controls
+ * carry the same line under them, and a fact about the block should not read
+ * louder than the controls that change it.
+ */
+.bridge-faqs__source {
+	margin: 0 0 1rem;
+	font-size: 12px;
+	font-style: normal;
+	line-height: 1.4;
+	color: #757575;
+}
+
+// One row of air while the questions are being fetched, so the band does not
+// collapse to its heading and jump back open a moment later.
+.bridge-faqs__loading {
+	display: flex;
+	justify-content: center;
+	padding-block: var(--wp--preset--spacing--40);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bridge-faq {
+		&::details-content {
+			transition: none;
+		}
+
+		&__marker {
+			transition: none;
+		}
+	}
+}

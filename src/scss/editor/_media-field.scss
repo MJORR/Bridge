@@ -5,9 +5,14 @@
  * for files, the chosen filename underneath — the shape every one of these
  * blocks needs and none of them should draw differently.
  *
- * Lives in main.css, which is registered with add_editor_style(), so it
- * reaches the Inspector. A per-block stylesheet would not: block styles paint
- * the canvas, and the sidebar is outside it.
+ * Ships in inspector.css, an ordinary admin stylesheet enqueued on
+ * `enqueue_block_editor_assets`.
+ *
+ * It used to ship in main.css, on the reasoning that add_editor_style() reaches
+ * the Inspector. It does not: those styles are prefixed with
+ * `.editor-styles-wrapper` and injected into the canvas iframe, and the sidebar
+ * is in neither. So none of this applied, and every chooser in every block drew
+ * its buttons with no gap between them.
  */
 .bridge-media-field {
 	display: flex;

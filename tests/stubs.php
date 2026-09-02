@@ -136,6 +136,54 @@ if (! function_exists('sanitize_text_field')) {
 	}
 }
 
+if (! function_exists('sanitize_textarea_field')) {
+	/** As above, and for the same reason: trimmed, with tags removed. */
+	function sanitize_textarea_field(string $str): string
+	{
+		return trim(strip_tags($str));
+	}
+}
+
+if (! function_exists('_n')) {
+	/**
+	 * Singular or plural, untranslated.
+	 *
+	 * Enough for the spam report, whose plural forms are only ever read back as
+	 * the reason attached to a held enquiry.
+	 */
+	function _n(string $single, string $plural, int $number, string $domain = 'default'): string
+	{
+		return 1 === $number ? $single : $plural;
+	}
+}
+
+if (! function_exists('is_email')) {
+	/**
+	 * Core's shape check, reduced to the part the enquiry validator relies on:
+	 * something, an @, something with a dot in it. Deliberately *stricter* than
+	 * a pass-through would be, because a test that accepted `not-an-address` as
+	 * valid would prove the opposite of what it claims.
+	 */
+	function is_email(string $email)
+	{
+		return (bool) preg_match('/^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/', $email) ? $email : false;
+	}
+}
+
+if (! function_exists('wp_hash')) {
+	/**
+	 * A real HMAC against a fixed salt.
+	 *
+	 * Copied in shape rather than simplified: the signed clock in
+	 * inc/enquiries.php is only worth testing if the signature is genuinely one,
+	 * and a pass-through here would let a tampered stamp verify.
+	 */
+	function wp_hash(string $data, string $scheme = 'auth'): string
+	{
+		return hash_hmac('md5', $data, 'bridge-test-salt-' . $scheme);
+	}
+}
+
 if (! function_exists('esc_url_raw')) {
 	/** A pass-through. No test depends on it — see the top. */
 	function esc_url_raw(string $url): string

@@ -87,7 +87,8 @@ $two-column: 48rem;
 		// this calc and leaves the operator at the end of the line; prettier
 		// is what runs on save, so it wins.
 		max-width: calc(
-			var(--wp--style--global--content-size) + 2 *
+			var(--wp--style--global--content-size) +
+				2 *
 				var(--wp--preset--spacing--40)
 		);
 		// stylelint-enable scss/operator-no-newline-after

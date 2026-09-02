@@ -8,15 +8,9 @@
 	"icon": "format-gallery",
 	"description": "Full-screen hero slider. Drop Cover blocks inside to author slides.",
 	"textdomain": "bridge",
-	"keywords": [
-		"slider",
-		"hero",
-		"carousel"
-	],
+	"keywords": ["slider", "hero", "carousel"],
 	"supports": {
-		"align": [
-			"full"
-		],
+		"align": ["full"],
 		"anchor": true,
 		"html": false,
 		"layout": false

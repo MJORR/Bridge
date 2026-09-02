@@ -17,14 +17,19 @@
  * editor's copy and this file's used to fire together and push every row's
  * media to the right, alternation and all.
  *
- * Only the blocks *before* the first row are the intro. Anything an editor
- * drops between two rows renders where they put it, because that is where the
- * editor shows it; hoisting it to the top would silently rearrange the page.
+ * ---- No heading, no summary ----------------------------------------------
+ *
+ * This block holds rows and nothing else. It used to open with an optional
+ * headline and a line of summary, the way every other section block does, and
+ * they were never used: the rows carry their own headings, so the section's
+ * title said the same thing twice or sat empty. The editor no longer allows
+ * them, and there is no intro to split out here — the inner blocks render as
+ * they come.
  *
  * @package Bridge
  *
  * @var array    $attributes Block attributes.
- * @var string   $content    Rendered inner-block HTML (unused).
+ * @var string   $content    Rendered inner-block HTML — the rows.
  * @var WP_Block $block      Parsed block instance.
  */
 
@@ -32,40 +37,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$width = 'narrow' === ( $attributes['width'] ?? 'wide' ) ? 'narrow' : 'wide';
+/*
+ * Three layouts, and the attribute names the container rather than the look:
+ *
+ *   narrow  the text column
+ *   wide    the wide container — the default
+ *   full    the window, with the media flush to its edge and the copy still
+ *           lined up with the wide container. See the stylesheet.
+ *
+ * Anything else is read as `wide`, so a record from a build that only knew two
+ * of them still renders the layout it was written for.
+ */
+$width = (string) ( $attributes['width'] ?? 'wide' );
+$width = in_array( $width, array( 'narrow', 'wide', 'full' ), true ) ? $width : 'wide';
 $flip  = ! empty( $attributes['firstImageRight'] );
 
-$intro    = '';
-$body     = '';
-$seen_row = false;
-
-foreach ( $block->inner_blocks as $inner ) {
-	if ( 'bridge/alternating-row' === $inner->name ) {
-		$seen_row = true;
-	}
-
-	if ( $seen_row ) {
-		$body .= $inner->render();
-		continue;
-	}
-
-	$intro .= $inner->render();
-}
-
-if ( '' === trim( $intro . $body ) ) {
+if ( '' === trim( $content ) ) {
 	return;
 }
 
 $classes = 'bridge-alternating'
-	. ( 'narrow' === $width ? ' bridge-alternating--narrow' : '' )
+	. ( 'wide' !== $width ? ' bridge-alternating--' . $width : '' )
+	// This layout insets its own content — the intro through its container,
+	// the copy through its padding — so the band opts out of the page gutter a
+	// skin would otherwise give it. See components/_sections.scss.
+	. ( 'full' === $width ? ' bridge-band--flush' : '' )
 	. ( $flip ? ' is-first-right' : '' );
 
-list( $intro_html, $label_id ) = bridge_section_intro( $intro, 'bridge-alternating__intro' );
-
-echo bridge_section_wrapper( $attributes, $classes, '', $label_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
+// No label id: with no heading in the block there is nothing to name the
+// <section> after, and an `aria-labelledby` pointing at nothing is worse than
+// an unnamed region — a region with a broken name is announced as one.
+echo bridge_section_wrapper( $attributes, $classes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 ?>
 	<div class="bridge-alternating__inner">
-		<?php echo $intro_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-		<?php echo $body; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	</div>
 </section>

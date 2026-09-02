@@ -1,6 +1,7 @@
 /**
  * Bridge — Downloads block and its items.
  */
+@use "../abstracts/band-mask" as mask;
 @use "../abstracts/card" as card;
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
@@ -8,12 +9,19 @@
 @include intro.section-intro;
 
 .bridge-downloads {
+	// The decorative mask shape, when the block asks for one — the same shape,
+	// the same four controls and the same mixin the cards band uses.
+	@include mask.band-mask;
+
 	&__inner {
 		@include section.container(wide);
 
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--50);
+
+		// Over the shape.
+		@include mask.band-mask-content;
 	}
 
 	&--narrow &__inner {
@@ -33,38 +41,79 @@
 	}
 }
 
+/**
+ * The download card.
+ *
+ * Built to the same shape as a post card, because on a page carrying both they
+ * were visibly two components: the post card's photograph bleeds to the card's
+ * edges, and this one's preview sat inset by the card's own padding with a
+ * radius of its own — a picture in a frame beside a picture that *was* the
+ * frame.
+ *
+ * So the surface, the lift, the clipping and the crop all come from the same
+ * places `.post-card` takes them from. What is left different is what actually
+ * differs: a download has a file size and a format where a post has an
+ * excerpt, and its link is a real link rather than the whole card.
+ */
 .bridge-download {
-	// The same ceiling the post cards keep, for the same reason: this card
-	// leads with a 4:3 preview image, and two downloads in a three-column grid
-	// would otherwise show that preview at half the width of the page.
 	max-width: section.$item-max;
 	margin-inline: auto;
 
-	@include card.base;
+	// Surface, not `base`: `base` adds the card's padding to the card itself,
+	// which is what held the preview off the edges. The padding moves to the
+	// body below, so the image can reach the corner the way a post card's does.
+	@include card.surface;
+	@include card.raise($translate: true);
 
 	display: flex;
 	flex-direction: column;
-	gap: var(--wp--preset--spacing--20);
 	margin: 0;
+	// The image is square-cornered and the card is not, so the card is what
+	// crops it — the same arrangement `.post-card` uses.
+	overflow: hidden;
 
+	/**
+	 * The preview.
+	 *
+	 * The crop is the one the chosen card style publishes, so a Theme Options
+	 * change to Summary's ratio moves the post cards and these together. The
+	 * fallback is the same 16/9 the post card falls back to, so the frame is
+	 * right before any token has been saved.
+	 *
+	 * `4 / 3` used to be written here, which is why a downloads band under a
+	 * cards band never quite lined up.
+	 */
 	&__preview {
-		@include section.media-fill("4 / 3");
+		@include card.cut-corner-child;
 
-		border-radius: var(--wp--custom--radius--small);
+		display: block;
+		inline-size: 100%;
+		aspect-ratio: var(--bridge-download-ratio, 16 / 9);
+		object-fit: cover;
+		margin: 0;
 	}
 
 	&__body {
+		@include card.padding;
+
 		display: flex;
 		flex-direction: column;
-		gap: var(--wp--preset--spacing--10);
-		// Holds the link at the foot of the card so a row of downloads with
-		// titles of different lengths still has its links in a line.
+		// The smallest step the spacing scale actually publishes. It asked for
+		// `--wp--preset--spacing--10`, which the scale does not generate — it
+		// starts at 20 — so the declaration was invalid and the gap resolved
+		// to nothing, which is why the three lines of this card sat on top of
+		// one another.
+		gap: var(--wp--preset--spacing--20);
 		flex-grow: 1;
 	}
 
 	&__title {
 		margin: 0;
+		font-size: var(--bridge-download-heading, inherit);
 		font-weight: 600;
+		// Filenames run long and arbitrary; wrapping mid-word keeps one from
+		// setting the width of every card in the row.
+		overflow-wrap: anywhere;
 	}
 
 	&__meta {
@@ -74,7 +123,19 @@
 	}
 
 	&__link {
+		/**
+		 * Pushed to the bottom of the card, so the links line up across a row
+		 * of cards whose titles run to different lengths.
+		 *
+		 * The air above it is padding rather than margin, because `auto` is
+		 * already spending this side: a length here would replace the push and
+		 * leave every link at whatever height its own card's text ended at. On
+		 * a card with no file metadata the auto margin collapses to nothing,
+		 * and this is what keeps the link off the title in that case.
+		 */
 		margin-block-start: auto;
+		padding-block-start: var(--wp--preset--spacing--20);
+
 		align-self: flex-start;
 		font-weight: 600;
 		// The whole card is not the link — a preview image that opens a
@@ -83,4 +144,38 @@
 		text-decoration: underline;
 		text-underline-offset: 0.2em;
 	}
+}
+
+/**
+ * The two styles.
+ *
+ * On the band rather than on the card, so one declaration serves every card in
+ * it — and so the card itself has no idea which style it is wearing, which is
+ * what keeps a third style a two-line addition here.
+ *
+ * ---- Why the title does not read the card heading token ------------------
+ *
+ * It did, and it was too big. `--wp--custom--card--{style}--heading` sizes a
+ * *post* title — the largest thing on a card whose other content is a few
+ * lines of excerpt. A download card's title sits above a file format, a size
+ * and a link, and at that scale it stopped being a title and started being a
+ * headline with three footnotes.
+ *
+ * So the crop still comes from Theme Options and the title takes a step of the
+ * type scale directly: body size for Summary, one step up for Tile, which is
+ * the style whose whole point is a larger heading.
+ *
+ * That also makes the setting mean something. Both card headings and both
+ * crops currently resolve to the same values, so Summary and Tile were
+ * identical on a download band until one of them was changed in Theme Options
+ * — a control that looked broken because nothing it named had moved yet.
+ */
+.bridge-downloads--summary {
+	--bridge-download-ratio: var(--wp--custom--card--summary--ratio, 16 / 9);
+	--bridge-download-heading: var(--wp--preset--font-size--medium);
+}
+
+.bridge-downloads--tile {
+	--bridge-download-ratio: var(--wp--custom--card--tile--ratio, 16 / 9);
+	--bridge-download-heading: var(--wp--preset--font-size--large);
 }

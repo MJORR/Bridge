@@ -718,7 +718,6 @@ $slot-error: #d63638;
 // ---- Tabs ----------------------------------------------------------------
 
 .bridge-options__tabs {
-
 	.components-tab-panel__tabs {
 		border-bottom: 1px solid #dcdcde;
 		gap: 0.25rem;
@@ -1199,6 +1198,125 @@ $slot-error: #d63638;
 }
 
 /**
+ * ---- Content types (CPT tab) ---------------------------------------------
+ *
+ * A row per declared type, separated by a rule rather than boxed. Three boxes
+ * in a column read as three unrelated panels, where these are a list of the
+ * same thing — the same reason the card styles are ruled rather than boxed.
+ */
+
+.bridge-cpt {
+	& + & {
+		margin-top: 1.25rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid rgb(0 0 0 / 8%);
+	}
+
+	/**
+	 * A row that is switched off.
+	 *
+	 * Faded rather than collapsed: the row still holds the name and the slug
+	 * an operator would need to read before deciding to switch it back on, and
+	 * a summary line with a "show" link would be hiding those behind a click.
+	 *
+	 * The fade stops at the switches, so the control that undoes this stays at
+	 * full contrast — dimming the way back out of a state is the one thing a
+	 * disabled look must not do.
+	 */
+	&.is-off {
+		.bridge-cpt__fields,
+		.bridge-cpt__count {
+			opacity: 0.55;
+		}
+	}
+}
+
+/**
+ * The three fields and the remove button, in one row where there is room.
+ *
+ * `auto` on the last track rather than an equal share: Remove is a word, and a
+ * quarter of the panel spent on it is a quarter not spent on the slug, which
+ * is the field an operator actually reads back. Below 48rem the whole thing
+ * stacks — three side-by-side text fields on a laptop split-screen are three
+ * fields too narrow to show what is in them.
+ */
+.bridge-cpt__fields {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+	align-items: start;
+	gap: 1rem;
+
+	@media (max-width: 48rem) {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+// Pushed down to sit on the baseline of the fields rather than on their
+// labels, which is where the eye looks for it.
+.bridge-cpt__remove {
+	padding-top: 1.6rem;
+
+	@media (max-width: 48rem) {
+		padding-top: 0;
+		justify-self: start;
+	}
+}
+
+/**
+ * The address this row will produce.
+ *
+ * Monospace and full, not an abbreviation: the point of showing it is that an
+ * operator recognises a URL they would not have chosen, and half a URL is not
+ * recognisable.
+ */
+.bridge-cpt__url {
+	margin: 0.75rem 0 0;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.75rem;
+	color: #787c82;
+	overflow-wrap: anywhere;
+
+	strong {
+		color: #1e1e1e;
+	}
+}
+
+/**
+ * The switches, under the fields rather than in the row with them.
+ *
+ * A different kind of decision — whether this content exists, what it *is*,
+ * and how it divides, rather than what it is called — and a toggle wedged into
+ * a row of text inputs reads as a fourth field.
+ *
+ * Three columns where there is room, because each one carries a line or two of
+ * help underneath and stacking them puts the third switch a scroll away from
+ * the first. `start` on the tracks so the three sit on one baseline whatever
+ * their help text does. Below 48rem they stack, with the same rule the fields
+ * above use.
+ */
+.bridge-cpt__switches {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	align-items: start;
+	gap: 1rem 1.5rem;
+	margin-top: 0.9rem;
+
+	@media (max-width: 48rem) {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.bridge-cpt__count {
+	margin: 0.4rem 0 0;
+	font-size: 0.8125rem;
+	color: #50575e;
+}
+
+.bridge-cpt__add {
+	margin-top: 0.5rem;
+}
+
+/**
  * ---- Block library (Blocks tab) ------------------------------------------
  *
  * Seventy-odd switches, so the work is done by grouping and scanning rather
@@ -1551,4 +1669,162 @@ $slot-error: #d63638;
 		font-style: normal;
 		font-size: 0.72rem;
 	}
+}
+
+/**
+ * The Posts tab's sidebar: one article in the chosen layout.
+ *
+ * A schematic of `blocks/_post.scss`, not a second implementation of it. The
+ * three arrangements here are the same three the site draws — image under the
+ * title, behind it, or beside it — but the real stylesheet answers to the
+ * page's own widths and this one to a sidebar's, so the two are deliberately
+ * separate. What must not drift is which shape goes where, and that is the
+ * whole of what these rules say.
+ */
+.bridge-preview__post {
+	overflow: hidden;
+	border-radius: 4px;
+	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+}
+
+.bridge-preview__post-body {
+	padding: 1rem;
+}
+
+.bridge-preview__post-photo {
+	display: block;
+}
+
+// Body copy, stood in for by three rules at the band's own foreground. Not
+// lorem: a preview about layout should not ask anyone to read.
+.bridge-preview__post-lines {
+	display: grid;
+	gap: 0.4rem;
+	margin-top: 0.9rem;
+
+	span {
+		display: block;
+		height: 0.3rem;
+		border-radius: 1px;
+		background: currentcolor;
+		opacity: 0.15;
+
+		&:last-child {
+			width: 72%;
+		}
+	}
+}
+
+// ---- Classic: the photograph under the title ------------------------------
+
+.bridge-preview__post--classic {
+	.bridge-preview__post-head {
+		display: grid;
+		gap: 0.9rem;
+	}
+
+	.bridge-preview__post-photo {
+		width: 100%;
+		aspect-ratio: 16 / 9;
+	}
+}
+
+// ---- Feature: the photograph beside it ------------------------------------
+
+.bridge-preview__post--feature {
+	.bridge-preview__post-head {
+		display: grid;
+		// The same 5:6 split the page uses — the words get a measure, the
+		// picture gets room.
+		grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+		gap: 0.75rem;
+		align-items: center;
+	}
+
+	.bridge-preview__post-photo {
+		width: 100%;
+		aspect-ratio: 4 / 3;
+	}
+}
+
+// ---- Cover: the photograph behind it --------------------------------------
+
+.bridge-preview__post--cover {
+	.bridge-preview__post-cover {
+		display: grid;
+		grid-template-areas: "cover";
+		// Bled to the edges of the frame, as the band is on the page.
+		min-height: 9rem;
+
+		> * {
+			grid-area: cover;
+		}
+	}
+
+	.bridge-preview__post-photo {
+		width: 100%;
+		height: 100%;
+	}
+
+	// The same gradient the page draws, so an operator sees the contrast the
+	// headline will actually have rather than a flat swatch behind it.
+	.bridge-preview__post-scrim {
+		background: linear-gradient(
+			to top,
+			rgb(0 0 0 / 78%) 0%,
+			rgb(0 0 0 / 55%) 35%,
+			rgb(0 0 0 / 10%) 70%,
+			rgb(0 0 0 / 0%) 100%
+		);
+	}
+
+	.bridge-preview__post-over {
+		align-self: end;
+		padding: 0.85rem 1rem;
+	}
+
+	.bridge-preview__post-body {
+		padding-top: 0;
+	}
+}
+
+// ---- Cover, in the Cards tab preview ---------------------------------------
+//
+// The photograph is the card, so the sample is a stack rather than a column:
+// the ground is set inline from the palette, the wash sits over it, and the
+// title and marker sit on the wash at the bottom edge. The same three layers
+// the real card has, in the same order.
+.bridge-preview__cardstyle-cover {
+	display: grid;
+	grid-template-areas: "cover";
+	height: 100%;
+
+	> * {
+		grid-area: cover;
+	}
+}
+
+.bridge-preview__cardstyle-coverbody {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	// Everything on the bottom edge, as the card does.
+	justify-content: flex-end;
+}
+
+// The link marker, stood in for by a ring and an arrow glyph rather than the
+// theme's own icon — the options bundle does not ship the icon library, and a
+// preview is not the place to start.
+.bridge-preview__cardstyle-go {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 1.5rem;
+	height: 1.5rem;
+	margin-top: 0.5rem;
+	border: 1.5px solid currentcolor;
+	border-radius: 50%;
+	font-size: 0.7rem;
+	line-height: 1;
 }

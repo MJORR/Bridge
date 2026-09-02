@@ -14,11 +14,13 @@ const { createElement: el, Fragment } = window.wp.element;
 const { PanelBody, RangeControl, SelectControl } = window.wp.components;
 const { __ } = window.wp.i18n;
 
-const ALLOWED_BLOCKS = ['bridge/testimonial', 'core/heading', 'core/paragraph'];
+const ALLOWED_BLOCKS = ['bridge/testimonial', 'core/heading'];
 
-// The intro: a headline and a summary line, the summary optional — an editor
-// who does not want one deletes the paragraph. Seeded rather than enforced,
-// so a section can also open straight onto its cards.
+// The intro: a headline, and the quotes. The summary line this used to seed
+// under the heading is gone — it was left untouched more often than it was
+// written, and an empty paragraph spends a row of the section's gap on
+// nothing. A heading is still optional: an editor who wants the section to
+// open straight onto its cards deletes it.
 const TEMPLATE = [
 	[
 		'core/heading',
@@ -26,13 +28,6 @@ const TEMPLATE = [
 			level: 2,
 			textAlign: 'center',
 			placeholder: __('What our customers say', 'bridge'),
-		},
-	],
-	[
-		'core/paragraph',
-		{
-			align: 'center',
-			placeholder: __('A line of summary (optional)', 'bridge'),
 		},
 	],
 	['bridge/testimonial', {}],

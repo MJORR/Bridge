@@ -13,6 +13,240 @@
  * archive can be dropped on a dark ground, and a grey typed in here would stay
  * grey when everything around it turned light.
  */
+@use "../abstracts/on-dark" as on-dark;
+@use "../abstracts/section" as section;
+
+// ---- The head of an article -------------------------------------------------
+
+/**
+ * The three article layouts.
+ *
+ * One template, three grids. `templates/single.html` puts the title, the byline
+ * and the featured image inside one full-width band with a constrained inner —
+ * the same shape every section block on this site has — and which of the three
+ * arrangements that inner takes is decided by a class on <body>, written by
+ * `bridge_post_body_class()` from the token record.
+ *
+ * The DOM order is the same in all three and it is the reading order: title,
+ * byline, image. Only Cover shows the image first, and it does that by
+ * overlaying rather than reordering, so a screen reader and a search engine get
+ * the headline before the picture in every layout.
+ *
+ * Nothing here names a colour or a size. The title is `post-title` wearing the
+ * site's own h1, the byline is the `small` preset, the corner is the card
+ * radius; Cover's foreground comes from `on-dark`, which resolves to the
+ * palette's own light slug. So a rebrand or a change of type scale moves all
+ * three layouts and none of them can drift from the rest of the site.
+ */
+
+// The band. Full width in all three — `alignfull` in the template does the
+// breakout, which is core's own layout support rather than a `100vw` trick that
+// overflows whenever a scrollbar is present.
+.bridge-article__head {
+	margin-block-end: var(--wp--preset--spacing--40);
+}
+
+// The column inside it. Wide rather than narrow: two of the three layouts run
+// the photograph past the text column, and the one that does not caps its own
+// header instead. Cover drops the container entirely — see below.
+.bridge-article__head-inner {
+	@include section.container(wide);
+}
+
+// The lead image takes the corner every other image on the site has, so a post
+// does not introduce a second idea of what a picture looks like. Cover, which
+// is a bled band rather than a picture on a page, takes it off again.
+.bridge-article__media {
+	margin: 0;
+
+	img {
+		display: block;
+		width: 100%;
+		height: auto;
+		border-radius: var(--wp--custom--card--radius, 6px);
+	}
+}
+
+/**
+ * Classic — the image under the title, in the text column.
+ *
+ * The layout the theme drew before this was a setting, and the default. The
+ * header is pulled back to the text column while the photograph keeps the wide
+ * container, which is the arrangement the original template got from putting
+ * `align="wide"` on the image alone.
+ */
+.bridge-single--classic {
+	.bridge-article__header {
+		max-width: var(--wp--style--global--content-size);
+		margin-inline: auto;
+		margin-block-end: var(--wp--preset--spacing--40);
+	}
+}
+
+/**
+ * Cover — the image behind the title, full width.
+ *
+ * One grid cell with three things in it: the photograph, a scrim, and the
+ * header. Stacking rather than reordering keeps the DOM in reading order.
+ *
+ * The height is a clamp rather than an aspect ratio. A ratio on a band this
+ * wide gives a strip a few hundred pixels tall on a phone and half a metre of
+ * photograph on a large monitor; a clamp holds it to something that reads as a
+ * cover at both ends.
+ */
+.bridge-single--cover {
+	.bridge-article__head {
+		margin-block-end: var(--wp--preset--spacing--50);
+	}
+
+	// Bled, so no container — the photograph is the band.
+	.bridge-article__head-inner {
+		max-width: none;
+		padding-inline: 0;
+
+		display: grid;
+		// One named cell, and everything in it.
+		grid-template-areas: "cover";
+		min-height: clamp(20rem, 52vh, 34rem);
+		position: relative;
+		isolation: isolate;
+
+		> * {
+			grid-area: cover;
+		}
+
+		/**
+		 * The scrim.
+		 *
+		 * Dark at the foot and clear at the head, so the photograph is only
+		 * dimmed where the words are. A gradient rather than a flat wash for
+		 * that reason: a uniform overlay costs the whole image a stop of
+		 * contrast to make legible the third of it that carries text.
+		 *
+		 * Black at opacity rather than a palette colour. It is a shadow, not a
+		 * brand decision — a scrim in Primary would tint every photograph on
+		 * the site with the brand hue, which is the one thing a photograph
+		 * should not be.
+		 */
+		&::before {
+			content: "";
+			grid-area: cover;
+			z-index: 1;
+			background: linear-gradient(
+				to top,
+				rgb(0 0 0 / 78%) 0%,
+				rgb(0 0 0 / 55%) 35%,
+				rgb(0 0 0 / 10%) 70%,
+				rgb(0 0 0 / 0%) 100%
+			);
+		}
+	}
+
+	.bridge-article__media {
+		z-index: 0;
+		align-self: stretch;
+		height: 100%;
+
+		img {
+			width: 100%;
+			height: 100%;
+			// The one place the theme crops a lead image. Said plainly in the
+			// control's own help text, because a picture whose subject sits at
+			// the edge will lose it here and nowhere else.
+			object-fit: cover;
+			// A bled band has no corners to round.
+			border-radius: 0;
+		}
+	}
+
+	.bridge-article__header {
+		@include on-dark.on-dark;
+		@include section.container(narrow);
+
+		z-index: 2;
+		align-self: end;
+		width: 100%;
+		padding-block: var(--wp--preset--spacing--50);
+	}
+
+	// The byline is `currentcolor` at reduced strength everywhere; on a
+	// photograph that is not enough separation, so it keeps the full
+	// foreground and is set apart by size alone.
+	.bridge-article__meta {
+		color: inherit;
+	}
+
+	/**
+	 * A post with no featured image.
+	 *
+	 * `post-featured-image` renders nothing at all when there is none, so the
+	 * cell would hold a scrim over the page's own background with a light title
+	 * on it — white on white on most palettes. `:has()` catches it and the head
+	 * falls back to the Classic arrangement, which needs no image to be
+	 * correct.
+	 */
+	.bridge-article__head-inner:not(:has(.bridge-article__media)) {
+		@include section.container(narrow);
+
+		display: block;
+		min-height: 0;
+
+		&::before {
+			content: none;
+		}
+
+		.bridge-article__header {
+			color: inherit;
+			padding-block: 0;
+
+			:where(h1, h2, h3, h4, h5, h6),
+			:where(a:not(.wp-element-button)) {
+				color: inherit;
+			}
+
+			:where(a:not(.wp-element-button)) {
+				text-decoration: none;
+			}
+		}
+	}
+}
+
+/**
+ * Feature — the image beside the title, two up.
+ *
+ * The title column first, matching the DOM, so nothing has to be reordered for
+ * the eye or for a screen reader. `align-items: center` rather than `start`:
+ * a two-word headline beside a tall photograph looks abandoned at the top of
+ * its column.
+ *
+ * One breakpoint, and it is a container query in spirit — below it the two
+ * columns are each too narrow for a headline or a photograph to be worth
+ * splitting, so they stack and the layout becomes Classic in all but name.
+ */
+.bridge-single--feature {
+	.bridge-article__head-inner {
+		display: grid;
+		gap: var(--wp--preset--spacing--40);
+		align-items: center;
+	}
+
+	@media (min-width: 48rem) {
+		.bridge-article__head-inner {
+			// Slightly narrower for the words than the picture: a headline
+			// wants a measure, a photograph wants room.
+			grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+			gap: var(--wp--preset--spacing--50);
+		}
+	}
+
+	// The photograph is cropped to a consistent shape here, unlike Classic —
+	// two columns only read as two columns if the right-hand one has a
+	// predictable height.
+	.bridge-article__media img {
+		aspect-ratio: 4 / 3;
+		object-fit: cover;
+	}
+}
 
 // ---- The article -----------------------------------------------------------
 
@@ -40,12 +274,6 @@
 			color: var(--wp--preset--color--secondary);
 		}
 	}
-}
-
-// The lead image takes the corner every other image on the site has, so a post
-// does not introduce a second idea of what a picture looks like.
-.bridge-article__media img {
-	border-radius: var(--wp--custom--card--radius, 6px);
 }
 
 /**

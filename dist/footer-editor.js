@@ -1,0 +1,1 @@
+(function(){"use strict";const{registerBlockType:o}=window.wp.blocks,{createElement:e}=window.wp.element,{useBlockProps:r}=window.wp.blockEditor,t=window.wp.serverSideRender;function n(){return e("div",r({className:"bridge-footer-preview"}),e(t,{block:"bridge/footer",httpMethod:"POST"}))}o("bridge/footer",{edit:n,save(){return null}})})();

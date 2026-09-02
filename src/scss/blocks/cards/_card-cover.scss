@@ -1,0 +1,250 @@
+@use "../../abstracts/card" as card;
+
+/**
+ * Bridge — Cover card.
+ *
+ * The photograph is the card. A gradient in a brand colour rises from the foot
+ * of it, the title sits on that gradient at the bottom edge, and a circled
+ * arrow sits under the title as the one cue that the card is a link.
+ *
+ * ---- How it stacks ---------------------------------------------------------
+ *
+ * One grid cell with both children in it, the same technique the Cover article
+ * layout uses in blocks/_post.scss. The image is the floor of the stack, the
+ * body is the ceiling, and the gradient is the body's own background rather
+ * than a third element — a card that paints its scrim with a pseudo-element
+ * needs three z-indexes and gains nothing.
+ *
+ * The DOM order is image then body, which is also the paint order, so nothing
+ * here needs a `z-index` beyond lifting the body out of the image's own
+ * stacking context.
+ *
+ * ---- The gradient ----------------------------------------------------------
+ *
+ * Any palette slug, chosen per site in Theme Options and compiled to
+ * `--wp--custom--card--cover--wash`. Never a colour named here: a hardcoded
+ * black would be a second idea of "dark" living in one stylesheet, and a wash
+ * that could not follow a rebrand would be the one thing on the card that
+ * didn't.
+ *
+ * Opaque at the foot and clear at the head. The stops between are not linear: a
+ * straight 100→0 ramp puts 50% opacity across the middle of the photograph,
+ * which greys out the part of the image the card is there to show. The curve
+ * below holds full strength only where the words are and clears quickly above
+ * them. The endpoints are exactly 100 and 0.
+ *
+ * ---- The foreground --------------------------------------------------------
+ *
+ * Derived, not chosen. The wash is the operator's decision; what colour the
+ * title then has to be is arithmetic, and PHP does it — `bridge_readable_on()`
+ * takes the palette's own light and dark slugs and returns whichever clears
+ * 4.5:1 against the wash, falling back to plain white or black only when
+ * neither does.
+ *
+ * That is what makes the whole palette safe to offer. A wash in Background or
+ * Surface is a legitimate design over a dark photograph, and with a fixed light
+ * title it would have been white on near-white; here the ink simply flips.
+ */
+.bridge-cards-grid {
+	.post-card--cover {
+		// What Theme Options set for this style. Upright by default: a poster
+		// is taller than it is wide, and a title laid over a landscape band has
+		// nowhere to sit.
+		--post-card-heading: var(
+			--wp--custom--card--cover--heading,
+			var(--wp--preset--font-size--x-large)
+		);
+		--post-card-ratio: var(--wp--custom--card--cover--ratio, 3 / 4);
+		// The colour the gradient rises in — any palette slug, set per site in
+		// Theme Options. Primary is the fallback because it is what the
+		// Inverted section skin paints a band, so an unsaved token leaves a
+		// Cover card and an Inverted band the same dark.
+		--post-card-cover-wash: var(
+			--wp--custom--card--cover--wash,
+			var(--wp--preset--color--primary, #0f172a)
+		);
+		// The title, the arrow and its ring. Not a slug an operator picks:
+		// it is derived from the wash in PHP and checked for 4.5:1, because a
+		// wash in Background or Surface with the theme's light title on it
+		// would be white on near-white. See the `wash` case in
+		// bridge_compile_theme_json().
+		--post-card-cover-ink: var(
+			--wp--custom--card--cover--ink,
+			var(--wp--preset--color--background, #fff)
+		);
+
+		// The card takes the crop, because here the card *is* the image.
+		aspect-ratio: var(--post-card-ratio, 3 / 4);
+
+		display: grid;
+		grid-template-areas: "cover";
+
+		> * {
+			grid-area: cover;
+		}
+
+		/**
+		 * A photograph with a wash over it is a ground of its own; the card's
+		 * surface colour would never be seen and its shadow would sit under an
+		 * opaque rectangle. The corner stays — `overflow: hidden` in the base
+		 * clips the image to it.
+		 *
+		 * The wash moves to the surface layer when the corner is cut, the same
+		 * way the shared card ground does, and for the same reason: the card
+		 * itself is the one box the cut deliberately does not touch, so a wash
+		 * painted there sits behind the clipped photograph and fills the notch
+		 * straight back in — in the card's own colour, which is the one colour
+		 * the cut exists to remove.
+		 *
+		 * The switch is the base's, read here rather than restated: with the
+		 * cut off it is the guaranteed-invalid value and this falls through to
+		 * the wash exactly as it always did.
+		 */
+		--bridge-card-layer-bg: var(--post-card-cover-wash);
+
+		background: var(
+			--bridge-card-own-bg,
+			var(--wp--custom--card--own-bg, var(--post-card-cover-wash))
+		);
+
+		// The focus ring is drawn against the photograph rather than the band,
+		// so it takes the card's own light foreground.
+		&:focus-within {
+			outline-color: var(--post-card-cover-ink);
+		}
+	}
+
+	// The photograph fills the card rather than sitting in a frame at the top
+	// of it, so the frame's own ratio is cleared and the figure stretches.
+	.post-card--cover .post-card__image {
+		aspect-ratio: auto;
+		height: 100%;
+
+		> img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+
+	// The stand-in, when a post has no featured image. It has no photograph to
+	// be legible against, so it keeps the neutral pattern and lets the wash do
+	// the work: the card becomes a flat panel in the wash colour with the ink
+	// on it, and that pairing is the one the compiler already contrast-checked.
+	.post-card--cover .post-card__image-placeholder {
+		height: 100%;
+	}
+
+	.post-card--cover .post-card__body {
+		// This one spans the whole card rather than sitting under the image, so
+		// it reaches the cut corner too. Its gradient is all but clear up there
+		// — a few per cent of wash — which is exactly the kind of tint that
+		// reads as a dirty edge rather than as a mistake.
+		@include card.cut-corner-child;
+
+		// Above the photograph. The only z-index this style needs.
+		position: relative;
+		z-index: 1;
+
+		display: flex;
+		flex-direction: column;
+		// Everything sits on the bottom edge: the title first, then the marker
+		// beneath it, both pushed down by the empty space above.
+		justify-content: flex-end;
+		align-items: flex-start;
+
+		color: var(--post-card-cover-ink);
+
+		background: linear-gradient(
+			to top,
+			var(--post-card-cover-wash) 0%,
+			color-mix(in srgb, var(--post-card-cover-wash) 88%, transparent) 28%,
+			color-mix(in srgb, var(--post-card-cover-wash) 45%, transparent) 55%,
+			color-mix(in srgb, var(--post-card-cover-wash) 12%, transparent) 78%,
+			transparent 100%
+		);
+	}
+
+	.post-card--cover .post-card__title {
+		// Not `inherit`: the base takes the title from the band, and on a light
+		// band that would be dark text on a photograph.
+		color: var(--post-card-cover-ink);
+
+		// A poster carries a headline, not a paragraph. Three lines is the most
+		// that can sit over a photograph and still leave the picture visible;
+		// past that the card is a block of text with an image behind it.
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	/**
+	 * The link marker: a ring with the theme's own arrow in it.
+	 *
+	 * The ring is sized here and the arrow is not. `bridge_render_icon()` draws
+	 * it at `1em`, which is the body's font size — so the ring can be tightened
+	 * around the arrow without shrinking it, and the two stay independent if
+	 * either is changed again.
+	 *
+	 * Under the 44px pointer-target floor on purpose: the marker is
+	 * `aria-hidden` decoration and the whole card is the link — the target is
+	 * the card, and it is far larger than the floor. Sizing this to 44 would be
+	 * sizing a picture of a button.
+	 *
+	 * The border is painted in the ink rather than in `currentcolor`, which is
+	 * the one thing that keeps the ring the same size in both states. On hover
+	 * the arrow inverts — `color` becomes the wash — and a border following
+	 * `currentcolor` inverted with it: the white shape lost its outer ring to
+	 * the wash and the marker appeared to shrink at the moment it was meant to
+	 * be drawing attention.
+	 */
+	.post-card--cover .post-card__go {
+		--post-card-go-size: 1.75rem;
+
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+		width: var(--post-card-go-size);
+		height: var(--post-card-go-size);
+		margin-block-start: var(--wp--preset--spacing--30);
+		border: 1px solid var(--post-card-cover-ink);
+		border-radius: 50%;
+		color: var(--post-card-cover-ink);
+		transition:
+			background-color 200ms ease,
+			color 200ms ease;
+
+		svg {
+			display: block;
+		}
+	}
+
+	/**
+	 * The hover state, and why it is not colour alone.
+	 *
+	 * The marker stays exactly where it is and fills instead: a ring becomes a
+	 * disc. That is a change of *form* rather than of hue — an outline over a
+	 * photograph turning into a solid area of the ink — so it satisfies WCAG
+	 * 1.4.1 without either colour having to be told apart from the other, which
+	 * is what the marker used to spend a nudge sideways on.
+	 *
+	 * `:focus-within` carries the same state, so a keyboard reaches everything
+	 * a pointer does.
+	 *
+	 * The border is not named here, and that is the point: it is already the
+	 * ink, so it stays the ink, and the marker's outer edge is in the same
+	 * place in both states. The disc that appears is exactly the circle the
+	 * ring was drawing.
+	 *
+	 * No `prefers-reduced-motion` rule, because there is no motion left to
+	 * switch off — a colour settling over 200ms is not movement, and the card
+	 * itself already answers that setting through `card.raise`.
+	 */
+	.post-card--cover:hover .post-card__go,
+	.post-card--cover:focus-within .post-card__go {
+		background-color: var(--post-card-cover-ink);
+		color: var(--post-card-cover-wash);
+	}
+}

@@ -29,7 +29,7 @@
 		},
 		"cardStyle": {
 			"type": "string",
-			"enum": ["summary", "tile", "portrait"],
+			"enum": ["summary", "tile", "cover", "team"],
 			"default": "summary"
 		},
 		"isPreview": {
@@ -72,6 +72,22 @@
 		"readMoreText": {
 			"type": "string",
 			"default": ""
+		},
+		"mask": {
+			"type": "boolean",
+			"default": false
+		},
+		"maskColor": {
+			"type": "string",
+			"default": "accent"
+		},
+		"maskSize": {
+			"type": "number",
+			"default": 60
+		},
+		"maskInset": {
+			"type": "number",
+			"default": 0
 		},
 		"buttonText": {
 			"type": "string",

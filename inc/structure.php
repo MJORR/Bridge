@@ -115,8 +115,37 @@ function bridge_template_inventory(): array
 
 	$inventory = array();
 
-	foreach ((array) glob(get_theme_file_path('templates/*.html')) as $path) {
-		$slug    = basename($path, '.html');
+	/**
+	 * Every file that can win the template hierarchy, in both dialects.
+	 *
+	 * A block theme's templates are the .html files in templates/, and that is
+	 * all this used to look at. `search.php` is the exception the theme now
+	 * has — a results page is decided by the request rather than arranged by
+	 * an operator, so it is written in PHP — and WordPress prefers a PHP
+	 * template over a block template of the same name. Left out of the list it
+	 * would be the one page whose header and footer this screen could not
+	 * account for, and the screen exists to say where those go.
+	 *
+	 * `functions.php` is the theme's bootstrap and never a template; nothing
+	 * else lives at the theme root today, and anything that arrives there
+	 * later will be a template by definition of where it is.
+	 */
+	$paths = array_merge(
+		(array) glob(get_theme_file_path('templates/*.html')),
+		array_values(
+			array_filter(
+				(array) glob(get_theme_file_path('*.php')),
+				static function (string $path): bool {
+					return 'functions.php' !== basename($path);
+				}
+			)
+		)
+	);
+
+	foreach ($paths as $path) {
+		// Either extension, so the slug is the template's name in the
+		// hierarchy — `search`, whichever dialect it happens to be written in.
+		$slug    = pathinfo($path, PATHINFO_FILENAME);
 		$content = (string) file_get_contents($path);
 		$parts   = array();
 
@@ -143,6 +172,15 @@ function bridge_template_inventory(): array
 			'parts' => $parts,
 		);
 	}
+
+	// glob() sorts within a directory, and the list is now two of them. Sorted
+	// by slug so the screen reads alphabetically however a template is written.
+	usort(
+		$inventory,
+		static function (array $a, array $b): int {
+			return strcmp((string) $a['slug'], (string) $b['slug']);
+		}
+	);
 
 	return $inventory;
 }
@@ -214,3 +252,42 @@ function bridge_register_section_skins(): void
 	}
 }
 add_action('init', 'bridge_register_section_skins');
+
+/**
+ * Carry the chosen article layout onto <body>.
+ *
+ * The three post layouts are one template and three grids — see
+ * `bridge_post_templates()` for why. What tells the stylesheet which of them to
+ * draw is this class, and a class on <body> rather than on the article itself
+ * because the template is static markup with nowhere to put a dynamic value.
+ * The alternative was a `render_block` filter matching on the wrapper's class
+ * name, which is a string comparison against markup an editor can change.
+ *
+ * Singular posts only. The layouts describe the head of an article — a
+ * featured image and a title — and a page, an archive or a search result has
+ * either no featured image or no single title for one to sit behind. `is_page()`
+ * is excluded explicitly rather than left to `is_singular('post')`, which
+ * already excludes it, so the intent survives someone widening the check.
+ */
+function bridge_post_body_class(array $classes): array
+{
+	if (! is_singular('post')) {
+		return $classes;
+	}
+
+	$tokens   = bridge_get_tokens();
+	$template = (string) ($tokens['posts']['template'] ?? 'classic');
+
+	// The sanitiser guarantees the slug is one the theme draws, but a filter
+	// that removed a layout after a site had saved it would not — and a class
+	// no stylesheet answers is an article with no head layout at all.
+	if (! isset(bridge_post_templates()[$template])) {
+		$template = 'classic';
+	}
+
+	$classes[] = 'bridge-single';
+	$classes[] = 'bridge-single--' . $template;
+
+	return $classes;
+}
+add_filter('body_class', 'bridge_post_body_class');

@@ -1,5 +1,5 @@
 /**
- * Bridge — Portrait card.
+ * Bridge — Team card.
  *
  * A circular photograph that overhangs the panel beneath it, so the panel
  * appears to arch up and around the face.
@@ -47,22 +47,21 @@
  * sets, so the same card is correct on a white page.
  */
 .bridge-cards-grid {
-
-	.post-card--portrait {
+	.post-card--team {
 		// What Theme Options set for this style.
 		--post-card-heading: var(
-			--wp--custom--card--portrait--heading,
+			--wp--custom--card--team--heading,
 			var(--wp--preset--font-size--large)
 		);
 
 		// The avatar's width, and with it the whole geometry of the card —
 		// Small, Medium or Large in Theme Options, each a `min()` of a
 		// percentage and a ceiling. The cap is the half that stops a single
-		// card in a one-column grid from becoming a portrait the height of the
+		// card in a one-column grid from becoming a team the height of the
 		// viewport, which is why the setting moves both numbers together
 		// rather than offering a slider for one of them.
 		--post-card-avatar: var(
-			--wp--custom--card--portrait--avatar,
+			--wp--custom--card--team--avatar,
 			min(72%, 14rem)
 		);
 		// How much of the circle sits inside the panel. Below about 0.3 the
@@ -74,9 +73,15 @@
 		// arch's edge, and it should not thin out on a narrow card.
 		--post-card-avatar-ring: 0.75rem;
 
-		// The card paints nothing — see the note above. Both properties come
-		// from `card.surface` in the base and both have to go, or the arch is
-		// drawn on top of a rectangle with its own shadow.
+		// The card paints nothing — see the note above. Every one of these
+		// comes from `card.surface` in the base and every one has to go, or
+		// the arch is drawn on top of a rectangle with its own shadow and a
+		// corner cut off a box that is not there. The surface layer is named as
+		// well as the two originals, because with the cut on it is that layer
+		// carrying the card's ground rather than `background`.
+		--bridge-card-layer-bg: transparent;
+		--bridge-card-clip: none;
+
 		background: none;
 		box-shadow: none;
 		// Centres the avatar over the panel. The body sets its own width below.
@@ -87,7 +92,7 @@
 	}
 
 	// ---- The avatar, and the top of the arch ----------------------------
-	.post-card--portrait .post-card__image {
+	.post-card--team .post-card__image {
 		width: var(--post-card-avatar);
 		// Square, so the 50% radius below is a circle rather than an ellipse.
 		// The base crops every other style to 16:9.
@@ -101,7 +106,9 @@
 		// The overlap that makes the two boxes one shape. Percentage margins
 		// resolve against the card's width, which is what `--post-card-avatar`
 		// is a fraction of — so this is exactly that fraction of the circle.
-		margin-block-end: calc(var(--post-card-avatar) * var(--post-card-avatar-sink) * -1);
+		margin-block-end: calc(
+			var(--post-card-avatar) * var(--post-card-avatar-sink) * -1
+		);
 		// Above the panel, so the ring reads as the arch's edge rather than
 		// being covered by the rectangle it overlaps.
 		position: relative;
@@ -111,14 +118,14 @@
 		overflow: visible;
 	}
 
-	.post-card--portrait .post-card__image > img {
+	.post-card--team .post-card__image > img {
 		border-radius: 50%;
 	}
 
 	// The stand-in, on the same circle. Inset by the ring rather than pinned to
 	// the padding box, so the site's mark sits inside the arch's edge exactly
 	// where a photograph would.
-	.post-card--portrait .post-card__image-placeholder {
+	.post-card--team .post-card__image-placeholder {
 		position: absolute;
 		inset: var(--post-card-avatar-ring);
 		width: auto;
@@ -127,7 +134,7 @@
 	}
 
 	// ---- The panel ------------------------------------------------------
-	.post-card--portrait .post-card__body {
+	.post-card--team .post-card__body {
 		width: 100%;
 		background: var(
 			--bridge-card-bg,
@@ -139,7 +146,14 @@
 			var(--wp--custom--card--radius, 6px);
 		// Clears the sunken half of the circle, then the card's usual air. The
 		// first term is the mirror of the negative margin above.
-		padding-block-start: calc(var(--post-card-avatar) * var(--post-card-avatar-sink) + var(--wp--custom--card--padding, 1.5rem));
+		// stylelint-disable scss/operator-no-newline-after -- prettier wraps
+		// this calc and puts the operator at the end of the line; prettier is
+		// what runs on save, so it wins.
+		padding-block-start: calc(
+			var(--post-card-avatar) * var(--post-card-avatar-sink) +
+				var(--wp--custom--card--padding, 1.5rem)
+		);
+		// stylelint-enable scss/operator-no-newline-after
 		text-align: center;
 		// The name, the role and the button are a stack of three centred
 		// things, not a column with the button pushed to the bottom. The gap
@@ -148,13 +162,13 @@
 		align-items: center;
 	}
 
-	.post-card--portrait .post-card__title {
+	.post-card--team .post-card__title {
 		font-weight: 700;
 	}
 
 	// The role. Muted like an excerpt, because it is supporting text — but it
 	// is one authored line, so it never grows to fill the card.
-	.post-card--portrait .post-card__subtitle {
+	.post-card--team .post-card__subtitle {
 		margin: 0;
 		font-size: var(--wp--preset--font-size--small);
 		line-height: 1.4;
@@ -166,7 +180,7 @@
 	// except the space above it and the reminder that it is not a target: the
 	// stretched link covers the whole card, and a pointer landing on this
 	// follows the card's own link.
-	.post-card--portrait .post-card__cta {
+	.post-card--team .post-card__cta {
 		margin-block-start: var(--wp--preset--spacing--20);
 		// The card is the click target; this must not claim to be one of its
 		// own, or a pointer over it reads as hovering something else.

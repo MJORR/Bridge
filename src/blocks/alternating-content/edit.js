@@ -12,18 +12,18 @@ const { createElement: el, Fragment } = window.wp.element;
 const { PanelBody, SelectControl, ToggleControl } = window.wp.components;
 const { __ } = window.wp.i18n;
 
-const ALLOWED_BLOCKS = [
-	'bridge/alternating-row',
-	'core/heading',
-	'core/paragraph',
-];
+/*
+ * Rows, and nothing else.
+ *
+ * The heading and summary this block used to accept are gone: the rows carry
+ * their own headings, so a section title either said the same thing twice or
+ * sat empty and spent a row of the section's gap on nothing. Removing them
+ * from the allow list is what stops the inserter offering them inside this
+ * block; render.php has no intro to render either.
+ */
+const ALLOWED_BLOCKS = ['bridge/alternating-row'];
 
 const TEMPLATE = [
-	['core/heading', { level: 2, placeholder: __('How it works', 'bridge') }],
-	[
-		'core/paragraph',
-		{ placeholder: __('A line of summary (optional)', 'bridge') },
-	],
 	['bridge/alternating-row', {}],
 	['bridge/alternating-row', {}],
 ];
@@ -37,7 +37,10 @@ const Edit = ({ attributes, setAttributes }) => {
 			'bridge-section',
 			'bridge-band',
 			'alignfull',
-			width === 'narrow' ? 'bridge-alternating--narrow' : '',
+			width && width !== 'wide' ? `bridge-alternating--${width}` : '',
+			// The band insets its own content in this layout, so it opts out
+			// of the gutter a skin would give it. Matches render.php.
+			width === 'full' ? 'bridge-band--flush' : '',
 			firstImageRight ? 'is-first-right' : '',
 		]
 			.filter(Boolean)
@@ -65,9 +68,17 @@ const Edit = ({ attributes, setAttributes }) => {
 				el(SelectControl, {
 					label: __('Width', 'bridge'),
 					value: width,
+					help:
+						width === 'full'
+							? __(
+									'Rows run the full width of the window and the media is flush to its edge. The words stay lined up with the wide container.',
+									'bridge'
+								)
+							: __('The container the rows sit in.', 'bridge'),
 					options: [
 						{ label: __('Wide', 'bridge'), value: 'wide' },
 						{ label: __('Narrow', 'bridge'), value: 'narrow' },
+						{ label: __('Full window', 'bridge'), value: 'full' },
 					],
 					onChange: (value) => setAttributes({ width: value }),
 					__nextHasNoMarginBottom: true,

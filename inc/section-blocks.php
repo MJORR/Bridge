@@ -35,9 +35,12 @@ function bridge_section_block_names(): array
 		'bridge/feature-blocks',
 		'bridge/call-to-action',
 		'bridge/cards',
+		'bridge/contact-form',
 		'bridge/section',
 		'bridge/downloads',
+		'bridge/faqs',
 		'bridge/gallery',
+		'bridge/goals',
 		'bridge/logo-slider',
 		'bridge/map',
 		'bridge/price-table',
@@ -137,14 +140,22 @@ function bridge_section_wrapper(array $attributes, string $class, string $style 
  * three names. Spelling that out ten times in bridge_register_blocks() would
  * be ten chances to mistype one.
  *
- * @param string $slug  Directory name under src/blocks, which is also the
- *                      dist filename stem and the handle suffix.
- * @param bool   $style Whether the block ships a stylesheet of its own.
- * @param bool   $view  Whether the block ships a frontend script.
+ * @param string   $slug  Directory name under src/blocks, which is also the
+ *                        dist filename stem and the handle suffix.
+ * @param bool     $style Whether the block ships a stylesheet of its own.
+ * @param bool     $view  Whether the block ships a frontend script.
+ * @param string[] $deps  Extra editor script dependencies, for a block whose
+ *                        edit view reaches past the shared set — the FAQs
+ *                        block wants `wp-core-data` to list the posts it will
+ *                        pull in.
  */
-function bridge_register_section_block(string $slug, bool $style = true, bool $view = false): void
+function bridge_register_section_block(string $slug, bool $style = true, bool $view = false, array $deps = array()): void
 {
-	bridge_register_script('bridge-' . $slug . '-editor', $slug . '-editor.js', bridge_editor_script_deps());
+	bridge_register_script(
+		'bridge-' . $slug . '-editor',
+		$slug . '-editor.js',
+		array_merge(bridge_editor_script_deps(), $deps)
+	);
 
 	if ($style) {
 		bridge_register_style('bridge-' . $slug . '-style', $slug . '.css');
@@ -307,6 +318,107 @@ function bridge_heading_label_id(string &$html): string
 }
 
 /**
+ * The class and inline style a band's decorative mask shape needs.
+ *
+ * The site's mask shape, painted as one flat palette colour behind whatever the
+ * band holds. Shared because two bands already want it and the arithmetic is
+ * not the interesting part: which colour, how wide, how far off the right edge.
+ *
+ * Nothing is returned unless there is both a shape to cut and a palette colour
+ * to cut it in — a site that has set neither gets no decoration rather than a
+ * coloured rectangle.
+ *
+ * The property names are deliberately not per block. One namespace means one
+ * stylesheet mixin, and a third band that wants this is an include rather than
+ * a fourth copy of these four declarations.
+ *
+ * @param array<string, mixed> $attributes Block attributes.
+ * @return array{0:string,1:string} A class suffix (possibly empty) and a style
+ *                                  attribute value (possibly empty).
+ */
+function bridge_band_mask( array $attributes ): array
+{
+	$color = sanitize_key( (string) ( $attributes['maskColor'] ?? 'accent' ) );
+	$url   = ! empty( $attributes['mask'] ) ? bridge_mask_shape_url() : '';
+
+	if ( '' === $url || ! isset( bridge_palette_slugs()[ $color ] ) ) {
+		return array( '', '' );
+	}
+
+	return array(
+		' has-mask',
+		sprintf(
+			'--bridge-band-mask-image:url(%s);'
+				. '--bridge-band-mask-color:var(--wp--preset--color--%s);'
+				. '--bridge-band-mask-size:%d%%;'
+				. '--bridge-band-mask-inset:%d%%;',
+			esc_url( $url ),
+			$color,
+			max( 10, min( 200, (int) ( $attributes['maskSize'] ?? 60 ) ) ),
+			max( 0, min( 90, (int) ( $attributes['maskInset'] ?? 0 ) ) )
+		),
+	);
+}
+
+/**
+ * The data the mask controls need in the editor.
+ *
+ * Printed against each block's editor script by functions.php. The palette
+ * comes from the token record rather than from the editor's own `colors`
+ * setting: those are the site's global colours, they are the only ones a mask
+ * may take, and reading them from where they are set is what keeps that true.
+ *
+ * @return array<string, mixed>
+ */
+function bridge_band_mask_data(): array
+{
+	$tokens = bridge_get_tokens();
+
+	return array(
+		'maskUrl'    => bridge_mask_shape_url(),
+		'optionsUrl' => admin_url( 'admin.php?page=' . BRIDGE_OPTIONS_SLUG ),
+		'palette'    => array_values(
+			array_map(
+				static function ( string $slug ) use ( $tokens ): array {
+					$entry = $tokens['brand']['palette'][ $slug ] ?? array();
+
+					return array(
+						'slug'  => $slug,
+						'name'  => (string) ( $entry['name'] ?? $slug ),
+						'color' => (string) ( $entry['color'] ?? '#000000' ),
+					);
+				},
+				array_keys( bridge_palette_slugs() )
+			)
+		),
+	);
+}
+
+/**
+ * Drop the blocks an author started and never filled in.
+ *
+ * A seeded heading or summary paragraph, left alone, is still a block and still
+ * serialises — so the front end printed an empty <p> or an empty <h2> that
+ * spent a row of the section's gap on nothing, which reads as a section
+ * starting too low for no visible reason.
+ *
+ * The heading matters as much as the paragraph: a title deleted down to an
+ * empty block still reserved its line height and the gap beneath it.
+ *
+ * @param string $html Rendered inner-block HTML.
+ * @return string The same HTML with empty headings and paragraphs removed.
+ */
+function bridge_strip_empty_blocks(string $html): string
+{
+	$empty = '(?:\s|&nbsp;|<br\s*/?>)*';
+
+	$html = (string) preg_replace('#<p[^>]*>' . $empty . '</p>#i', '', $html);
+	$html = (string) preg_replace('#<h([1-6])[^>]*>' . $empty . '</h\1>#i', '', $html);
+
+	return $html;
+}
+
+/**
  * The intro's markup, and the id of the heading that names it.
  *
  * A row of its own, full container width — the headline introduces everything
@@ -325,11 +437,7 @@ function bridge_heading_label_id(string &$html): string
  */
 function bridge_section_intro(string $intro, string $class): array
 {
-	// Every one of these blocks seeds an optional summary paragraph under its
-	// heading. Left untouched it is still a block, and still serialises — so
-	// the front end was printing an empty <p> that spent a row of the
-	// section's gap on nothing. Dropped here, where every section passes.
-	$intro = preg_replace('#<p[^>]*>(?:\s|&nbsp;|<br\s*/?>)*</p>#i', '', $intro);
+	$intro = bridge_strip_empty_blocks($intro);
 
 	if ('' === trim($intro)) {
 		return array('', '');
@@ -361,7 +469,9 @@ function bridge_section_intro(string $intro, string $class): array
  */
 function bridge_logo_slider_row(array $images, string $display, bool $reverse = false): void
 {
-	$classes = 'bridge-logos__row' . ($reverse ? ' is-reverse' : '');
+	// The display mode reaches the row as well as the image: `contain` leaves
+	// every logo at its own width, so the row is what has to open the gaps up.
+	$classes = 'bridge-logos__row is-' . $display . ($reverse ? ' is-reverse' : '');
 ?>
 	<div class="<?php echo esc_attr($classes); ?>" style="--bridge-logo-count: <?php echo (int) count($images); ?>;">
 		<ul class="bridge-logos__track" role="list">

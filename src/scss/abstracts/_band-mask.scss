@@ -1,0 +1,65 @@
+/**
+ * Bridge — the decorative mask shape a band can carry behind its contents.
+ *
+ * The site's mask shape, painted as one flat palette colour. A mask over a
+ * coloured box rather than an <img>, because the SVG is a silhouette: masking
+ * paints the palette colour through it, so the shape follows the site's colours
+ * instead of carrying its own.
+ *
+ * The four values are written onto the band by `bridge_band_mask()` and by the
+ * editor, under one property namespace — so this mixin is the only place the
+ * shape's placement is decided, and a band that wants one is an include.
+ */
+
+@mixin band-mask {
+	// The shape is absolutely positioned against the band.
+	position: relative;
+
+	&.has-mask::before {
+		content: "";
+		position: absolute;
+
+		/**
+		 * The paint box.
+		 *
+		 * `inset-inline-end` is what the position control moves: it pulls the
+		 * box's own right edge in from the band's, which reads as "hold the
+		 * shape this far off the right". A `mask-position` percentage would
+		 * not — that measures the gap between two sizes, which is nobody's
+		 * idea of a margin.
+		 *
+		 * The box also does the cropping: a mask paints nothing outside the
+		 * element it is on, so a shape larger than the box is cut by it.
+		 */
+		inset: 0;
+		inset-inline-end: var(--bridge-band-mask-inset, 0%);
+
+		background-color: var(--bridge-band-mask-color);
+		mask-image: var(--bridge-band-mask-image);
+		mask-repeat: no-repeat;
+		mask-position: right center;
+
+		/**
+		 * Sized by width, so the shape keeps its own proportions rather than
+		 * being stretched to the band. At 100% it is as wide as the box it
+		 * sits in — for a shape no wider than it is tall, taller than the band
+		 * as well, which is what makes 100% read as "covers".
+		 */
+		mask-size: var(--bridge-band-mask-size, 60%) auto;
+
+		// Decoration. It must never take a click meant for the content over
+		// it, and it has nothing to say to a screen reader.
+		pointer-events: none;
+	}
+}
+
+/**
+ * What sits over the shape.
+ *
+ * Both are positioned with `z-index: auto`, so they paint in document order and
+ * the content — which comes second — lands on top. No `z-index` on either: a
+ * stacking context here would trap the cards' own hover shadows.
+ */
+@mixin band-mask-content {
+	position: relative;
+}

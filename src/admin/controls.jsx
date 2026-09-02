@@ -436,6 +436,48 @@ const LAYOUT_ART = {
 		logo: [[10, 28, 26, 10]],
 		nav: [[86, 30, 24, 5]],
 	},
+	/**
+	 * The three article layouts.
+	 *
+	 * Drawn in the same four weights the header layouts use, read here as: the
+	 * photograph is `logo` (the solid one), the headline is `nav`, the byline
+	 * and body copy are `util`, the rule is `rule`. The point of each drawing
+	 * is only where the picture sits relative to the title, because that is the
+	 * whole of the choice.
+	 */
+	classic: {
+		nav: [[24, 8, 48, 6]],
+		util: [
+			[24, 18, 26, 3],
+			[10, 46, 100, 3],
+			[10, 53, 82, 3],
+		],
+		logo: [[10, 26, 100, 15]],
+	},
+	cover: {
+		// The photograph is the band: it runs to the edges of the frame and the
+		// headline sits inside it, which is the only drawing of the three where
+		// the two shapes overlap.
+		logo: [[0, 0, 120, 38]],
+		nav: [[10, 22, 48, 6]],
+		util: [
+			[10, 31, 26, 3],
+			[10, 46, 100, 3],
+			[10, 53, 82, 3],
+		],
+	},
+	feature: {
+		nav: [
+			[10, 12, 44, 6],
+			[10, 21, 32, 6],
+		],
+		util: [
+			[10, 32, 26, 3],
+			[10, 48, 100, 3],
+			[10, 55, 82, 3],
+		],
+		logo: [[62, 10, 48, 30]],
+	},
 	columns: {
 		logo: [[10, 12, 22, 9]],
 		nav: [

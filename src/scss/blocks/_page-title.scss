@@ -13,7 +13,6 @@
  */
 
 .bridge-page-title {
-
 	&.has-text-align-left {
 		text-align: left;
 	}
@@ -84,7 +83,6 @@
 // padding, though: the matching bottom padding is still holding the
 // content off the footer, and nothing about hiding a title changes that.
 .bridge-title-hidden {
-
 	main {
 		margin-block-start: 0;
 	}

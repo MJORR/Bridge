@@ -1,12 +1,12 @@
 <?php
 /**
- * Portrait — a face, a name, a role and a way in.
+ * Team — a face, a name, a role and a way in.
  *
  * For a grid of people. The avatar is circular and overhangs the panel it sits
  * on, so the arch behind it is the panel's own background rather than a shape
  * drawn on top — which is why this style paints the body and the image slot
  * instead of the card, and why it is the one style whose card is transparent.
- * The whole of that is CSS; see blocks/cards/_card-portrait.scss.
+ * The whole of that is CSS; see blocks/cards/_card-team.scss.
  *
  * No excerpt. A biography truncated to twenty words is a sentence that stops
  * mid-clause under someone's name, and the field that belongs here is the role
@@ -32,7 +32,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // The chip belongs to Tile. See image.php.
 $card_show_badge = false;
 ?>
-<article class="post-card post-card--portrait">
+<article class="post-card post-card--team">
 	<?php require __DIR__ . '/image.php'; ?>
 	<div class="post-card__body">
 		<h3 class="post-card__title">

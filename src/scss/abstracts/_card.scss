@@ -37,18 +37,154 @@
  * they share.
  */
 
-// The corner radius and the resting shadow. For the card element itself, when
-// its padding sits on a child — a card with an edge-to-edge image cannot pad
-// its own box.
+/**
+ * The band's answer for this card: whichever ground the skin pointed
+ * `--bridge-card-bg` at, or the light one when the band wears no skin.
+ *
+ * Written here rather than compiled into a custom property, and that is not a
+ * style preference. A `var()` chain inside a custom property is resolved where
+ * that property is *declared* — for a theme.json value, `:root` — not where it
+ * is used. `--bridge-card-bg` is set by the section skins, far below `:root`,
+ * so a compiled chain resolves against a variable that does not exist yet and
+ * falls straight through to the light ground. Every card on the site then wears
+ * the light ground whatever band it is standing on, which on a Surface band is
+ * the band's own colour: a card that has vanished into its section.
+ *
+ * A Sass variable substitutes the chain into each rule at build time, so it is
+ * resolved on the card, where the skin's value is in scope.
+ */
+$ground: var(--bridge-card-bg, var(--wp--custom--card--on-light, #f5f5f4));
+
+// The corner radius, the surface and the resting shadow. For the card element
+// itself, when its padding sits on a child — a card with an edge-to-edge image
+// cannot pad its own box.
+//
+// Every declaration below names one property and reads one custom property.
+// Which mode the card is in — rounded or cut — was decided in PHP and arrives
+// as the *values*: see the `$cut` block in bridge_compile_theme_json(). Nothing
+// here branches, and there is no second ruleset for the feature being off.
 @mixin surface {
-	// The fallback chain is the whole mechanism: a card on a band with no skin
-	// gets the light ground, because nothing set the variable.
+	// The card's own ground, and `transparent` once the cut has moved the
+	// colour to the layer below. With the cut off the compiler publishes
+	// `initial` for that switch, which is the guaranteed-invalid value — so
+	// `var()` falls through to the ground and the card paints exactly what it
+	// painted before this feature existed.
 	background-color: var(
-		--bridge-card-bg,
-		var(--wp--custom--card--on-light, #f5f5f4)
+		--bridge-card-own-bg,
+		var(--wp--custom--card--own-bg, #{$ground})
 	);
 	border-radius: var(--wp--custom--card--radius, 6px);
-	box-shadow: var(--wp--custom--card--shadow, none);
+	box-shadow: var(
+		--bridge-card-shadow,
+		var(--wp--custom--card--shadow, none)
+	);
+
+	@include cut-corner;
+}
+
+/**
+ * The cut corner: the top left taken off at 45°, with the shadow following it.
+ *
+ * ---- Why the card is not the thing that gets clipped -----------------------
+ *
+ * `clip-path` on the card is the reflex, and it takes the card's whole
+ * rendering with it — including the focus ring, which `.post-card` puts at
+ * `outline-offset: 2px`. A card is the outermost box its block draws, so there
+ * is nowhere to move the ring to: a grid that loses its focus ring the moment
+ * an operator turns on a corner treatment is not a trade worth making.
+ *
+ * So the shape lives one level down:
+ *
+ *   the card    keeps its box, its ring and its layout;
+ *   `::before`  is the surface — the card's colour, clipped to the cut.
+ *
+ * A pseudo-element rather than a wrapper in the markup: these cards are block
+ * roots carrying `get_block_wrapper_attributes()`, and three of them are
+ * `<li>`s inside a list, so a wrapper would move each block's own attributes
+ * off its root and change the element the list is made of.
+ *
+ * There is no shadow to place, because a cut card has none: a `box-shadow` is
+ * drawn around the card's box and would trace the square corner the cut just
+ * removed, so the compiler publishes `none` for it whatever the Shadow control
+ * says. See bridge_compile_theme_json().
+ *
+ * ---- Why the shape is in `cqw` ---------------------------------------------
+ *
+ * The size is a share of the card's *width* and the angle has to be 45°, which
+ * is one length spent on two axes — and a percentage in a polygon resolves per
+ * axis, so it comes out at 51° on a 400×500 card. `cqw` is the one unit that
+ * answers it, and the card makes itself the query container to supply it.
+ * Containment is asked for only when something is going to read a `cqw`; with
+ * the cut off the compiler publishes `normal` and the card's inline size is
+ * free again.
+ *
+ * ---- What still squares the corner -----------------------------------------
+ *
+ * A border. Two cards on this theme draw one — the FAQ card and the price card
+ * — and a border is painted on the card, which is the element that is not being
+ * clipped. Left rather than special-cased: an outline and a cut corner are two
+ * different ideas about where a card ends, and a site that wants the cut on a
+ * bordered card wants the border gone.
+ */
+@mixin cut-corner {
+	// Supplies the `cqw` the clip below is written in. `normal` — which is
+	// what the compiler publishes with the cut off — is the initial value, so
+	// this costs a card nothing until the feature is switched on.
+	container-type: var(--wp--custom--card--container, normal);
+	// And the width that containment then needs, because an element sized "as
+	// if it had no contents" has to be given its size by something else. A
+	// grid item is normally given one by its track — but not one that centres
+	// itself with an auto margin, which is how the post card and the download
+	// keep their `max-width`, and those two collapsed to nothing. `auto` with
+	// the cut off, so a card is only held to a width while it is contained.
+	// See the `width` note in bridge_compile_theme_json().
+	width: var(--wp--custom--card--width, auto);
+	// The corner is positioned against the card. Cards that already establish
+	// this say so themselves; the rest are unaffected, since a card is the
+	// outermost box its block draws and nothing inside was being positioned
+	// against something further out.
+	position: relative;
+	// And the stacking context the surface below has to stay inside. Stated,
+	// not inherited: a filter and (in some engines) the containment above both
+	// happen to establish one, and neither survives an operator choosing
+	// Shadow: None on a browser that dropped the other. See the `isolation`
+	// note in bridge_compile_theme_json().
+	isolation: var(--wp--custom--card--isolation, auto);
+
+	// The surface. Clear until the cut moves the card's colour down here, so
+	// with the feature off this is an empty box that paints nothing.
+	&::before {
+		content: "";
+		// Not rendered at all unless the cut needs it. A layer that always
+		// existed would paint the shared ground over any card that had chosen
+		// a different one — the outlined testimonial is transparent by design —
+		// and `display: none` is the one switch with no such reach.
+		display: var(--wp--custom--card--layer, none);
+		position: absolute;
+		// Behind the card's content and in front of the card's own background,
+		// which is where a negative index puts a child of an element that
+		// establishes a stacking context — and `container-type` and `filter`
+		// both establish one, so this is stable rather than lucky.
+		z-index: -1;
+		inset: 0;
+		border-radius: inherit;
+		background-color: var(--bridge-card-layer-bg, #{$ground});
+		clip-path: var(--bridge-card-clip, var(--wp--custom--card--clip, none));
+	}
+}
+
+/**
+ * The same cut, for a child that reaches the corner on its own.
+ *
+ * `::before` is the card's *background*; anything painted over it — a card
+ * whose photograph runs to the edge, a feature panel's background image — is a
+ * square of its own sitting on top of a chamfered one, and it has to be cut to
+ * match or it fills the notch straight back in. Its own top-left is the card's
+ * top-left and the polygon is written in the card's container units, so the
+ * same value lands in the same place on both.
+ */
+@mixin cut-corner-child {
+	clip-path: var(--bridge-card-clip, var(--wp--custom--card--clip, none));
 }
 
 // The air inside a card, wherever it lands: on the card for the simple ones,
@@ -66,6 +202,10 @@
 // The lift under the pointer, for cards that are themselves a link. Only the
 // shadow moves by default; `$translate` adds the nudge upwards that the post
 // cards had, and both stop under `prefers-reduced-motion`.
+//
+// On a cut card both the resting and the hover shadow compile to `none`, so
+// what is left of the lift is the translation — which is the right answer for a
+// card whose whole treatment is flat.
 @mixin raise($translate: false) {
 	transition:
 		box-shadow 200ms ease,

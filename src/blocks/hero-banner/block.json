@@ -8,17 +8,9 @@
 	"icon": "cover-image",
 	"description": "A single full-height hero. One Cover block, laid out in columns — the static counterpart to the Hero Slider.",
 	"textdomain": "bridge",
-	"keywords": [
-		"hero",
-		"banner",
-		"cover",
-		"columns",
-		"split"
-	],
+	"keywords": ["hero", "banner", "cover", "columns", "split"],
 	"supports": {
-		"align": [
-			"full"
-		],
+		"align": ["full"],
 		"anchor": true,
 		"html": false,
 		"layout": false

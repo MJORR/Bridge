@@ -118,7 +118,6 @@
 // transitioned rather than switched so it holds until the fade has finished.
 // ---------------------------------------------------------------------------
 .bridge-hero-slider.is-effect-fade {
-
 	.bridge-hero-slider__track > * {
 		position: absolute;
 		inset: 0;
@@ -143,7 +142,6 @@
 // honest about where the slides are. It is the reason fade is the default.
 // ---------------------------------------------------------------------------
 .bridge-hero-slider.is-effect-slide {
-
 	.bridge-hero-slider__track {
 		display: flex;
 		// The track is one slide wide, so a whole-number translation of its
@@ -291,9 +289,7 @@
 // for, and an instant answer is the right one.
 // ---------------------------------------------------------------------------
 @media (prefers-reduced-motion: reduce) {
-
 	.bridge-hero-slider {
-
 		&.is-effect-fade .bridge-hero-slider__track > *,
 		&.is-effect-slide .bridge-hero-slider__track,
 		.bridge-hero-slider__arrow,

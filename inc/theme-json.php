@@ -422,14 +422,146 @@ function bridge_compile_theme_json(array $tokens): array
 	// One property per ground: `--wp--custom--card--on-primary` and friends.
 	// The card itself never names one of these — it reads `--bridge-card-bg`,
 	// which the section skin points at whichever of them belongs to the band.
+	/**
+	 * The cut corner.
+	 *
+	 * A rounded corner and a cut one are two answers to the same question, so
+	 * the cut wins outright and the radius compiles to zero — a card cannot be
+	 * both, and a 6px round on three corners with a notch on the fourth is the
+	 * look nobody asked for. The operator's radius is left in the record
+	 * rather than overwritten, so turning the cut off gives them back the
+	 * corner they had instead of a square one they have to set again.
+	 *
+	 * ---- And the shadow goes -----------------------------------------------
+	 *
+	 * A `box-shadow` is drawn around the card's *box*, so on a cut card it
+	 * traces the square corner the cut just removed — the one line on the card
+	 * that contradicts its shape. A cut card is therefore given no shadow,
+	 * whatever the Shadow control says, on the same principle as the radius: a
+	 * card cannot be two shapes, and the corner treatment is the one the
+	 * operator asked for most recently. The saved preset is left alone, so
+	 * turning the cut off gives back the shadow they had.
+	 *
+	 * ---- Why the switches are here and not in the stylesheet ---------------
+	 *
+	 * A cut card is painted differently from a rounded one, not just shaped
+	 * differently: the surface moves to a layer that can be clipped, so that
+	 * clipping it does not take the card's focus ring with it.
+	 *
+	 * Every one of those swaps is decided here and published as a value, so the
+	 * stylesheet names one property per job and never asks which mode it is in.
+	 * That is what keeps the default case honest: with the cut off, the clip is
+	 * `none`, the containment is `normal`, the filter is `none` and the surface
+	 * is back on the card itself — a card that paints exactly what it painted
+	 * before this feature existed, rather than one that goes through the cut
+	 * machinery with the numbers set to zero.
+	 */
+	$cut = ! empty($cards['cutCorner']);
+
 	$card = array(
 		'padding'     => sprintf('var(--wp--preset--spacing--%s)', $cards['padding']),
 		// A plain length, not a preset: the corner radius scale in the static
 		// theme.json is for the small furniture — buttons, thumbnails — and a
 		// card's corner is read off a design in pixels.
-		'radius'      => (int) $cards['radius'] . 'px',
-		'shadow'      => $shadow['shadow'],
-		'shadowHover' => $shadow['hover'],
+		'radius'      => $cut ? '0px' : (int) $cards['radius'] . 'px',
+
+		/**
+		 * The shape, in container units.
+		 *
+		 * `cqw` is 1% of the card's own inline size, which is the one way CSS
+		 * can spend a share of an element's *width* on both axes at once — and
+		 * both is what a 45° line needs. A percentage in a polygon resolves per
+		 * axis, so `8% 8%` on a 400×500 card is 32px across and 40px down, and
+		 * the line comes out at 51°. The card makes itself the query container
+		 * below, which is why the containment is published beside this.
+		 */
+		'clip'        => $cut
+			? sprintf(
+				'polygon(0 %1$dcqw, %1$dcqw 0, 100%% 0, 100%% 100%%, 0 100%%)',
+				(int) $cards['cutSize']
+			)
+			: 'none',
+		// Containment is not free — it fixes the card's inline size against its
+		// contents — so it is only asked for when something is going to read a
+		// `cqw`, and the answer is `normal` the rest of the time.
+		'container'   => $cut ? 'inline-size' : 'normal',
+
+		/**
+		 * And the width the containment then requires.
+		 *
+		 * Inline-size containment sizes an element *as if it had no contents*,
+		 * which is only safe while something else is deciding how wide the card
+		 * is. Usually something is: a card is a grid item, and a grid item
+		 * stretches to its track. But two of them — the post card and the
+		 * download — cap themselves with `max-width` and centre the result with
+		 * `margin-inline: auto`, and an auto margin opts an item out of that
+		 * stretch: its width then comes from its contents, which containment
+		 * has just made nothing. The card collapsed to zero and `overflow:
+		 * hidden` did the rest — the grid still reserved the track, so the row
+		 * kept its shape and every card in it disappeared.
+		 *
+		 * `100%` gives the containment a width that was never going to come
+		 * from the contents. It is what the stretched cards already resolve to,
+		 * so it changes nothing for them, and the capped two keep their
+		 * `max-width` and their centring — `width` proposes, `max-width`
+		 * disposes.
+		 *
+		 * Published rather than written into the stylesheet so a card is only
+		 * held to a width while it is being contained. This is also the guard
+		 * for the next card block someone writes: it cannot collapse, whatever
+		 * it does with its own margins.
+		 */
+		'width'       => $cut ? '100%' : 'auto',
+
+		/**
+		 * And the stacking context the surface layer sits in.
+		 *
+		 * That layer is a `::before` at `z-index: -1` — behind the card's
+		 * content, in front of the card's own (clear) background — and a
+		 * negative index only stays *inside* an element that establishes a
+		 * stacking context. Nothing else on a cut card reliably establishes one:
+		 * the containment above did in some engines and versions, but Chrome 129
+		 * stopped `container-type: inline-size` doing it. Without one the
+		 * surface escapes the card and paints behind the band, taking the card's
+		 * ground with it and leaving the photograph floating on the page.
+		 *
+		 * `isolation: isolate` establishes one for no other reason, in every
+		 * engine, and says so. `auto` with the cut off, so a card that is not
+		 * carrying a surface layer is not carrying a stacking context either.
+		 *
+		 * This is now the *only* thing holding that layer in place — a cut card
+		 * has no shadow and so no filter — which is exactly why it is stated
+		 * rather than left to a side effect of something else.
+		 */
+		'isolation'   => $cut ? 'isolate' : 'auto',
+
+		/**
+		 * Which layer paints the card.
+		 *
+		 * The cut needs a surface it can clip without taking the card's focus
+		 * ring with it, so the ground moves to a layer inside the card and the
+		 * card itself goes clear.
+		 *
+		 * Both of these are switches, never colours. The colour is a chain —
+		 * the band's ground, or the light one — and a chain published as a
+		 * custom property is resolved at `:root`, where the skins have not set
+		 * `--bridge-card-bg` yet; every card came out wearing the light ground
+		 * whatever band it stood on. So the colour stays in the stylesheet,
+		 * where it is resolved on the card, and only the on/off travels.
+		 *
+		 * `initial` rather than a colour for the off case: it is the
+		 * guaranteed-invalid value, so `var()` falls through to the ground the
+		 * stylesheet names. And the layer is switched with `display` rather
+		 * than a transparent fill, so a card that has chosen its own ground —
+		 * the outlined testimonial is transparent by design — is not painted
+		 * over by a layer it never asked for.
+		 */
+		'ownBg'       => $cut ? 'transparent' : 'initial',
+		'layer'       => $cut ? 'block' : 'none',
+
+		// Nothing, on a cut card. See the note above.
+		'shadow'      => $cut ? 'none' : $shadow['shadow'],
+		'shadowHover' => $cut ? 'none' : $shadow['hover'],
 	);
 
 	foreach (bridge_card_grounds() as $key => $entry) {
@@ -441,7 +573,7 @@ function bridge_compile_theme_json(array $tokens): array
 	 * The per-style settings, one nested group per style.
 	 *
 	 * WordPress turns nesting into `--` and camelCase into `-`, so
-	 * `card.portrait.avatar` arrives as `--wp--custom--card--portrait--avatar`.
+	 * `card.team.avatar` arrives as `--wp--custom--card--team--avatar`.
 	 * The Cards block's stylesheet reads these and nothing else does; each
 	 * style points its own `--post-card-*` variable at the group that belongs
 	 * to it, so the base rules stay written once.
@@ -479,6 +611,35 @@ function bridge_compile_theme_json(array $tokens): array
 				case 'avatar':
 					$group['avatar'] = (string) (
 						$avatars[$value]['width'] ?? $avatars[$entry['avatar'] ?? 'm']['width'] ?? 'min(72%, 14rem)'
+					);
+					break;
+
+				/**
+				 * The wash, and the ink that has to survive it.
+				 *
+				 * Two properties from one setting, because only one of them is
+				 * a choice. An operator picks the colour the gradient rises in;
+				 * what the title is then painted is arithmetic, and arithmetic
+				 * this file is better at than they are.
+				 *
+				 * Without it a wash in Background or Surface — both legitimate
+				 * on a brand with a dark photograph behind them — would leave
+				 * the theme's light title white on near-white. `bridge_readable_on()`
+				 * is the same function the button labels go through: it takes
+				 * the palette's own light and dark slugs first, so the ink is a
+				 * brand colour wherever one clears 4.5:1, and falls back to
+				 * plain white or black only when neither does.
+				 */
+				case 'wash':
+					$group['wash'] = sprintf('var(--wp--preset--color--%s)', $value);
+
+					$ground = bridge_palette_hex($value);
+					$group['ink'] = bridge_readable_on(
+						$ground,
+						array(
+							bridge_palette_hex('background'),
+							bridge_palette_hex('text'),
+						)
 					);
 					break;
 			}
@@ -624,6 +785,125 @@ function bridge_filter_theme_json_data($theme_json)
 		return $theme_json;
 	}
 
-	return $theme_json->update_with(bridge_compile_theme_json(bridge_get_tokens()));
+	$data = bridge_compile_theme_json(bridge_get_tokens());
+
+	// Merged here rather than inside the compiler: the compiler turns the token
+	// record into geometry and colour, and this is a fixed statement about the
+	// theme's own blocks that no token moves.
+	$data['settings']['blocks'] = bridge_block_style_lockdown();
+
+	return $theme_json->update_with($data);
+}
+
+/**
+ * Every block this theme ships, by name.
+ *
+ * Read off the block.json files rather than listed by hand, so a block added
+ * later is covered the day it exists — the alternative is a list that is
+ * correct until somebody forgets it, and the failure there is a styling panel
+ * quietly reappearing on one block.
+ *
+ * Memoised: theme.json is resolved more than once a request.
+ *
+ * @return string[]
+ */
+function bridge_block_names(): array
+{
+	static $names = null;
+
+	if (null !== $names) {
+		return $names;
+	}
+
+	$names = array();
+
+	foreach ((array) glob(get_theme_file_path('src/blocks') . '/*/block.json') as $file) {
+		$json = wp_json_file_decode((string) $file, array('associative' => true));
+
+		if (is_array($json) && ! empty($json['name']) && is_string($json['name'])) {
+			$names[] = $json['name'];
+		}
+	}
+
+	sort($names);
+
+	return $names;
+}
+
+/**
+ * Colour and typography, off, on every block this theme ships.
+ *
+ * ---- What this is for ------------------------------------------------------
+ *
+ * A block's own `supports` decide what its Styles tab offers when it is
+ * selected on a page. They do not decide what Site Editor → Styles → Blocks
+ * offers, which reads theme.json settings and will hand any block the whole
+ * palette and the whole type scale unless told otherwise. So a block can
+ * declare no colour support and still be given a colour panel one screen over.
+ *
+ * Both surfaces have to be closed to close the door, and this is the second
+ * one.
+ *
+ * ---- Why every block, and why all of it ------------------------------------
+ *
+ * Because a Bridge block is not a place where type and colour are decided. Its
+ * colour comes from the band's skin — Surface, Inverted, Accent — and its type
+ * from the scale in Theme Options, and both of those are one decision applied
+ * everywhere rather than a decision per block per page. A colour control on a
+ * band is a way to produce a section that matches nothing else on the site,
+ * which is the failure this theme exists to prevent.
+ *
+ * Every key WP_Theme_JSON declares is named, not the obvious four: the panels
+ * appear if *any* one control survives, which is how `textAlign` and
+ * `textColumns` kept the Typography panel open after the seven likely keys had
+ * been turned off.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function bridge_block_style_lockdown(): array
+{
+	$off = array(
+		'color'      => array(
+			'background'       => false,
+			'button'           => false,
+			'caption'          => false,
+			'custom'           => false,
+			'customDuotone'    => false,
+			'customGradient'   => false,
+			'defaultDuotone'   => false,
+			'defaultGradients' => false,
+			'defaultPalette'   => false,
+			'heading'          => false,
+			'link'             => false,
+			'text'             => false,
+			'duotone'          => array(),
+			'gradients'        => array(),
+			'palette'          => array(),
+		),
+		'typography' => array(
+			'customFontSize'   => false,
+			'defaultFontSizes' => false,
+			'dropCap'          => false,
+			'fontStyle'        => false,
+			'fontWeight'       => false,
+			'letterSpacing'    => false,
+			'lineHeight'       => false,
+			'textAlign'        => false,
+			'textColumns'      => false,
+			'textDecoration'   => false,
+			'textTransform'    => false,
+			'writingMode'      => false,
+			'fontSizes'        => array(),
+			'fontFamilies'     => array(),
+		),
+	);
+
+	$blocks = array();
+
+	foreach (bridge_block_names() as $name) {
+		$blocks[$name] = $off;
+	}
+
+	return $blocks;
 }
 add_filter('wp_theme_json_data_theme', 'bridge_filter_theme_json_data');

@@ -10,7 +10,6 @@
  */
 
 body.bridge-has-banner {
-
 	.wp-block-post-title,
 	.editor-post-title,
 	.editor-post-title__input {
@@ -28,7 +27,6 @@ body.bridge-has-banner {
 	}
 
 	&.bridge-banner-align-center {
-
 		.wp-block-post-title,
 		.editor-post-title,
 		.editor-post-title__input {
@@ -39,7 +37,6 @@ body.bridge-has-banner {
 	// Full width: stretch to the canvas edges and square off the corners to
 	// distinguish it from the contained, inset banner.
 	&.bridge-banner-style-fullwidth {
-
 		.wp-block-post-title,
 		.editor-post-title,
 		.editor-post-title__input {
@@ -62,7 +59,6 @@ body.bridge-has-banner {
 // selector list as bridge-landing-mode, and for the same reason: the
 // title field is one element under several names across editor versions.
 body.bridge-title-hidden {
-
 	.editor-post-title,
 	.editor-visual-editor__post-title-wrapper,
 	.edit-post-visual-editor__post-title-wrapper,

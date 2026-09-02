@@ -1,0 +1,78 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/goals",
+	"version": "1.0.0",
+	"title": "Goals",
+	"category": "design",
+	"icon": "chart-bar",
+	"description": "A row of figures — a number, its unit and a label — that count up as the band scrolls into view.",
+	"textdomain": "bridge",
+	"keywords": ["goals", "stats", "figures", "numbers", "counter", "totals"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "wide"
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		},
+		"textAlignment": {
+			"type": "string",
+			"default": "center"
+		},
+		"countUp": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"example": {
+		"attributes": {
+			"columns": 3,
+			"width": "wide"
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"content": "Where we have got to"
+				}
+			},
+			{
+				"name": "bridge/goal",
+				"attributes": {
+					"number": "120",
+					"unit": "miles",
+					"label": "Distance Run"
+				}
+			},
+			{
+				"name": "bridge/goal",
+				"attributes": {
+					"number": "1,200",
+					"unit": "£",
+					"label": "Money Raised"
+				}
+			},
+			{
+				"name": "bridge/goal",
+				"attributes": {
+					"number": "38",
+					"unit": "",
+					"label": "Runners"
+				}
+			}
+		]
+	},
+	"editorScript": "bridge-goals-editor",
+	"style": "bridge-goals-style",
+	"viewScript": "bridge-goals-view",
+	"render": "file:./render.php"
+}

@@ -1,0 +1,140 @@
+/**
+ * Bridge — the two-field editing screen for content that has no pages.
+ *
+ * Loaded only on post.php and post-new.php for a declared type with no pages,
+ * by inc/simple-editor.php. Everything here is either a page-shaped control
+ * being taken off the screen, or the two fields being made to look like the
+ * form they now are.
+ *
+ * Written against core's admin ids on purpose. They are the handles WordPress
+ * gives these controls and they have been stable for the whole life of the
+ * classic screen; a class of our own would mean re-marking up core's markup,
+ * which is the more fragile of the two.
+ */
+
+/**
+ * The controls that describe a page, hidden rather than unhooked.
+ *
+ * They are inputs the form submits — status, visibility, the publish date —
+ * and removing them from the markup would make every save read their defaults
+ * instead of the post's own values. See the note in inc/simple-editor.php.
+ *
+ * `#minor-publishing-actions` is Save Draft and Preview: a preview of a type
+ * with no page is a 404, and Save Draft is the Publish button one state
+ * earlier.
+ */
+#minor-publishing-actions,
+#misc-publishing-actions {
+	display: none;
+}
+
+// The Publish box's remaining padding, now that the two rows above the button
+// have gone. Without this the button sits against the box's title.
+#submitdiv #major-publishing-actions {
+	border-top: 0;
+}
+
+/**
+ * The two labels.
+ *
+ * Bigger than a form label and smaller than a heading: they name the two
+ * halves of the screen, which is a job closer to a section title than to
+ * "First name". Block, so the field starts on its own line under it.
+ *
+ * Two selectors for one look, because the two labels come from different
+ * places and only one of them could. `#title-prompt-text` is core's own
+ * `<label for="title">`, printed inside `#titlewrap` and carrying whatever
+ * `enter_title_here` returned; there is no hook that can put markup in there,
+ * so the label that names the title field has to be that one. The other is
+ * printed by this theme on `edit_form_after_title`.
+ */
+.bridge-simple-editor__label,
+#titlediv #title-prompt-text.screen-reader-text {
+	display: block;
+	margin: 0 0 0.35rem;
+	font-size: 0.95rem;
+	font-weight: 600;
+	line-height: 1.3;
+	color: #1e1e1e;
+}
+
+/**
+ * Un-hiding core's title label.
+ *
+ * It is marked `screen-reader-text` and, since WordPress 5.x, nothing ever
+ * unhides it — so the classic title field has an accessible name and no
+ * visible one. Every property below undoes one clause of that hiding, or one
+ * clause of the overlay positioning core gives it in edit.css: `position` and
+ * `pointer-events` from `#titlediv #title-prompt-text`, the rest from
+ * `.screen-reader-text`.
+ *
+ * The selector carries both the id chain and the class so it outranks each of
+ * them wherever this stylesheet happens to load.
+ */
+#titlediv #title-prompt-text.screen-reader-text {
+	position: static;
+	width: auto;
+	height: auto;
+	padding: 0;
+	overflow: visible;
+	clip-path: none;
+	pointer-events: auto;
+}
+
+// Air between the question and the answer, so the two read as two fields
+// rather than as one stack. Core's title box has no bottom margin of its own
+// once the permalink row is gone.
+#post-body-content #titlediv {
+	margin-bottom: 1.25rem;
+}
+
+/**
+ * The title field, sized as a form field rather than as a page title.
+ *
+ * Core sets 1.7em and a light weight, which is right when the thing being
+ * typed is the name of a page and wrong when it is one of two boxes on a form
+ * — at that size the question dwarfs the answer under it.
+ */
+#titlediv #title {
+	height: auto;
+	padding: 0.5rem 0.6rem;
+	font-size: 1.05rem;
+	font-weight: 400;
+	line-height: 1.4;
+}
+
+// The permalink row, for the case where something puts one back. A pageless
+// type has no URL, so there is nothing for it to show.
+#edit-slug-box {
+	display: none;
+}
+
+/**
+ * The answer box.
+ *
+ * Nothing hides `.wp-editor-tools` — the strip that would hold the Visual and
+ * Text tabs and the media button — because core does not print it at all when
+ * there is nothing to put in it. See the guard around it in
+ * class-wp-editor.php: no media button and no quicktags means no container.
+ */
+#postdivrich .wp-editor-container {
+	border-radius: 3px;
+}
+
+/**
+ * The answer box with no visual editor.
+ *
+ * A user with "Disable the visual editor when writing" set in their profile
+ * gets the bare textarea and no iframe, so the padding injected into TinyMCE's
+ * document (see bridge_simple_editor_content_style()) never reaches them. Same
+ * inset, same type, stated again here because there is no one place that can
+ * say it for both — one of them is a document this stylesheet cannot enter.
+ */
+#postdivrich .wp-editor-area {
+	padding: 12px 14px;
+	font-family: -apple-system, blinkmacsystemfont, "Segoe UI", roboto,
+		oxygen-sans, ubuntu, cantarell, "Helvetica Neue", sans-serif;
+	font-size: 15px;
+	line-height: 1.6;
+	color: #1e1e1e;
+}

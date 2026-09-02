@@ -193,6 +193,14 @@ function bridge_rest_tokens_payload(): array
 		'icons'          => bridge_icon_library(),
 		'iconWeights'    => bridge_icon_weights(),
 		'templates'      => bridge_template_inventory(),
+		// How much content each declared post type is holding, so removing one
+		// can say what it is about to hide rather than asking the operator to
+		// remember. Nothing is deleted by a removal — see inc/post-types.php.
+		'postTypeCounts' => bridge_post_type_counts(),
+		// The front page's address, so the post-type form can show the real
+		// archive URL a slug will produce rather than guessing at it from the
+		// admin's own location — which is wrong on every subdirectory install.
+		'homeUrl'        => home_url('/'),
 		// The site's menus, so the header can be pointed at one by name rather
 		// than by an id the operator would have to go and look up.
 		'menus'          => bridge_navigation_menus(),
@@ -225,6 +233,10 @@ function bridge_rest_tokens_payload(): array
 		// scale — so the control can never offer a size the type system has
 		// not compiled.
 		'fontSizeSlugs'  => bridge_font_size_slugs(),
+		// The three article layouts, each with the sentence that says what it
+		// asks of a photograph — which is the whole of the decision, and not
+		// something a name alone can carry.
+		'postTemplates'  => bridge_post_template_choices(),
 		'version'        => bridge_tokens_version(),
 	);
 }

@@ -79,7 +79,7 @@ $overflow        = 'carousel' === ( $attributes['overflowStyle'] ?? 'wrap' ) ? '
  * an attribute arrives from the saved post content and from the REST preview
  * request, and neither is validated by the editor that wrote it.
  */
-$card_styles     = array( 'summary', 'tile', 'portrait' );
+$card_styles     = array( 'summary', 'tile', 'cover', 'team' );
 $card_style      = sanitize_key( $attributes['cardStyle'] ?? 'summary' );
 $card_style      = in_array( $card_style, $card_styles, true ) ? $card_style : 'summary';
 
@@ -113,7 +113,7 @@ $is_carousel     = 'carousel' === $overflow && ! $is_preview && ! $use_main;
 $read_more_text  = trim( (string) ( $attributes['readMoreText'] ?? '' ) );
 $read_more_text  = '' !== $read_more_text ? $read_more_text : __( 'Read more', 'bridge' );
 
-// Portrait's button, on the same terms and for the same reason.
+// Team's button, on the same terms and for the same reason.
 $button_text     = trim( (string) ( $attributes['buttonText'] ?? '' ) );
 $button_text     = '' !== $button_text ? $button_text : __( 'View profile', 'bridge' );
 
@@ -154,12 +154,32 @@ list( $intro_html, $label_id ) = $is_preview
 	? array( '', '' )
 	: bridge_section_intro( $content, 'bridge-cards__intro' );
 
+/*
+ * ---- The mask shape ------------------------------------------------
+ *
+ * The site's mask shape, painted as one flat colour behind the cards. Not an
+ * image and not a pattern: a solid silhouette from the palette, which is why
+ * the colour is a slug rather than a value — it moves when the palette moves.
+ *
+ * Three numbers do the placing, and each does one thing: which palette colour,
+ * how wide the shape is as a share of the band, and how far its right edge is
+ * held off the band's right edge. Everything else — the anchoring, the
+ * stacking, the clipping — is in the stylesheet, where it is the same in the
+ * editor.
+ *
+ * Nothing renders without both a colour and a shape to cut: the shape comes
+ * from Theme Options and is shared with every other block that uses it, so a
+ * site that has not set one gets no decoration rather than a coloured
+ * rectangle.
+ */
+list( $mask_class, $mask_style ) = bridge_band_mask( $attributes );
+
 $section_open = $is_preview
 	? ''
 	: bridge_section_wrapper(
 		$attributes,
-		'bridge-cards bridge-cards--' . $width . ' bridge-cards--' . $overflow,
-		'',
+		'bridge-cards bridge-cards--' . $width . ' bridge-cards--' . $overflow . $mask_class,
+		$mask_style,
 		$label_id
 	);
 
@@ -252,7 +272,7 @@ $placeholder_logo_id = function_exists( 'bridge_light_logo_id' ) ? bridge_light_
 // hint rather than a description of fixed breakpoints: full width on a phone,
 // half on a tablet, and the authored column share above that.
 //
-// Portrait is the exception, and the only place the style reaches this far into
+// Team is the exception, and the only place the style reaches this far into
 // the PHP: its avatar is a circle a fraction of the width of the column, not a
 // photograph spanning the whole of it, so the same hint would have every
 // browser fetch a file far wider than the slot it lands in.
@@ -263,9 +283,9 @@ $placeholder_logo_id = function_exists( 'bridge_light_logo_id' ) ? bridge_light_
 // the requested file size with it, and the two cannot drift apart.
 $card_width_share = 1.0;
 
-if ( 'portrait' === $card_style && function_exists( 'bridge_card_avatar_sizes' ) ) {
+if ( 'team' === $card_style && function_exists( 'bridge_card_avatar_sizes' ) ) {
 	$card_tokens   = function_exists( 'bridge_get_tokens' ) ? bridge_get_tokens() : array();
-	$avatar_slug   = (string) ( $card_tokens['cards']['styles']['portrait']['avatar'] ?? 'm' );
+	$avatar_slug   = (string) ( $card_tokens['cards']['styles']['team']['avatar'] ?? 'm' );
 	$avatar_sizes  = bridge_card_avatar_sizes();
 	$card_width_share = (float) ( $avatar_sizes[ $avatar_slug ]['fraction'] ?? 0.72 );
 }

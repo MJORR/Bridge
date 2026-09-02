@@ -17,6 +17,32 @@
 		@include section.container(narrow);
 	}
 
+	/**
+	 * Full window.
+	 *
+	 * No container at all: the map is the band. The gutter a skinned band
+	 * would otherwise take comes off through `bridge-band--flush`, added
+	 * alongside this class by render.php and by the editor — see
+	 * components/_sections.scss.
+	 *
+	 * The radius goes with it. A rounded corner against the edge of the window
+	 * reads as a mistake rather than as a detail, which is the same call the
+	 * alternating band makes.
+	 */
+	&--full &__inner {
+		max-width: none;
+		padding-inline: 0;
+	}
+
+	&--full &__canvas {
+		border-radius: 0;
+	}
+
+	// The caption still belongs to the text column, whatever the map is doing.
+	&--full &__label {
+		@include section.container(wide);
+	}
+
 	&__frame {
 		display: block;
 		width: 100%;
@@ -50,4 +76,113 @@
 		align-items: flex-end;
 		flex-wrap: wrap;
 	}
+}
+
+/**
+ * ---- The map itself --------------------------------------------------------
+ *
+ * `__canvas` is what Google draws into, on the front end and in the editor
+ * alike — the same element, the same height, so what an editor frames is what
+ * a visitor gets. The search box and the notes below it are the editor's only.
+ */
+.bridge-map__editor {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20);
+}
+
+/**
+ * The search box.
+ *
+ * Google renders its suggestions into a `.pac-container` appended to <body>,
+ * positioned against this input — so the input has to be a real, laid-out box
+ * and cannot be a floating overlay on the map.
+ */
+/**
+ * The finder's suggestions.
+ *
+ * The field itself is a WordPress `TextControl` and needs nothing from here —
+ * that is the point of not using Google's own element, which cannot be told
+ * what size to be. This is only the list under it.
+ */
+.bridge-map__suggestions {
+	list-style: none;
+	margin: -4px 0 16px;
+	padding: 0;
+	border: 1px solid rgb(0 0 0 / 12%);
+	border-radius: 2px;
+	background: #fff;
+	// Long addresses on a narrow sidebar: a few and then scroll, rather than a
+	// list that pushes every control below it off the screen.
+	max-block-size: 220px;
+	overflow-y: auto;
+
+	button {
+		display: block;
+		inline-size: 100%;
+		padding: 8px 10px;
+		border: 0;
+		background: none;
+		font-size: 13px;
+		line-height: 1.4;
+		text-align: left;
+		cursor: pointer;
+
+		&:hover,
+		&:focus {
+			background: #f0f0f0;
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--wp-admin-theme-color, #3858e9);
+			outline-offset: -2px;
+		}
+	}
+
+	li + li button {
+		border-block-start: 1px solid rgb(0 0 0 / 8%);
+	}
+}
+
+.bridge-map__canvas {
+	block-size: var(--bridge-map-height, 420px);
+	inline-size: 100%;
+	border-radius: var(--wp--custom--radius--medium);
+	overflow: hidden;
+	// The grey Google draws behind the tiles, so a map that is still loading
+	// is a map-shaped space rather than a hole in the page.
+	background-color: #e5e3df;
+
+	// Google writes its own positioning onto the children it creates, and it
+	// measures the container to do it — so the container has to be a plain box
+	// with a definite height and nothing clever about its layout.
+	> * {
+		max-inline-size: none;
+	}
+}
+
+.bridge-map__loading {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	block-size: var(--bridge-map-height, 420px);
+}
+
+.bridge-map__note {
+	margin: 0;
+	font-size: 0.8125rem;
+	opacity: 0.75;
+}
+
+// Said where a map cannot be drawn: no key, or nothing chosen yet.
+.bridge-map__empty {
+	display: grid;
+	place-items: center;
+	block-size: var(--bridge-map-height, 420px);
+	margin: 0;
+	padding: var(--wp--preset--spacing--40);
+	background-color: #e5e3df;
+	border-radius: var(--wp--custom--radius--medium);
+	text-align: center;
 }

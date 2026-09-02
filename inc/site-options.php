@@ -15,9 +15,10 @@
  * are read together — a footer wants the whole set — so one autoloaded row is
  * one cache hit instead of eight, and a save is atomic.
  *
- * This file stores and edits. Nothing reads these values into a page yet; the
- * accessors at the foot of the file are what the footer, the map block and
- * anything else will use when they do.
+ * This file stores and edits. The accessors at the foot of it are what
+ * everything else reads through — inc/enquiries.php asks for `notify_email`
+ * when it has an enquiry to announce, and the footer and the map block will
+ * ask for the rest.
  *
  * @package Bridge
  */
@@ -106,37 +107,79 @@ function bridge_social_icon(string $network): string
 function bridge_site_options_schema(): array
 {
 	return array(
-		'company' => array(
+		'company'      => array(
 			'section' => 'business',
 			'type'    => 'text',
 			'label'   => __('Company name', 'bridge'),
 			'help'    => __('The trading name, as it should read in the footer and anywhere else the company is named.', 'bridge'),
 		),
-		'address' => array(
+		'address'      => array(
 			'section' => 'business',
 			'type'    => 'textarea',
 			'label'   => __('Address', 'bridge'),
 			'help'    => __('One line per line, as it would be written on an envelope.', 'bridge'),
 		),
-		'phone'   => array(
+		'phone'        => array(
 			'section' => 'business',
 			'type'    => 'text',
 			'label'   => __('Phone', 'bridge'),
 			'help'    => __('Written the way it should be read. The dialling link is built from it separately, so spaces and brackets are safe here.', 'bridge'),
 		),
-		'gtm_id'  => array(
+		'notify_email' => array(
+			'section' => 'notifications',
+			'type'    => 'text',
+			'label'   => __('Notifications email', 'bridge'),
+			'help'    => __('Where enquiries from the site\'s contact forms are sent. Leave it empty and they go to the site administrator\'s address instead.', 'bridge'),
+		),
+		'gtm_id'       => array(
 			'section' => 'keys',
 			'type'    => 'text',
 			'label'   => __('Google Tag Manager ID', 'bridge'),
 			'help'    => __('The container ID, in the form GTM-XXXXXXX. Stored only — nothing on the site loads Tag Manager yet.', 'bridge'),
 		),
-		'map_key' => array(
+		'map_key'      => array(
 			'section' => 'keys',
 			'type'    => 'text',
 			'label'   => __('Google Maps API key', 'bridge'),
-			'help'    => __('Stored only — the Map block still uses the keyless embed. A key that reaches a page is public, so restrict it to this domain in the Google Cloud console.', 'bridge'),
+			'help'    => __('What the Map block draws with. It needs Maps JavaScript API and Places API (New) enabled. The key reaches the page — that is how the API works — so restrict it to this domain in the Google Cloud console.', 'bridge'),
+		),
+		'map_id'       => array(
+			'section' => 'keys',
+			'type'    => 'text',
+			'label'   => __('Google Map ID', 'bridge'),
+			'help'    => __('Optional. A Map ID carries a map style made in the Cloud console, and is what lets the pin be a modern advanced marker. Without one the map is Google’s default styling and a classic pin.', 'bridge'),
 		),
 	);
+}
+
+/**
+ * The site's Google Maps API key, or an empty string.
+ *
+ * One accessor so nothing else has to know which option row it lives in, and so
+ * "is there a key" is one question with one answer — the Map block asks it three
+ * times: to decide which embed to build, whether to load the editor's map, and
+ * what to tell an editor when there is no key to load it with.
+ */
+function bridge_map_key(): string
+{
+	$key = bridge_site_option('map_key');
+
+	return is_string($key) ? trim($key) : '';
+}
+
+/**
+ * The site's Google Map ID, or an empty string.
+ *
+ * Not a second key and not a secret: a Map ID names a style saved in the Cloud
+ * console, and it is also the thing `AdvancedMarkerElement` requires before it
+ * will draw. Empty is a working map — Google's own styling, and the classic
+ * marker — which is why nothing here treats its absence as a problem.
+ */
+function bridge_map_id(): string
+{
+	$id = bridge_site_option('map_id');
+
+	return is_string($id) ? trim($id) : '';
 }
 
 /**
@@ -239,6 +282,22 @@ function bridge_sanitize_site_options($input): array
 
 	$clean['gtm_id'] = strtoupper($clean['gtm_id']);
 
+	// The address enquiries are sent to, so a typo here is a client wondering
+	// for a fortnight why nobody has been in touch. Kept rather than cleared
+	// for the same reason the two below are: an address that is wrong is worse
+	// than one that is missing, because the missing one falls back to the
+	// administrator and still arrives.
+	if ('' !== $clean['notify_email'] && ! is_email($clean['notify_email'])) {
+		bridge_site_options_error(
+			'bridge_bad_notify_email',
+			__('That does not look like an email address, so the old one has been kept. Enquiries go to the site administrator until a valid address is saved here.', 'bridge')
+		);
+
+		$clean['notify_email'] = (string) (bridge_get_site_options()['notify_email'] ?? '');
+	}
+
+	$clean['notify_email'] = sanitize_email($clean['notify_email']);
+
 	// Google's keys are URL-safe; anything else is a paste that went wrong —
 	// a whole URL, or a key with a stray quote around it.
 	if ('' !== $clean['map_key'] && ! preg_match('/^[A-Za-z0-9_-]{20,}$/', $clean['map_key'])) {
@@ -248,6 +307,18 @@ function bridge_sanitize_site_options($input): array
 		);
 
 		$clean['map_key'] = (string) (bridge_get_site_options()['map_key'] ?? '');
+	}
+
+	// A Map ID is a short opaque token from the Cloud console, not a URL and
+	// not a key. Same reading as above: a paste that went wrong is kept out
+	// rather than saved and silently ignored by Google.
+	if ('' !== $clean['map_id'] && ! preg_match('/^[A-Za-z0-9_-]{4,}$/', $clean['map_id'])) {
+		bridge_site_options_error(
+			'bridge_bad_map_id',
+			__('That does not look like a Google Map ID — they are a short run of letters, numbers, hyphens and underscores. The old value has been kept.', 'bridge')
+		);
+
+		$clean['map_id'] = (string) (bridge_get_site_options()['map_id'] ?? '');
 	}
 
 	$networks = bridge_social_networks();
@@ -373,7 +444,7 @@ function bridge_render_site_options_page(): void
 		<h1><?php esc_html_e('Site Options', 'bridge'); ?></h1>
 
 		<p class="description" style="max-width:46rem">
-			<?php esc_html_e('The site\'s own details, kept in one place so they are written once and correct everywhere. Nothing on the site reads them yet — that comes next.', 'bridge'); ?>
+			<?php esc_html_e('The site\'s own details, kept in one place so they are written once and correct everywhere. The notifications address is the one that is already in use: it is where enquiries from the contact form are sent.', 'bridge'); ?>
 		</p>
 
 		<?php settings_errors(BRIDGE_SITE_OPTIONS_KEY); ?>
@@ -387,6 +458,19 @@ function bridge_render_site_options_page(): void
 					<?php
 					foreach ($schema as $key => $field) {
 						if ('business' === $field['section']) {
+							bridge_site_options_field($key, $field, $value);
+						}
+					}
+					?>
+				</tbody>
+			</table>
+
+			<h2><?php esc_html_e('Notifications', 'bridge'); ?></h2>
+			<table class="form-table" role="presentation">
+				<tbody>
+					<?php
+					foreach ($schema as $key => $field) {
+						if ('notifications' === $field['section']) {
 							bridge_site_options_field($key, $field, $value);
 						}
 					}

@@ -103,7 +103,12 @@
 	}
 
 	// ---- Background image ------------------------------------------------
+	// Both of these cover the whole panel, so both cover the cut corner the
+	// card's surface has underneath them. Cut to match; `none` while the
+	// setting is off.
 	&__background {
+		@include card.cut-corner-child;
+
 		position: absolute;
 		inset: 0;
 		width: 100%;
@@ -119,6 +124,8 @@
 	}
 
 	&__scrim {
+		@include card.cut-corner-child;
+
 		position: absolute;
 		inset: 0;
 		background-color: var(--wp--preset--color--primary);
@@ -154,7 +161,7 @@
 	// contents, graphic and all.
 	&.is-linked {
 		.bridge-feature__link::after {
-			content: '';
+			content: "";
 			position: absolute;
 			inset: 0;
 			z-index: 2;

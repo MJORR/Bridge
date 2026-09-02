@@ -463,6 +463,54 @@ function bridge_header_nav(int $menu, string $justify, array $extra = array()): 
 }
 
 /**
+ * Append the header's call to action to a rendered navigation, as its last row.
+ *
+ * The mobile panel is core's navigation block, and there is no way into it from
+ * outside: the sheet is a dialog with its own focus trap, so a button rendered
+ * beside the nav — which is where the header's call to action lives — cannot be
+ * moved into the open menu by CSS, and a visitor on a phone would never see it.
+ * Below 600px the header hides it outright, so before this the site's one
+ * conversion had no mobile home at all.
+ *
+ * So the item is put in the list core built. Inserted before the last `</ul>`,
+ * which is the top-level container's: submenus are nested inside it and close
+ * first, so the last close tag in the markup is always the outer list's,
+ * whatever depth the menu happens to have. Cheaper and steadier than parsing —
+ * WP_HTML_Tag_Processor can walk this document but cannot insert a node into
+ * it, and the alternative is a second HTML parser for one `<li>`.
+ *
+ * One item, not two: it renders into the menu bar as well, where the header's
+ * own button is already showing, and the stylesheet hides it above 599px. A
+ * second copy of the markup would mean two links to the same page in the
+ * accessibility tree at every width — this way exactly one of the two is ever
+ * displayed.
+ *
+ * @param string $nav   Navigation markup, as returned by bridge_header_nav().
+ * @param string $label The button's label. Already trimmed by the caller.
+ * @param string $url   Where it goes.
+ */
+function bridge_header_nav_cta(string $nav, string $label, string $url): string
+{
+	$close = strrpos($nav, '</ul>');
+
+	if (false === $close) {
+		return $nav;
+	}
+
+	$item = sprintf(
+		'<li class="wp-block-navigation-item bridge-nav__cta">' .
+			'<a class="wp-block-navigation-item__content" href="%s">' .
+				'<span class="wp-block-navigation-item__label">%s</span>' .
+			'</a>' .
+		'</li>',
+		esc_url($url),
+		esc_html($label)
+	);
+
+	return substr_replace($nav, $item, $close, 0);
+}
+
+/**
  * Register the header block and the script that previews it in the editor.
  *
  * A dynamic block with no `edit` implementation renders as an error in the

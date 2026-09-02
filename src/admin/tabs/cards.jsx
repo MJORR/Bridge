@@ -36,7 +36,7 @@
 import { CardColorSlot, Section, rangeControl } from '../controls';
 import { CardAudit, CardStylePreview } from '../preview';
 
-const { SelectControl } = wp.components;
+const { SelectControl, ToggleControl } = wp.components;
 const { __, sprintf } = wp.i18n;
 
 /**
@@ -73,6 +73,7 @@ export function CardsTab({
 		cardRatios,
 		cardAvatars,
 		fontSizeSlugs,
+		paletteSlugs,
 	} = payload;
 
 	const range = rangeControl(constraints, draft, setGroup);
@@ -97,12 +98,20 @@ export function CardsTab({
 			label: entry.name,
 			value: entry.slug,
 		})),
+		// The whole palette. What the title is then painted is not offered —
+		// it is derived from this and contrast-checked server-side, so no
+		// choice here can produce an illegible card.
+		wash: Object.entries(paletteSlugs || {}).map(([slug, name]) => ({
+			label: name,
+			value: slug,
+		})),
 	};
 
 	const labelFor = {
 		heading: __('Heading size', 'bridge'),
 		ratio: __('Image crop', 'bridge'),
 		avatar: __('Photograph size', 'bridge'),
+		wash: __('Wash colour', 'bridge'),
 	};
 
 	const helpFor = {
@@ -116,6 +125,10 @@ export function CardsTab({
 		),
 		avatar: __(
 			'How much of the card the circular photograph takes. The panel’s arch is drawn around it, so this moves the whole shape of the card.',
+			'bridge'
+		),
+		wash: __(
+			'The brand colour the gradient rises in, from opaque at the foot of the card to clear at the top. The title takes whichever of the palette’s light or dark colours reads against it — that is worked out for you and checked at 4.5:1, so every choice here is legible.',
 			'bridge'
 		),
 	};
@@ -189,7 +202,7 @@ export function CardsTab({
 			<Section
 				title={__('The card surface', 'bridge')}
 				description={__(
-					'One card surface, drawn by every block that has cards — the post cards, downloads, feature panels, price cards and testimonials. These three values are what they share, so a change here reaches all of them and none of them can drift.',
+					'One card surface, drawn by every block that has cards — the post cards, downloads, feature panels, price cards and testimonials. These values are what they share, so a change here reaches all of them and none of them can drift.',
 					'bridge'
 				)}
 			>
@@ -206,31 +219,54 @@ export function CardsTab({
 					__next40pxDefaultSize
 				/>
 
-				{range(
-					'cards',
-					'radius',
-					__('Corner radius (px)', 'bridge'),
-					__(
-						'0 is a square card, which is a design rather than a mistake. Panels set flush against each other keep their square corners whatever this says.',
-						'bridge'
-					)
-				)}
-
-				<SelectControl
-					label={__('Shadow', 'bridge')}
-					value={draft.cards.shadow}
-					options={(cardShadows || []).map((entry) => ({
-						label: entry.name,
-						value: entry.slug,
-					}))}
-					onChange={(value) => setGroup('cards', 'shadow', value)}
+				<ToggleControl
+					label={__('Cut the top-left corner', 'bridge')}
+					checked={Boolean(draft.cards.cutCorner)}
+					onChange={(on) => setGroup('cards', 'cutCorner', on)}
 					help={__(
-						'How far a card lifts off the page. Outlined testimonials draw a border instead and are left flat — an outline and a shadow are two answers to the same question.',
+						'Takes the top-left corner off every card at 45°, showing the band behind it. Cut cards are flat and square: a corner radius is a second answer to the corner, and a shadow is drawn around the card’s box so it would trace the very corner you just removed. Both controls are put away while this is on, and both come back at the values you left them.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
-					__next40pxDefaultSize
 				/>
+
+				{draft.cards.cutCorner
+					? range(
+							'cards',
+							'cutSize',
+							__('Corner cut (% of card width)', 'bridge'),
+							__(
+								'A share of the card’s width rather than a fixed size, so the notch keeps its proportion on a card given a third of the page and one given a whole row. The cut is always 45°; this only says how far along the edges it starts.',
+								'bridge'
+							)
+						)
+					: range(
+							'cards',
+							'radius',
+							__('Corner radius (px)', 'bridge'),
+							__(
+								'0 is a square card, which is a design rather than a mistake. Panels set flush against each other keep their square corners whatever this says.',
+								'bridge'
+							)
+						)}
+
+				{!draft.cards.cutCorner && (
+					<SelectControl
+						label={__('Shadow', 'bridge')}
+						value={draft.cards.shadow}
+						options={(cardShadows || []).map((entry) => ({
+							label: entry.name,
+							value: entry.slug,
+						}))}
+						onChange={(value) => setGroup('cards', 'shadow', value)}
+						help={__(
+							'How far a card lifts off the page. Outlined testimonials draw a border instead and are left flat — an outline and a shadow are two answers to the same question.',
+							'bridge'
+						)}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+				)}
 			</Section>
 
 			<Section
@@ -295,6 +331,7 @@ export function CardsPreview({ draft, payload, preview }) {
 				spacingSizes={preview?.spacingSizes}
 				fontSizes={preview?.fontSizes}
 				palette={preview?.palette}
+				custom={preview?.custom}
 			/>
 		</>
 	);

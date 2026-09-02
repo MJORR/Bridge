@@ -1,0 +1,18 @@
+/**
+ * Bridge — the block editor's Inspector sidebar.
+ *
+ * Not the canvas. The two are different documents, and that distinction is the
+ * whole reason this file exists.
+ *
+ * `add_editor_style()` — which is how main.css reaches the editor — hands its
+ * CSS to the block editor as *canvas* styles: WordPress prefixes every selector
+ * with `.editor-styles-wrapper` and injects the result into the iframe the page
+ * is drawn in. The Inspector is not in that iframe and is not inside that
+ * wrapper, so nothing delivered that way has ever applied to it.
+ *
+ * Anything styling a control in the sidebar therefore has to be an ordinary
+ * admin stylesheet, enqueued on `enqueue_block_editor_assets` — which is what
+ * this bundle is. See bridge_enqueue_editor_assets() in functions.php.
+ */
+@use "editor/media-field";
+@use "editor/logo-list";

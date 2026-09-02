@@ -51,19 +51,21 @@ $style = '';
 
 if ( $has_image ) {
 	/*
-	 * The wash over the photograph is the colour the block's own Background
-	 * control was set to. That control already existed — core's colour support
-	 * is declared in block.json — and with an image over it, it painted
-	 * something no visitor could ever see. Reading it here turns a dead
-	 * control into the one an editor was looking for, without adding a
-	 * control. The palette is locked to the theme's slugs (`custom: false`),
-	 * so the value is a slug and never a hex code.
+	 * The wash over the photograph is Primary, and is not chosen per block.
+	 *
+	 * It used to read the block's own Background control: that control existed
+	 * anyway, and under a photograph it painted something no visitor could see,
+	 * so borrowing it turned a dead control into the one an editor wanted. The
+	 * Background control has since been taken off this block, so there is
+	 * nothing left to borrow — and one wash colour across every call to action
+	 * is the more consistent answer in any case. Darken image still says how
+	 * much of it lands.
 	 */
-	$scrim = isset( $attributes['backgroundColor'] ) && '' !== $attributes['backgroundColor']
-		? sprintf( 'var(--wp--preset--color--%s)', sanitize_title( (string) $attributes['backgroundColor'] ) )
-		: 'var(--wp--preset--color--primary)';
-
-	$style = sprintf( '--bridge-cta-dim: %s; --bridge-cta-scrim: %s;', $dim / 100, $scrim );
+	$style = sprintf(
+		'--bridge-cta-dim: %s; --bridge-cta-scrim: %s;',
+		$dim / 100,
+		'var(--wp--preset--color--primary)'
+	);
 }
 
 echo bridge_section_wrapper( $attributes, $classes, $style ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.

@@ -37,9 +37,11 @@ import '../scss/admin/_options.scss';
 
 import { useGooglePreviewFonts } from './hooks';
 import { BlocksTab } from './tabs/blocks';
+import { CptTab } from './tabs/cpt';
 import { CardsPreview, CardsTab } from './tabs/cards';
 import { ButtonsPreview, ButtonsTab } from './tabs/buttons';
 import { DesignPreview, DesignTab } from './tabs/design';
+import { PostsPreview, PostsTab } from './tabs/posts';
 import { TemplatesTab } from './tabs/templates';
 
 const {
@@ -197,6 +199,18 @@ function OptionsApp() {
 	}, []);
 
 	/**
+	 * Replace the declared content types.
+	 *
+	 * The whole list, not a patch: the rows are ordered and removable, so
+	 * every edit is a new list. `bridge_merge_deep()` replaces a list outright
+	 * rather than merging it index by index, which is what makes a removal
+	 * survive the round trip instead of leaving the last row behind.
+	 */
+	const setPostTypes = useCallback((next) => {
+		setDraft((current) => ({ ...current, postTypes: next }));
+	}, []);
+
+	/**
 	 * Switch blocks on or off.
 	 *
 	 * Stores the difference from what the theme ships rather than the whole
@@ -310,6 +324,7 @@ function OptionsApp() {
 		setButtonFill,
 		setHeader,
 		setBlocks,
+		setPostTypes,
 	};
 
 	return (
@@ -319,7 +334,9 @@ function OptionsApp() {
 				{ name: 'design', title: __('Design', 'bridge') },
 				{ name: 'buttons', title: __('Buttons', 'bridge') },
 				{ name: 'cards', title: __('Cards', 'bridge') },
+				{ name: 'posts', title: __('Posts', 'bridge') },
 				{ name: 'blocks', title: __('Blocks', 'bridge') },
+				{ name: 'cpt', title: __('Content types', 'bridge') },
 				{ name: 'templates', title: __('Templates', 'bridge') },
 			]}
 		>
@@ -329,8 +346,14 @@ function OptionsApp() {
 				// repeating them smaller would be the same information twice.
 				// Blocks, because the library is seventy-odd switches and a
 				// half-width column turns it into a scroll.
+				// Content types joins them: the tab is a form of text fields,
+				// and what it produces — a menu item and an address — is text
+				// shown under the row that produces it, so there is nothing
+				// for a preview column to draw.
 				const single =
-					'templates' === tab.name || 'blocks' === tab.name;
+					'templates' === tab.name ||
+					'blocks' === tab.name ||
+					'cpt' === tab.name;
 
 				// Cards splits 60/40 instead of taking the fixed sidebar the
 				// other two-column tabs use. Its preview is twelve cards
@@ -407,7 +430,9 @@ function OptionsApp() {
 								<ButtonsTab {...shared} />
 							)}
 							{tab.name === 'cards' && <CardsTab {...shared} />}
+							{tab.name === 'posts' && <PostsTab {...shared} />}
 							{tab.name === 'blocks' && <BlocksTab {...shared} />}
+							{tab.name === 'cpt' && <CptTab {...shared} />}
 							{tab.name === 'templates' && (
 								<TemplatesTab {...shared} />
 							)}
@@ -446,6 +471,13 @@ function OptionsApp() {
 										<CardsPreview
 											draft={draft}
 											payload={payload}
+											preview={preview}
+										/>
+									)}
+
+									{preview && tab.name === 'posts' && (
+										<PostsPreview
+											draft={draft}
 											preview={preview}
 										/>
 									)}

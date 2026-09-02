@@ -1,0 +1,53 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/faqs",
+	"version": "3.3.0",
+	"title": "FAQs",
+	"category": "design",
+	"icon": "editor-help",
+	"description": "A set of questions that open to reveal their answers, drawn from the FAQs written in the admin.",
+	"textdomain": "bridge",
+	"keywords": ["faq", "faqs", "questions", "accordion"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"default": "narrow"
+		},
+		"exclusive": {
+			"type": "boolean",
+			"default": false
+		},
+		"category": {
+			"type": "string",
+			"default": ""
+		},
+		"order": {
+			"type": "string",
+			"default": "menu_order"
+		},
+		"count": {
+			"type": "number",
+			"default": 0
+		}
+	},
+	"example": {
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 2,
+					"content": "Frequently asked questions"
+				}
+			}
+		]
+	},
+	"editorScript": "bridge-faqs-editor",
+	"style": "bridge-faqs-style",
+	"render": "file:./render.php"
+}

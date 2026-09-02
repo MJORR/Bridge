@@ -85,6 +85,22 @@
 .bridge-testimonial {
 	@include card.base;
 
+	/**
+	 * No cut corner, whatever the site's cards are set to.
+	 *
+	 * `card.base` brings the shared card surface, and with it the chamfer from
+	 * Theme Options → Cards. On a post card that reads as the theme's corner —
+	 * it is one shape repeated down a grid of photographs. On a quote it reads
+	 * as a torn page: there is no image to anchor it, so the missing corner
+	 * looks like damage rather than a detail.
+	 *
+	 * `--bridge-card-clip` is the surface layer's own override, the same hook
+	 * the outlined variant below uses for its background. Only the solid style
+	 * changes here — an outlined card paints no surface at all, so its chamfer
+	 * was already invisible and its border was already square.
+	 */
+	--bridge-card-clip: none;
+
 	display: flex;
 	flex-direction: column;
 	gap: var(--wp--preset--spacing--20);
@@ -93,7 +109,11 @@
 	&__quote {
 		display: flex;
 		flex-direction: column;
-		gap: var(--wp--preset--spacing--10);
+		// The smallest step the spacing scale actually publishes. It asked for
+		// `--wp--preset--spacing--10`, which the scale does not generate — it
+		// starts at 20 — so the declaration was invalid and the gap resolved
+		// to nothing, putting the attribution hard against the quote.
+		gap: var(--wp--preset--spacing--20);
 		margin: 0;
 		padding: 0;
 		border: 0;
@@ -157,6 +177,11 @@
 	// which stays visible on a light band and on a dark one without either
 	// being named here.
 	border: 1px solid color-mix(in srgb, currentcolor 25%, transparent);
+	// Both layers, because with a cut corner the card's ground is painted by
+	// the surface inside it rather than by the card — and an outlined card that
+	// went transparent on one layer only would still be filled by the other.
+	--bridge-card-layer-bg: transparent;
+
 	background-color: transparent;
 	// The shared card shadow goes with the fill it was lifting. An outline
 	// and a shadow are two answers to the same question — where the card

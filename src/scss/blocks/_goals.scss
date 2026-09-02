@@ -1,0 +1,104 @@
+/**
+ * Bridge — Goals and the figures inside them.
+ */
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+.bridge-goals {
+	&__inner {
+		@include section.container(wide);
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	&--narrow &__inner {
+		@include section.container(narrow);
+	}
+
+	// A smaller minimum track than the card grids use: a figure is a handful
+	// of characters, so four of them fit across a width that would only take
+	// two cards. `--columns` is still the ceiling, and the grid drops below it
+	// on its own when the band is narrow.
+	&__list {
+		@include section.auto-grid(8rem, section.$grid-gap);
+
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	&--text-center .bridge-goal {
+		text-align: center;
+		align-items: center;
+	}
+}
+
+.bridge-goal {
+	display: flex;
+	flex-direction: column;
+	// Deliberately tighter than the grid's own gap: the label belongs to the
+	// number above it, and a figure whose two halves are as far apart as two
+	// figures are from each other reads as four things rather than two.
+	gap: var(--wp--preset--spacing--20);
+	align-items: flex-start;
+	margin: 0;
+
+	// No card surface. A figure is not a panel — it is a number standing on
+	// the band, which is why this block can sit on any skin without needing
+	// a ground of its own.
+	&__value {
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+		margin: 0;
+		font-size: var(
+			--bridge-goal-size,
+			var(--wp--preset--font-size--xx-large)
+		);
+		font-weight: 700;
+		// The figure is the largest thing in the band, so it is set solid:
+		// the preset's own line height would leave a gap under it wide enough
+		// to break the pairing with the label.
+		line-height: 1;
+		letter-spacing: -0.02em;
+		// Fixed-width digits, so a number counting from 0 to 1,200 does not
+		// change width on every frame and shove the label about under it.
+		font-variant-numeric: tabular-nums;
+	}
+
+	// Two thirds the size of the number and a shade lighter in weight: read as
+	// part of the figure, but never mistaken for part of the number.
+	&__unit {
+		font-size: var(--bridge-goal-unit-size, 0.6em);
+		font-weight: 600;
+	}
+
+	// A leading unit — a currency symbol — is drawn first while staying second
+	// in the markup, so the editor's caret does not jump between two fields as
+	// a `£` is typed. render.php prints it first already, where `order` is
+	// simply a no-op.
+	&__unit.is-prefix {
+		order: -1;
+	}
+
+	// A trailing unit gets a hair of space and nothing more. `120 miles` with a
+	// word space between them at this size reads as two words; closed right up
+	// it reads as a typo.
+	&__unit:not(.is-prefix) {
+		margin-inline-start: 0.1em;
+	}
+
+	&__label {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		// Inherited from the band, like every other colour in these blocks, so
+		// an Inverted skin reaches the label rather than stopping at it.
+		color: inherit;
+	}
+}

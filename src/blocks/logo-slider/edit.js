@@ -2,9 +2,14 @@
  * Editor view for `bridge/logo-slider`.
  *
  * Logos carry no per-item content — no title, no link, nothing to write — so
- * they stay an attribute chosen through the media library's own gallery
- * picker rather than becoming a child block each. Reordering happens in that
- * picker, which is where the pictures are.
+ * they stay an attribute picked from the media library rather than becoming a
+ * child block each.
+ *
+ * The Inspector lists the chosen logos one per line: add one, remove one,
+ * nudge one along the row. The media frame's gallery mode used to do the
+ * ordering, but it asks the editor to build a gallery on the way to choosing
+ * pictures, and every trip through it replaced the whole set — so removing a
+ * single logo meant re-picking the rest.
  */
 
 const {
@@ -19,6 +24,8 @@ const { PanelBody, SelectControl, ToggleControl, Button } =
 	window.wp.components;
 const { __ } = window.wp.i18n;
 
+// Heading only. A paragraph is still allowed — it is just not put there
+// waiting to be deleted on every insert.
 const TEMPLATE = [
 	[
 		'core/heading',
@@ -28,66 +35,128 @@ const TEMPLATE = [
 			placeholder: __('Trusted by', 'bridge'),
 		},
 	],
-	[
-		'core/paragraph',
-		{
-			align: 'center',
-			placeholder: __('A line of summary (optional)', 'bridge'),
-		},
-	],
 ];
 
 // Only the id is rendered — render.php looks the file up again — so the url is
 // the editor's preview and nothing else. `medium` is what the front end draws,
 // and a row of full-size logos is a slow editor for no gain.
-const toImages = (media) =>
-	media.map((item) => ({
-		id: item.id,
-		url: item.sizes?.medium?.url || item.url,
-	}));
+const toImage = (item) => ({
+	id: item.id,
+	url: item.sizes?.medium?.url || item.url,
+	name: item.title || item.filename || '',
+});
 
-const RowPicker = ({ label, images, onChange }) =>
-	el(
-		MediaUploadCheck,
-		null,
-		el(MediaUpload, {
-			multiple: true,
-			gallery: true,
-			allowedTypes: ['image'],
-			value: images.map((image) => image.id),
-			onSelect: (media) => onChange(toImages(media)),
-			render: ({ open }) =>
-				el(
-					'div',
-					{ className: 'bridge-media-field' },
+// The row of logos, one per line, each with its own controls.
+const RowPicker = ({ addLabel, images, onChange }) => {
+	const removeAt = (index) =>
+		onChange(images.filter((image, at) => at !== index));
+
+	const moveBy = (index, step) => {
+		const next = images.slice();
+
+		next.splice(index + step, 0, next.splice(index, 1)[0]);
+		onChange(next);
+	};
+
+	return el(
+		'div',
+		{ className: 'bridge-logo-list' },
+		images.length > 0 &&
+			el(
+				'ul',
+				{ className: 'bridge-logo-list__items' },
+				images.map((image, index) =>
 					el(
-						Button,
-						{ variant: 'secondary', onClick: open },
-						images.length
-							? /* translators: %d: number of logos. */
-								__('Edit logos', 'bridge') +
-									` (${images.length})`
-							: label
-					),
-					images.length > 0 &&
+						'li',
+						{
+							className: 'bridge-logo-list__item',
+							// The same logo may legitimately appear twice in a
+							// row, so the id alone is not a key.
+							key: `${image.id}-${index}`,
+						},
+						el('img', {
+							className: 'bridge-logo-list__thumb',
+							src: image.url,
+							alt: '',
+						}),
+						el(
+							'span',
+							{ className: 'bridge-logo-list__name' },
+							image.name || __('Logo', 'bridge')
+						),
+						el(
+							'div',
+							{ className: 'bridge-logo-list__actions' },
+							el(Button, {
+								icon: 'arrow-up-alt2',
+								size: 'small',
+								label: __('Move logo earlier', 'bridge'),
+								disabled: 0 === index,
+								onClick: () => moveBy(index, -1),
+							}),
+							el(Button, {
+								icon: 'arrow-down-alt2',
+								size: 'small',
+								label: __('Move logo later', 'bridge'),
+								disabled: index === images.length - 1,
+								onClick: () => moveBy(index, 1),
+							}),
+							el(Button, {
+								icon: 'no-alt',
+								size: 'small',
+								isDestructive: true,
+								label: __('Remove logo', 'bridge'),
+								onClick: () => removeAt(index),
+							})
+						)
+					)
+				)
+			),
+		el(
+			MediaUploadCheck,
+			null,
+			el(MediaUpload, {
+				// Pick as many as you like in one visit, but nothing is
+				// preselected and `gallery` stays off: this picker adds to the
+				// row, it does not stand in for the row. Gallery mode would
+				// hand back the whole selection instead, which is what made
+				// removing a single logo impossible.
+				multiple: true,
+				gallery: false,
+				addToGallery: false,
+				allowedTypes: ['image'],
+				title: __('Add logos', 'bridge'),
+				onSelect: (media) =>
+					onChange([
+						...images,
+						...(Array.isArray(media) ? media : [media]).map(
+							toImage
+						),
+					]),
+				render: ({ open }) =>
+					el(
+						'div',
+						{ className: 'bridge-media-field' },
 						el(
 							Button,
-							{
-								variant: 'link',
-								isDestructive: true,
-								onClick: () => onChange([]),
-							},
-							__('Clear', 'bridge')
+							{ variant: 'secondary', onClick: open },
+							addLabel
 						)
-				),
-		})
+					),
+			})
+		)
 	);
+};
 
 const Edit = ({ attributes, setAttributes }) => {
 	const { width, imageDisplay, images, secondRow, imagesSecond } = attributes;
 
+	// Anything that is not `full` is `wide` — the block used to offer `narrow`
+	// too, and a block still carrying it should draw as a width that exists.
+	const rowWidth = 'full' === width ? 'full' : 'wide';
+
 	const blockProps = useBlockProps({
-		className: `bridge-logos bridge-section bridge-band alignfull bridge-logos--${width}`,
+		className: `bridge-logos bridge-section bridge-band alignfull bridge-logos--${rowWidth}`,
 	});
 
 	const innerBlocksProps = useInnerBlocksProps(
@@ -103,10 +172,13 @@ const Edit = ({ attributes, setAttributes }) => {
 		el(
 			'ul',
 			{ className: 'bridge-logos__track', key },
-			row.map((image) =>
+			row.map((image, index) =>
 				el(
 					'li',
-					{ className: 'bridge-logos__item', key: image.id },
+					{
+						className: 'bridge-logos__item',
+						key: `${image.id}-${index}`,
+					},
 					el('img', {
 						className: `bridge-logos__image is-${imageDisplay}`,
 						src: image.url,
@@ -126,16 +198,20 @@ const Edit = ({ attributes, setAttributes }) => {
 				PanelBody,
 				{ title: __('Logos', 'bridge'), initialOpen: true },
 				el(RowPicker, {
-					label: __('Choose logos', 'bridge'),
+					addLabel: __('Add logos', 'bridge'),
 					images,
 					onChange: (value) => setAttributes({ images: value }),
 				}),
 				el(SelectControl, {
 					label: __('Width', 'bridge'),
-					value: width,
+					help: __(
+						'Full width runs the logos to the edges of the window. The heading stays in the content column either way.',
+						'bridge'
+					),
+					value: rowWidth,
 					options: [
+						{ label: __('Full width', 'bridge'), value: 'full' },
 						{ label: __('Wide', 'bridge'), value: 'wide' },
-						{ label: __('Narrow', 'bridge'), value: 'narrow' },
 					],
 					onChange: (value) => setAttributes({ width: value }),
 				}),
@@ -161,7 +237,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				}),
 				secondRow &&
 					el(RowPicker, {
-						label: __('Choose second-row logos', 'bridge'),
+						addLabel: __('Add second-row logos', 'bridge'),
 						images: imagesSecond,
 						onChange: (value) =>
 							setAttributes({ imagesSecond: value }),
@@ -179,14 +255,18 @@ const Edit = ({ attributes, setAttributes }) => {
 				// the block hard to select and the intro hard to click into.
 				el(
 					'div',
-					{ className: 'bridge-logos__row is-static' },
+					{
+						className: `bridge-logos__row is-static is-${imageDisplay}`,
+					},
 					preview(images, 'first')
 				),
 				secondRow &&
 					imagesSecond.length > 0 &&
 					el(
 						'div',
-						{ className: 'bridge-logos__row is-static' },
+						{
+							className: `bridge-logos__row is-static is-${imageDisplay}`,
+						},
 						preview(imagesSecond, 'second')
 					)
 			)

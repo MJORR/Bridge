@@ -30,7 +30,10 @@
 		// The global rhythm, so a site that widens the space between its blocks
 		// widens the space under a section's headline with it.
 		> * + * {
-			margin-block-start: var(--wp--style--block-gap, var(--wp--preset--spacing--30));
+			margin-block-start: var(
+				--wp--style--block-gap,
+				var(--wp--preset--spacing--30)
+			);
 		}
 	}
 }

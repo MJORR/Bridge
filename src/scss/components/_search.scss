@@ -1,0 +1,403 @@
+/**
+ * Bridge — the search results page (search.php).
+ *
+ * Three parts, and only the first is always drawn: the head, which states what
+ * was asked and what came back; the results, which are the Cards band and are
+ * styled nowhere near here; and the empty state, which is a page of its own
+ * standing in for the grid when nothing matched.
+ *
+ * The results are the reason there is so little here. A search page that drew
+ * its own cards would be a second implementation of the one the archive
+ * already has, and the second one drifts — so the grid is `bridge/cards` with
+ * `source: main`, and this file styles the sentences around it.
+ *
+ * Every colour resolves to a palette preset and every length to a spacing or
+ * type preset, so the page follows a rebrand without being edited.
+ */
+@use "../abstracts/section" as section;
+
+.bridge-search {
+	// WordPress puts a block gap above every direct child of `.wp-site-blocks`,
+	// which on this template would be a strip of the page's own background
+	// between the header and a band that is a different colour — a seam where
+	// the two are meant to meet. Every other template opens on the page
+	// background and never sees it.
+	//
+	// A bare class beats the `:where(.wp-site-blocks) > *` core writes this in,
+	// which has no specificity at all, so no `!important` is needed.
+	margin-block-start: 0;
+}
+
+// ---- The head ------------------------------------------------------------
+
+/**
+ * The band that states the search.
+ *
+ * Surface rather than the brand's own colour: the head is the quiet half of
+ * this page and the results are the loud half, and a full-strength brand band
+ * at the top of a list of cards competes with the thing the visitor came for.
+ * The gradient fades it towards the page background at the foot, so the band
+ * hands over to the grid instead of stopping at a line.
+ */
+.bridge-search__head {
+	position: relative;
+	overflow: hidden;
+	padding-block: var(
+		--wp--custom--section-padding,
+		var(--wp--preset--spacing--70)
+	);
+	background: linear-gradient(
+		180deg,
+		var(--wp--preset--color--surface) 0%,
+		color-mix(
+				in srgb,
+				var(--wp--preset--color--surface) 30%,
+				var(--wp--preset--color--background)
+			)
+			100%
+	);
+
+	// The gutter is the container's, not the band's, and that is the whole
+	// reason it is spent down here: `container(wide)` puts the padding
+	// *inside* the wide width, which is exactly what `.bridge-cards__inner`
+	// does. Moving it up to the band would widen this column by two gutters
+	// and the title would no longer start where the first card does.
+	&-inner {
+		@include section.container(wide);
+
+		position: relative;
+		// Above the glyph, which is drawn into the same box.
+		z-index: 1;
+	}
+}
+
+/**
+ * The oversized search mark bled off the trailing edge.
+ *
+ * The same icon as the header's search button, drawn at a size where it reads
+ * as texture rather than as a control anyone could press — which is why it is
+ * `aria-hidden` at source and why it is nailed to a corner rather than set in
+ * the flow.
+ *
+ * Off below the two-column width. It survives by being unnoticeable, and there
+ * is no room for anything unnoticeable on a phone.
+ */
+.bridge-search__glyph {
+	display: none;
+
+	@include section.two-column {
+		display: block;
+		position: absolute;
+		inset-block-start: 50%;
+		inset-inline-end: -2rem;
+		width: 22rem;
+		height: 22rem;
+		translate: 0 -50%;
+		color: var(--wp--preset--color--primary);
+		opacity: 0.05;
+		pointer-events: none;
+	}
+}
+
+/**
+ * The line above the title.
+ *
+ * Small, spaced and in the brand's second colour: it says which kind of page
+ * this is before the title says what it is about, and it is the one place on
+ * the page where letter-spacing is spent.
+ */
+.bridge-search__eyebrow {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	margin: 0 0 var(--wp--preset--spacing--20);
+	color: var(--wp--preset--color--secondary);
+	font-size: var(--wp--preset--font-size--small);
+	font-weight: 600;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	line-height: 1;
+}
+
+.bridge-search__title {
+	margin: 0;
+	// Tightened a little past the site's heading leading: this is the largest
+	// type on the page and set at two words, where the default tracking reads
+	// loose.
+	letter-spacing: -0.02em;
+}
+
+/**
+ * The sentence under the title: how many, and what for.
+ *
+ * Set at `large` and quietened, so it reads as a standfirst rather than as the
+ * first line of the results — the same relationship the archive's term
+ * description has to its title.
+ */
+.bridge-search__summary {
+	margin-block: var(--wp--preset--spacing--20) 0;
+	max-width: 44rem;
+	color: color-mix(in srgb, currentcolor 75%, transparent);
+	font-size: var(--wp--preset--font-size--large);
+	line-height: 1.4;
+
+	strong {
+		color: var(--wp--preset--color--primary);
+		font-weight: 600;
+	}
+}
+
+/**
+ * The term itself, lifted out of the sentence.
+ *
+ * A highlighter rather than a colour change: the term is a quotation of what
+ * the visitor typed, and a wash behind it says "this is the bit you gave us"
+ * without making it look like a link. Drawn with `box-shadow` inside the box
+ * so it costs no layout and wraps with the words.
+ */
+.bridge-search__term {
+	position: relative;
+	color: var(--wp--preset--color--primary);
+	font-weight: 600;
+	box-shadow: inset 0 -0.42em 0
+		color-mix(in srgb, var(--wp--preset--color--accent) 40%, transparent);
+}
+
+/**
+ * The strip under the standfirst: which page of several, and the way out.
+ *
+ * A hairline above rather than a rule of its own colour, so the row is
+ * separated from the sentence without introducing a second edge into a band
+ * that already has a gradient doing that job at the bottom.
+ */
+.bridge-search__meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);
+	margin-block: var(--wp--preset--spacing--40) 0;
+	padding-block-start: var(--wp--preset--spacing--30);
+	border-block-start: 1px solid
+		color-mix(in srgb, currentcolor 12%, transparent);
+	color: color-mix(in srgb, currentcolor 70%, transparent);
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.bridge-search__home {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45em;
+	// Pushed to the trailing end on any row wide enough to have one, so the
+	// page count and the way out sit at opposite ends rather than in a huddle.
+	margin-inline-start: auto;
+	color: inherit;
+	font-weight: 600;
+	text-decoration: none;
+
+	// The icon leads the label back, so it moves the way the link goes.
+	&:hover .bridge-icon,
+	&:focus-visible .bridge-icon {
+		translate: -0.2em 0;
+	}
+
+	.bridge-icon {
+		@media (prefers-reduced-motion: no-preference) {
+			transition: translate 0.18s ease;
+		}
+	}
+
+	&:hover,
+	&:focus-visible {
+		color: var(--wp--preset--color--secondary);
+		text-decoration: underline;
+		text-underline-offset: 0.25em;
+	}
+}
+
+/**
+ * A site whose header floats over the page.
+ *
+ * A transparent header takes no space in the flow, so the first band starts at
+ * the top of the window and the head's own padding is the only thing between
+ * the title and a menu drawn on top of it. The header publishes its measured
+ * height on the root — see header.js — and the estimate in
+ * `bridge_header_height_estimate()` is what holds until the script runs; the
+ * fallback here is for neither being available, which is a header roughly the
+ * size the theme ships with.
+ */
+// stylelint-disable scss/operator-no-newline-after -- prettier wraps this calc
+// and leaves the operator at the end of the line; prettier is what runs on
+// save, so it wins.
+body:has(.bridge-header--transparent) .bridge-search__head {
+	padding-block-start: calc(
+		var(--bridge-header-height, 5rem) +
+			var(--wp--custom--section-padding, var(--wp--preset--spacing--70))
+	);
+}
+// stylelint-enable scss/operator-no-newline-after
+
+// ---- Nothing found -------------------------------------------------------
+
+/**
+ * The empty state.
+ *
+ * Centred and narrow, which is the one place on this site a column is centred:
+ * there is no list to scan and nothing to compare, so the usual reason to
+ * anchor text to a left edge is not there — and a single short column reads as
+ * a considered answer rather than as a page that failed to fill.
+ */
+.bridge-search__empty {
+	padding-block: var(
+		--wp--custom--section-padding,
+		var(--wp--preset--spacing--70)
+	);
+	padding-inline: var(--wp--preset--spacing--40);
+
+	&-inner {
+		max-width: 34rem;
+		margin-inline: auto;
+		text-align: center;
+	}
+
+	&-title {
+		margin: 0;
+	}
+
+	&-copy {
+		margin-block: var(--wp--preset--spacing--20) 0;
+		color: color-mix(in srgb, currentcolor 75%, transparent);
+	}
+}
+
+/**
+ * The disc the icon sits in.
+ *
+ * A shape rather than an illustration: an empty state wants something for the
+ * eye to land on before it reads the apology, and a circle of the site's own
+ * surface colour is the one thing here that cannot go off-brand.
+ */
+.bridge-search__mark {
+	display: grid;
+	place-items: center;
+	width: 4.5rem;
+	height: 4.5rem;
+	margin: 0 auto var(--wp--preset--spacing--30);
+	border-radius: 50%;
+	background: var(--wp--preset--color--surface);
+	color: var(--wp--preset--color--primary);
+}
+
+/**
+ * The second chance.
+ *
+ * The same shape as the header's panel field — an icon inside the control
+ * rather than beside it, so the two read as one — but on the page's own ground
+ * rather than the brand's, because this one is sitting in body copy.
+ */
+.bridge-search__form {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--wp--preset--spacing--20);
+	margin-block-start: var(--wp--preset--spacing--40);
+	text-align: start;
+}
+
+.bridge-search__control {
+	display: flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--20);
+	flex: 1 1 14rem;
+	padding-inline: var(--wp--preset--spacing--30);
+	border: 1px solid color-mix(in srgb, currentcolor 18%, transparent);
+	border-radius: var(--wp--custom--radius--medium, 6px);
+	background: var(--wp--preset--color--background);
+	color: color-mix(in srgb, currentcolor 60%, transparent);
+
+	// The ring belongs on the control, which is the shape a visitor sees, not
+	// on the input inside it — which is why the input drops its own below.
+	&:focus-within {
+		outline: 2px solid var(--wp--preset--color--secondary);
+		outline-offset: 2px;
+	}
+}
+
+.bridge-search__field {
+	flex: 1;
+	// The control around it is already drawn; a border here would draw the
+	// same edge twice.
+	border: 0;
+	background: none;
+	padding-block: 0.75rem;
+	padding-inline: 0;
+	color: var(--wp--preset--color--text);
+	font-family: inherit;
+	font-size: var(--wp--preset--font-size--medium);
+	line-height: 1.5;
+
+	&::placeholder {
+		color: currentcolor;
+		opacity: 0.75;
+	}
+
+	&:focus {
+		outline: none;
+	}
+}
+
+.bridge-search__submit {
+	flex: 0 0 auto;
+}
+
+/**
+ * The way onward at the foot of an empty results page.
+ *
+ * A rule rather than a skin. The band is `bridge/cards` and the skins are
+ * registered on `core/group`, so painting it Surface would be borrowing a
+ * class the block was never offered — and the skins spend a second gutter on
+ * the band itself, which would step the grid in from every other grid on the
+ * site. A hairline says the same thing: what follows is a different offer, not
+ * more results.
+ */
+.bridge-search__more {
+	border-block-start: 1px solid
+		color-mix(in srgb, currentcolor 12%, transparent);
+}
+
+/**
+ * What to try instead.
+ *
+ * Left-aligned inside a centred column: three lines of advice are a list to be
+ * read down, and centred list items give the eye no edge to return to. The
+ * markers are drawn rather than inherited so the list keeps the site's colour
+ * language instead of the browser's bullet.
+ */
+.bridge-search__tips {
+	margin-block: var(--wp--preset--spacing--40) 0;
+	padding: 0;
+	list-style: none;
+	text-align: start;
+	color: color-mix(in srgb, currentcolor 75%, transparent);
+	font-size: var(--wp--preset--font-size--small);
+
+	li {
+		position: relative;
+		padding-inline-start: 1.5rem;
+		line-height: 1.6;
+
+		+ li {
+			margin-block-start: var(--wp--preset--spacing--20);
+		}
+
+		&::before {
+			content: "";
+			position: absolute;
+			inset-block-start: 0.55em;
+			inset-inline-start: 0.25rem;
+			width: 0.4rem;
+			height: 0.4rem;
+			border-radius: 50%;
+			background: var(--wp--preset--color--secondary);
+		}
+	}
+}

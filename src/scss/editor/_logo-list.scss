@@ -1,0 +1,59 @@
+/**
+ * Bridge — the Logo Slider's list of chosen logos, in the Inspector sidebar.
+ *
+ * One logo per line: a thumbnail, its name, and the three controls that act on
+ * that logo alone. The media frame's gallery mode handed back the whole
+ * selection every time, so a list is what makes "remove this one" possible at
+ * all.
+ *
+ * Editor-only, and in inspector.css rather than main.css for the reason set
+ * out at the top of inspector.scss — the sidebar is not the canvas.
+ */
+.bridge-logo-list {
+	&__items {
+		margin: 0 0 12px;
+		padding: 0;
+		list-style: none;
+		border: 1px solid #e0e0e0;
+		border-radius: 2px;
+	}
+
+	&__item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0;
+		padding: 6px 4px 6px 8px;
+
+		& + & {
+			border-block-start: 1px solid #e0e0e0;
+		}
+	}
+
+	&__thumb {
+		flex: 0 0 auto;
+		width: 32px;
+		height: 32px;
+		// Logos are every shape there is; contain keeps the row of thumbnails
+		// square without cropping anyone's mark.
+		object-fit: contain;
+		background: #f0f0f0;
+	}
+
+	&__name {
+		flex: 1 1 auto;
+		min-width: 0;
+		font-size: 12px;
+		// Filenames are long and arbitrary — one should not widen the sidebar.
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		opacity: 0.75;
+	}
+
+	&__actions {
+		display: flex;
+		flex: 0 0 auto;
+		align-items: center;
+	}
+}

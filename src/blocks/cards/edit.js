@@ -32,6 +32,11 @@ const { useSelect } = window.wp.data;
 const { __, sprintf } = window.wp.i18n;
 const ServerSideRender = window.wp.serverSideRender;
 
+// The mask shape's controls and preview styling, shared with every other band
+// that offers them. Its own script handle, named in this block's dependencies
+// — see src/editor/band-mask.js.
+const { MaskPanel, maskStyle, hasMask } = window.bridgeBandMaskUI || {};
+
 /**
  * The site's excerpt length, printed by functions.php.
  *
@@ -41,6 +46,9 @@ const ServerSideRender = window.wp.serverSideRender;
  */
 const SITE_EXCERPT_LENGTH = window.bridgeCards?.excerptLength ?? 20;
 
+// The site's mask shape, set once in Theme Options. Empty when none is set,
+// which is what the inspector reports rather than offering controls that would
+// paint nothing.
 const BLOCK_NAME = 'bridge/cards';
 
 // The intro only. The cards themselves are queried, not authored, so there is
@@ -102,15 +110,39 @@ const CARD_STYLES = [
 		fields: ['excerpt'],
 	},
 	{
-		value: 'portrait',
-		label: __('Portrait', 'bridge'),
+		value: 'cover',
+		label: __('Cover', 'bridge'),
+		help: __(
+			'The photograph is the whole card, with the title and a link marker over it. A poster rather than a summary — it wants a strong image and a short title.',
+			'bridge'
+		),
+		// No excerpt and no read-more: the only words on a Cover card are the
+		// headline, which is what makes it work at small sizes.
+		fields: [],
+	},
+	{
+		value: 'team',
+		label: __('Team', 'bridge'),
 		help: __(
 			'A circular photograph, a name, the post’s “subtitle” field as a role line, and a button. For people.',
 			'bridge'
 		),
 		fields: ['button'],
+		// Built and styled, but not offered — see `bridge_card_styles()` in
+		// inc/tokens.php for the argument. It is drawn for a Team post type
+		// that does not exist yet, and offering it now would let an editor make
+		// an ordinary post look like a staff profile.
+		//
+		// Listed rather than deleted so a block already set to it still finds
+		// its `fields` and still draws the right inspector; it is only kept out
+		// of the picker below.
+		hidden: true,
 	},
 ];
+
+// What the Card style control offers. Hidden styles stay in the table above so
+// a block already using one keeps working — they are simply not choosable.
+const CARD_STYLE_CHOICES = CARD_STYLES.filter((s) => !s.hidden);
 
 const cardStyleHas = (style, field) =>
 	(
@@ -198,7 +230,9 @@ const Edit = ({ attributes, setAttributes }) => {
 	// The band. The same classes render.php puts on the front end, so the
 	// editor shows the section skin, the background colour and the width the
 	// page will actually have.
+
 	const blockProps = useBlockProps({
+		style: maskStyle(attributes),
 		className: [
 			'bridge-cards',
 			`bridge-cards--${width}`,
@@ -211,7 +245,10 @@ const Edit = ({ attributes, setAttributes }) => {
 			// it under the toolbar — and the stylesheet keys the swipe
 			// behaviour off the absence of this class.
 			'is-editor-preview',
-		].join(' '),
+			hasMask(attributes) ? 'has-mask' : '',
+		]
+			.filter(Boolean)
+			.join(' '),
 	});
 
 	const introProps = useInnerBlocksProps(
@@ -307,7 +344,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				label: __('Card style', 'bridge'),
 				help: CARD_STYLES.find((s) => s.value === style)?.help,
 				value: style,
-				options: CARD_STYLES.map(({ value, label }) => ({
+				options: CARD_STYLE_CHOICES.map(({ value, label }) => ({
 					value,
 					label,
 				})),
@@ -409,7 +446,8 @@ const Edit = ({ attributes, setAttributes }) => {
 					value: buttonText,
 					onChange: (value) => setAttributes({ buttonText: value }),
 				})
-		)
+		),
+		MaskPanel(attributes, setAttributes)
 	);
 
 	const ssrProps = {

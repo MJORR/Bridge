@@ -1,0 +1,63 @@
+/**
+ * Bridge — the inside of the answer box.
+ *
+ * Loaded into TinyMCE's iframe, which has a document of its own: the admin
+ * stylesheet cannot reach the text being typed, and this is the way in. Handed
+ * to TinyMCE as a `content_css` URL by inc/simple-editor.php.
+ *
+ * ---- Why a file, and not a string ----------------------------------------
+ *
+ * TinyMCE also takes a `content_style` setting — a string of CSS — and it is
+ * the obvious way to do this. It is also a trap. WordPress serialises the
+ * TinyMCE configuration to JavaScript in `_WP_Editors::_parse_init()`, which
+ * writes every string as `key:"value"` with no escaping at all
+ * (class-wp-editor.php:851). One double quote in the CSS — and a font stack
+ * naming "Segoe UI" has two — closes the JS string early, breaks the object
+ * literal, and TinyMCE never initialises. The editor does not degrade: it is
+ * simply not there.
+ *
+ * A URL cannot do that. It is also real CSS: linted, built and cache-busted
+ * with everything else, rather than a string nothing checks.
+ */
+
+// The class inc/simple-editor.php appends to the editor body, so these rules
+// cannot touch any other TinyMCE instance that happens to load this file.
+body.bridge-simple-editor__body {
+	/**
+	 * Padding, not margin.
+	 *
+	 * Core sets `margin: 9px 10px` on the editor body, and both halves are
+	 * wrong here. Ten pixels is not enough room for text to sit off the edge
+	 * of a field. And margin puts the gutter outside the body, so a click in
+	 * it lands on nothing — the caret only moves when the pointer is already
+	 * on the text. Padding puts the same gap inside, where clicking it puts
+	 * the cursor on the nearest line, which is what clicking near the edge of
+	 * a text box means.
+	 */
+	margin: 0;
+	padding: 12px 14px;
+
+	/**
+	 * The admin's type, not the front end's.
+	 *
+	 * Core's editor body is Georgia at 16px — a preview of a page whose theme
+	 * uses a serif, which is a reasonable default for the post editor and a
+	 * strange one directly under a sans-serif Question field. Matching the
+	 * admin makes the two fields read as one form.
+	 */
+	font-family: -apple-system, blinkmacsystemfont, "Segoe UI", roboto,
+		oxygen-sans, ubuntu, cantarell, "Helvetica Neue", sans-serif;
+	font-size: 15px;
+	line-height: 1.6;
+	color: #1e1e1e;
+
+	// The first and last lines sit on the padding rather than adding a
+	// paragraph's margin to it, which would leave the box top-heavy.
+	> :first-child {
+		margin-top: 0;
+	}
+
+	> :last-child {
+		margin-bottom: 0;
+	}
+}

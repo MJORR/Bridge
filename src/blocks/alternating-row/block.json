@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/alternating-row",
-	"version": "1.0.0",
+	"version": "1.2.0",
 	"title": "Row",
 	"category": "design",
 	"icon": "align-pull-left",
@@ -15,6 +15,9 @@
 		"imageId": { "type": "number" },
 		"imageUrl": { "type": "string", "default": "" },
 		"alt": { "type": "string", "default": "" },
+		"cropCorner": { "type": "boolean", "default": false },
+		"mask": { "type": "boolean", "default": false },
+		"maskSize": { "type": "number", "default": 100 },
 		"videoUrl": { "type": "string", "default": "" },
 		"youtubeId": { "type": "string", "default": "" }
 	},

@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/footer",
+	"version": "1.0.0",
+	"title": "Site Footer",
+	"category": "theme",
+	"icon": "table-row-after",
+	"description": "The three-column site footer, drawn from Theme Options and Site Options.",
+	"textdomain": "bridge",
+	"supports": {
+		"inserter": false,
+		"html": false,
+		"reusable": false,
+		"multiple": false
+	},
+	"editorScript": "bridge-footer-editor",
+	"render": "file:./render.php"
+}

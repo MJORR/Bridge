@@ -2,9 +2,10 @@
 /**
  * Server-side render for `bridge/alternating-row`.
  *
- * The copy beside the media is inner blocks, so a row can hold a heading, a
- * list and a button — all styled by global styles — where the old block had a
- * single WYSIWYG field and one button of its own.
+ * The copy beside the media is inner blocks, so a row can hold a heading, body
+ * copy, a list and a row of buttons — all styled by global styles — where the
+ * old block had a single WYSIWYG field and one button of its own. Those four
+ * are the whole list: see ALLOWED_BLOCKS in edit.js.
  *
  * @package Bridge
  *
@@ -48,10 +49,58 @@ $play_label = '' !== $heading
 	? sprintf( __( 'Play video: %s', 'bridge' ), $heading )
 	: __( 'Play video', 'bridge' );
 
+/*
+ * The mask.
+ *
+ * One shape for the whole site, set in Theme Options → Templates, so a row
+ * switches it on rather than choosing its own — the alternative is twelve rows
+ * each pointing at a different SVG, which is a collage rather than a design.
+ *
+ * Empty URL covers both "no shape chosen" and "chosen, then deleted from the
+ * library". Either way there is nothing to cut with, so the row keeps its
+ * rectangle instead of rendering an image masked to nothing, which is an image
+ * that has vanished.
+ *
+ * Size is a percentage the stylesheet turns into a scale. 100 is the shape at
+ * the height of the image area, centred; above that it grows past the area and
+ * the box crops it, which is the point of the control.
+ */
+$mask_url = ! empty( $attributes['mask'] ) ? bridge_mask_shape_url() : '';
+
+$media_class = 'bridge-alternating__media';
+$media_style = '';
+
+/*
+ * The cut corner.
+ *
+ * A chamfer taken off the top left of the picture, in place of the rounded
+ * corners, whichever side the picture is on — the same corner the cards cut.
+ * The class only says "cut this one"; the stylesheet owns the shape.
+ *
+ * It does nothing on a full-window band, where the picture is already flush to
+ * the glass and a chamfer would be cutting the corner off the window. The
+ * stylesheet scopes it; the editor greys the switch out and says so.
+ */
+if ( ! empty( $attributes['cropCorner'] ) ) {
+	$media_class .= ' has-crop';
+}
+
+if ( '' !== $mask_url ) {
+	$mask_size = (int) ( $attributes['maskSize'] ?? 100 );
+	$mask_size = max( 50, min( 300, $mask_size ) );
+
+	$media_class .= ' has-mask';
+	$media_style  = sprintf(
+		' style="--bridge-mask-image:url(%s);--bridge-mask-scale:%s"',
+		esc_url( $mask_url ),
+		esc_attr( (string) ( $mask_size / 100 ) )
+	);
+}
+
 $wrapper = get_block_wrapper_attributes( array( 'class' => 'bridge-alternating__row' ) );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core. ?>>
-	<div class="bridge-alternating__media">
+	<div class="<?php echo esc_attr( $media_class ); ?>"<?php echo $media_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from esc_url()/esc_attr() above. ?>>
 		<?php if ( 'youtube' === $media_type && '' !== $youtube ) : ?>
 			<?php
 			/*

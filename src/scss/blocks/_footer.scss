@@ -1,0 +1,190 @@
+/**
+ * Bridge — the site footer.
+ *
+ * Three columns and a line under them. Grid rather than flex, because the
+ * columns are not equal: the identity column carries a logo and a row of icons
+ * and wants more room than a list of five links does.
+ *
+ * Nothing here names a colour. The ground arrives as `--bridge-footer-bg` on
+ * the element — render.php publishes it there so the editor canvas, which runs
+ * none of the theme's enqueue hooks, resolves it too — and everything else is
+ * derived from `currentcolor`, which is what lets one stylesheet paint a footer
+ * on any of the six palette slugs.
+ */
+
+.bridge-footer {
+	background-color: var(
+		--bridge-footer-bg,
+		var(--wp--preset--color--surface)
+	);
+	padding-block: var(--wp--preset--spacing--60) var(--wp--preset--spacing--40);
+}
+
+/**
+ * Light text on a dark ground.
+ *
+ * Set on the footer rather than on each thing inside it: `color` inherits, so
+ * one declaration reaches the headings, the links and the copyright line — and
+ * the icons, which are drawn in `currentColor` and so change with it.
+ *
+ * The contrast is computed in PHP from the chosen colour, because CSS cannot
+ * ask whether a colour is light.
+ */
+.bridge-footer--contrast-light {
+	color: var(--wp--preset--color--background, #fff);
+}
+
+.bridge-footer--contrast-dark {
+	color: var(--wp--preset--color--text, #1f2937);
+}
+
+/**
+ * The three columns.
+ *
+ * `auto-fit` with a floor rather than a media query: the footer collapses when
+ * its own container runs out of room, which is the right question — the same
+ * footer appears inside the editor canvas at half the window's width, where a
+ * viewport query would still be answering "desktop".
+ *
+ * The identity column is given more of the row on wide screens, because a logo
+ * and a row of icons need width where a list of links needs height.
+ */
+.bridge-footer__inner {
+	display: grid;
+	gap: var(--wp--preset--spacing--50) var(--wp--preset--spacing--60);
+	grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+
+	@media (width >= 56rem) {
+		grid-template-columns: 1.5fr 1fr 1fr;
+	}
+}
+
+.bridge-footer__col {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--30);
+	min-width: 0;
+}
+
+// ---- Column one: the logo and the social row -----------------------------
+
+.bridge-footer__logo {
+	display: inline-flex;
+	// A logo is a link to the home page, not a piece of running text; the
+	// underline the site puts on links would sit under the image.
+	text-decoration: none;
+	color: inherit;
+
+	&--text {
+		font-size: var(--wp--preset--font-size--large);
+		font-weight: 700;
+	}
+}
+
+.bridge-footer__logo-img {
+	// Height rather than width: two wordmarks of different proportions should
+	// read as the same size, and it is the cap height that says so.
+	block-size: auto;
+	max-block-size: 3rem;
+	inline-size: auto;
+	max-inline-size: 100%;
+}
+
+.bridge-footer__social {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--20);
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.bridge-footer__social-link {
+	display: grid;
+	place-items: center;
+	// The 44px minimum touch target, which an icon on its own is well under.
+	inline-size: 2.75rem;
+	block-size: 2.75rem;
+	margin-inline-start: -0.6rem;
+	border-radius: 50%;
+	color: inherit;
+	text-decoration: none;
+	// A tint of the text colour rather than a named colour, so the hover works
+	// on all six grounds without a rule per ground.
+	transition: background-color 200ms ease;
+
+	&:hover,
+	&:focus-visible {
+		background-color: color-mix(in srgb, currentcolor 14%, transparent);
+	}
+
+	svg {
+		inline-size: 1.5rem;
+		block-size: 1.5rem;
+		// Core's social icons are solid shapes, not strokes.
+		fill: currentcolor;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		transition: none;
+	}
+}
+
+// The first icon's negative margin pulls its touch target back to the column's
+// edge so the row lines up with the logo above it; the rest sit inside the row.
+.bridge-footer__social-item + .bridge-footer__social-item {
+	.bridge-footer__social-link {
+		margin-inline-start: 0;
+	}
+}
+
+// ---- Columns two and three: the menus ------------------------------------
+
+.bridge-footer__heading {
+	margin: 0;
+	font-size: var(--wp--preset--font-size--small);
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	// The label is a signpost, not a voice. Held back from the links it names
+	// so the eye lands on what is clickable.
+	opacity: 0.7;
+}
+
+.bridge-footer__nav {
+	font-size: var(--wp--preset--font-size--small);
+
+	// core/navigation prints its own gap; this is the one it should have in a
+	// column, which is tighter than the row spacing a header wants.
+	.wp-block-navigation__container {
+		gap: var(--wp--preset--spacing--20);
+	}
+
+	a {
+		color: inherit;
+		text-decoration: none;
+
+		&:hover,
+		&:focus-visible {
+			text-decoration: underline;
+			text-underline-offset: 0.2em;
+		}
+	}
+}
+
+// ---- The line underneath -------------------------------------------------
+
+.bridge-footer__legal {
+	margin-block-start: var(--wp--preset--spacing--50);
+	padding-block-start: var(--wp--preset--spacing--30);
+	// Derived from the text colour for the reason the hover tint is: one rule
+	// that works on a white footer and an inverted one alike.
+	border-block-start: 1px solid
+		color-mix(in srgb, currentcolor 15%, transparent);
+}
+
+.bridge-footer__copyright {
+	margin: 0;
+	font-size: var(--wp--preset--font-size--small);
+	opacity: 0.75;
+}

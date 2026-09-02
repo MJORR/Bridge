@@ -55,6 +55,21 @@ module.exports = {
 			},
 		],
 
+		// Prettier strips blank lines from the top of a block, so a rule that
+		// opens with a prose comment — the shape most of the blocks in this
+		// theme use — can never satisfy the default here: the blank line the
+		// linter asks for is removed again by the next `npm run format`.
+		// `first-nested` excepts exactly that position, which is prettier's
+		// own behaviour written down. Everywhere else a comment still wants
+		// air above it.
+		'comment-empty-line-before': [
+			'always',
+			{
+				except: ['first-nested'],
+				ignore: ['stylelint-commands', 'after-comment'],
+			},
+		],
+
 		// A bare `//` line is a paragraph break inside a prose comment, which
 		// this theme's comments have plenty of. It is not an empty comment in
 		// the sense the rule means — a stray `/* */` left behind by a deletion.

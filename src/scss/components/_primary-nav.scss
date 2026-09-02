@@ -6,6 +6,10 @@
  * API. This file only restyles existing classes; it doesn't replace icons,
  * rewrite HTML, or wire up custom JS.
  *
+ * The one class here core did not write is `.bridge-nav__cta`, on a list item
+ * bridge_header_nav_cta() appends to the menu. Core's own structure around it
+ * is untouched, and nothing below reaches for it outside the mobile panel.
+ *
  * Three treatments, one per context, because a menu bar and a menu sheet are
  * not the same object with different numbers:
  *
@@ -91,6 +95,12 @@
 	--bridge-nav-row-pad: 1.0625rem;
 	--bridge-nav-row-size: 1.1875rem;
 
+	// The ground under a child row in the panel, and the one thing that tells
+	// it from its parent now that the indent is gone. A tenth of the panel's
+	// foreground over the panel's ground: see the child row rule for why it is
+	// mixed from `currentcolor` rather than named.
+	--bridge-nav-child-bg: color-mix(in srgb, currentcolor 10%, transparent);
+
 	// Strip any background WP/theme.json puts on the <li> so only the surface
 	// this file paints shows on hover (no square halo around it).
 	.wp-block-navigation-item {
@@ -118,7 +128,6 @@
 // on is set up in _header.scss, which stretches every wrapper core renders
 // between the <nav> and the <li> to the full height of the header row.
 @media (min-width: 600px) {
-
 	.bridge-header .bridge-nav--primary {
 		// Roomier than the pill: the inset is what separates one label from
 		// the next now that the gap is gone, and it is also what sets the
@@ -193,7 +202,8 @@
 				height: var(--bridge-nav-marker-size);
 				background-color: var(--bridge-nav-marker);
 				transform: scaleX(0);
-				transition: transform var(--bridge-nav-speed) var(--bridge-nav-ease);
+				transition: transform var(--bridge-nav-speed)
+					var(--bridge-nav-ease);
 			}
 
 			&:hover::before,
@@ -278,7 +288,8 @@
 				svg {
 					width: 0.6em;
 					height: 0.6em;
-					transition: transform var(--bridge-nav-speed) var(--bridge-nav-ease);
+					transition: transform var(--bridge-nav-speed)
+						var(--bridge-nav-ease);
 				}
 			}
 
@@ -355,7 +366,6 @@
 // A nav that shares its row with something else gets a pill: it has no height
 // of its own to fill, so a full-bleed surface would paint over its neighbours.
 .wp-block-navigation:not(.bridge-nav--primary) {
-
 	.wp-block-navigation-item__content {
 		padding: 0.5rem var(--bridge-nav-inset);
 		border-radius: 4px;
@@ -518,8 +528,9 @@
  * in already crossed, which does not animate at all.
  */
 .bridge-header
-	.bridge-nav--primary:has(.wp-block-navigation__responsive-container.is-menu-open) {
-
+	.bridge-nav--primary:has(
+		.wp-block-navigation__responsive-container.is-menu-open
+	) {
 	.wp-block-navigation__responsive-container-open {
 		// The close button laid over it takes the tap. Without this the press
 		// lands on whichever of the two the browser picks.
@@ -587,7 +598,6 @@
  * 44 pixels the hamburger occupies.
  */
 @media (max-width: 599px) {
-
 	.bridge-header .bridge-nav--primary {
 		position: static;
 	}
@@ -662,11 +672,10 @@
 		height: 100%;
 		min-height: 0;
 		margin: 0;
-		padding: var(--bridge-nav-panel-pad-block)
-			var(--bridge-nav-panel-inset);
+		padding: var(--bridge-nav-panel-pad-block) var(--bridge-nav-panel-inset);
 		background-color: var(
 			--bridge-nav-panel-bg,
-			var(--wp--preset--color--secondary)
+			var(--wp--preset--color--primary)
 		);
 		color: var(--bridge-nav-panel-fg, var(--wp--preset--color--background));
 		box-shadow: none;
@@ -705,13 +714,16 @@
 		width: 100%;
 	}
 
-	// Flattened submenus: no panel of their own, one indent, and the rail
-	// their rows carry starts where that indent ends.
+	// Flattened submenus: no panel of their own, and no box of their own
+	// either. Every side is zero — a child is told apart by its ground, not by
+	// where it starts, so an indent here would only stop its surface reaching
+	// the edge of the screen, and the half-rem that used to close the group
+	// would open a gap between the last child's fill and the divider under it.
 	.wp-block-navigation__submenu-container {
 		position: static;
 		min-width: 0;
 		margin: 0;
-		padding: 0 0 0.5rem var(--bridge-nav-panel-inset);
+		padding: 0;
 		border: 0;
 		border-radius: 0;
 		background: transparent;
@@ -741,8 +753,7 @@
 	width: auto;
 	margin-inline: calc(-1 * var(--bridge-nav-panel-inset));
 	padding: var(--bridge-nav-row-pad) var(--bridge-nav-panel-inset);
-	border-bottom: 1px solid
-		color-mix(in srgb, currentcolor 16%, transparent);
+	border-bottom: 1px solid color-mix(in srgb, currentcolor 16%, transparent);
 	border-radius: 0;
 	color: inherit;
 	font-size: var(--bridge-nav-row-size);
@@ -761,41 +772,103 @@
 		outline-offset: -3px;
 	}
 
-	// The marker is the dropdown's; in the panel a child is placed by its
-	// indent and the rule beside it.
+	// The marker is the dropdown's; in the panel a child is told apart by the
+	// ground it is standing on.
 	&::before {
 		display: none;
 	}
 }
 
-// A child row: quieter, one step in, and standing against a rail rather than a
-// divider — indentation alone reads as a smaller sibling, and a line down the
-// side says which parent the group belongs to without repeating its name. It
-// gives up its left bleed to do that and keeps the right one, so a press still
-// lights the row all the way to the edge of the screen.
+/**
+ * A child row: quieter, and a step up in tone rather than a step in from the
+ * edge.
+ *
+ * An indent says "child" by starting the label somewhere the parents do not,
+ * which costs the row its left bleed — the surface stops short of the screen
+ * and the group reads as a floating strip. A lighter ground says the same
+ * thing using the whole row, so the child keeps the parents' inset, the labels
+ * all start on one line, and the fill runs edge to edge underneath them.
+ *
+ * The tint is mixed from `currentcolor`, so it is 10% of the panel's own
+ * foreground laid over the panel's ground: white on the dark half of the
+ * palette, which is a tenth lighter, and dark on a light secondary, where a
+ * tenth lighter would be nothing at all. One rule, both halves.
+ *
+ * The divider is the parents' — a border on the row rather than the group, so
+ * every item in the list carries one and none of them is drawn by a neighbour.
+ */
 .bridge-header
 	.wp-block-navigation.bridge-nav--primary
 	.wp-block-navigation__responsive-container.is-menu-open
 	.wp-block-navigation__submenu-container
 	.wp-block-navigation-item__content {
-	margin-inline: 0 calc(-1 * var(--bridge-nav-panel-inset));
 	padding-block: calc(var(--bridge-nav-row-pad) * 0.75);
-	padding-inline: 0.875rem var(--bridge-nav-panel-inset);
-	border-bottom: 0;
-	border-left: 2px solid color-mix(in srgb, currentcolor 30%, transparent);
+	background-color: var(--bridge-nav-child-bg);
 	font-size: 1rem;
 	font-weight: 400;
+
+	// Above the child's own ground rather than above the panel's, or the
+	// press would land on the tint the row is already wearing.
+	&:hover,
+	&:active {
+		background-color: color-mix(in srgb, currentcolor 22%, transparent);
+	}
 }
 
-// The last row keeps the list's rhythm without drawing a line under a panel
-// that has nothing below it.
+/**
+ * The call to action, as the last row of the panel.
+ *
+ * render.php puts the header's button into core's list as a real menu item,
+ * because the panel is a dialog and a button rendered beside it cannot be moved
+ * inside — see bridge_header_nav_cta(). That leaves one `<li>` serving two
+ * widths, so this is where the two are separated: hidden in the menu bar, where
+ * the header's own button is already showing, and painted in the panel, where
+ * it is the only one there is.
+ *
+ * The panel is the brand's first colour and this row is its second, which is
+ * the whole reason the panel moved off `secondary`: an action painted in the
+ * same colour as the sheet it sits on is not painted at all. Both grounds carry
+ * the half of the palette they were measured against — worked out in PHP, since
+ * CSS cannot ask whether a colour is light.
+ */
+@media (min-width: 600px) {
+	.bridge-header .bridge-nav--primary .bridge-nav__cta {
+		display: none;
+	}
+}
+
 .bridge-header
 	.wp-block-navigation.bridge-nav--primary
 	.wp-block-navigation__responsive-container.is-menu-open
-	.wp-block-navigation__container
-	> .wp-block-navigation-item:last-child
-	> .wp-block-navigation-item__content {
-	border-bottom: 0;
+	.bridge-nav__cta
+	.wp-block-navigation-item__content {
+	background-color: var(
+		--bridge-nav-cta-bg,
+		var(--wp--preset--color--secondary)
+	);
+	color: var(--bridge-nav-cta-fg, var(--wp--preset--color--background));
+
+	// No type of its own — size and weight both come from the row rule above,
+	// so this row sets its type exactly where every other row in the panel
+	// sets it. It carried a heavier weight here for a while, which at a shared
+	// size is the kind of difference that reads as a size difference: the
+	// label looked bigger than the menu it was the last line of. The fill is
+	// what marks this row as the action, and one signal is enough.
+
+	// The wash the site's own buttons use, over the fill rather than over the
+	// panel: `currentcolor` here is the label the fill was measured against, so
+	// the press reads on a light secondary and a dark one alike.
+	&:hover,
+	&:active {
+		background-image: linear-gradient(
+			color-mix(in srgb, currentcolor 12%, transparent),
+			color-mix(in srgb, currentcolor 12%, transparent)
+		);
+		background-color: var(
+			--bridge-nav-cta-bg,
+			var(--wp--preset--color--secondary)
+		);
+	}
 }
 
 /**
@@ -862,7 +935,6 @@
  * own, which is where the sense of movement actually comes from.
  */
 @keyframes bridge-nav-panel-in {
-
 	from {
 		clip-path: inset(0 0 0 100%);
 	}
@@ -875,7 +947,6 @@
 // The rows follow the panel in rather than riding along with it: a short lift
 // and a fade, in the same direction the panel came from.
 @keyframes bridge-nav-row-in {
-
 	from {
 		transform: translateX(1.25rem);
 		opacity: 0;
@@ -892,7 +963,6 @@
 // in step with the rules above it. The markers and surfaces still appear —
 // they just stop growing into place.
 @media (prefers-reduced-motion: reduce) {
-
 	.wp-block-navigation {
 		--bridge-nav-speed: 0ms;
 	}
@@ -921,7 +991,6 @@
 
 	// The bars cross without the turn.
 	.bridge-header .wp-block-navigation__responsive-container-open {
-
 		&::before,
 		&::after {
 			transition: none;

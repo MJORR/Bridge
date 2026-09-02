@@ -40,6 +40,10 @@ define('BRIDGE_DIST_PATH', get_theme_file_path('dist'));
  */
 require_once get_theme_file_path('inc/color.php');
 require_once get_theme_file_path('inc/tokens.php');
+// Loaded beside the tokens because it is part of their vocabulary:
+// bridge_sanitize_tokens() asks this file which slugs are reserved and how
+// many types are allowed.
+require_once get_theme_file_path('inc/post-types.php');
 require_once get_theme_file_path('inc/fonts.php');
 require_once get_theme_file_path('inc/theme-json.php');
 require_once get_theme_file_path('inc/icons.php');
@@ -48,6 +52,12 @@ require_once get_theme_file_path('inc/section-blocks.php');
 require_once get_theme_file_path('inc/card-data.php');
 require_once get_theme_file_path('inc/hero-blocks.php');
 require_once get_theme_file_path('inc/header.php');
+require_once get_theme_file_path('inc/footer.php');
+// Seeds the content types and navigation menus a fresh site starts with.
+// After header.php and footer.php, because it points their menu slots at the
+// menus it just created and so needs bridge_header_menu_id() and
+// bridge_footer_menu_id().
+require_once get_theme_file_path('inc/activation.php');
 
 /**
  * Access control and the editor lockdown.
@@ -60,7 +70,12 @@ require_once get_theme_file_path('inc/lockdown.php');
 require_once get_theme_file_path('inc/svg.php');
 require_once get_theme_file_path('inc/site-options.php');
 require_once get_theme_file_path('inc/admin-page.php');
+require_once get_theme_file_path('inc/simple-editor.php');
 require_once get_theme_file_path('inc/rest.php');
+// The contact form's server half: the Enquiries post type, the submission
+// handler and the two emails. After site-options.php, because it asks that
+// file where notifications should go.
+require_once get_theme_file_path('inc/enquiries.php');
 
 require_once get_theme_file_path('inc/cli.php');
 
@@ -240,6 +255,33 @@ function bridge_register_blocks(): void
 	// so it is deferred.
 	bridge_register_script('bridge-carousel', 'carousel.js', array(), true);
 
+	/**
+	 * The decorative mask shape's editor controls, shared by every band that
+	 * offers them.
+	 *
+	 * One handle, named in the dependencies of each of those blocks' editor
+	 * scripts, so WordPress loads it once however many are on the page — the
+	 * same arrangement the carousel runtime above has, one layer down.
+	 *
+	 * A shared *script* rather than a shared module: every bundle here is a
+	 * self-contained IIFE loaded as a classic script, so a module two entries
+	 * import is hoisted into a chunk nothing enqueues.
+	 *
+	 * The data travels with it — the shape, the palette and the address of the
+	 * screen that sets them are the same answer whichever band is asking.
+	 */
+	bridge_register_script(
+		'bridge-band-mask',
+		'band-mask.js',
+		array('wp-element', 'wp-components', 'wp-i18n')
+	);
+
+	wp_add_inline_script(
+		'bridge-band-mask',
+		'window.bridgeBandMask = ' . wp_json_encode(bridge_band_mask_data()) . ';',
+		'before'
+	);
+
 	// --- Hero Slider -------------------------------------------------------
 	bridge_register_script('bridge-hero-slider-editor', 'hero-slider-editor.js', bridge_editor_script_deps());
 	bridge_register_script('bridge-hero-slider-view', 'slider.js', array(), true);
@@ -262,16 +304,167 @@ function bridge_register_blocks(): void
 	// No stylesheet of its own: its two rules live in main.css beside the
 	// section skins they belong with.
 	bridge_register_section_block('section', false);
-	bridge_register_section_block('map');
+	// A view script, and the only block here that ships one to build its own
+	// content: the map is the Maps JavaScript API rather than an iframe, so
+	// something has to construct it. See src/js/map-view.js.
+	bridge_register_section_block('map', true, true);
+
+	/**
+	 * The Maps key, for the block's editor.
+	 *
+	 * With one, the editor loads a real Google map: an editor searches for a
+	 * place, drags the pin onto the door rather than the postcode, and the
+	 * coordinates that come back are what the front end's embed is built from.
+	 * Without one it keeps the address field and the keyless preview, so the
+	 * block is usable on a site that has never opened the Cloud console.
+	 *
+	 * The key reaches the page either way — it is in the front end's iframe URL
+	 * too, which is what the Embed API expects. Restricting it to this domain
+	 * in the Cloud console is the control that matters, and Site Options says
+	 * so beside the field.
+	 */
+	wp_add_inline_script(
+		'bridge-map-editor',
+		'window.bridgeMap = ' . wp_json_encode(
+			array(
+				'key'        => bridge_map_key(),
+				// A style from the Cloud console, and what an advanced marker
+				// needs before it will draw. Empty is a working map.
+				'mapId'      => bridge_map_id(),
+				'optionsUrl' => admin_url('admin.php?page=' . BRIDGE_SITE_OPTIONS_SLUG),
+			)
+		) . ';',
+		'before'
+	);
 	bridge_register_section_block('call-to-action');
 	bridge_register_section_block('testimonials');
-	bridge_register_section_block('downloads');
+	// The downloads band offers the decorative mask shape, so its editor script
+	// names the shared handle that draws those controls.
+	bridge_register_section_block('downloads', true, false, array('bridge-band-mask'));
 	bridge_register_section_block('price-table');
 	bridge_register_section_block('feature-blocks');
 	bridge_register_section_block('gallery', true, true);
 	bridge_register_section_block('logo-slider');
 	bridge_register_section_block('alternating-content');
+	// No view script: the accordion is a <details> element, so the opening,
+	// the closing and the "one at a time" all ship with the browser.
+	//
+	// `wp-core-data` because the edit view lists the questions the block will
+	// pull in, which are posts of a declared content type rather than blocks
+	// nested inside it.
+	bridge_register_section_block('faqs', true, false, array('wp-core-data'));
+
+	/**
+	 * Where the block's questions come from.
+	 *
+	 * One content type, not a choice of them. The block is called FAQs, it
+	 * renders an accordion of questions and answers, and the theme declares an
+	 * FAQ type for it to read — so "which content type" was a control with one
+	 * right answer, which is a control that only exists to be got wrong. A
+	 * page pointed at Team by accident renders a grid of biographies inside a
+	 * disclosure widget and looks, in the editor, like it is working.
+	 *
+	 * Empty when the FAQ type has been switched off or removed in Theme
+	 * Options. Both are answers rather than errors, so the block says which one
+	 * happened rather than falling back to another type.
+	 *
+	 * Printed as data rather than fetched, for the same reason the cards
+	 * block's excerpt length is — it is three strings already in memory here,
+	 * against a REST round trip on every editor load. The taxonomy name is one
+	 * of them: it decides whether the block offers a category filter at all,
+	 * and the alternative is the editor fetching the whole taxonomy index to
+	 * find out.
+	 *
+	 * Two addresses travel with it, so a block that cannot show anything sends
+	 * an operator to the screen that fixes it rather than describing where to
+	 * look: Theme Options when the content type itself is off, and the
+	 * category screen when the type is on but nobody has written a category
+	 * yet.
+	 */
+	$faq_entry    = bridge_faq_post_type_entry();
+	$faq_taxonomy = $faq_entry && bridge_post_type_has_categories($faq_entry)
+		? bridge_post_type_taxonomy($faq_entry['slug'])
+		: '';
+
+	wp_add_inline_script(
+		'bridge-faqs-editor',
+		'window.bridgeFaqs = ' . wp_json_encode(
+			array(
+				'source'         => bridge_faq_post_type(),
+				'plural'         => $faq_entry ? $faq_entry['plural'] : '',
+				'taxonomy'       => $faq_taxonomy,
+				'optionsUrl'     => admin_url('admin.php?page=' . BRIDGE_OPTIONS_SLUG),
+				'categoriesUrl'  => '' !== $faq_taxonomy
+					? admin_url(
+						sprintf(
+							'edit-tags.php?taxonomy=%s&post_type=%s',
+							$faq_taxonomy,
+							$faq_entry['slug']
+						)
+					)
+					: '',
+			)
+		) . ';',
+		'before'
+	);
 	bridge_register_section_block('split-content');
+
+	// A view script, for the count-up: the figures render at their final
+	// values and goals-view.js counts them from zero once the row is on
+	// screen. Nothing about the block needs it to be readable.
+	bridge_register_section_block('goals', true, true);
+
+	// --- Contact form ------------------------------------------------------
+	// A view script, and the block works without it: the form is an ordinary
+	// POST that the server answers with a redirect. contact-form-view.js only
+	// keeps the visitor on the page. See inc/enquiries.php.
+	bridge_register_section_block('contact-form', true, true);
+
+	/**
+	 * The fields, for the editor's preview of the form.
+	 *
+	 * The preview has to draw the same four controls the front end does, and a
+	 * copy of the list written in JavaScript would be the copy nobody updates
+	 * — the front end, the validator and both emails all read
+	 * bridge_enquiry_fields(), so the preview reads it too.
+	 *
+	 * Printed as data rather than fetched, for the reason the FAQs and Cards
+	 * blocks give: it is a handful of strings already in memory here, against
+	 * a REST round trip on every editor load.
+	 *
+	 * The notification address travels with it so the inspector can say where
+	 * enquiries will go — and, when nothing is set, send an editor to the
+	 * screen that sets it rather than describing where to look.
+	 */
+	$notify         = bridge_site_option('notify_email');
+	$enquiry_fields = bridge_enquiry_fields();
+
+	wp_add_inline_script(
+		'bridge-contact-form-editor',
+		'window.bridgeContactForm = ' . wp_json_encode(
+			array(
+				'fields'      => array_values(
+					array_map(
+						static function (array $field, string $key): array {
+							return array(
+								'key'         => $key,
+								'label'       => $field['label'],
+								'type'        => $field['type'],
+								'required'    => ! empty($field['required']),
+								'placeholder' => $field['placeholder'],
+								'rows'        => (int) ($field['rows'] ?? 0),
+							);
+						},
+						$enquiry_fields,
+						array_keys($enquiry_fields)
+					)
+				),
+				'notifyEmail' => is_email($notify) ? $notify : '',
+				'optionsUrl'  => admin_url('admin.php?page=' . BRIDGE_SITE_OPTIONS_SLUG),
+			)
+		) . ';',
+		'before'
+	);
 
 	// Child blocks render inside their parent and are painted by the parent's
 	// stylesheet, so they register a script and a type only.
@@ -283,14 +476,42 @@ function bridge_register_blocks(): void
 			'feature-block',
 			'gallery-item',
 			'alternating-row',
+			'goal',
 		) as $child
 	) {
 		bridge_register_script('bridge-' . $child . '-editor', $child . '-editor.js', bridge_editor_script_deps());
 		bridge_register_block($child);
 	}
 
+	/**
+	 * The mask shape, for the row's inspector and its preview.
+	 *
+	 * One URL, set once in Theme Options and shared by every row that switches
+	 * a mask on — which is why it is not a per-row media picker. Empty when no
+	 * shape has been chosen, and the inspector says so rather than offering a
+	 * toggle that would do nothing.
+	 *
+	 * After the loop above, not before it: `wp_add_inline_script()` attaches to
+	 * a registered handle and fails silently against one that does not exist
+	 * yet, which is a global that is simply never printed.
+	 */
+	wp_add_inline_script(
+		'bridge-alternating-row-editor',
+		'window.bridgeAlternatingRow = ' . wp_json_encode(
+			array(
+				'maskUrl'    => bridge_mask_shape_url(),
+				'optionsUrl' => admin_url('admin.php?page=' . BRIDGE_OPTIONS_SLUG),
+			)
+		) . ';',
+		'before'
+	);
+
 	// --- Cards -------------------------------------------------------------
-	bridge_register_script('bridge-cards-editor', 'cards-editor.js', $previewed);
+	bridge_register_script(
+		'bridge-cards-editor',
+		'cards-editor.js',
+		array_merge($previewed, array('bridge-band-mask'))
+	);
 
 	/**
 	 * The site's excerpt length, for the block's own inspector.
@@ -310,6 +531,7 @@ function bridge_register_blocks(): void
 		) . ';',
 		'before'
 	);
+
 
 	bridge_register_block('cards');
 
@@ -550,5 +772,27 @@ function bridge_enqueue_editor_assets(): void
 			'wp-blocks',
 		)
 	);
+
+	// Keeps full-width bands out of columns, where their full-bleed arithmetic
+	// resolves against the wrong box and hangs the band off the side of the
+	// window. See src/editor/top-level-only.js.
+	bridge_enqueue_script(
+		'bridge-top-level-only',
+		'top-level-only.js',
+		array(
+			'wp-hooks',
+		)
+	);
+
+	/*
+	 * The Inspector sidebar's own styles.
+	 *
+	 * An ordinary admin stylesheet, not add_editor_style(): that one prefixes
+	 * every selector with `.editor-styles-wrapper` and injects the result into
+	 * the canvas iframe, which the sidebar is not in. See src/scss/inspector.scss.
+	 */
+	if (bridge_register_style('bridge-inspector', 'inspector.css')) {
+		wp_enqueue_style('bridge-inspector');
+	}
 }
 add_action('enqueue_block_editor_assets', 'bridge_enqueue_editor_assets');

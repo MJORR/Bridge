@@ -1,0 +1,516 @@
+/**
+ * Bridge — the contact form.
+ *
+ * ---- Where the colours come from ------------------------------------------
+ *
+ * `currentcolor`, mixed. A control's border is the band's own foreground at
+ * 60%, its ground at 4%, its focus ring the button scheme's. That is what lets
+ * one form sit on white, on the Surface skin, on Accent and on an Inverted
+ * band without a rule of its own for each — and it is why the Styles tab
+ * genuinely restyles it rather than colouring the box around it.
+ *
+ * There is one literal, `$invalid`, and it is deliberately confined to
+ * decoration: the wash behind a rejected field and the ground of the notice
+ * above the form. It used to draw the error text and the invalid border too,
+ * and that was wrong — measured with bridge_contrast_ratio() against the four
+ * grounds a band can be, `#d92d20` came out at 4.83:1 on Surface but 3.08:1 on
+ * Accent and 1.96:1 on Inverted, against the 4.5:1 that text owes. Mixing it
+ * towards the band's ink to rescue it does not work either: even a half-and-
+ * half blend only reaches 3.90:1 on Inverted, because a mid-red lightened
+ * against a mid-purple stays mid.
+ *
+ * So nothing that carries meaning is red. The band's ink is the one colour
+ * that is guaranteed to be legible on the band — it was chosen against it —
+ * and every part of the error state is drawn in it: the 2px border, the
+ * message, the ringed "!". The red is left where it only has to be noticed,
+ * not read.
+ *
+ * ---- What the panel is ----------------------------------------------------
+ *
+ * The card abstract, so a form lifted off its band is lifted the same amount,
+ * with the same corner and the same shadow, as every other card on the site —
+ * all three of them operator settings from Theme Options. The block can turn
+ * it off, for a form that should read as part of the page rather than as a
+ * thing sitting on it.
+ *
+ * ---- The accessibility that is geometry -----------------------------------
+ *
+ * The parts of WCAG 2.2 a stylesheet owns, as in abstracts/_button.scss. The
+ * ratios below were measured with the theme's own bridge_contrast_ratio()
+ * against the four grounds, at the palette this build ships; they are the
+ * reason the mix percentages are the numbers they are rather than whatever
+ * looked about right.
+ *
+ *   1.4.11 Non-text contrast — a control's resting border is `currentcolor` at
+ *          60%, which measures 3.36:1 on the worst of the four grounds
+ *          (Accent) against the 3:1 a control boundary owes. At the 22% it was
+ *          first written with it measured 1.48:1 — a border that looked
+ *          tasteful and told a partially sighted visitor nothing about where
+ *          the field began.
+ *   1.4.3 Contrast (minimum) — the placeholder and the legend under the button
+ *          are text, so they take `currentcolor` at 75%: 4.87:1 on the worst
+ *          ground. 65% measured 3.81:1 there and would have failed.
+ *   2.4.11 / 2.4.13 Focus — a 3px ring offset clear of the control's own
+ *          border, so it is measured against the band rather than merging with
+ *          the input.
+ *   1.4.1 Use of colour — an invalid field is never only colour: the border
+ *          doubles in weight, the ground is washed, and a line of text says
+ *          what is wrong. That last is the part somebody who cannot separate
+ *          red from grey actually reads.
+ *   1.4.10 Reflow — one column until there is room for two, and the room is
+ *          the *container's*, not the window's, so a form in a narrow band
+ *          does not get the wide answer.
+ *   2.3.3 Animation from interactions — the tick that draws itself in and the
+ *          spinner that replaces the button's label are both dropped under
+ *          `prefers-reduced-motion`, and neither is the only way its state is
+ *          told: the panel says "thank you" in words, and the button is
+ *          disabled and dimmed while it is busy.
+ */
+@use "../abstracts/card" as card;
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+// The band's own foreground, thinned. Every edge and ground in this file is
+// one of these — see the file header for why, and for where each number came
+// from. They are measurements, not preferences: moving one is a contrast
+// decision.
+$edge: color-mix(in srgb, currentcolor 60%, transparent);
+$edge-strong: color-mix(in srgb, currentcolor 85%, transparent);
+$ground: color-mix(in srgb, currentcolor 4%, transparent);
+$muted: color-mix(in srgb, currentcolor 75%, transparent);
+
+// The one literal, and decoration only. See the file header.
+$invalid: #d92d20;
+
+/**
+ * A control's corner is the *button's*, not the card's.
+ *
+ * They are different settings in Theme Options, and the inputs stand in a row
+ * with the submit button — so a site with rounded buttons and square cards
+ * would otherwise get rounded buttons beside square fields in the same form.
+ * The notice below keeps the card radius, because it is a box on the panel
+ * rather than a control in the row.
+ */
+$control-radius: var(--wp--custom--button--radius, 6px);
+
+.bridge-contact {
+	&__inner {
+		@include section.container(narrow);
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	&--wide &__inner {
+		@include section.container(wide);
+	}
+
+	/**
+	 * The card the form sits on.
+	 *
+	 * `card.surface` reads `--bridge-card-bg`, which the section skins set —
+	 * so the panel is painted correctly on a Surface band and an Inverted one
+	 * without this file knowing which band it landed on.
+	 */
+	&--panel &__panel {
+		@include card.surface;
+
+		padding: clamp(1.5rem, 1rem + 2.5vw, 2.75rem);
+	}
+
+	/**
+	 * The containment context the grid below is measured against.
+	 *
+	 * On the panel whether or not it is drawn as a card, because the question
+	 * the grid asks — is there room for two columns — is about the space the
+	 * form has, which exists either way.
+	 */
+	&__panel {
+		container-type: inline-size;
+	}
+
+	&__grid {
+		display: grid;
+		gap: var(--wp--preset--spacing--30);
+
+		/**
+		 * Two columns, decided by the panel rather than by the window.
+		 *
+		 * A container query, not a media query: this form is dropped into a
+		 * narrow band, a wide one and a half-width column, and the window's
+		 * width says nothing useful about any of them.
+		 *
+		 * Name and email pair up; phone and the message take the full row,
+		 * because a phone number beside an empty half of a row reads as a
+		 * field somebody forgot to add.
+		 */
+		@container (width >= 34rem) {
+			grid-template-columns: 1fr 1fr;
+
+			> .bridge-field--phone,
+			> .bridge-field--message {
+				grid-column: 1 / -1;
+			}
+		}
+	}
+
+	&__actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);
+		margin-block-start: var(--wp--preset--spacing--40);
+	}
+
+	&__legend {
+		flex: 1 1 12rem;
+		margin: 0;
+		color: $muted;
+		font-size: var(--wp--preset--font-size--small);
+		line-height: 1.4;
+	}
+
+	/**
+	 * The submit button.
+	 *
+	 * `wp-element-button` is on it in the markup, so the whole of
+	 * components/_button.scss already applies — the skin, the scheme, the
+	 * hover, the focus ring and the 44px target. Nothing about the button is
+	 * decided here; what is left is the one state a form has and a link does
+	 * not.
+	 */
+	&__submit {
+		position: relative;
+
+		// The margin components/_button.scss gives every button is rhythm
+		// between a button and the paragraph above it. Here the row already
+		// carries the space, and the margin only knocked the button out of
+		// line with the legend beside it.
+		margin-block: 0;
+
+		&[disabled] {
+			cursor: progress;
+			opacity: 0.7;
+		}
+	}
+
+	/**
+	 * While the message is in flight.
+	 *
+	 * The label steps aside for a spinner, so the button is visibly busy
+	 * rather than merely dimmed — and only for the visitors who have not asked
+	 * for less movement. Under `reduce` the whole swap is skipped rather than
+	 * the animation alone: a spinner that does not spin, standing where the
+	 * label used to be, is a button that has gone blank. Those visitors keep
+	 * the label and the disabled state, which is what says "busy" anyway.
+	 */
+	@media (prefers-reduced-motion: no-preference) {
+		.is-sending &__submit-label {
+			visibility: hidden;
+		}
+
+		.is-sending &__spinner {
+			display: block;
+			position: absolute;
+			width: 1.1em;
+			height: 1.1em;
+			border: 2px solid color-mix(in srgb, currentcolor 30%, transparent);
+			border-block-start-color: currentcolor;
+			border-radius: 50%;
+			animation: bridge-contact-spin 700ms linear infinite;
+		}
+	}
+
+	/**
+	 * What the visitor is told when the whole form was refused — an expired
+	 * token, a rate limit, or a field that needs another look.
+	 *
+	 * The band's ink on a ground washed with the error red, so it separates
+	 * from the panel it sits on whatever that panel is painted. Only the wash
+	 * is red: the words are `currentcolor`, which is what makes them readable
+	 * on all four grounds.
+	 */
+	&__notice {
+		margin-block-end: var(--wp--preset--spacing--30);
+		padding: 0.85rem 1.1rem;
+		border: 1px solid color-mix(in srgb, #{$invalid} 45%, transparent);
+		border-radius: var(--wp--custom--card--radius, 6px);
+		background-color: color-mix(in srgb, #{$invalid} 8%, transparent);
+		font-size: var(--wp--preset--font-size--small);
+		line-height: 1.5;
+	}
+
+	/**
+	 * The thank-you.
+	 *
+	 * Given a minimum height close to the form it replaced, so the page does
+	 * not jump upward under the reader at the moment their message goes — the
+	 * one moment they are looking for confirmation that something happened.
+	 *
+	 * It is focused when it appears, which is why it takes a ring of its own:
+	 * the browser's default outline on a `tabindex="-1"` container is drawn
+	 * tight against text that is already centred in a good deal of space.
+	 */
+	&__success {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--wp--preset--spacing--30);
+		min-height: 14rem;
+		padding: var(--wp--preset--spacing--40);
+		text-align: center;
+
+		&:focus {
+			outline: none;
+		}
+
+		&:focus-visible {
+			outline: 3px solid currentcolor;
+			outline-offset: 4px;
+		}
+	}
+
+	&__tick {
+		display: grid;
+		place-items: center;
+		width: 3.25rem;
+		height: 3.25rem;
+		border-radius: 50%;
+		background-color: color-mix(in srgb, currentcolor 10%, transparent);
+
+		// Drawn in rather than simply appearing, and only for the visitors who
+		// have not asked for less movement. The words beside it say the same
+		// thing either way.
+		@media (prefers-reduced-motion: no-preference) {
+			animation: bridge-contact-pop 420ms cubic-bezier(0.2, 0.9, 0.3, 1.4)
+				both;
+		}
+	}
+
+	&__success-text {
+		max-width: 34ch;
+		margin: 0;
+		font-size: var(--wp--preset--font-size--medium);
+		line-height: 1.5;
+		text-wrap: balance;
+	}
+}
+
+/**
+ * One field.
+ *
+ * A <p> in the markup, because a label and its control are one thing and the
+ * browser's default stylesheet already keeps a paragraph out of its
+ * neighbours' way if this file never loads.
+ */
+.bridge-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+	margin: 0;
+
+	&__label {
+		display: flex;
+		align-items: baseline;
+		gap: 0.25em;
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 600;
+		letter-spacing: 0.01em;
+	}
+
+	// The asterisk takes the band's ink like the label it sits in — it is
+	// `aria-hidden` decoration beside a control that already carries
+	// `required`, which is the part assistive technology reads, and a colour
+	// of its own would only be a second thing to prove readable on four
+	// grounds.
+	&__required {
+		font-size: 1.1em;
+		line-height: 1;
+	}
+
+	/**
+	 * The control.
+	 *
+	 * `1rem` on the font size and nothing smaller, for a reason that is not
+	 * taste: iOS Safari zooms the page when a control smaller than 16px takes
+	 * focus, and a form that zooms itself on the first tap is a form the
+	 * visitor then has to pinch their way back out of.
+	 */
+	&__control {
+		box-sizing: border-box;
+		width: 100%;
+		min-height: 3rem;
+		padding: 0.8rem 1rem;
+		border: 1px solid $edge;
+		border-radius: $control-radius;
+		background-color: $ground;
+		color: inherit;
+		font-family: inherit;
+		font-size: max(1rem, var(--wp--preset--font-size--small));
+		line-height: 1.5;
+		transition:
+			border-color 160ms ease,
+			background-color 160ms ease;
+
+		&::placeholder {
+			color: $muted;
+			opacity: 1;
+		}
+
+		// Three steps, each one nearer the band's own ink: 60% at rest, 85%
+		// under the pointer, the ink itself when the caret is in it.
+		&:hover {
+			border-color: $edge-strong;
+		}
+
+		&:focus {
+			border-color: currentcolor;
+			background-color: transparent;
+			outline: 3px solid
+				var(
+					--bridge-button-ring,
+					var(--wp--custom--button--on-default--ring)
+				);
+			outline-offset: 2px;
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			transition: none;
+		}
+	}
+
+	/**
+	 * Wrong, as the browser sees it and as the server sees it.
+	 *
+	 * `:user-invalid` rather than `:invalid`, deliberately: `:invalid` matches
+	 * an empty required field from the moment the page loads, so a form drawn
+	 * with that rule greets every visitor by marking all four fields before
+	 * they have typed anything. `:user-invalid` waits until they have tried.
+	 *
+	 * The border doubles in weight and takes the band's ink — a change that is
+	 * visible without being a colour, which is the half of this that has to
+	 * work for a visitor who cannot separate red from grey. The wash behind it
+	 * is the red, and it is the half that only has to be noticed.
+	 */
+	&__control:user-invalid,
+	&.is-invalid &__control {
+		border-color: currentcolor;
+		border-width: 2px;
+		background-color: color-mix(in srgb, #{$invalid} 6%, transparent);
+	}
+
+	// Never colour alone: this is what somebody who cannot see the wash reads
+	// instead. No colour is set on it at all — the band's ink is the one
+	// colour guaranteed to be legible on the band, and the weight and the
+	// badge are what separate it from the label above.
+	&__error {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.4em;
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 600;
+		line-height: 1.4;
+
+		&::before {
+			content: "!";
+			display: grid;
+			place-items: center;
+			flex: 0 0 auto;
+			width: 1.15em;
+			height: 1.15em;
+			border: 1px solid currentcolor;
+			border-radius: 50%;
+			font-size: 0.85em;
+			font-weight: 700;
+			line-height: 1;
+		}
+	}
+
+	/**
+	 * The honeypot.
+	 *
+	 * Not `display: none` and not `type="hidden"`, because a script that reads
+	 * the markup skips both and the field is then worth nothing. It has to
+	 * look like an ordinary field to something parsing HTML and be absent for
+	 * everybody else — so it is hidden the way base/_a11y.scss hides
+	 * `.screen-reader-text`, which keeps it in the layout as far as the DOM is
+	 * concerned. It is *not* that class, and must not become it: that one
+	 * hides things from eyes and shows them to screen readers, and this has to
+	 * be hidden from both. `aria-hidden` and `tabindex="-1"` in the markup do
+	 * the other half.
+	 *
+	 * The clip, rather than the older `left: -9999px`: an element pushed
+	 * off the left edge is off-screen in a left-to-right document and
+	 * overflowing in a right-to-left one, where it would put a scrollbar under
+	 * a field nobody can see.
+	 *
+	 * `!important` on the two declarations that do the hiding, because this
+	 * field failing open — visible, in the middle of the form — is a broken
+	 * form, and it is the one rule here that a stray override must not win
+	 * against.
+	 */
+	&--trap {
+		position: absolute !important;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		border: 0;
+		overflow: hidden;
+		clip-path: inset(50%) !important;
+	}
+}
+
+/**
+ * The editor's preview.
+ *
+ * The fields are disabled there — nothing on the canvas should look like it
+ * can be typed into — and a browser's default disabled styling is a grey box
+ * that says the form is broken. So the preview is drawn at the resting state
+ * of a real control, with only the placeholder's own muting to say it is a
+ * picture of one. `-webkit-text-fill-color` is not a duplicate of `color`:
+ * Safari ignores `color` on a disabled control and honours only this.
+ */
+.bridge-contact__form .bridge-field__control[disabled] {
+	background-color: $ground;
+	color: $muted;
+	cursor: default;
+	opacity: 1;
+	-webkit-text-fill-color: currentcolor;
+}
+
+/**
+ * A textarea's default resize handle lets it be dragged in both directions,
+ * and sideways is the one that breaks the grid it is sitting in.
+ *
+ * At the top level rather than nested in `.bridge-field`, because
+ * `textarea#{&}__control` inside that block compiles to
+ * `.bridge-field textarea.bridge-field__control` — the class named twice, once
+ * as an ancestor it can never have.
+ */
+textarea.bridge-field__control {
+	min-height: 8rem;
+	resize: vertical;
+}
+
+@keyframes bridge-contact-spin {
+	to {
+		transform: rotate(1turn);
+	}
+}
+
+@keyframes bridge-contact-pop {
+	from {
+		opacity: 0;
+		transform: scale(0.6);
+	}
+
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}

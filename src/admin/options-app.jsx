@@ -377,7 +377,7 @@ function OptionsApp() {
 							>
 								{saving
 									? __('Saving…', 'bridge')
-									: __('Save design system', 'bridge')}
+									: __('Save Theme Options', 'bridge')}
 							</Button>
 							<Button
 								variant="tertiary"

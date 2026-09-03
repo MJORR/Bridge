@@ -2,14 +2,14 @@
 
 **One global design system, set once, applied everywhere.**
 
-## Brand colours, fonts, cards and buttons are set globally using Theme Options.
+Brand colours, fonts, cards and buttons are set globally using Theme Options.
 
 # Getting started
 
 Nothing here needs a developer, and nothing needs compiling — the theme runs
 exactly as it comes.
 
-**You'll need:** WordPress 6.6 or later, PHP 8.1 or later.
+You will need: WordPress 6.6 or later, PHP 8.1 or later.
 
 ### 1. Install it
 
@@ -40,8 +40,7 @@ define( 'BRIDGE_OPERATORS', 'you@example.com,someone@agency.com' );
 ```
 
 You'll need to be an administrator _and_ on that list. If the list is left
-empty the lock opens for all administrators rather than locking everyone out —
-a wrong list can't strand you.
+empty the lock opens for all administrators rather than locking everyone out.
 
 ### 4. Set the design up
 

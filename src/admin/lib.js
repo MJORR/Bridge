@@ -80,7 +80,9 @@ export function skinVars(skin) {
 		'--wp--custom--button--border-width': skin?.borderWidth,
 		'--wp--custom--button--shadow': skin?.shadow,
 		'--wp--custom--button--shadow-hover': skin?.shadowHover,
-		'--wp--custom--button--lift': skin?.lift,
+		'--wp--custom--button--wipe': skin?.wipe,
+		'--wp--custom--button--wipe-width': skin?.wipeWidth,
+		'--wp--custom--button--wipe-height': skin?.wipeHeight,
 		'--wp--custom--button--sweep': skin?.sweep,
 		// Not a skin value — the tap-target floor is the same on all three.
 		'--wp--custom--button--min-size': skin?.minSize || '44px',

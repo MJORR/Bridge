@@ -132,7 +132,14 @@
 		// Roomier than the pill: the inset is what separates one label from
 		// the next now that the gap is gone, and it is also what sets the
 		// width of each hover column.
-		--bridge-nav-inset: 1.125rem;
+		//
+		// Read from the header rather than stated, because the search icon
+		// and the call to action beside this menu are spaced by the same
+		// number and there should be one of it. See `--bridge-header-rhythm`
+		// in blocks/_header.scss. The literal stays as the fallback, for a nav
+		// rendered outside a Bridge header — the editor's block preview, or a
+		// template part somebody has lifted out.
+		--bridge-nav-inset: var(--bridge-header-rhythm, 1.125rem);
 
 		// The header's own vertical padding, restated under a short name: the
 		// surface and the marker are both placed relative to it, and both of

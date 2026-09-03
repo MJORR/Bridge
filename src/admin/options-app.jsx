@@ -331,7 +331,10 @@ function OptionsApp() {
 		<TabPanel
 			className="bridge-options__tabs"
 			tabs={[
-				{ name: 'design', title: __('Design', 'bridge') },
+				// The label is the two things the tab actually holds; `design`
+				// stays the name, which is what the tab logic and the preview
+				// column switch on below.
+				{ name: 'design', title: __('Colours & Fonts', 'bridge') },
 				{ name: 'buttons', title: __('Buttons', 'bridge') },
 				{ name: 'cards', title: __('Cards', 'bridge') },
 				{ name: 'posts', title: __('Posts', 'bridge') },

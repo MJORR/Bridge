@@ -43,6 +43,18 @@
 		--bridge-header-height,
 		calc(var(--bridge-header-icon) + 2 * var(--bridge-header-pad))
 	);
+
+	/**
+	 * The distance between any two things in the menu row.
+	 *
+	 * Declared on the header rather than on the nav, because three different
+	 * elements have to read it — the menu items, the search toggle and the
+	 * call to action — and only the first of those is inside the nav. Custom
+	 * properties inherit down, so this is the nearest ancestor all three
+	 * share. See the rule near the end of this file that spends it, and
+	 * `--bridge-nav-inset` in components/_primary-nav.scss, which is this.
+	 */
+	--bridge-header-rhythm: 1.125rem;
 }
 
 // The header spans the viewport; its contents line up with the page.
@@ -790,6 +802,56 @@ html:has(.bridge-header--sticky) {
 	// rather than a second, larger voice beside it. The skin decides the
 	// button's weight and its case; the header decides how big the row is.
 	font-size: inherit;
+}
+
+/**
+ * One gap, spent three times.
+ *
+ * The menu row carries three kinds of join — label to label, last label to the
+ * search icon, and the icon to the call to action — and until this block they
+ * were three different distances, because each was the sum of a different set
+ * of parts. A menu item's separation is its own `padding-inline`, which the
+ * items must keep: it is also the width of the hover column, and a gap between
+ * them would cut a stripe of bare header between two surfaces. The icon and
+ * the button, meanwhile, were separated by the flex gap on `__end`, on top of
+ * whichever insets happened to be beside them. So the row measured 36px
+ * between two labels, 46px from the last label to the icon, and 28px from the
+ * icon to the button.
+ *
+ * The fix is to stop mixing the two mechanisms. The gap goes to zero and every
+ * join is spent as an inset instead — the nav item's, the toggle's, and one
+ * the call to action carries on its leading edge — all of them the same
+ * number, `--bridge-header-rhythm`, which is also what the menu items read for
+ * their own padding. Three joins, one value, and moving it moves all three.
+ *
+ * The icon's own box is wider than its mark by about two pixels a side, and a
+ * letter sits a pixel or so inside its glyph box, so the optical gaps land
+ * within a pixel of each other rather than exactly on it. That is as close as
+ * text and an icon can be brought without hand-tuning one against the other.
+ *
+ * Above 600px only. Below it the call to action is gone and the row is two
+ * icons, which want the gap they have.
+ */
+@media (min-width: 600px) {
+	// `column-gap`, not `gap`: the row still wraps when it runs out of width,
+	// and a wrapped row with no gap at all puts the call to action hard
+	// against the underside of the menu. The joins along the row are insets
+	// now; the join between two rows is still a gap, and it is untouched.
+	.bridge-header__end {
+		column-gap: 0;
+	}
+
+	// A wider box than the 44px floor, not a taller one: the padding is the
+	// gap, and the tap target was already comfortably past the minimum.
+	.bridge-header__search-toggle {
+		padding-inline: var(--bridge-header-rhythm);
+	}
+
+	// The button's own edge is the visible one, so the inset is a margin on
+	// the wrapper rather than padding that would only make the fill wider.
+	.bridge-header__cta {
+		margin-inline-start: var(--bridge-header-rhythm);
+	}
 }
 
 // The stacked layouts collapse earlier than the single-row one: two rows of

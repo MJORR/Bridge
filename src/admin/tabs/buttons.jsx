@@ -100,14 +100,14 @@ export function ButtonsTab({
 					<li>
 						<strong>{__('Hover', 'bridge')}</strong>
 						{__(
-							'CSS only, no JavaScript, and never colour alone — §1.4.1. Solid and Pill move and change elevation; Edge draws a rule under the label. All three also change fill, and all three answer a keyboard the same way.',
+							'CSS only, no JavaScript, and never colour alone — §1.4.1. Solid’s fill climbs from the bottom edge and Pill’s sweeps across from the leading one; Edge draws a rule under the label. All three also change fill, and all three answer a keyboard the same way.',
 							'bridge'
 						)}
 					</li>
 					<li>
 						<strong>{__('Motion', 'bridge')}</strong>
 						{__(
-							'The lift and the sweep are transitions, and both stop under prefers-reduced-motion. Nothing is conveyed by the movement itself.',
+							'The button itself never moves — not under the pointer, not on the press. What moves is inside it: the fill arriving from an edge on Solid and Pill, and Edge’s rule drawing itself. All of it stops under prefers-reduced-motion, where the same colours arrive at once instead. Nothing is conveyed by the movement itself.',
 							'bridge'
 						)}
 					</li>

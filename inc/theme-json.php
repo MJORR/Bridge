@@ -362,7 +362,15 @@ function bridge_compile_button_custom(array $tokens): array
 		'borderWidth'   => (string) $skin['borderWidth'],
 		'shadow'        => (string) $skin['shadow'],
 		'shadowHover'   => (string) $skin['shadowHover'],
-		'lift'          => (string) $skin['lift'],
+		/*
+		 * The three the moving hover fill spends. Defaulted rather than read
+		 * straight, unlike everything above: skins are filterable, and one
+		 * written before this fill existed should draw a button with the old
+		 * hover rather than a button with no width to its hover layer.
+		 */
+		'wipe'          => (string) ( $skin['wipe'] ?? '0' ),
+		'wipeWidth'     => (string) ( $skin['wipeWidth'] ?? '100%' ),
+		'wipeHeight'    => (string) ( $skin['wipeHeight'] ?? '0' ),
 		'sweep'         => (string) $skin['sweep'],
 		'minSize'       => '44px',
 	);

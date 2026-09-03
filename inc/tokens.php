@@ -695,12 +695,29 @@ function bridge_card_shadow_choices(): array
  *                  given one without the button changing dimensions.
  *   shadow         Resting elevation.
  *   shadowHover    Elevation under the pointer.
- *   lift           Vertical nudge under the pointer. Suppressed under
- *                  `prefers-reduced-motion`.
  *   sweep          Height of the rule that draws itself under the label on
- *                  hover. 0 on the skins that answer with fill and lift
+ *                  hover. 0 on the skins that answer with fill and elevation
  *                  instead, which costs them nothing: a 0-height bar paints
  *                  nothing.
+ *   wipe           1 where the hover fill moves into the button from an edge,
+ *                  0 where it simply changes colour. Read as the moving
+ *                  layer's opacity and, through a `color-mix()`, as the switch
+ *                  that holds the box at its resting colour while the layer
+ *                  covers it — see the `fill` mixin. Suppressed under
+ *                  `prefers-reduced-motion`, where the same colour arrives
+ *                  without the movement.
+ *   wipeWidth      The moving layer's resting width and height, which is what
+ *   wipeHeight     decides the direction it grows in: `100%`/`0` climbs from
+ *                  the bottom edge, `0`/`100%` sweeps in from the leading one.
+ *                  Both go to 100% under the pointer. Ignored where `wipe` is
+ *                  0, since nothing is drawn to move.
+ *
+ * There was a `lift` here too — a vertical nudge under the pointer, and a 1px
+ * sink on the press. Both are gone: a button that moves under the cursor moves
+ * out from under the cursor, and on the options screen, where the same button
+ * is a control being clicked repeatedly, it read as the page flinching. Hover
+ * is fill and elevation now, and the Edge skin's sweep, which moves a rule
+ * rather than the target.
  *   fill           How far the fill shades on hover, 0–1 of the distance to
  *                  black or white. Not CSS — the shading happens server-side
  *                  so the hover colour is a known hex whose contrast can be
@@ -718,7 +735,7 @@ function bridge_button_skins(): array
 		array(
 			'solid'   => array(
 				'name'          => __('Solid', 'bridge'),
-				'description'   => __('A softly rounded filled button that lifts and deepens under the pointer. The safe, contemporary default — at home on a corporate site and on a shop.', 'bridge'),
+				'description'   => __('A softly rounded filled button. Under the pointer the deeper fill climbs it from the bottom edge and a shadow comes up with it. The safe, contemporary default — at home on a corporate site and on a shop.', 'bridge'),
 				'radius'        => '6px',
 				'paddingBlock'  => '0.85rem',
 				'paddingInline' => '1.65rem',
@@ -728,8 +745,14 @@ function bridge_button_skins(): array
 				'borderWidth'   => '2px',
 				'shadow'        => 'none',
 				'shadowHover'   => '0 6px 16px rgba(0, 0, 0, 0.16)',
-				'lift'          => '-2px',
 				'sweep'         => '0px',
+				// The filled, softly rounded button — a shape with room for
+				// the movement to be read — and the default, so this is the
+				// hover most of these sites will actually have.
+				'wipe'          => '1',
+				// Up from the floor.
+				'wipeWidth'     => '100%',
+				'wipeHeight'    => '0',
 				'fill'          => 0.12,
 			),
 			'edge'    => array(
@@ -744,16 +767,20 @@ function bridge_button_skins(): array
 				'letterSpacing' => '0.08em',
 				'borderWidth'   => '2px',
 				'shadow'        => 'none',
-				// Flat by design. A square button that lifts reads as a tile
-				// that came loose.
+				// Flat by design, and now flat in every skin: a square button
+				// that rose read as a tile that came loose.
 				'shadowHover'   => 'none',
-				'lift'          => '0',
 				'sweep'         => '2px',
+				// The rule under the label is this skin's answer to a pointer.
+				// A moving fill as well would be two of them.
+				'wipe'          => '0',
+				'wipeWidth'     => '100%',
+				'wipeHeight'    => '0',
 				'fill'          => 0.18,
 			),
 			'pill'    => array(
 				'name'          => __('Pill', 'bridge'),
-				'description'   => __('Fully rounded with generous side padding and a resting shadow, rising under the pointer. Friendly and app-like — the skin for consumer and service brands.', 'bridge'),
+				'description'   => __('Fully rounded with generous side padding and a resting shadow. Under the pointer the deeper fill sweeps across it from the leading edge and the shadow deepens with it. Friendly and app-like — the skin for consumer and service brands.', 'bridge'),
 				// Far past half the height of any button this theme draws, so
 				// the ends stay true semicircles at every font size.
 				'radius'        => '999px',
@@ -765,8 +792,14 @@ function bridge_button_skins(): array
 				'shadow'        => '0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08)',
 				'borderWidth'   => '2px',
 				'shadowHover'   => '0 4px 10px rgba(0, 0, 0, 0.16), 0 12px 24px rgba(0, 0, 0, 0.12)',
-				'lift'          => '-3px',
 				'sweep'         => '0px',
+				'wipe'          => '1',
+				// Across from the leading edge rather than up from the floor.
+				// A fill climbing inside a 999px radius reads as a vessel
+				// filling; travelling the long way along a shape that is
+				// mostly length reads as the button answering.
+				'wipeWidth'     => '0',
+				'wipeHeight'    => '100%',
 				'fill'          => 0.12,
 			),
 		)

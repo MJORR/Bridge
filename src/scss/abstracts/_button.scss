@@ -33,13 +33,15 @@
  *   2.4.11 Focus not obscured, 2.4.13 Focus appearance — a 3px ring offset 3px
  *         clear of the button's own border, in the band's foreground, so it is
  *         measured against the band and cannot merge with the button.
- *   1.4.1 Use of colour — hover is never colour alone. Two skins move the
- *         button and change its elevation; the third draws a rule under the
- *         label. Every hover state is repeated on `:focus-visible`, so a
- *         keyboard reaches everything a pointer does.
- *   2.5.7 / motion — the lift and the sweep are transitions on `transform`,
- *         both dropped under `prefers-reduced-motion`. Nothing is conveyed by
- *         the movement itself; the colour change carries the state.
+ *   1.4.1 Use of colour — hover is never colour alone. Two skins change the
+ *         button's elevation; the third draws a rule under the label. Every
+ *         hover state is repeated on `:focus-visible`, so a keyboard reaches
+ *         everything a pointer does.
+ *   2.5.7 / motion — the button itself does not move. It used to rise under
+ *         the pointer and sink on the press; both are gone, and the only
+ *         movement left is the Edge skin's sweep — a transition on the rule's
+ *         own `transform`, dropped under `prefers-reduced-motion`. Nothing is
+ *         conveyed by movement; colour and elevation carry the state.
  *
  * The one thing not settled here is contrast, because it cannot be: the
  * numbers depend on the palette, and they are computed against it in PHP.
@@ -79,8 +81,33 @@
  * given a colour of its own — the skin is the site's, the colour may not be.
  */
 @mixin shape {
-	// The sweep bar is absolutely positioned against this.
+	// The sweep bar and the climbing fill are absolutely positioned against
+	// this.
 	position: relative;
+	// And the moving fill sits at `z-index: -1`, which only means "over the
+	// box's own background, under its label" inside a stacking context of the
+	// button's own. Without one it would drop behind the *band's* background
+	// and never be seen. `isolation` rather than `z-index: 0`, because it says
+	// only that and cannot be read as a position in some other stack.
+	isolation: isolate;
+
+	/*
+	 * And the button is what rounds that fill off, rather than the fill
+	 * wearing the radius itself.
+	 *
+	 * A layer carrying `border-radius: inherit` looks right at full size and
+	 * wrong on the way in or out: CSS scales a radius down when it no longer
+	 * fits its box, so a 999px pill layer narrowing past its own height keeps
+	 * collapsing the radius with it and the last stretch of the sweep renders
+	 * as a rounded blob rather than a straight edge retreating. Clipping to
+	 * the button instead leaves the layer a plain rectangle, and the only
+	 * curve in it is the button's own.
+	 *
+	 * Safe on all three: `overflow` clips descendants, never the element's own
+	 * border, background or shadow, so the Pill skin keeps its resting
+	 * elevation. The focus ring is an `outline`, which is not clipped either.
+	 */
+	overflow: hidden;
 	// Flex rather than inline-block so the label centres against the 44px
 	// floor instead of sitting at the top of a box the padding did not fill.
 	display: inline-flex;
@@ -104,12 +131,14 @@
 	text-align: center;
 	text-decoration: none;
 	text-transform: var(--wp--custom--button--transform, none);
+	// No `transform` in this list: nothing moves the button any more. The
+	// sweep is a transform, but it is the pseudo-element's own and carries its
+	// own transition.
 	transition:
 		background-color 180ms ease,
 		border-color 180ms ease,
 		box-shadow 180ms ease,
-		color 180ms ease,
-		transform 180ms ease;
+		color 180ms ease;
 
 	/**
 	 * The rule that draws itself under the label.
@@ -159,21 +188,17 @@
 		outline-offset: 3px;
 	}
 
-	&:active {
-		transform: translateY(1px);
-	}
-
 	@media (prefers-reduced-motion: reduce) {
 		transition: none;
 
+		// The two moving parts: the fill that climbs and the rule that draws
+		// itself. Both stop, and both states still arrive — instantly, and in
+		// the same colours. The rest of what a button does under the pointer
+		// is colour and elevation, which this preference has never had
+		// anything to say about.
+		&::before,
 		&::after {
 			transition: none;
-		}
-
-		&:hover,
-		&:focus-visible,
-		&:active {
-			transform: none;
 		}
 	}
 }
@@ -196,11 +221,83 @@
 	);
 	color: var(--bridge-button-fg, var(--wp--custom--button--on-default--fg));
 
-	&:hover,
-	&:focus-visible {
+	/**
+	 * The hover fill, as a layer that moves into the button rather than a
+	 * colour that changes.
+	 *
+	 * A band of the hover colour anchored at the bottom-left corner and grown
+	 * to cover the box, so the fill arrives from an edge instead of appearing
+	 * everywhere at once. Which edge is the skin's to say, and it says it by
+	 * giving the layer a resting size: full width and no height climbs from
+	 * the floor, full height and no width sweeps in from the leading edge.
+	 * Both dimensions go to 100% under the pointer, so only the one that was
+	 * not already there moves.
+	 *
+	 * One anchor serves both, which is why there is one layer here and not
+	 * two. `inset-inline-start` rather than `left`, so the sweep runs from the
+	 * side the reader starts on in either direction.
+	 *
+	 * `width`/`height` rather than a `transform: scale()` because the layer is
+	 * a flat colour: there is nothing in it to distort, and a scaled box would
+	 * carry the button's corners out of shape as it grew.
+	 *
+	 * `z-index: -1` puts it over the button's own background and under its
+	 * label — the painting order inside a stacking context, which is why
+	 * `shape` opens one. The label needs no wrapper and no z-index of its own,
+	 * which matters: the markup is core's and this file does not get to add to
+	 * it.
+	 *
+	 * No radius of its own: it is a rectangle, and the button clips it to the
+	 * shape — see `overflow` in `shape` for what went wrong when the layer
+	 * wore the radius itself.
+	 */
+	&::before {
+		content: "";
+		position: absolute;
+		z-index: -1;
+		inset-block-end: 0;
+		inset-inline-start: 0;
+		width: var(--wp--custom--button--wipe-width, 100%);
+		height: var(--wp--custom--button--wipe-height, 0);
 		background-color: var(
 			--bridge-button-hover-bg,
 			var(--wp--custom--button--on-default--hover-bg)
+		);
+		// 0 on the skins that answer with a colour change instead, which costs
+		// them one transparent box that never grows.
+		opacity: var(--wp--custom--button--wipe, 0);
+		// Long enough to read as a movement, short enough that a button
+		// clicked twice is not waiting on it.
+		transition:
+			width 400ms ease,
+			height 400ms ease;
+		pointer-events: none;
+	}
+
+	&:hover,
+	&:focus-visible {
+		/**
+		 * The box under the climbing layer.
+		 *
+		 * A skin that wipes holds its resting fill here. The layer is what
+		 * brings the hover colour in, and a box that changed colour underneath
+		 * would arrive first — in 180ms, everywhere at once — leaving the
+		 * layer nothing to reveal and the climb invisible. A skin that does
+		 * not wipe takes the hover fill directly, as it always has.
+		 *
+		 * `--wipe` is 1 or 0, so this mixes 100% of one colour or 100% of the
+		 * other and nothing in between is ever asked for. It is a switch
+		 * written as arithmetic, because a custom property can carry a number
+		 * into a declaration and cannot carry a choice between two.
+		 */
+		background-color: color-mix(
+			in srgb,
+			var(--bridge-button-bg, var(--wp--custom--button--on-default--bg))
+				calc(var(--wp--custom--button--wipe, 0) * 100%),
+			var(
+				--bridge-button-hover-bg,
+				var(--wp--custom--button--on-default--hover-bg)
+			)
 		);
 		border-color: var(
 			--bridge-button-hover-border,
@@ -211,7 +308,11 @@
 			--bridge-button-hover-fg,
 			var(--wp--custom--button--on-default--hover-fg)
 		);
-		transform: translateY(var(--wp--custom--button--lift, 0));
+
+		&::before {
+			width: 100%;
+			height: 100%;
+		}
 	}
 }
 
@@ -245,7 +346,6 @@
 			color-mix(in srgb, currentcolor 12%, transparent)
 		);
 		box-shadow: var(--wp--custom--button--shadow-hover, none);
-		transform: translateY(var(--wp--custom--button--lift, 0));
 	}
 }
 
@@ -292,6 +392,5 @@
 			--bridge-button-ghost-hover,
 			var(--wp--custom--button--on-default--ghost-hover)
 		);
-		transform: translateY(var(--wp--custom--button--lift, 0));
 	}
 }

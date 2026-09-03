@@ -49,9 +49,9 @@
 }
 
 // And the ones an editor did paint keep their colour but still answer the
-// pointer, in the skin's own terms — the wash, the lift and the sweep. The
-// alternative was a page where one button was inert because someone had once
-// picked a colour for it.
+// pointer, in the skin's own terms — the wash, the elevation and the sweep.
+// The alternative was a page where one button was inert because someone had
+// once picked a colour for it.
 .wp-block-button__link:is(.has-background, .has-text-color),
 .wp-element-button:is(.has-background, .has-text-color) {
 	@include button.wash;

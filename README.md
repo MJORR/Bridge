@@ -1,15 +1,15 @@
 # Bridge
 
-**One global design system, set once, applied everywhere.**
+**One global design system, set once, applied everywhere.** Brand colours,
+fonts, cards and buttons are set globally using Theme Options.
 
-Brand colours, fonts, cards and buttons are set globally using Theme Options.
+Requires WordPress 6.6 or later and PHP 8.1 or later. Nothing here needs a
+developer, and nothing needs compiling — the theme runs exactly as it comes.
 
-# Getting started
+- [Getting started](#getting-started)
+- [Developer notes](#developer-notes)
 
-Nothing here needs a developer, and nothing needs compiling — the theme runs
-exactly as it comes.
-
-You will need: WordPress 6.6 or later, PHP 8.1 or later.
+## Getting started
 
 ### 1. Install it
 
@@ -23,24 +23,17 @@ Copy the theme folder into `wp-content/themes/`, or upload it as a zip through
 The theme sets a few things up for you on activation: the Team and FAQs content
 types, and the menus for the header and footer.
 
-### 3. Acess Theme Options
+### 3. Access Global Theme Options
 
-The design controls are deliberately locked down. This is to improve the editor experience and to prevent design drift.
-
-Add yourself in `wp-config.php`
-
-```php
-define( 'BRIDGE_OPERATORS', 'you@example.com' );
-```
-
-Several users can be add, comma-separated, is fine:
+The design controls are deliberately locked down, to improve the editor
+experience and to prevent design drift. Add yourself in `wp-config.php`:
 
 ```php
 define( 'BRIDGE_OPERATORS', 'you@example.com,someone@agency.com' );
 ```
 
-You'll need to be an administrator _and_ on that list. If the list is left
-empty the lock opens for all administrators rather than locking everyone out.
+You'll need to be an administrator _and_ on that list. If the list is left empty
+the lock opens for all administrators rather than locking everyone out.
 
 ### 4. Set the design up
 
@@ -66,26 +59,30 @@ and the map API keys.
 ### 5. Build pages
 
 Add a page and start with the custom blocks — Section, Cards, FAQs, Hero Banner
-and the rest. Most of them have a small settings panel on the right for the choices that are
-genuinely per-page (how many items, which category, wide or full width).
+and the rest. Most of them have a small settings panel on the right for the
+choices that are genuinely per-page (how many items, which category, wide or
+full width).
 
 ---
 
-# Developer notes
+## Developer notes
 
-## Requirements
+### Requirements
 
-|           |                                                                                           |
-| --------- | ----------------------------------------------------------------------------------------- |
-| WordPress | 6.6 or later                                                                              |
-| PHP       | 8.1 or later — `composer.json` is the accurate one; the `style.css` header still says 8.0 |
-| Node      | 23 — see `.nvmrc`                                                                         |
-| Composer  | development only: PHPCS and PHPUnit                                                       |
+| Dependency | Requirement                         |
+| ---------- | ----------------------------------- |
+| WordPress  | 6.6 or later                        |
+| PHP        | 8.1 or later                        |
+| Node       | 23 — see `.nvmrc`                   |
+| Composer   | Development only: PHPCS and PHPUnit |
+
+`composer.json` is the accurate source for the PHP version; the `style.css`
+header still says 8.0.
 
 The front end is served entirely from `dist/`, which Vite builds from `src/`.
 PHP never reads `src/` at runtime.
 
-## Building
+### Building
 
 ```bash
 nvm use          # Node 23, per .nvmrc
@@ -102,7 +99,7 @@ Rebuild after any change under `src/`: SCSS, editor JS, the options app, the
 icon library. PHP, `theme.json` and the `.html` templates are read directly and
 need no build.
 
-### Checks
+#### Checks
 
 ```bash
 npm run lint     # eslint (src/**/*.js,jsx) + stylelint (src/**/*.scss)
@@ -117,14 +114,15 @@ The PHP tests don't boot WordPress. `tests/bootstrap.php` loads doubles from
 `tests/stubs.php` and then the theme's files in the order `functions.php` uses,
 so they run anywhere PHP does.
 
-### What the build produces
+#### What the build produces
 
 - **Stable, hash-free filenames**, because PHP enqueues them statically by name.
 - **Per-entry CSS bundles** (`cssCodeSplit`), so a block's stylesheet ships only
   on pages that render that block.
 - **`dist/icons.json`** — every `src/icons/*.svg` compiled into one library at
-  `writeBundle` (after `emptyOutDir` has run, so the file survives the build that
-  made it). PHP renders each icon inline rather than through an external sprite.
+  `writeBundle` (after `emptyOutDir` has run, so the file survives the build
+  that made it). PHP renders each icon inline rather than through an external
+  sprite.
 - **Source maps in development only.** They're deploy bloat in production, and
   browsers fetch them only with devtools open.
 
@@ -133,12 +131,12 @@ globals WordPress already prints, and `.jsx` compiles straight to
 `wp.element.createElement` via the esbuild settings in `vite.config.js` — so no
 React import, and no runtime added.
 
-## `dist/` is committed
+### `dist/` is committed
 
 The build output is tracked in version control, so installing the theme is clone
 and activate — running the site needs no Node toolchain.
 
-## Adding a block
+### Adding a block
 
 1. Create `src/blocks/<slug>/` with `block.json`, `index.js`, `edit.js`,
    `save.js` and `render.php`.
@@ -148,10 +146,10 @@ and activate — running the site needs no Node toolchain.
    which registers the script, the stylesheet and the type in one call.
 4. Run `npm run build`.
 
-## Rebranding the theme
+### Rebranding the theme
 
-A rebrand, not a refactor. Four files carry the name a client sees; the `bridge`
-identifiers underneath stay exactly as they are.
+A rebrand, not a refactor. Three files carry the name a client sees; the
+`bridge` identifiers underneath stay exactly as they are.
 
 1. **`style.css` header** — `Theme Name`, `Theme URI`, `Author`, `Author URI`,
    `Description`.
@@ -163,13 +161,13 @@ identifiers underneath stay exactly as they are.
 That's the whole rebrand. None of it changes an identifier, so there's nothing
 to break and nothing to migrate.
 
-### Leave `bridge` alone
+#### Leave `bridge` alone
 
 The `bridge` prefix is internal and invisible to everyone but a developer —
-function names, CSS classes, script handles, the text domain. None of it is visible to a client.
-The brand lives in the four files above.
+function names, CSS classes, script handles, the text domain. None of it is
+visible to a client. The brand lives in the three files above.
 
-## Project layout
+### Project layout
 
 ```
 functions.php      Bootstrap: constants, asset registration, block registration
@@ -184,7 +182,7 @@ templates/ parts/  Block templates and template parts
 tests/             PHPUnit, with WordPress doubled rather than booted
 ```
 
-## Escape hatches
+### Escape hatches
 
 Both are `wp-config.php` constants, both deliberate:
 

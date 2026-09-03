@@ -24,7 +24,7 @@ define('BRIDGE_VERSION', '1.0.0');
  * meta keys are written into post content and postmeta, so renaming them
  * breaks existing content.
  */
-define('BRIDGE_BRAND', 'Cape Marketing');
+define('BRIDGE_BRAND', 'White Label');
 
 define('BRIDGE_DIST_URI', get_theme_file_uri('dist'));
 define('BRIDGE_DIST_PATH', get_theme_file_path('dist'));

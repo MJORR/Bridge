@@ -1,0 +1,35 @@
+/**
+ * Where the primary navigation stops being a menu bar.
+ *
+ * Core's own answer is 600px, written into the navigation block's stylesheet
+ * as a media query and therefore not something a theme can move. It is also
+ * far too low for a header carrying a logo, a search icon and a call to action
+ * beside the menu. Measured against this theme's own numbers — a menu item
+ * costs its label plus twice `--bridge-header-rhythm`, the search toggle 60px,
+ * the call to action about 150 — a five-item menu needs roughly 875px of inner
+ * width, which is a viewport of about 925. Core would draw that menu as a bar
+ * from 600px up, and for three hundred pixels it would be a bar on two rows.
+ *
+ * So the theme keeps its own floor, and every rule in the header is written
+ * against it. Below it the menu is a panel, always, decided in CSS and true
+ * whether or not this theme's script runs. Above it header.js measures the bar
+ * and collapses it the moment it stops fitting — see `initNavCollapse()` — so
+ * this number is a safety net rather than the working answer.
+ *
+ * 1024 rather than something wider: it clears five items comfortably and most
+ * sixes, and it keeps the real menu bar for a scriptless visitor on an
+ * ordinary laptop rather than handing everyone a hamburger. Wider is safer and
+ * emptier, and there is a ceiling on how much safer — `.bridge-header__inner`
+ * is capped at `wideSize`, so the bar never gets more than 1200px however
+ * large the window is, and a menu that cannot fit in that cannot fit anywhere.
+ *
+ * `$panel` is stated as `$bar - 1px` rather than typed. A gap between the two
+ * is a width where neither query matches and the header has no treatment at
+ * all; an overlap is a width where both match and the last one wins by
+ * accident. Two numbers that have to stay adjacent should be one number.
+ *
+ * NAV_BREAKPOINT in src/js/header.js is this value. It cannot read this file,
+ * so it names the number and says where the other copy lives.
+ */
+$bar: 1024px;
+$panel: $bar - 1px;

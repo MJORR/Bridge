@@ -14,6 +14,7 @@
  * escape the template-part wrapper, which is a box the theme does not emit.
  */
 @use "../abstracts/button" as button;
+@use "../abstracts/nav" as nav;
 
 .bridge-header {
 	position: relative;
@@ -55,6 +56,26 @@
 	 * `--bridge-nav-inset` in components/_primary-nav.scss, which is this.
 	 */
 	--bridge-header-rhythm: 1.125rem;
+
+	/**
+	 * How the header's own disclosures move.
+	 *
+	 * Two clocks, not one. A panel that is arriving has already been asked
+	 * for — the visitor pressed the icon — so it gets the longer of the two
+	 * and a curve with no ease-in, because a slow first frame on something
+	 * that was just requested reads as the interface thinking about it. A
+	 * panel that is leaving is answering a decision already made, and wants
+	 * to be gone: shorter, on the symmetric curve.
+	 *
+	 * The same pair of ideas as `--bridge-nav-ease` and
+	 * `--bridge-nav-enter-ease` in components/_primary-nav.scss, restated here
+	 * because those are declared on the navigation block and the search panel
+	 * is not inside it.
+	 */
+	--bridge-header-ease: cubic-bezier(0.4, 0, 0.2, 1);
+	--bridge-header-enter-ease: cubic-bezier(0, 0, 0.2, 1);
+	--bridge-header-motion-in: 280ms;
+	--bridge-header-motion-out: 200ms;
 }
 
 // The header spans the viewport; its contents line up with the page.
@@ -221,31 +242,66 @@
  * padding's worth of margin carries it the rest of the way. Horizontal
  * alignment stays exactly where core put it.
  *
- * Scoped above 600px because that is where core stops rendering the nav as an
- * overlay and starts rendering it as a menu bar. Below it there are no panels
- * to place — the submenu is flattened into the modal.
+ * Scoped to the width the theme draws a menu bar at — `abstracts/_nav.scss` —
+ * and to a header header.js has not collapsed. Below either there are no panels
+ * to place: the submenu is flattened into the modal.
  */
-@media (min-width: 600px) {
+@media (min-width: nav.$bar) {
 	// The height has to be handed down every wrapper core renders between the
 	// <nav> and the <li>. A percentage height against an auto-height ancestor
 	// resolves to auto, so one gap anywhere breaks the whole run.
-	.bridge-header__row > .bridge-header__end,
-	.bridge-header .bridge-nav--primary,
-	.bridge-header
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-header__row
+		> .bridge-header__end,
+	.bridge-header:not(.is-nav-collapsed) .bridge-nav--primary,
+	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.wp-block-navigation__responsive-container,
-	.bridge-header .bridge-nav--primary .wp-block-navigation__container,
-	.bridge-header .bridge-nav--primary .wp-block-navigation-item {
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-nav--primary
+		.wp-block-navigation__container,
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-nav--primary
+		.wp-block-navigation-item {
 		align-self: stretch;
 	}
 
 	// These three are block boxes rather than flex items, so they take the
 	// height rather than the stretch.
-	.bridge-header .bridge-nav--primary {
+	.bridge-header:not(.is-nav-collapsed) .bridge-nav--primary {
 		.wp-block-navigation__responsive-close,
 		.wp-block-navigation__responsive-dialog,
 		.wp-block-navigation__responsive-container-content {
 			height: 100%;
+		}
+	}
+
+	/**
+	 * A menu bar that has run out of room overflows; it does not wrap.
+	 *
+	 * Wrapping is the failure this exists to remove — a second row of links
+	 * under the first, at a width core still calls desktop — but it is also
+	 * what hides the failure from anything trying to measure it. A row that
+	 * wraps reports the same width as a row that fits, so there is nothing to
+	 * compare. Held on one line, the row's `scrollWidth` runs past its
+	 * `clientWidth` by exactly the amount it is short, which is the number
+	 * header.js reads to decide the menu should be a panel instead.
+	 *
+	 * Nobody sees the overflow: the script collapses the header on the same
+	 * frame it measures. It is the state the measurement is taken in, not a
+	 * state the visitor is left in — and with the script off, an overflowing
+	 * row is no worse than the wrapped one it replaces.
+	 */
+	.bridge-header:not(.is-nav-collapsed) {
+		.bridge-header__end,
+		.bridge-nav--primary .wp-block-navigation__container {
+			flex-wrap: nowrap;
+		}
+
+		// A label that breaks over two lines is the same failure one level
+		// down, and it hides itself the same way.
+		.bridge-nav--primary .wp-block-navigation-item__content {
+			white-space: nowrap;
 		}
 	}
 
@@ -261,7 +317,7 @@
 	 * Six classes because core's right-alignment rule is five, and a tie would
 	 * hand the decision to stylesheet order.
 	 */
-	.bridge-header
+	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.wp-block-navigation__container
 		> .wp-block-navigation-item.has-child
@@ -279,14 +335,31 @@
 	 * drifts with the fluid type scale, so it could not line up with a rem one
 	 * by coincidence. Six classes here to settle it.
 	 */
-	.bridge-header
+	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.wp-block-navigation__container
 		.wp-block-navigation__submenu-container
 		.wp-block-navigation-item
 		.wp-block-navigation-item__content {
-		padding-block: 0.6875rem;
+		padding-block: 0.875rem;
 		padding-inline: var(--bridge-nav-inset);
+
+		/**
+		 * A list to read, not more tabs to scan.
+		 *
+		 * The menu bar sets 500 and a touch of tracking on the nav, and both
+		 * cascade straight into this panel; with no size set either, the rows
+		 * came out identical to the items above them, and a column of them
+		 * read as the bar stacked vertically rather than as a menu that had
+		 * opened. One step down the scale at ordinary weight, with the
+		 * tracking given back, separates the two jobs.
+		 *
+		 * The block padding above pays for it: the rows lose the weight that
+		 * was holding them apart, so they take the space instead.
+		 */
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 400;
+		letter-spacing: normal;
 	}
 
 	/**
@@ -303,54 +376,68 @@
 	 * mobile overlay, where the submenu is flattened and has no surface of its
 	 * own, keeps winning on its own terms.
 	 */
-	.bridge-header
+	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.wp-block-navigation__container
 		.wp-block-navigation__submenu-container {
 		/**
-		 * The header's own ground, published by the block, lifted one step.
+		 * A fifth of the header's own text colour, over the header's ground.
 		 *
-		 * Opaque, not a tint of it: a translucent panel reads whatever is
-		 * scrolling underneath it, and body copy showing faintly through a
-		 * menu is the difference between a dropdown and a smudge.
+		 * `currentcolor` rather than a named palette entry, so the panel
+		 * darkens off a light bar and lightens off a dark one from a single
+		 * declaration, and keeps doing the right thing when a sticky header
+		 * swaps ground mid-page. It is the same mix the menu items tint
+		 * themselves with, at the same strength the dropdown's own rows use —
+		 * one idea at three depths rather than three colours.
 		 *
-		 * The step is mixed from `currentcolor` — the header's text colour —
-		 * so the panel lightens off a dark bar and darkens off a light one
-		 * from a single declaration, and keeps doing the right thing when a
-		 * sticky header swaps ground mid-page. Text colour is inherited for
-		 * the same reason: the panel follows the contrast treatment rather
-		 * than restating it.
+		 * Mixed over the ground rather than over `transparent`: with no
+		 * border, no radius and no shadow, the fill is the only thing telling
+		 * the panel from the page, and a fifth of a colour on nothing is not
+		 * a surface — it is the page showing through, with the menu's labels
+		 * lying on top of whatever happens to be scrolling past.
+		 *
+		 * Text colour is inherited for the same reason the fill is mixed from
+		 * it: the panel follows the header's contrast treatment rather than
+		 * restating it.
 		 */
 		background: color-mix(
 			in srgb,
-			currentcolor 6%,
+			currentcolor 20%,
 			var(--bridge-header-menu-bg, var(--wp--preset--color--background))
 		);
 		color: inherit;
-		border: 0;
-		border-radius: 0 0 10px 10px;
 		min-width: 15rem;
 
 		/**
-		 * A hairline on three sides, and the elevation.
+		 * No edge treatment of any kind.
 		 *
-		 * The hairline is three inset shadows rather than a border, because a
-		 * border is a box and this panel's whole job is to line its rows up
-		 * with a link one level above it: a 1px left border moves every row in
-		 * the panel 1px right of the text it is meant to sit under, and 1px
-		 * out is exactly as wrong as 10 for something the eye reads as a
-		 * column. An inset shadow paints in the same place and takes no space.
-		 *
-		 * Nothing on the top edge: that side is against the header, which the
-		 * panel is continuous with, and a line there would draw a seam through
-		 * the join the full-height hover just closed.
+		 * All three are written out rather than left off, because this
+		 * selector exists to outrank core and theme.json, and both of those
+		 * have opinions about a submenu's border and radius. Omitting a
+		 * declaration here does not remove the thing — it hands the decision
+		 * back to whoever else set it.
 		 */
-		box-shadow:
-			inset 1px 0 0 0 color-mix(in srgb, currentcolor 12%, transparent),
-			inset -1px 0 0 0 color-mix(in srgb, currentcolor 12%, transparent),
-			inset 0 -1px 0 0 color-mix(in srgb, currentcolor 12%, transparent),
-			0 18px 32px -18px rgba(15, 23, 42, 0.45),
-			0 4px 10px -6px rgba(15, 23, 42, 0.25);
+		border: 0;
+		border-radius: 0;
+
+		/**
+		 * The panel's bottom edge: the same accent bar, at the same depth, as
+		 * the marker across the top of the tab it hangs from.
+		 *
+		 * Not elevation — there is still no shadow here in the sense of a
+		 * panel floating above the page. It is a painted bar, drawn as an
+		 * inset shadow rather than a border because a border is a box: it
+		 * would take layout space and reopen the alignment question the rows
+		 * were built to answer. This paints inside the padding the panel
+		 * already has, so nothing moves.
+		 *
+		 * Without it the panel simply stops wherever the last row ends, which
+		 * on a surface with no edges reads as truncated rather than finished.
+		 * Bracketed top and bottom by the same mark, the whole thing — tab and
+		 * panel — is one object.
+		 */
+		box-shadow: inset 0 calc(-1 * var(--bridge-nav-marker-size)) 0 0
+			var(--bridge-nav-marker);
 		// Closed, the panel is clipped to nothing, so this is only ever seen
 		// on the way in: the panel drops the last few pixels into place rather
 		// than appearing whole.
@@ -361,15 +448,15 @@
 	// can happen — pointer on the item, focus inside it, and the caret button
 	// on a menu that opens by click. All three land here, so the drop plays
 	// whichever way the panel was asked for.
-	.bridge-header
+	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.wp-block-navigation-item.has-child:hover
 		> .wp-block-navigation__submenu-container,
-	.bridge-header
+	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.wp-block-navigation-item.has-child:focus-within
 		> .wp-block-navigation__submenu-container,
-	.bridge-header
+	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.wp-block-navigation-submenu__toggle[aria-expanded="true"]
 		~ .wp-block-navigation__submenu-container {
@@ -388,7 +475,7 @@
 
 	// Only the first level. Nested panels open sideways from their parent
 	// panel, and core has already placed them.
-	.bridge-header
+	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.wp-block-navigation__container
 		> .wp-block-navigation-item
@@ -664,16 +751,27 @@ html:has(.bridge-header--sticky) {
 
 	color: var(--bridge-search-fg);
 
+	// Closing. The open state below restates this on its own clock, because
+	// the two directions are not the same event and a single symmetric
+	// transition makes both of them slightly wrong.
 	@media (prefers-reduced-motion: no-preference) {
 		transition:
-			grid-template-rows 0.28s ease,
-			visibility 0.28s;
+			grid-template-rows var(--bridge-header-motion-out)
+				var(--bridge-header-ease),
+			visibility var(--bridge-header-motion-out);
 	}
 }
 
 .bridge-header.is-search-open .bridge-header__search-panel {
 	grid-template-rows: 1fr;
 	visibility: visible;
+
+	@media (prefers-reduced-motion: no-preference) {
+		transition:
+			grid-template-rows var(--bridge-header-motion-in)
+				var(--bridge-header-enter-ease),
+			visibility var(--bridge-header-motion-in);
+	}
 }
 
 // The clipping box the 0fr row needs: without `min-height: 0` a grid item
@@ -683,11 +781,53 @@ html:has(.bridge-header--sticky) {
 	min-height: 0;
 }
 
+/**
+ * The field travels with the band rather than being unveiled by it.
+ *
+ * The row growing from 0fr is a shutter: on its own it reveals a field that
+ * was already there at full size and full strength, so what the eye follows is
+ * an edge moving down a static object. Fading and lifting the form through the
+ * same moment makes the two read as one thing arriving.
+ *
+ * Opacity and transform rather than anything else the panel could have
+ * animated — they are the two properties that do not touch layout, so this is
+ * the half of the motion the compositor can carry while the row's own
+ * animation is relaying the page below it.
+ *
+ * The small delay on the way in is the whole trick: the band opens first and
+ * the field follows it a frame or two later, which is the order they happen in
+ * physically. Leaving, the order reverses and the delay goes — the field is out
+ * before the band has finished closing, so nothing is still fading while the
+ * gap it sits in has already gone.
+ *
+ * Both live inside the reduced-motion guard, so a visitor who has asked for
+ * less gets a field at full strength rather than one that never fades in.
+ */
 .bridge-header__search-form {
 	display: flex;
 	align-items: center;
 	gap: var(--wp--preset--spacing--20);
 	padding-block: var(--wp--preset--spacing--30);
+
+	@media (prefers-reduced-motion: no-preference) {
+		opacity: 0;
+		transform: translateY(-0.375rem);
+		transition:
+			opacity var(--bridge-header-motion-out) var(--bridge-header-ease),
+			transform var(--bridge-header-motion-out) var(--bridge-header-ease);
+	}
+}
+
+.bridge-header.is-search-open .bridge-header__search-form {
+	@media (prefers-reduced-motion: no-preference) {
+		opacity: 1;
+		transform: none;
+		transition:
+			opacity var(--bridge-header-motion-in)
+				var(--bridge-header-enter-ease) 60ms,
+			transform var(--bridge-header-motion-in)
+				var(--bridge-header-enter-ease) 60ms;
+	}
 }
 
 // The icon lives inside the field's surface rather than beside it, so the two
@@ -798,10 +938,19 @@ html:has(.bridge-header--sticky) {
 	 */
 	margin-block: 0;
 
-	// The menu's own size, so the label reads as part of the same row of type
-	// rather than a second, larger voice beside it. The skin decides the
-	// button's weight and its case; the header decides how big the row is.
-	font-size: inherit;
+	/**
+	 * The menu's own size, so the label reads as part of the same row of type
+	 * rather than a second, larger voice beside it. The skin decides the
+	 * button's weight and its case; the header decides how big the row is.
+	 *
+	 * Named rather than inherited. This button is a sibling of the navigation,
+	 * not a descendant of it, so `inherit` reaches past the menu to the header
+	 * and comes back with the body size — which was right while the menu was
+	 * the body size too, and became a step out the moment the menu was not.
+	 * The two now read the same preset, which is the thing they actually have
+	 * in common.
+	 */
+	font-size: var(--wp--preset--font-size--small);
 }
 
 /**
@@ -829,14 +978,14 @@ html:has(.bridge-header--sticky) {
  * within a pixel of each other rather than exactly on it. That is as close as
  * text and an icon can be brought without hand-tuning one against the other.
  *
- * Above 600px only. Below it the call to action is gone and the row is two
- * icons, which want the gap they have.
+ * In the menu bar only. In the panel the call to action is gone and the row is
+ * two icons, which want the gap they have.
  */
-@media (min-width: 600px) {
-	// `column-gap`, not `gap`: the row still wraps when it runs out of width,
-	// and a wrapped row with no gap at all puts the call to action hard
-	// against the underside of the menu. The joins along the row are insets
-	// now; the join between two rows is still a gap, and it is untouched.
+@media (min-width: nav.$bar) {
+	// `column-gap`, not `gap`: the joins along the row are insets now, but the
+	// row keeps a row-gap for the stacked layouts, where the call to action
+	// sits under the menu rather than beside it and a zero gap would put it
+	// hard against the underside.
 	.bridge-header__end {
 		column-gap: 0;
 	}
@@ -854,14 +1003,22 @@ html:has(.bridge-header--sticky) {
 	}
 }
 
-// The stacked layouts collapse earlier than the single-row one: two rows of
-// centred content runs out of width long before a logo and a menu side by side.
-//
-// 599 rather than 600, so this is the exact complement of core's `min-width:
-// 600px` menu-bar query and of the `.bridge-nav__cta` rule that hides the
-// button's copy inside the menu. At 600 the two queries both matched and the
-// call to action vanished on the one width where neither half claimed it.
-@media (max-width: 599px) {
+/**
+ * The end of the row, once the menu has become a single button.
+ *
+ * Which happens two ways — under the theme's breakpoint, where the menu is a
+ * panel whatever else is true, and at any width above it where header.js has
+ * measured the bar and found it does not fit. Both want the same row, so it is
+ * written here once and included at both triggers rather than kept in step by
+ * hand.
+ *
+ * The query below uses `$panel`, which is `$bar - 1px`, so it is the exact
+ * complement of the menu-bar query and of the `.bridge-nav__cta` rule that
+ * hides the button's copy inside the menu. Left as two typed numbers they once
+ * both matched, and the call to action vanished on the single width where
+ * neither half claimed it.
+ */
+@mixin bridge-header-overlay-row {
 	.bridge-header__cta {
 		display: none;
 	}
@@ -869,11 +1026,9 @@ html:has(.bridge-header--sticky) {
 	/**
 	 * Search first, then the menu toggle.
 	 *
-	 * 600px is where core stops drawing the navigation as a menu bar and
-	 * starts drawing it as a single hamburger button, and the two orders belong
-	 * to those two things: beside a row of links the icon follows the menu it
-	 * searches, but beside one button it is the toggle that should be nearest
-	 * the edge — that is the corner a thumb reaches, and it is where a menu
+	 * The two orders belong to the two shapes this row takes: beside a row of
+	 * links the icon follows the menu it searches, but beside one button it is
+	 * the toggle that should be nearest the edge — that is the corner a thumb reaches, and it is where a menu
 	 * button is looked for.
 	 *
 	 * `order` rather than a second copy of the markup, so there is one button
@@ -886,4 +1041,19 @@ html:has(.bridge-header--sticky) {
 	.bridge-header__search-toggle {
 		order: -1;
 	}
+}
+
+// Below core's own breakpoint, where the menu is a hamburger whatever else is
+// true.
+@media (max-width: nav.$panel) {
+	.bridge-header {
+		@include bridge-header-overlay-row;
+	}
+}
+
+// And at any width where header.js has found the bar does not fit. The two are
+// one state wearing two triggers, so the declarations are written once and
+// included twice rather than kept in step by hand.
+.bridge-header.is-nav-collapsed {
+	@include bridge-header-overlay-row;
 }

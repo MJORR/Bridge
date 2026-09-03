@@ -203,6 +203,17 @@ function bridge_register_style(string $handle, string $file, array $deps = array
 
 	wp_register_style($handle, BRIDGE_DIST_URI . '/' . $file, $deps, (string) filemtime($path));
 
+	// Registering the path is what makes the handle a candidate for core's
+	// `wp_maybe_inline_styles()`: it only considers styles that declare one,
+	// and without this line every per-block bundle is a separate
+	// render-blocking request no matter how small it is. Core inlines the ones
+	// that fit inside its 40KB budget, smallest first, and leaves the rest as
+	// links — which is the right trade for the block styles, all of which sit
+	// below the fold. main.css declares a path too and simply never wins the
+	// budget at 72KB, which is also correct: it is the one stylesheet worth a
+	// cacheable request of its own across the whole site.
+	wp_style_add_data($handle, 'path', $path);
+
 	return true;
 }
 
@@ -669,17 +680,42 @@ function bridge_is_light_color(string $hex): bool
 }
 
 /**
- * Preload the hero-slider CSS when the current request actually renders
- * the block. The browser starts fetching it in parallel with the HTML
- * parser, removing it from the render-blocking critical path.
+ * Inline the hero-slider CSS when the current request renders the block.
+ *
+ * The slider is the first section of a landing page, so its stylesheet is
+ * above the fold by construction and belongs in front of the LCP paint.
+ * Left to itself it is a `<link>` roughly 24KB into the head — after the
+ * global styles and core's block CSS — which is 24KB the browser has to
+ * receive before it can even discover the request, and a round trip after
+ * that before it can paint. Inlining it costs 3.5KB of uncacheable HTML and
+ * removes both.
+ *
+ * This bypasses `wp_maybe_inline_styles()` rather than duplicating it. Core
+ * inlines file-backed styles too, but it sorts the queue by size and fills a
+ * 40KB budget, with no notion of which file is above the fold — whether the
+ * slider makes the cut depends on how many other blocks the page happens to
+ * use. Claiming the handle here at priority 0, one step ahead of core's
+ * priority 1, makes the answer the same on every landing page and hands the
+ * whole budget to the blocks further down the page.
+ *
+ * Safe to inline because the Vite bundles carry no relative `url()` — the
+ * only one in the build is a data URI in main.css — so moving the bytes into
+ * the document cannot break an asset path.
  */
-function bridge_preload_hero_slider_css(): void
+function bridge_inline_hero_slider_css(): void
 {
 	if (is_admin() || is_feed() || is_embed()) {
 		return;
 	}
 
-	if (! has_block('bridge/hero-slider')) {
+	// The enqueue itself is the condition, not `has_block()`: block templates
+	// and this theme's search.php both render the body before `wp_head()`, so
+	// by now the block has asked for its `viewStyle` if it is on the page at
+	// all — including from a template part or a pattern, which a `has_block()`
+	// test against post content would miss.
+	$handle = 'bridge-hero-slider-style';
+
+	if (! wp_style_is($handle, 'enqueued')) {
 		return;
 	}
 
@@ -688,12 +724,26 @@ function bridge_preload_hero_slider_css(): void
 		return;
 	}
 
+	$css = file_get_contents($css_path); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents — a build artefact on local disk, read the way core's own wp_maybe_inline_styles() reads it.
+
+	// A build that produced an empty file should leave the `<link>` alone
+	// rather than swallow it into a `<style>` element with nothing in it.
+	if (false === $css || '' === trim($css)) {
+		return;
+	}
+
+	wp_dequeue_style($handle);
+
+	// Printed raw: this is a compiled stylesheet, and escaping it for HTML
+	// would corrupt every `>` combinator and `&` in it. The content is a
+	// build artefact, never user input.
 	printf(
-		'<link rel="preload" href="%s" as="style" />' . "\n",
-		esc_url(BRIDGE_DIST_URI . '/slider.css?ver=' . filemtime($css_path))
+		'<style id="%s-inline-css">%s</style>' . "\n",
+		esc_attr($handle),
+		$css
 	);
 }
-add_action('wp_head', 'bridge_preload_hero_slider_css', 1);
+add_action('wp_head', 'bridge_inline_hero_slider_css', 0);
 
 /**
  * Editor scripts that belong only to the Page edit screen.

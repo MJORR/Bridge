@@ -71,7 +71,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 				</h3>
 				<p className="bridge-options__subhelp">
 					{__(
-						'Every pair of these six colours the theme actually draws, measured. WCAG 2.2 §1.4.3 asks for 4.5:1 on body-sized text, which all of these are. Nothing here is adjusted for you — both colours in a pair are the brand’s, and a design system that quietly darkened one would be a design system nobody could trust.',
+						'Every pair of these six colours the theme actually draws, measured. WCAG 2.2 §1.4.3 asks for 4.5:1 on body-sized text, which all of these are.',
 						'bridge'
 					)}
 				</p>

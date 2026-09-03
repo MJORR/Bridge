@@ -87,16 +87,18 @@ $bridge_menu_bg = 'transparent' === $bridge_background
 	: $bridge_solid;
 
 // The mobile panel is the brand's first colour and its call to action the
-// second, so the one row in the sheet that is an action is the one row not
-// painted in the sheet's own colour. The type on each is whichever half of the
-// palette that ground can carry, worked out here — the same way the header
-// decides its own contrast — because CSS cannot ask whether a colour is light,
-// and a menu whose labels have gone invisible is worse than one that ignored
-// the brand.
+// accent, so the one row in the sheet that is an action is the one row not
+// painted in the sheet's own colour — and it is painted in the colour this
+// theme uses nowhere except to say "here". The type on each is whichever half
+// of the palette that ground can carry, worked out here — the same way the
+// header decides its own contrast — because CSS cannot ask whether a colour is
+// light, and a menu whose labels have gone invisible is worse than one that
+// ignored the brand. The accent is the more likely of the two to be a light
+// colour, which is the whole reason that question is asked rather than assumed.
 $bridge_palette   = bridge_get_tokens()['brand']['palette'];
 $bridge_panel_hex = (string) ( $bridge_palette['primary']['color'] ?? '#0f172a' );
 $bridge_panel_fg  = bridge_is_light_color( $bridge_panel_hex ) ? 'text' : 'background';
-$bridge_cta_hex   = (string) ( $bridge_palette['secondary']['color'] ?? '#2563eb' );
+$bridge_cta_hex   = (string) ( $bridge_palette['accent']['color'] ?? '#f59e0b' );
 $bridge_cta_fg    = bridge_is_light_color( $bridge_cta_hex ) ? 'text' : 'background';
 
 $bridge_style = sprintf(
@@ -107,7 +109,7 @@ $bridge_style = sprintf(
 	$bridge_menu_bg,
 	'var(--wp--preset--color--primary)',
 	sprintf( 'var(--wp--preset--color--%s)', $bridge_panel_fg ),
-	'var(--wp--preset--color--secondary)',
+	'var(--wp--preset--color--accent)',
 	sprintf( 'var(--wp--preset--color--%s)', $bridge_cta_fg )
 );
 

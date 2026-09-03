@@ -11,10 +11,16 @@
  *    and whether the row has wrapped.
  * 3. That Escape has been pressed over an open dropdown, which WCAG 2.2 SC
  *    1.4.13 requires to dismiss it.
+ * 4. Whether the menu bar still fits. A breakpoint is a number, and the width
+ *    a menu actually needs is not a number anyone can write down in advance:
+ *    it depends on how many items the site has and how long their labels are.
+ *    Between the two, a menu the operator has added one item too many to wraps
+ *    onto a second row and stays there for several hundred pixels before any
+ *    fixed number finally calls it mobile.
  *
- * The first two are reported by an observer rather than by a scroll or resize
- * listener, so nothing of ours runs on the main thread while a visitor is
- * scrolling.
+ * The first, second and fourth are reported by an observer rather than by a
+ * scroll or resize listener, so nothing of ours runs on the main thread while
+ * a visitor is scrolling.
  */
 
 // The header carries its own state, so this asks the element whether it is
@@ -24,11 +30,38 @@ const HEADER = '.bridge-header--sticky';
 const SCROLLED = 'is-scrolled';
 const ANY_HEADER = '.bridge-header';
 const HEIGHT = '--bridge-header-height';
-const PRIMARY_NAV = '.bridge-header .bridge-nav--primary';
+const NAV = '.bridge-nav--primary';
+const PRIMARY_NAV = `${ANY_HEADER} ${NAV}`;
 const HAS_CHILD = '.wp-block-navigation-item.has-child';
 const DISMISSED = 'is-hover-dismissed';
 const SEARCH_TOGGLE = '.bridge-header__search-toggle';
 const SEARCH_OPEN = 'is-search-open';
+const END = '.bridge-header__end';
+const NAV_COLLAPSED = 'is-nav-collapsed';
+const NAV_OPEN_BUTTON = '.wp-block-navigation__responsive-container-open';
+const NAV_CONTAINER = '.wp-block-navigation__responsive-container';
+const NAV_MENU_OPEN = 'is-menu-open';
+
+// Core's own two classes for "this navigation is an overlay at every width" —
+// what it prints when the block is set to Always show the hamburger. Borrowed
+// rather than reimplemented: every rule core has for an overlay menu keys off
+// these, so a collapsed bar is a state the block already knows how to be, and
+// the stylesheet does not need a second copy of it that can drift.
+const NAV_ALWAYS_SHOWN = 'always-shown';
+const NAV_HIDDEN_BY_DEFAULT = 'hidden-by-default';
+
+// The width below which the menu is a panel whatever its contents — the same
+// value as `$bar` in src/scss/abstracts/_nav.scss, which is where the reasoning
+// for it lives. Below this the stylesheet has already collapsed the nav, in a
+// media query, and this file has nothing to decide; above it, nothing else
+// can decide, because whether a bar fits is a question about the menu rather
+// than about the window.
+//
+// The two copies cannot be derived from one another — a media query is not
+// readable from script, and a custom property would put a number the layout
+// depends on somewhere it could be overridden. So they are two, and each says
+// where the other is.
+const NAV_BREAKPOINT = 1024;
 
 function initStickyHeader() {
 	const header = document.querySelector(HEADER);
@@ -219,11 +252,126 @@ function initHeaderSearch() {
 	});
 }
 
+/**
+ * Collapse the menu bar to the panel at the width it stops fitting, rather
+ * than at the width core happens to name.
+ *
+ * The measurement is one comparison, made possible by a stylesheet rule rather
+ * than by arithmetic here: in the bar state the header's row is held to a
+ * single line, so a menu with nowhere left to go overflows instead of wrapping
+ * and `scrollWidth` runs past `clientWidth`. Adding up label widths, gaps,
+ * padding and a logo would be the same question asked in a way that goes wrong
+ * every time somebody changes the CSS.
+ *
+ * Collapsing hides the thing being measured, so the width the bar needed is
+ * kept: once collapsed, the row's own content proves nothing, and the only
+ * honest question left is whether there is now at least as much room as there
+ * was when it stopped fitting. When there is, the bar comes back and is
+ * measured again in the same frame — so a number that has gone stale, because
+ * a font swapped or the menu was edited, corrects itself on the next resize
+ * rather than being trusted forever.
+ *
+ * State goes on with core's own overlay classes, so the panel that opens is
+ * the panel core already knows how to open. The class on the header is for the
+ * theme's own rules: it tells the menu-bar treatments to stand down, which is
+ * what stops a dropdown's tab styling landing on rows inside the panel.
+ */
+function initNavCollapse() {
+	const header = document.querySelector(ANY_HEADER);
+	const nav = header?.querySelector(NAV);
+	const row = header?.querySelector(END)?.parentElement;
+	const button = nav?.querySelector(NAV_OPEN_BUTTON);
+	const container = nav?.querySelector(NAV_CONTAINER);
+
+	if (
+		!header ||
+		!row ||
+		!button ||
+		!container ||
+		typeof ResizeObserver === 'undefined'
+	) {
+		return;
+	}
+
+	// The width the bar was short of, remembered from the frame it ran out.
+	let required = 0;
+	let scheduled = false;
+
+	const apply = (collapsed) => {
+		header.classList.toggle(NAV_COLLAPSED, collapsed);
+		button.classList.toggle(NAV_ALWAYS_SHOWN, collapsed);
+		container.classList.toggle(NAV_HIDDEN_BY_DEFAULT, collapsed);
+	};
+
+	// One pixel of tolerance. Sub-pixel layout rounds a row that fits exactly
+	// into one that overflows by a fraction, and a menu that collapses on the
+	// width it fits at is the original bug with a smaller number.
+	const overflows = () => row.scrollWidth > row.clientWidth + 1;
+
+	const sync = () => {
+		scheduled = false;
+
+		// Not while the panel is open: the visitor is inside the menu, and
+		// taking it out from under them to swap in a bar is worse than a bar
+		// arriving a moment late.
+		if (container.classList.contains(NAV_MENU_OPEN)) {
+			return;
+		}
+
+		if (window.innerWidth < NAV_BREAKPOINT) {
+			// Core collapses the nav on its own down here, and it does it in a
+			// media query, which is one fewer thing to be wrong.
+			apply(false);
+			return;
+		}
+
+		if (!header.classList.contains(NAV_COLLAPSED)) {
+			if (overflows()) {
+				required = row.scrollWidth;
+				apply(true);
+			}
+
+			return;
+		}
+
+		if (!required || row.clientWidth < required) {
+			return;
+		}
+
+		apply(false);
+
+		// Measured again now the bar is back, because `required` is a record
+		// of what was true last time rather than a fact about this one.
+		if (overflows()) {
+			required = row.scrollWidth;
+			apply(true);
+		}
+	};
+
+	const schedule = () => {
+		if (scheduled) {
+			return;
+		}
+
+		scheduled = true;
+		requestAnimationFrame(sync);
+	};
+
+	new ResizeObserver(schedule).observe(row);
+
+	// A font that swaps late changes what the menu needs without changing the
+	// size of anything the observer is watching.
+	document.fonts?.ready.then(schedule);
+
+	sync();
+}
+
 function initHeader() {
 	initStickyHeader();
 	publishHeaderHeight();
 	initHoverDismiss();
 	initHeaderSearch();
+	initNavCollapse();
 }
 
 if (document.readyState === 'loading') {

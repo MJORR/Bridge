@@ -13,7 +13,7 @@
  * Three treatments, one per context, because a menu bar and a menu sheet are
  * not the same object with different numbers:
  *
- *   1. The menu bar — the primary nav in the header, above 600px. Items tile
+ *   1. The menu bar — the primary nav in the header, at full width. Items tile
  *      edge to edge and each hover surface runs the full height of the
  *      header, so the bar reads as a row of tabs rather than a line of
  *      floating pills.
@@ -23,6 +23,7 @@
  *      and stops at the bottom of the header, so the logo and the toggle stay
  *      where they are and the site stays on screen behind it.
  */
+@use "../abstracts/nav" as nav;
 
 // ---------------------------------------------------------------------------
 // Shared tokens
@@ -42,19 +43,19 @@
 	// the three being named.
 	--bridge-nav-tint: color-mix(in srgb, currentcolor 10%, transparent);
 
-	// The bar under a hovered or current item. Brand colour, because this is
-	// the one mark in the header that is about the site rather than the
-	// chrome; `currentcolor` if the palette has no accent.
-	--bridge-nav-marker: var(--wp--preset--color--accent, currentcolor);
-	--bridge-nav-marker-size: 2px;
+	// The same tint, doubled, for a row inside the dropdown. A child row is
+	// hovered against the panel's brand fill rather than against the header's
+	// ground, and 10% of the panel's own foreground barely separates from it —
+	// what reads as a clear change of state on the bar reads as a smudge in
+	// the panel. Twice the mix, the same idea.
+	--bridge-nav-tint-child: color-mix(in srgb, currentcolor 20%, transparent);
 
-	// How far the marker stops short of the header's bottom edge. Not flush
-	// with it: the header sits directly on whatever the page opens with, and
-	// a marker drawn on that join disappears into any band that happens to
-	// share its colour — which on this theme is the page title, in this exact
-	// accent. A strip of header ground beneath it keeps the mark reading as
-	// part of the bar rather than as a notch cut out of the page.
-	--bridge-nav-lift: 0.5rem;
+	// The bar over a hovered or current item. Brand colour, because this is
+	// the one mark in the header that is about the site rather than the
+	// chrome; `currentcolor` if the palette has no accent. Deep enough to
+	// read as the lit edge of a tab rather than as a hairline.
+	--bridge-nav-marker: var(--wp--preset--color--accent, currentcolor);
+	--bridge-nav-marker-size: 5px;
 
 	// Everything in the nav that changes state — a hover surface, a marker, a
 	// caret turning over — moves on this curve and this clock.
@@ -101,6 +102,13 @@
 	// mixed from `currentcolor` rather than named.
 	--bridge-nav-child-bg: color-mix(in srgb, currentcolor 10%, transparent);
 
+	// The bullet on a child row in the panel, and the space between it and the
+	// label. Small enough to read as punctuation rather than as a control: at
+	// much more than this a dot in a menu starts to look like something a
+	// thumb is meant to press.
+	--bridge-nav-bullet-size: 0.3125rem;
+	--bridge-nav-bullet-gap: 0.625rem;
+
 	// Strip any background WP/theme.json puts on the <li> so only the surface
 	// this file paints shows on hover (no square halo around it).
 	.wp-block-navigation-item {
@@ -123,12 +131,17 @@
 // ---------------------------------------------------------------------------
 // 1. The menu bar — primary nav in the header, desktop
 // ---------------------------------------------------------------------------
-// Scoped above 600px because that is where core stops rendering the nav as an
-// overlay and starts rendering it as a menu bar. The height these rules build
-// on is set up in _header.scss, which stretches every wrapper core renders
-// between the <nav> and the <li> to the full height of the header row.
-@media (min-width: 600px) {
-	.bridge-header .bridge-nav--primary {
+// Scoped to the width the theme draws a menu bar at — `abstracts/_nav.scss`,
+// which explains the number — and further to a header header.js has not
+// collapsed. Both halves matter: below the first there is no bar to style, and
+// past the second the same items are rows in a panel, where a tab's full-height
+// hover surface and its top marker would be nonsense.
+//
+// The height these rules build on is set up in _header.scss, which stretches
+// every wrapper core renders between the <nav> and the <li> to the full height
+// of the header row.
+@media (min-width: nav.$bar) {
+	.bridge-header:not(.is-nav-collapsed) .bridge-nav--primary {
 		// Roomier than the pill: the inset is what separates one label from
 		// the next now that the gap is gone, and it is also what sets the
 		// width of each hover column.
@@ -193,29 +206,51 @@
 				transition: background-color var(--bridge-nav-speed) ease;
 			}
 
-			// The marker is placed against the bottom of the header rather
-			// than the bottom of the item — one lift short of the edge, so it
-			// sits on the bar itself whatever the page opens with. And it
-			// underlines the label rather than the whole item: run it edge to
-			// edge and the marker on a hovered item touches the one on the
-			// current page beside it, where two separate states read as a
-			// single long bar. Held in by the inset, each is unmistakably
-			// about one word.
+			// The marker sits on the header's top edge, flush against it —
+			// the same line the hover surface starts at, so the two read as
+			// one object rather than as a stripe floating inside the item.
+			// It runs the item's full width rather than being held in by the
+			// inset: at this depth the mark is the top edge of a tab, and a
+			// tab edge that stops short of its own sides looks unfinished.
 			&::after {
 				content: "";
 				position: absolute;
-				inset-inline: var(--bridge-nav-inset);
-				bottom: calc(var(--bridge-nav-lift) - var(--bridge-nav-pad));
+				inset-inline: 0;
+				top: calc(-1 * var(--bridge-nav-pad));
 				height: var(--bridge-nav-marker-size);
 				background-color: var(--bridge-nav-marker);
 				transform: scaleX(0);
-				transition: transform var(--bridge-nav-speed)
-					var(--bridge-nav-ease);
+
+				// No transition in the resting state, so the mark only
+				// animates on the way in. Coming out it is gone on the frame
+				// the pointer leaves: a marker that retracts is still
+				// claiming the item after the pointer has moved on, and
+				// across a row of tabs that reads as the bar lagging behind
+				// the cursor. The timing lives on the hover rule instead.
 			}
 
 			&:hover::before,
 			&:focus-within::before {
 				background-color: var(--bridge-nav-tint);
+			}
+
+			// An item with a panel open lights at the panel's own value
+			// instead. The panel has no border, no radius and no shadow, so
+			// its fill is its entire shape — and a tab lit one step lighter
+			// than the slab hanging off it puts a seam across the join, which
+			// is the first thing the eye finds. At one value the two are a
+			// single form: a tab that got taller.
+			//
+			// Three ways in, the same three core opens a panel by: pointer on
+			// the item, focus inside it, and the caret on a click-to-open
+			// menu. The toggle is matched as a direct child so a nested panel
+			// left open cannot light its grandparent.
+			&.has-child:hover::before,
+			&.has-child:focus-within::before,
+			&:has(
+					> .wp-block-navigation-submenu__toggle[aria-expanded="true"]
+				)::before {
+				background-color: var(--bridge-nav-tint-child);
 			}
 
 			// The current page keeps the marker without keeping a surface: the
@@ -230,6 +265,8 @@
 			&.current-menu-ancestor::after,
 			&:has(> [aria-current="page"])::after {
 				transform: scaleX(1);
+				transition: transform var(--bridge-nav-speed)
+					var(--bridge-nav-ease);
 			}
 
 			// The anchor keeps the full height of the item as its hit area and
@@ -337,7 +374,10 @@
 	 * Only when the nav is the last thing in the row: with a CTA beside it,
 	 * the button owns the edge and the nav is an interior element.
 	 */
-	.bridge-header__row .bridge-header__end > .bridge-nav--primary:last-child {
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-header__row
+		.bridge-header__end
+		> .bridge-nav--primary:last-child {
 		margin-inline-end: calc(-1 * var(--bridge-nav-inset));
 	}
 
@@ -355,7 +395,7 @@
 	 * Six classes, because core's hover rule is four and this has to outrank
 	 * it while the pointer is still on the item.
 	 */
-	.bridge-header
+	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary.is-hover-dismissed
 		.wp-block-navigation-item.has-child:hover
 		> .wp-block-navigation__submenu-container {
@@ -407,10 +447,10 @@
 	padding-block: 0.5rem;
 	padding-inline: 0;
 
-	// Colour is inherited, not stated: the panel sits on the header's own
-	// ground, so a fixed palette hover would be the one thing in the header
-	// that ignores which ground that is. `currentcolor` is the same tint the
-	// top-level items use, and it works on either.
+	// Colour is inherited, not stated: a fixed palette hover would be the one
+	// thing in the header that ignores which ground it is on. `currentcolor`
+	// is the panel's own foreground, so the row lightens off a dark fill and
+	// darkens off a light one from a single declaration.
 	.wp-block-navigation-item__content {
 		// Padding is not set here — core claims it at five classes, the same
 		// way it claims the panel's surface. It lives in _header.scss with the
@@ -420,30 +460,20 @@
 		width: 100%;
 		transition: background-color var(--bridge-nav-speed) ease;
 
-		// The row's marker: the bar that runs along the bottom of a top-level
-		// item, stood on its end. Same colour, same idea, turned through 90°
-		// because a row is entered from the side.
-		&::before {
-			content: "";
-			position: absolute;
-			inset-block: 0;
-			left: 0;
-			width: var(--bridge-nav-marker-size);
-			background-color: var(--bridge-nav-marker);
-			transform: scaleX(0);
-			transform-origin: left;
-			transition: transform var(--bridge-nav-speed) var(--bridge-nav-ease);
-		}
-
 		&:hover,
 		&:focus-visible {
-			background-color: var(--bridge-nav-tint);
+			background-color: var(--bridge-nav-tint-child);
 		}
 
-		&:hover::before,
-		&:focus-visible::before,
-		&[aria-current="page"]::before {
-			transform: scaleX(1);
+		// The current page, in the accent — colour on the label rather than a
+		// mark beside it. The panel used to carry a hairline down the left of
+		// this row, which was the bottom marker of a top-level item stood on
+		// its end; that marker is now a 5px bar across the top of a tab, and a
+		// 2px vertical hairline is the last speaker of a language nothing else
+		// in the header still uses. Colour is also the one signal a panel with
+		// no borders and a tinted hover has not already spent.
+		&[aria-current="page"] {
+			color: var(--bridge-nav-marker);
 		}
 
 		&:focus-visible {
@@ -471,9 +501,10 @@
  */
 .bridge-header .wp-block-navigation__responsive-container-open {
 	position: relative;
-	// No `display` of its own. Core shows this button below 600px and hides it
-	// above, both at two classes, and a rule here that set `display` at two
-	// classes of its own would win the tie on stylesheet order alone — putting
+	// No `display` of its own. Core shows this button below its own breakpoint
+	// and hides it above, both at two classes, and a rule here that set
+	// `display` at two classes of its own would win the tie on stylesheet
+	// order alone — putting
 	// a hamburger next to a menu bar that is already showing every link it
 	// has. The bars centre themselves instead.
 	width: var(--bridge-nav-toggle-size);
@@ -595,19 +626,60 @@
 // ---------------------------------------------------------------------------
 
 /**
+ * Below the theme's own breakpoint the menu is a panel, whatever core thinks.
+ *
+ * Core decides this in a media query at 600px — show the bar, hide the
+ * hamburger — and a media query in a stylesheet a theme does not own is a
+ * number that cannot be moved, only outranked. So it is outranked: between
+ * 600px and this theme's floor the two rules below put core's own overlay
+ * back, and they do it with `display` alone because that is all core changed.
+ *
+ * This is the half of the collapse that does not need JavaScript. header.js
+ * covers everything above the floor, where whether a bar fits is a question
+ * about the menu rather than about the window; here the answer is known in
+ * advance and CSS can state it. Written at three and four classes against
+ * core's two and three, which is what settles it — the two stylesheets are
+ * loaded in an order no theme should be relying on.
+ *
+ * Note that a menu button still needs core's own script to open the panel it
+ * opens, at this width exactly as at 400px. What this survives is header.js
+ * not running, which is the failure it is a fallback for.
+ */
+@media (max-width: nav.$panel) {
+	.bridge-header .bridge-nav--primary {
+		// Not `:not(.is-menu-open)` as a nicety — core's inline-bar rule
+		// carries that guard, and without it here the panel would be hidden
+		// the moment it was asked for.
+		.wp-block-navigation__responsive-container:not(.is-menu-open) {
+			display: none;
+		}
+
+		.wp-block-navigation__responsive-container-open {
+			display: flex;
+		}
+	}
+}
+
+/**
  * The panel is positioned against the header, so the nav must stop being a
  * containing block.
  *
  * Core makes every navigation block `position: relative`, which on the bar is
- * exactly right — it is what the dropdowns hang from. Below 600px there are no
+ * exactly right — it is what the dropdowns hang from. In the panel there are no
  * dropdowns, and it is the one thing standing between a full-width panel and
  * the width of the toggle: leave it, and `left: 0; right: 0` resolves to the
  * 44 pixels the hamburger occupies.
  */
-@media (max-width: 599px) {
+@media (max-width: nav.$panel) {
 	.bridge-header .bridge-nav--primary {
 		position: static;
 	}
+}
+
+// And wherever header.js has collapsed a bar that did not fit, which is the
+// same panel arriving at a width core still calls desktop.
+.bridge-header.is-nav-collapsed .bridge-nav--primary {
+	position: static;
 }
 
 /**
@@ -787,19 +859,24 @@
 }
 
 /**
- * A child row: quieter, and a step up in tone rather than a step in from the
- * edge.
+ * A child row: quieter, a step up in tone, and marked with a bullet.
  *
- * An indent says "child" by starting the label somewhere the parents do not,
- * which costs the row its left bleed — the surface stops short of the screen
- * and the group reads as a floating strip. A lighter ground says the same
- * thing using the whole row, so the child keeps the parents' inset, the labels
- * all start on one line, and the fill runs edge to edge underneath them.
+ * The row is not indented. An indent says "child" by moving the whole surface
+ * in from the edge, which costs the row its left bleed — the fill stops short
+ * of the screen and the group reads as a floating strip pasted onto the panel.
+ * The ground and the bullet say it instead, and both of them can say it while
+ * the surface still runs edge to edge under the label.
  *
- * The tint is mixed from `currentcolor`, so it is 10% of the panel's own
+ * The bullet sits inside the row's existing padding, so it is the label that
+ * moves rather than the row: children start a little in from their parents,
+ * which is the indent's one good idea kept without its cost. It is drawn from
+ * `currentcolor` at just over half strength — a mark, not a second piece of
+ * punctuation competing with the word beside it.
+ *
+ * The tint is mixed from `currentcolor` too, so it is 10% of the panel's own
  * foreground laid over the panel's ground: white on the dark half of the
- * palette, which is a tenth lighter, and dark on a light secondary, where a
- * tenth lighter would be nothing at all. One rule, both halves.
+ * palette, which is a tenth lighter, and dark on a light one, where a tenth
+ * lighter would be nothing at all. One rule, both halves.
  *
  * The divider is the parents' — a border on the row rather than the group, so
  * every item in the list carries one and none of them is drawn by a neighbour.
@@ -813,6 +890,22 @@
 	background-color: var(--bridge-nav-child-bg);
 	font-size: 1rem;
 	font-weight: 400;
+	gap: var(--bridge-nav-bullet-gap);
+
+	// The row rule above hides this — on a parent it is the dropdown's marker,
+	// which the panel has no use for. Here it is the bullet, so it is turned
+	// back on: same pseudo-element, a different job, and this selector carries
+	// one class more than the rule that switched it off.
+	&::before {
+		content: "";
+		display: block;
+		flex: none;
+		width: var(--bridge-nav-bullet-size);
+		height: var(--bridge-nav-bullet-size);
+		border-radius: 50%;
+		background-color: currentcolor;
+		opacity: 0.55;
+	}
 
 	// Above the child's own ground rather than above the panel's, or the
 	// press would land on the tint the row is already wearing.
@@ -838,8 +931,10 @@
  * the half of the palette they were measured against — worked out in PHP, since
  * CSS cannot ask whether a colour is light.
  */
-@media (min-width: 600px) {
-	.bridge-header .bridge-nav--primary .bridge-nav__cta {
+@media (min-width: nav.$bar) {
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-nav--primary
+		.bridge-nav__cta {
 		display: none;
 	}
 }
@@ -851,7 +946,7 @@
 	.wp-block-navigation-item__content {
 	background-color: var(
 		--bridge-nav-cta-bg,
-		var(--wp--preset--color--secondary)
+		var(--wp--preset--color--accent)
 	);
 	color: var(--bridge-nav-cta-fg, var(--wp--preset--color--background));
 
@@ -864,7 +959,7 @@
 
 	// The wash the site's own buttons use, over the fill rather than over the
 	// panel: `currentcolor` here is the label the fill was measured against, so
-	// the press reads on a light secondary and a dark one alike.
+	// the press reads on a light accent and a dark one alike.
 	&:hover,
 	&:active {
 		background-image: linear-gradient(
@@ -873,7 +968,7 @@
 		);
 		background-color: var(
 			--bridge-nav-cta-bg,
-			var(--wp--preset--color--secondary)
+			var(--wp--preset--color--accent)
 		);
 	}
 }

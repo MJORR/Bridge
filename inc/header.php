@@ -400,14 +400,33 @@ function bridge_header_logo(array $header, string $background): string
 	}
 
 	// Both images are decorative: the accessible name sits on the link, below.
-	$image = wp_get_attachment_image($id, 'full', false, array('class' => 'bridge-header__logo-img', 'alt' => ''));
+	//
+	// `loading` is set explicitly because core will not get it right here.
+	// `wp_get_attachment_image()` defers to `wp_get_loading_optimization_attributes()`,
+	// which decides by counting content images in the main loop — and the header
+	// renders outside that loop, so the answer moved with the template: `lazy` on
+	// the front page, absent on a landing page. The logo is the topmost element
+	// of every page on the site and is never below the fold.
+	//
+	// Not `fetchpriority="high"`, deliberately. That belongs to the hero image
+	// the page is judged on; a logo that outbids it for bandwidth trades a
+	// worse LCP for a marginally earlier header.
+	$bridge_logo_attr = array(
+		'class'   => 'bridge-header__logo-img',
+		'alt'     => '',
+		'loading' => 'eager',
+	);
+
+	$image = wp_get_attachment_image($id, 'full', false, $bridge_logo_attr);
 
 	if ('' === $image) {
 		return $fallback;
 	}
 
+	// The sticky header carries both images in the markup and swaps them in
+	// CSS, so the light one is above the fold on exactly the same terms.
 	$light = $light_id > 0
-		? wp_get_attachment_image($light_id, 'full', false, array('class' => 'bridge-header__logo-light', 'alt' => ''))
+		? wp_get_attachment_image($light_id, 'full', false, array('class' => 'bridge-header__logo-light', 'alt' => '', 'loading' => 'eager'))
 		: '';
 
 	// An attachment deleted since it was chosen leaves one image and no swap.
@@ -445,6 +464,13 @@ function bridge_header_nav(int $menu, string $justify, array $extra = array()): 
 	$attrs = array_merge(
 		array(
 			'className'   => 'bridge-nav bridge-nav--primary',
+			// One step down the scale from body copy. A menu bar is scanned
+			// rather than read, and at the body size a row of tabs competes
+			// with the page's own first line. Set as a block attribute rather
+			// than in the stylesheet so it travels as core's own preset class
+			// and the size stays on the scale the operator controls — the
+			// dropdown and the panel both size themselves from here.
+			'fontSize'    => 'small',
 			'overlayMenu' => 'mobile',
 			'layout'      => array(
 				'type'          => 'flex',

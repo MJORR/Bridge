@@ -64,6 +64,31 @@ function bridge_palette_slugs(): array
 }
 
 /**
+ * A palette slug from untrusted input, or the fallback.
+ *
+ * The check is `is_string()` before the comparison rather than a cast after
+ * it. A cast looks equivalent and is not: the options screen posts JSON, and
+ * an array arriving where a slug belongs — a malformed request, an older
+ * client, a hand-rolled REST call — makes `(string)` emit an "Array to string
+ * conversion" warning before returning the useless value "Array". The
+ * sanitiser's whole job is that nothing reaches the tokens except a value it
+ * recognises, and a warning on the way to rejecting one is a bug in the
+ * rejecting.
+ *
+ * @param mixed  $value    Candidate, from anywhere.
+ * @param string $fallback Slug to use when the candidate is not one.
+ * @return string A slug in bridge_palette_slugs().
+ */
+function bridge_pick_palette_slug($value, string $fallback): string
+{
+	if (! is_string($value) || ! isset(bridge_palette_slugs()[$value])) {
+		return $fallback;
+	}
+
+	return $value;
+}
+
+/**
  * The hex a palette slug currently resolves to.
  *
  * Read from the token record rather than from the compiled global settings:
@@ -691,8 +716,8 @@ function bridge_card_shadow_choices(): array
  *   letterSpacing  Tracking. Positive only where the case demands it.
  *   borderWidth    The boundary. Filled buttons carry one too, in their own
  *                  fill colour, so the two styles are exactly the same size
- *                  and a fill that needs a visible edge (WCAG 1.4.11) can be
- *                  given one without the button changing dimensions.
+ *                  and a fill that has no edge of its own at all can be given
+ *                  one without the button changing dimensions.
  *   shadow         Resting elevation.
  *   shadowHover    Elevation under the pointer.
  *   sweep          Height of the rule that draws itself under the label on
@@ -916,9 +941,13 @@ function bridge_button_ground_choices(): array
  *          it sits on, from the palette first and black or white as a
  *          backstop. Every colour reaches at least 4.58:1 against one of
  *          those two, so a label that fails is not reachable from here.
- *   1.4.11 Non-text contrast — a fill within 3:1 of its own band would have
- *          no discernible edge, so it is given a border in the band's
- *          foreground, which by construction contrasts with both.
+ *   1.4.11 Non-text contrast — a filled button is identified by its fill and
+ *          the label on it, both of which are measured above, so its edge is
+ *          its own fill and a chosen colour is the whole button. The one
+ *          promotion left is the degenerate case: a fill under
+ *          BRIDGE_BUTTON_EDGE_FLOOR of its band is not a quiet button but an
+ *          invisible one, and takes a border in the band's foreground. See the
+ *          border rule in bridge_button_scheme() for why this is not 3:1.
  *   2.4.11 Focus not obscured / focus appearance — the ring is the band's
  *          foreground, offset far enough to clear the button's own boundary.
  *
@@ -948,85 +977,169 @@ function bridge_button_schemes(array $tokens): array
 	$schemes = array();
 
 	foreach (bridge_button_grounds() as $key => $entry) {
-		$ground     = $hex($entry['ground']);
-		$foreground = $hex($entry['text']);
-		$fill       = $hex((string) ($tokens['buttons']['colors'][$key] ?? $entry['fill']));
-
-		$hover_fill  = bridge_shade_hex($fill, $shade);
-		$label       = bridge_readable_on($fill, $labels);
-		// The resting label first, so a hover state only changes colour when
-		// the shaded fill genuinely stopped carrying it.
-		$hover_label = bridge_readable_on($hover_fill, array_merge(array($label), $labels));
-
-		$edge       = bridge_contrast_ratio($fill, $ground);
-		$hover_edge = bridge_contrast_ratio($hover_fill, $ground);
-
-		/**
-		 * The band's own foreground, promoted if it cannot do the job.
-		 *
-		 * These three — the border a fill is given when it has no edge of its
-		 * own, the focus ring, and the secondary button — were the band's
-		 * foreground outright, on the reasoning that a colour legible enough
-		 * to be the band's text is legible enough to draw a line in.
-		 *
-		 * That holds for a palette anyone would design and fails for one the
-		 * sanitiser will nonetheless accept. A brand of mid-greys puts its
-		 * text at 1.01:1 against its own background; a brand that recolours
-		 * `text` for a dark background leaves it at 1.95:1 on the Accent band.
-		 * In both, the border drawn to satisfy 1.4.11 was as invisible as the
-		 * fill it was covering for, and the focus ring with it.
-		 *
-		 * So each is asked for at the threshold it actually has to meet — 3:1
-		 * for a boundary, 4.5:1 for the secondary button's label — and falls
-		 * back to black or white when the palette cannot supply it, which
-		 * always clears both. On a palette that was already fine, every one of
-		 * these is the foreground, unchanged.
-		 */
-		$boundary = bridge_readable_on($ground, array($foreground), 3.0);
-		$ghost    = bridge_readable_on($ground, array($foreground), 4.5);
-
-		// A boundary only where the fill has not got one.
-		$border       = $edge >= 3.0 ? $fill : $boundary;
-		$hover_border = $hover_edge >= 3.0 ? $hover_fill : $boundary;
-
-		$schemes[$key] = array(
-			'bg'          => strtolower($fill),
-			'fg'          => strtolower($label),
-			'hoverBg'     => strtolower($hover_fill),
-			'hoverFg'     => strtolower($hover_label),
-			'border'      => strtolower($border),
-			'hoverBorder' => strtolower($hover_border),
-			// The secondary button. Transparent, carrying the band's own
-			// foreground as its label and boundary — the one treatment legible
-			// on all four grounds — and inverting into the band on hover,
-			// which is a change of state no colour blindness can miss.
-			'ghost'       => strtolower($ghost),
-			'ghostHover'  => strtolower($ground),
-			// Focus. Offset clear of the button's own edge, so the ring is
-			// measured against the band rather than against the button.
-			'ring'        => strtolower($boundary),
-			// The arithmetic, for the options screen to show and for anyone
-			// who has to answer "does this pass" with a number rather than a
-			// reassurance. `fill` is the ratio of the button's own colour
-			// against its band and `boundary` the ratio of whatever actually
-			// draws its edge — the same figure until the fill is too close to
-			// the band to have an edge, at which point the border it was given
-			// is what 1.4.11 is measuring.
-			'audit'       => array(
-				'label'      => bridge_contrast_ratio($fill, $label),
-				'hoverLabel' => bridge_contrast_ratio($hover_fill, $hover_label),
-				'fill'       => $edge,
-				'boundary'   => $edge >= 3.0 ? $edge : bridge_contrast_ratio($border, $ground),
-				'ghost'      => bridge_contrast_ratio($ground, $ghost),
-				'ring'       => bridge_contrast_ratio($ground, $boundary),
-				// True when the fill could not be its own edge and was given
-				// one.
-				'bordered'   => $edge < 3.0,
-			),
+		$schemes[$key] = bridge_button_scheme(
+			$hex((string) ($tokens['buttons']['colors'][$key] ?? $entry['fill'])),
+			$hex($entry['ground']),
+			$hex($entry['text']),
+			$shade,
+			$labels
 		);
 	}
 
 	return $schemes;
+}
+
+/**
+ * The contrast at which a fill stops being its own edge.
+ *
+ * Not 3:1. See the border rule in bridge_button_scheme(): a filled button is
+ * identified by its fill and its label, so the edge follows the fill, and this
+ * is the floor below which there is no fill to follow — a button the same
+ * colour as the page it sits on.
+ *
+ * Two measured pairs set it, and it has to sit between them:
+ *
+ *   1.42  A yellow button on a cream Surface band (#ffcb2e on #faf7f0). Two
+ *         colours a designer chose, one clearly on the other. It keeps its own
+ *         edge. This was 1.5 briefly, which put a dark outline on that button
+ *         at rest while its hover shade — a fraction darker, at 1.84 — kept
+ *         the fill. A rule that changes a button's border when the pointer
+ *         arrives is worse than either answer on its own.
+ *   1.01  A near-white fill on a white page (#fefefe on #ffffff), and the
+ *         `background` slug on the Default ground at 1.00. Not a quiet button,
+ *         no button: nothing marks where it is. These are given a border.
+ *
+ * Set it to 0 to drop the promotion altogether and let a fill be its own edge
+ * unconditionally. The cost is that the pairs on the second line render as an
+ * invisible control, and the Buttons tab can reach them.
+ */
+define('BRIDGE_BUTTON_EDGE_FLOOR', 1.1);
+
+
+
+/**
+ * One button's colours, derived from its fill and the ground it stands on.
+ *
+ * Split out of bridge_button_schemes() so the four grounds in
+ * bridge_button_grounds() are not the only places a button can be painted.
+ * The header is the other one: it sits on whichever palette colour an operator
+ * chose for it, or on a hero photograph when a landing page overlays it, so it
+ * cannot be a fixed entry in that list — but its call to action still has to
+ * be a complete button rather than a fill with the default ground's border
+ * around it. Every rule in the docblock above is applied here; that function
+ * is now the loop, and this is the arithmetic.
+ *
+ * @param string   $fill       The button's own colour, as a hex.
+ * @param string   $ground     The band behind it, as a hex.
+ * @param string   $foreground The band's own text colour, as a hex.
+ * @param float    $shade      How far the skin shades a fill on hover.
+ * @param string[] $labels     Palette colours a label may be, in preference
+ *                             order.
+ * @return array<string, mixed> Colours, plus the `audit` arithmetic.
+ */
+function bridge_button_scheme(string $fill, string $ground, string $foreground, float $shade, array $labels): array
+{
+	$hover_fill  = bridge_shade_hex($fill, $shade);
+	$label       = bridge_readable_on($fill, $labels);
+	// The resting label first, so a hover state only changes colour when
+	// the shaded fill genuinely stopped carrying it.
+	$hover_label = bridge_readable_on($hover_fill, array_merge(array($label), $labels));
+
+	$edge       = bridge_contrast_ratio($fill, $ground);
+	$hover_edge = bridge_contrast_ratio($hover_fill, $ground);
+
+	/**
+	 * The band's own foreground, promoted if it cannot do the job.
+	 *
+	 * These three — the border a fill is given when it has no edge of its
+	 * own, the focus ring, and the Outline button — were the band's
+	 * foreground outright, on the reasoning that a colour legible enough
+	 * to be the band's text is legible enough to draw a line in.
+	 *
+	 * That holds for a palette anyone would design and fails for one the
+	 * sanitiser will nonetheless accept. A brand of mid-greys puts its
+	 * text at 1.01:1 against its own background; a brand that recolours
+	 * `text` for a dark background leaves it at 1.95:1 on the Accent band.
+	 * In both, the border drawn to satisfy 1.4.11 was as invisible as the
+	 * fill it was covering for, and the focus ring with it.
+	 *
+	 * So each is asked for at the threshold it actually has to meet — 3:1
+	 * for a boundary, 4.5:1 for the Outline button's label — and falls
+	 * back to black or white when the palette cannot supply it, which
+	 * always clears both. On a palette that was already fine, every one of
+	 * these is the foreground, unchanged.
+	 */
+	$boundary = bridge_readable_on($ground, array($foreground), 3.0);
+	$ghost    = bridge_readable_on($ground, array($foreground), 4.5);
+
+	/**
+	 * The border follows the fill.
+	 *
+	 * This used to promote at 3:1: a fill within that of its own band was given
+	 * the band's foreground as an edge, on the strict reading of WCAG 1.4.11.
+	 * The cost was that an Accent button — amber at 2.08:1 on a white page, and
+	 * the single most common brand button there is — came wrapped in a near-black
+	 * outline nobody designed. 1.4.11 asks for a boundary at 3:1 where the
+	 * boundary is what identifies the control; a filled button carrying a label
+	 * at 4.5:1 is identified by the fill and the label, and Understanding 1.4.11
+	 * says as much. So a chosen colour is now the whole button: pick Accent and
+	 * the edge is Accent.
+	 *
+	 * BRIDGE_BUTTON_EDGE_FLOOR is the exception, and it is not an aesthetic one.
+	 * Below it the fill is not a quiet edge, it is no edge: `background` on the
+	 * Default ground is a white button on a white page, which without a border
+	 * is an invisible control rather than a subtle one. 1.5 sits under every
+	 * two-colour pairing a brand would choose — Accent on white clears it by
+	 * half again — and over the pairings that are the same colour twice.
+	 */
+	$border       = $edge >= BRIDGE_BUTTON_EDGE_FLOOR ? $fill : $boundary;
+	$hover_border = $hover_edge >= BRIDGE_BUTTON_EDGE_FLOOR ? $hover_fill : $boundary;
+
+	return array(
+		'bg'          => strtolower($fill),
+		'fg'          => strtolower($label),
+		'hoverBg'     => strtolower($hover_fill),
+		'hoverFg'     => strtolower($hover_label),
+		'border'      => strtolower($border),
+		'hoverBorder' => strtolower($hover_border),
+		// The Outline button. Transparent, carrying the band's own
+		// foreground as its label and boundary — the one treatment legible
+		// on all four grounds — and filling with that foreground on hover,
+		// which is a change of state no colour blindness can miss.
+		//
+		// Its hover label used to be the band's own colour, so the button
+		// inverted into the band exactly. That is the tidier idea and it put an
+		// unreadable label on the one ground where the band's colour is not a
+		// label colour: on Inverted the Outline button filled with white and
+		// wrote Primary on it — a mid-dark brand colour where the palette has a
+		// text colour meant for exactly this. So the label is picked the way
+		// every other label in this function is picked, by ratio against the
+		// thing it sits on. On the grounds where the band's colour was already
+		// the readable answer, it still is.
+		'ghost'       => strtolower($ghost),
+		'ghostHover'  => strtolower(bridge_readable_on($ghost, $labels)),
+		// Focus. Offset clear of the button's own edge, so the ring is
+		// measured against the band rather than against the button.
+		'ring'        => strtolower($boundary),
+		// The arithmetic, for the options screen to show and for anyone
+		// who has to answer "does this pass" with a number rather than a
+		// reassurance. `fill` is the ratio of the button's own colour
+		// against its band and `boundary` the ratio of whatever actually
+		// draws its edge — the same figure until the fill is too close to
+		// the band to have an edge, at which point the border it was given
+		// is what 1.4.11 is measuring.
+		'audit'       => array(
+			'label'      => bridge_contrast_ratio($fill, $label),
+			'hoverLabel' => bridge_contrast_ratio($hover_fill, $hover_label),
+			'fill'       => $edge,
+			'boundary'   => $edge >= BRIDGE_BUTTON_EDGE_FLOOR ? $edge : bridge_contrast_ratio($border, $ground),
+			'ghost'      => bridge_contrast_ratio($ground, $ghost),
+			'ring'       => bridge_contrast_ratio($ground, $boundary),
+			// True when the fill could not be its own edge and was given
+			// one — now only when it had no edge at all. See the border rule.
+			'bordered'   => $edge < BRIDGE_BUTTON_EDGE_FLOOR,
+		),
+	);
 }
 
 /**
@@ -1098,7 +1211,6 @@ function bridge_token_constraints(): array
 			// menu in a fixed centre column, which would cap how many items it
 			// can hold as a client's services grow.
 			'layout'       => array('options' => array('left', 'centre', 'two-row')),
-			'background'   => array('options' => array('solid', 'transparent')),
 			'contrast'     => array('options' => array('auto', 'light', 'dark')),
 			'logoHeight'   => array('min' => 16, 'max' => 120, 'step' => 2, 'unit' => 'px'),
 			// 0 is a header whose logo touches the edges of its ground — flush
@@ -1271,7 +1383,21 @@ function bridge_token_defaults(): array
 			// light ground, and `lightId` the light one for a dark ground.
 			// Either may be 0 — a site with a single logo uses it everywhere.
 			'logo'            => array('id' => 0, 'lightId' => 0, 'height' => 40),
-			'cta'             => array('enabled' => false, 'label' => '', 'url' => ''),
+			// `color` is the button's fill, as a palette slug rather than a hex, so
+			// the CTA follows the brand when it changes. Accent because that is
+			// what the header hard-coded before this was a setting, so a site that
+			// never opens the control keeps the button it had.
+			'cta'             => array('enabled' => false, 'label' => '', 'url' => '', 'color' => 'accent'),
+			// The three colours the menu bar paints that are not the header's own
+			// ground: the surface under a hovered item, the dropdown that hangs
+			// off it, and the mark that lights the item you are on. Defaults are
+			// what the stylesheet hard-coded before they were settings, so a site
+			// that never opens the controls keeps the menu it had.
+			'nav'             => array(
+				'rollover' => 'surface',
+				'child'    => 'surface',
+				'accent'   => 'accent',
+			),
 		),
 		'footer'     => array(
 			'style'           => 'simple',
@@ -1524,6 +1650,16 @@ function bridge_clamp_token(string $group, string $key, $value, float $fallback)
 function bridge_pick_token(string $group, string $key, $value, string $fallback): string
 {
 	$options = bridge_token_constraints()[$group][$key]['options'];
+
+	// Scalar first, and `is_scalar()` rather than `is_string()`: the spacing
+	// slugs are numeric strings ('20', '30', …), so a client posting a number
+	// where one belongs is asking for something real and the cast should be
+	// allowed to answer. An array is not, and casting one emits an "Array to
+	// string conversion" warning on the way to rejecting it — a warning raised
+	// by the code whose job is to reject quietly.
+	if (! is_scalar($value)) {
+		return $fallback;
+	}
 
 	return in_array((string) $value, $options, true) ? (string) $value : $fallback;
 }
@@ -2009,6 +2145,26 @@ function bridge_sanitize_tokens(array $raw): array
 		? ! empty($raw_cta['enabled'])
 		: ('' !== $cta_label && '' !== $cta_url);
 
+	// Checked against the palette rather than picked through bridge_pick_token()
+	// for the same reason the header's own backgroundColor is: the valid set is
+	// the palette's slugs, which is data, not a fixed list this schema can name.
+	// A record written before the setting existed falls to the default, which is
+	// the colour the header used to hard-code.
+	$cta_color = bridge_pick_palette_slug($raw_cta['color'] ?? null, $defaults['header']['cta']['color']);
+
+	// The menu bar's three colours, each a palette slug and nothing else. Same
+	// check as the call to action's fill, three more times.
+	$raw_nav = isset($raw_header['nav']) && is_array($raw_header['nav']) ? $raw_header['nav'] : array();
+
+	$nav = array();
+
+	foreach (array('rollover', 'child', 'accent') as $nav_key) {
+		$nav[$nav_key] = bridge_pick_palette_slug(
+			$raw_nav[$nav_key] ?? null,
+			$defaults['header']['nav'][$nav_key]
+		);
+	}
+
 	$header = array(
 		'layout'          => bridge_pick_token('header', 'layout', $raw_header['layout'] ?? '', $defaults['header']['layout']),
 		'topBar'          => ! empty($top_bar),
@@ -2021,10 +2177,26 @@ function bridge_sanitize_tokens(array $raw): array
 			'primary' => max(0, (int) ($raw_menus['primary'] ?? 0)),
 			'utility' => max(0, (int) ($raw_menus['utility'] ?? 0)),
 		),
-		'background'      => bridge_pick_token('header', 'background', $raw_header['background'] ?? '', $defaults['header']['background']),
-		'backgroundColor' => isset(bridge_palette_slugs()[(string) ($raw_header['backgroundColor'] ?? '')])
-			? (string) $raw_header['backgroundColor']
-			: $defaults['header']['backgroundColor'],
+		// Not a setting any more, and pinned rather than merely hidden.
+		//
+		// A transparent header is a fact about a template, not about a site:
+		// bridge_template_header_background() gives one to `page-landing`, which
+		// opens on a hero and never consults this value. Every other template —
+		// page, single, archive, search, 404 — opens on ordinary content, and a
+		// site-wide `transparent` overlaid the header on it, sliding the first
+		// section's text underneath. There was no template where the setting did
+		// what an operator picking it would expect.
+		//
+		// Pinned rather than left to whatever is stored, because the control that
+		// wrote it is gone: a site that had chosen `transparent` would otherwise
+		// keep an overlaid header with nothing left in the UI to turn it off. The
+		// three-way resolution in the header block is unchanged — a block
+		// attribute and the template both still outrank this.
+		'background'      => 'solid',
+		'backgroundColor' => bridge_pick_palette_slug(
+			$raw_header['backgroundColor'] ?? null,
+			$defaults['header']['backgroundColor']
+		),
 		'contrast'        => bridge_pick_token('header', 'contrast', $raw_header['contrast'] ?? '', $defaults['header']['contrast']),
 		'sticky'          => ! empty($raw_header['sticky']),
 		'border'          => ! empty($raw_header['border']),
@@ -2038,7 +2210,9 @@ function bridge_sanitize_tokens(array $raw): array
 			'enabled' => $cta_enabled,
 			'label'   => $cta_label,
 			'url'     => $cta_url,
+			'color'   => $cta_color,
 		),
+		'nav'             => $nav,
 	);
 
 	$raw_footer_menus = isset($raw_footer['menus']) && is_array($raw_footer['menus']) ? $raw_footer['menus'] : array();

@@ -204,7 +204,7 @@
 }
 
 /**
- * The primary button's colours, and how they answer a pointer.
+ * The Solid button's colours, and how they answer a pointer.
  *
  * Separate from `shape` so a caller can withhold it from a button an editor
  * has painted by hand. Every value is the current ground's, with the page's
@@ -328,7 +328,7 @@
  * The wash is mixed from `currentcolor`, which is the one colour known to
  * contrast with the fill, whatever the fill turned out to be. So it darkens a
  * light button and lightens a dark one without anything here knowing which it
- * is — the same trick the secondary button's tint used, and the reason neither
+ * is — the same trick the Outline button's tint used, and the reason neither
  * needs a colour of its own.
  *
  * A `background-image` rather than an inset shadow, because the resting
@@ -350,10 +350,10 @@
 }
 
 /**
- * The secondary button: transparent, with the band's own foreground as its
+ * The Outline button: transparent, with the band's own foreground as its
  * label and its boundary.
  *
- * One treatment that is legible on all four grounds, which is what a secondary
+ * One treatment that is legible on all four grounds, which is what an Outline
  * action needs — it is the button that ends up on a photograph, a dimmed hero
  * and an Inverted band, and any named colour would be right on some of those
  * and wrong on the rest.

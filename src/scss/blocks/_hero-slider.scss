@@ -20,6 +20,9 @@
  * readable if the script never arrives.
  */
 
+@use "../abstracts/on-dark" as dark;
+@use "../abstracts/section" as section;
+
 // The transparent header that overlays this slider is styled in
 // blocks/_header.scss. It used to be described here too, which meant the
 // landing page's header only positioned itself correctly on pages that
@@ -34,25 +37,64 @@
 	// effects, so a fade and a step feel like the same slider.
 	--bridge-slider-speed: 800ms;
 
-	position: relative;
-	// Height is driven by --bridge-slider-height set inline from render.php
-	// (preset or custom value from the InspectorControls). Falls back to
-	// full viewport if no value is present. Less whatever the header is already
-	// spending of the window: render.php decides what that is worth — it is
-	// the only place that knows whether the height was asked for in viewport
-	// units, and whether the header on this page occupies its own band or
-	// floats over this one — and publishes the answer as a length. Zero in
-	// every case where neither applies, so this stays one expression rather
-	// than a set of variants.
-	height: calc(
+	// The floor the hero is measured against. A named length rather than the
+	// calc() written straight into `min-height`, because the expression is two
+	// variables and a subtraction and reads as one idea — "the window, less the
+	// header" — only when it has somewhere to say so. The banner does the same
+	// arithmetic inline and needs a stylelint exemption to survive prettier
+	// wrapping it.
+	//
+	// Driven by --bridge-slider-height, set inline from render.php (preset or
+	// custom value from the InspectorControls), falling back to the full
+	// window. Less whatever the header is already spending of it: render.php
+	// decides what that is worth — it is the only place that knows whether the
+	// height was asked for in viewport units, and whether the header on this
+	// page occupies its own band or floats over this one — and publishes the
+	// answer as a length. Zero in every case where neither applies, so this
+	// stays one expression rather than a set of variants.
+	--bridge-slider-floor: calc(
 		var(--bridge-slider-height, 100dvh) - var(--bridge-slider-inset, 0px)
 	);
+
+	// A hero is a photograph with words on it, which is the case this mixin
+	// exists for — the same one the inverted band and the photographic call to
+	// action are. It brings the Inverted button scheme (a light fill with a
+	// dark label, and an Outline button that inverts into the slide), the
+	// light foreground this block used to set by hand, and headings and links
+	// that follow it rather than staying the palette's dark.
+	//
+	// It replaced two hand-written custom properties here that pointed only
+	// the ghost pair at the Inverted scheme. They were the right answer to
+	// half the question: a *filled* button on a slide had the same problem and
+	// was not covered, and the theme already had one place that knew all of
+	// it.
+	@include dark.on-dark;
+
+	position: relative;
+	// A floor, not a fixed height — the same measure the banner takes, and for
+	// the same reason: content that outgrows the window makes the hero taller
+	// instead of being clipped by it. A slider used to have to pin every slide
+	// to one fixed box because the cross-fade stacked them with `position:
+	// absolute`, which took them out of flow and left nothing for the box to
+	// be sized by. They are stacked in a single grid cell now instead — still
+	// in flow, still in the same place, and the tallest of them sizes the
+	// hero.
+	min-height: var(--bridge-slider-floor);
+	// One in-flow child, the track, stretched to whichever is taller: the
+	// floor, or the content. The chrome is positioned rather than placed, so
+	// none of it is a grid item.
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
 	overflow: hidden;
-	color: var(--wp--preset--color--background);
 
 	&__track {
 		position: relative;
-		height: 100%;
+		// One column, and — under the fade, where every slide is placed in the
+		// same cell — one row. The slides stretch to it and it stretches to
+		// the slider, so the floor reaches the bottom of the last slide
+		// without any percentage height having to resolve on the way down.
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	// Every direct child of the track is a slide, whatever block made it.
@@ -62,10 +104,18 @@
 		margin: 0;
 	}
 
-	// Each slide is a Cover. Override its per-slide minHeight so it always
-	// fills the slider — the slider sizes the slide; let Cover follow.
+	// Each slide is a Cover, and the slider sizes the slide rather than the
+	// other way round: whatever minHeight the Cover was saved with — core's
+	// own 430px default, or a figure an operator typed into a slide that has
+	// since been dropped into a shorter hero — is dropped, and the height
+	// comes from stretching to the track. The height control in the sidebar is
+	// then the only thing deciding how tall the hero is.
+	//
+	// Zero rather than a length, because this is the one rule that must not
+	// become a ceiling: a slide whose content is taller than the floor stays
+	// as tall as its content, and takes the hero with it.
 	&__track > .wp-block-cover {
-		min-height: 100% !important;
+		min-height: 0 !important;
 	}
 
 	// Cover's flex centering only centers the inner-container *as a box* —
@@ -73,14 +123,52 @@
 	// the top. Make the inner-container fill the cover, then center its
 	// own children (the title/subtitle) vertically inside it. Inline padding
 	// keeps content clear of the prev/next buttons at the slide edges.
-	&__track > .wp-block-cover > .wp-block-cover__inner-container {
-		min-height: 100%;
+	// Two selectors, because the two trees differ: render.php wraps the slides
+	// in a track, and the editor puts them under the block itself. Everything
+	// else in this file belongs to one side or the other — the transition, the
+	// stacking, the chrome — but the column the words sit in is the same
+	// question in both, and a preview that answers it differently is a preview
+	// of another page.
+	//
+	// The editor's is a descendant selector rather than a child one. The child
+	// form is the honest description of the tree the block builds, and it
+	// broke: `<InnerBlocks />` had been putting `.block-editor-inner-blocks >
+	// .block-editor-block-list__layout` between the block and its Covers, so
+	// nothing matched. edit.js places the slides with `useInnerBlocksProps`
+	// now and the Covers are direct children again — but the canvas is the
+	// editor's markup to change, not ours, and this rule should not be the
+	// thing that notices next time.
+	&__track > .wp-block-cover > .wp-block-cover__inner-container,
+	&.is-editor-preview .wp-block-cover > .wp-block-cover__inner-container {
+		// The narrow column, the same one `bridge/section` and the FAQ band
+		// take when their width control is set to narrow — the site has one
+		// answer to "how wide is a column of words" and a hero is not the
+		// place to invent a second. It brings its own gutter, so nothing here
+		// needs to keep the words off the window edge.
+		//
+		// On the container rather than on each child. Capping the children
+		// would look the same for a heading and a paragraph and stop being
+		// true the moment a slide holds a Group: a Group set to constrained
+		// starts the site's content width again inside itself, and the nested
+		// content spreads back out to it. A narrow box cannot be argued with
+		// from the inside.
+		//
+		// Nothing else caps this. Cover declares layout support with no
+		// default, so its children get flow rather than the constrained layout
+		// a Group or the post content gets — hero copy runs the full width of
+		// the slide until something here says otherwise.
+		@include section.container(narrow);
+
+		// Fill the Cover. `align-self` rather than `min-height: 100%`: a
+		// percentage height resolves against a parent that has a height, and
+		// the Cover now has a floor and content instead — the percentage would
+		// quietly compute to zero and leave the content sitting at the top of
+		// the slide. Stretching asks the Cover's own flexbox for the same
+		// answer without needing anyone up the chain to be a fixed size.
+		align-self: stretch;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		// The scale, not a bespoke clamp: these presets are fluid, and a
-		// hand-rolled one here would taper on its own schedule.
-		padding-inline: var(--wp--preset--spacing--80);
 		// A transparent header covers the top of this box without shortening
 		// it, so centring here would centre against a strip the visitor
 		// cannot see into. Padding the covered part out of the box moves the
@@ -116,11 +204,17 @@
 // `visibility` rides along with the opacity so a faded-out slide is not a
 // focus trap for a keyboard or a duplicate reading for a screen reader; it is
 // transitioned rather than switched so it holds until the fade has finished.
+//
+// "The same place" is one grid cell, not `position: absolute`. Both stack the
+// slides; only this one leaves them in flow, where they can still be measured.
+// The track is as tall as the tallest slide and every slide is that tall, so a
+// slide with more to say makes the hero taller instead of spilling out of it —
+// and the hero does not change height as the slides change, which absolute
+// positioning could not have done either.
 // ---------------------------------------------------------------------------
 .bridge-hero-slider.is-effect-fade {
 	.bridge-hero-slider__track > * {
-		position: absolute;
-		inset: 0;
+		grid-area: 1 / 1;
 		opacity: 0;
 		visibility: hidden;
 		transition:
@@ -143,7 +237,11 @@
 // ---------------------------------------------------------------------------
 .bridge-hero-slider.is-effect-slide {
 	.bridge-hero-slider__track {
+		// Flex rather than the grid above: side by side instead of stacked.
+		// The slides still stretch to the track and the track to the slider,
+		// so the floor and the growth work the same either way.
 		display: flex;
+		align-items: stretch;
 		// The track is one slide wide, so a whole-number translation of its
 		// own width is exactly one step.
 		transform: translate3d(
@@ -189,7 +287,15 @@
 	}
 
 	position: absolute;
-	inset-block-start: 50%;
+	// The middle of what the visitor can see, which is not the middle of the
+	// box. Where the header overlays the hero it covers the top
+	// `--bridge-slider-lead` of it, so the visible band runs from `lead` to the
+	// bottom and its centre is `lead / 2` below the box's own — the same
+	// correction the slide content makes with `padding-block-start`, halved
+	// because this is a midpoint rather than an offset. Zero when the header
+	// sits above the hero instead, where the floor has already been shortened
+	// by it and 50% is the honest answer.
+	inset-block-start: calc(50% + var(--bridge-slider-lead, 0px) / 2);
 	transform: translateY(-50%);
 	z-index: 2;
 	display: grid;
@@ -351,7 +457,11 @@
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
-	height: auto;
+	// The floor belongs to the front end, where the slides are stacked and one
+	// of them is the hero. Here they are a column of blocks being written, and
+	// a window's worth of minimum before the first of them would be a canvas
+	// that opens on nothing.
+	min-height: 0;
 	overflow: visible;
 
 	// In the editor each Cover is a block being written, not a slide being

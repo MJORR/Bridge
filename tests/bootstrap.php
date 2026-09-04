@@ -49,6 +49,9 @@ require_once $bridge_theme_dir . '/inc/post-types.php';
 require_once $bridge_theme_dir . '/inc/fonts.php';
 require_once $bridge_theme_dir . '/inc/lockdown.php';
 require_once $bridge_theme_dir . '/inc/theme-json.php';
+// The band mask turns a signed percentage into a colour, which is arithmetic
+// worth pinning the same way the button schemes are.
+require_once $bridge_theme_dir . '/inc/section-blocks.php';
 // The activation seeds. Loaded for bridge_seed_post_types(), which is pure
 // token arithmetic — the menu seeding beside it talks to the database and is
 // not called from a test.

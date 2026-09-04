@@ -158,86 +158,133 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
 						/>
+						<SelectControl
+							label={__('Button colour', 'bridge')}
+							value={header.cta.color}
+							options={Object.entries(paletteSlugs).map(
+								([slug]) => ({
+									label: draft.brand.palette[slug].name,
+									value: slug,
+								})
+							)}
+							onChange={(value) => setHeader('cta.color', value)}
+							help={__(
+								'What fills the button. The header is the one ground the Buttons tab does not model \u2014 it is whichever colour you painted it, or a hero photograph on a landing page \u2014 so this fill is chosen rather than computed. The label follows it automatically, and the same colour paints the button in the mobile menu.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
 					</>
 				)}
 
+				{/*
+				 * There is no Solid/Transparent choice here any more. A transparent
+				 * header is a fact about a template rather than about a site: the
+				 * Landing Page template overlays its header on the hero it opens
+				 * with, and it does that whatever this panel said. Every other
+				 * template opens on ordinary content, which a transparent header
+				 * slid underneath. There was nothing the setting could usefully be
+				 * set to: the one template it would have helped never read it.
+				 */}
 				<SelectControl
-					label={__('Background', 'bridge')}
-					value={header.background}
-					options={[
-						{
-							label: __('Solid', 'bridge'),
-							value: 'solid',
-						},
-						{
-							label: __(
-								'Transparent — overlays what follows',
-								'bridge'
-							),
-							value: 'transparent',
-						},
-					]}
-					onChange={(value) => setHeader('background', value)}
+					label={__('Header background', 'bridge')}
+					value={header.backgroundColor}
+					options={Object.entries(paletteSlugs).map(([slug]) => ({
+						label: draft.brand.palette[slug].name,
+						value: slug,
+					}))}
+					onChange={(value) => setHeader('backgroundColor', value)}
+					help={__(
+						'The ground the header sits on everywhere except the Landing Page template, whose header overlays the hero instead.',
+						'bridge'
+					)}
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
 
-				{header.background === 'solid' && (
-					<SelectControl
-						label={__('Background colour', 'bridge')}
-						value={header.backgroundColor}
-						options={Object.entries(paletteSlugs).map(([slug]) => ({
-							label: draft.brand.palette[slug].name,
-							value: slug,
-						}))}
-						onChange={(value) =>
-							setHeader('backgroundColor', value)
-						}
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-					/>
-				)}
+				<SelectControl
+					label={__('Landing page header text', 'bridge')}
+					value={header.contrast}
+					options={[
+						{
+							label: __('Auto', 'bridge'),
+							value: 'auto',
+						},
+						{
+							label: __('Light text', 'bridge'),
+							value: 'light',
+						},
+						{
+							label: __('Dark text', 'bridge'),
+							value: 'dark',
+						},
+					]}
+					onChange={(value) => setHeader('contrast', value)}
+					help={__(
+						'On the Landing Page template the header sits over the hero rather than on a colour, so its text is chosen against a photograph. Auto assumes a dark one; a photograph\u2019s brightness cannot be known in advance, so set it here if auto reads wrong.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
 
-				{header.background === 'transparent' && (
-					<SelectControl
-						label={__('Text contrast', 'bridge')}
-						value={header.contrast}
-						options={[
-							{
-								label: __('Auto', 'bridge'),
-								value: 'auto',
-							},
-							{
-								label: __('Light text', 'bridge'),
-								value: 'light',
-							},
-							{
-								label: __('Dark text', 'bridge'),
-								value: 'dark',
-							},
-						]}
-						onChange={(value) => setHeader('contrast', value)}
-						help={__(
-							'Auto assumes a dark hero. A photograph\u2019s brightness cannot be known in advance, so set it here if auto reads wrong.',
-							'bridge'
-						)}
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-					/>
-				)}
+				<SelectControl
+					label={__('Nav rollover background colour', 'bridge')}
+					value={header.nav.rollover}
+					options={Object.entries(paletteSlugs).map(([slug]) => ({
+						label: draft.brand.palette[slug].name,
+						value: slug,
+					}))}
+					onChange={(value) => setHeader('nav.rollover', value)}
+					help={__(
+						'The surface behind a main menu item the pointer is on. Its label colour follows automatically, so this stays readable on the Landing Page template where the menu sits over the hero.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+
+				<SelectControl
+					label={__('Nav child background colour', 'bridge')}
+					value={header.nav.child}
+					options={Object.entries(paletteSlugs).map(([slug]) => ({
+						label: draft.brand.palette[slug].name,
+						value: slug,
+					}))}
+					onChange={(value) => setHeader('nav.child', value)}
+					help={__(
+						'The dropdown panel, and the item it hangs from \u2014 the two are painted in one colour so the open menu reads as the tab having grown rather than as a slab under it.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+
+				<SelectControl
+					label={__('Nav accent colour', 'bridge')}
+					value={header.nav.accent}
+					options={Object.entries(paletteSlugs).map(([slug]) => ({
+						label: draft.brand.palette[slug].name,
+						value: slug,
+					}))}
+					onChange={(value) => setHeader('nav.accent', value)}
+					help={__(
+						'The bar that lights a hovered item and marks the page you are on, and the colour of the current page\u2019s label inside a dropdown.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
 
 				<ToggleControl
 					label={__('Stick to the top on scroll', 'bridge')}
 					checked={Boolean(header.sticky)}
 					onChange={(on) => setHeader('sticky', on)}
-					help={
-						header.background === 'transparent'
-							? __(
-									'A transparent sticky header turns solid once it leaves the hero, so its links stay readable.',
-									'bridge'
-								)
-							: undefined
-					}
+					help={__(
+						'On a landing page the sticky header turns solid once it leaves the hero, so its links stay readable.',
+						'bridge'
+					)}
 					__nextHasNoMarginBottom
 				/>
 

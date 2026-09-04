@@ -137,8 +137,15 @@ final class ButtonSchemesTest extends BridgeTestCase
 				$audit['hoverLabel'],
 				"Ground: {$ground}"
 			);
+			// Against the band, not against the hover label: the audit reports
+			// whether the secondary button can be read where it rests, and the
+			// two stopped being the same number when the hover label began
+			// being chosen by ratio rather than being the band's own colour.
+			$band = bridge_sanitize_tokens($this->palette($palette))['brand']['palette'];
+			$hex  = strtolower($band[bridge_button_grounds()[$ground]['ground']]['color']);
+
 			$this->assertSame(
-				bridge_contrast_ratio($scheme['ghost'], $scheme['ghostHover']),
+				bridge_contrast_ratio($hex, $scheme['ghost']),
 				$audit['ghost'],
 				"Ground: {$ground}"
 			);
@@ -146,15 +153,22 @@ final class ButtonSchemesTest extends BridgeTestCase
 	}
 
 	/**
-	 * Every fill either stands off its band, or is given an edge that does.
+	 * Every button can be told from the page it sits on.
 	 *
-	 * WCAG 1.4.11 in one assertion: a control has to have a discernible
-	 * boundary. The interesting case is `background` on the Default ground —
-	 * a white button on a white page, which has no edge of its own at all.
+	 * The guarantee, since the border began following the fill: a button is
+	 * discernible because its own colour is discernible and because the label on
+	 * it is legible — not because an outline was added to cover for the fill. So
+	 * two assertions rather than one, and the boundary is measured against
+	 * BRIDGE_BUTTON_EDGE_FLOOR rather than 3:1.
+	 *
+	 * The interesting case is still `background` on the Default ground — a white
+	 * button on a white page, which has no edge of its own at all and is the one
+	 * case still given a border. That is what keeps the first assertion honest:
+	 * it would fail outright if the floor stopped promoting.
 	 *
 	 * @dataProvider provide_hostile_palettes
 	 */
-	public function test_every_button_has_a_discernible_boundary(array $palette): void
+	public function test_every_button_can_be_told_from_its_band(array $palette): void
 	{
 		$grounds = bridge_button_grounds();
 
@@ -164,12 +178,84 @@ final class ButtonSchemesTest extends BridgeTestCase
 
 			foreach ($schemes as $ground => $scheme) {
 				$this->assertGreaterThanOrEqual(
-					3.0,
+					BRIDGE_BUTTON_EDGE_FLOOR,
 					$scheme['audit']['boundary'],
 					"Boundary failed on {$ground} with a {$fill} fill"
 				);
+
+				$this->assertGreaterThanOrEqual(
+					4.5,
+					$scheme['audit']['label'],
+					"Label failed on {$ground} with a {$fill} fill"
+				);
 			}
 		}
+	}
+
+	/**
+	 * A chosen colour is the whole button.
+	 *
+	 * The regression this rule was changed for: Accent is amber at roughly 2:1
+	 * on a white page, which the old 3:1 promotion wrapped in a near-black
+	 * outline. Asserted on both grounds where it is a plausible choice.
+	 */
+	public function test_a_fill_that_stands_off_its_band_at_all_keeps_its_own_edge(): void
+	{
+		$schemes = $this->schemes(
+			array('accent' => '#f0a519', 'background' => '#ffffff'),
+			'solid',
+			array('default' => 'accent', 'surface' => 'accent')
+		);
+
+		foreach (array('default', 'surface') as $ground) {
+			$scheme = $schemes[$ground];
+
+			$this->assertSame(
+				$scheme['bg'],
+				$scheme['border'],
+				"An accent button on the {$ground} ground took a foreign border"
+			);
+			$this->assertSame($scheme['hoverBg'], $scheme['hoverBorder']);
+			$this->assertFalse($scheme['audit']['bordered']);
+			$this->assertLessThan(3.0, $scheme['audit']['fill']);
+		}
+	}
+
+	/**
+	 * The resting border and the hover border answer the same question.
+	 *
+	 * The regression: a yellow fill on the cream Surface band measured 1.42
+	 * against it and its hover shade 1.84, so a floor set between them promoted
+	 * the resting border to the band's foreground and left the hover border on
+	 * the fill. The button grew a dark outline that vanished under the pointer.
+	 * Whatever the floor is, both sides of one button have to land the same side
+	 * of it for any fill a designer would actually pick.
+	 */
+	public function test_a_button_does_not_change_border_colour_on_hover(): void
+	{
+		$schemes = $this->schemes(
+			array('accent' => '#ffcb2e', 'surface' => '#faf7f0'),
+			'solid',
+			array('surface' => 'accent')
+		);
+		$scheme = $schemes['surface'];
+
+		$this->assertSame($scheme['bg'], $scheme['border']);
+		$this->assertSame($scheme['hoverBg'], $scheme['hoverBorder']);
+		$this->assertFalse($scheme['audit']['bordered']);
+	}
+
+	/**
+	 * The floor still catches the case it exists for.
+	 */
+	public function test_a_fill_indistinguishable_from_its_band_is_still_bordered(): void
+	{
+		$schemes = $this->schemes(array(), 'solid', array('default' => 'background'));
+		$scheme  = $schemes['default'];
+
+		$this->assertTrue($scheme['audit']['bordered']);
+		$this->assertNotSame($scheme['bg'], $scheme['border']);
+		$this->assertGreaterThanOrEqual(3.0, $scheme['audit']['boundary']);
 	}
 
 	/** @return array<string, array{0: array<string, string>}> */
@@ -258,7 +344,15 @@ final class ButtonSchemesTest extends BridgeTestCase
 
 			$this->assertSame(strtolower($palette[$entry['text']]['color']), $scheme['ghost']);
 			$this->assertSame(strtolower($palette[$entry['text']]['color']), $scheme['ring']);
-			$this->assertSame(strtolower($palette[$entry['ground']]['color']), $scheme['ghostHover']);
+			// The hover label is picked by ratio against the fill the secondary
+			// button takes on hover, which is its own resting label colour.
+			$this->assertSame(
+				strtolower(bridge_readable_on(
+					$scheme['ghost'],
+					array($palette['background']['color'], $palette['text']['color'])
+				)),
+				$scheme['ghostHover']
+			);
 		}
 	}
 

@@ -49,7 +49,11 @@ function iconLibrary() {
  *
  * Entries:
  *   - main                  Global frontend JS + bundled global SCSS.
- *   - slider                Hero-slider viewScript + viewStyle (runtime + component SCSS).
+ *   - slider                Hero-slider runtime + stylesheet (component SCSS).
+ *                           The stylesheet is the block's `style`, so the editor
+ *                           and the front end are painted by one file; the script
+ *                           is enqueued by render.php, and only where there are
+ *                           two slides or more.
  *   - hero-slider-editor    Block registration script loaded in the editor.
  *   - hero-banner-editor    Hero Banner block registration script (editor only).
  *   - hero-banner           Hero Banner stylesheet (CSS-only entry).
@@ -99,6 +103,10 @@ export default defineConfig(({ mode }) => ({
 			input: {
 				main: resolve(__dirname, 'src/main.js'),
 				slider: resolve(__dirname, 'src/js/slider.js'),
+				'header-cta-backdrop': resolve(
+					__dirname,
+					'src/js/header-cta-backdrop.js'
+				),
 				'hero-slider-editor': resolve(
 					__dirname,
 					'src/blocks/hero-slider/index.js'
@@ -191,10 +199,7 @@ export default defineConfig(({ mode }) => ({
 				),
 				'faqs-editor': resolve(__dirname, 'src/blocks/faqs/index.js'),
 				faqs: resolve(__dirname, 'src/scss/faqs.scss'),
-				'goals-editor': resolve(
-					__dirname,
-					'src/blocks/goals/index.js'
-				),
+				'goals-editor': resolve(__dirname, 'src/blocks/goals/index.js'),
 				'goal-editor': resolve(__dirname, 'src/blocks/goal/index.js'),
 				goals: resolve(__dirname, 'src/scss/goals.scss'),
 				'goals-view': resolve(__dirname, 'src/js/goals-view.js'),
@@ -244,9 +249,14 @@ export default defineConfig(({ mode }) => ({
 					__dirname,
 					'src/editor/paragraph-lock.js'
 				),
-				'button-lock': resolve(
+				'button-lock': resolve(__dirname, 'src/editor/button-lock.js'),
+				'button-panel': resolve(
 					__dirname,
-					'src/editor/button-lock.js'
+					'src/editor/button-panel.js'
+				),
+				'band-gradient': resolve(
+					__dirname,
+					'src/editor/band-gradient.js'
 				),
 				'top-level-only': resolve(
 					__dirname,

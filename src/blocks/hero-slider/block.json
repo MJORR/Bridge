@@ -65,7 +65,6 @@
 		}
 	},
 	"editorScript": "bridge-hero-slider-editor",
-	"viewScript": "bridge-hero-slider-view",
-	"viewStyle": "bridge-hero-slider-style",
+	"style": "bridge-hero-slider-style",
 	"render": "file:./render.php"
 }

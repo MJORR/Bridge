@@ -37,7 +37,23 @@
 		background-color: var(--bridge-band-mask-color);
 		mask-image: var(--bridge-band-mask-image);
 		mask-repeat: no-repeat;
-		mask-position: right center;
+
+		/**
+		 * Centred by default, and anchored by the bands that grow.
+		 *
+		 * The box is the band, so a centred shape sits half a band down —
+		 * which moves whenever the band's height changes. On a Cards or
+		 * Downloads band the height is settled by the time anyone looks at it
+		 * and centred is the better placing. An FAQ band is an accordion: it
+		 * grows and shrinks under the reader's own clicks, and a decoration
+		 * that slides up and down the page as they open questions reads as
+		 * the layout coming loose.
+		 *
+		 * Vertical only. The horizontal edge is `right` for every band —
+		 * moving the shape off it is what `--bridge-band-mask-inset` does, on
+		 * the box rather than on the mask, for the reason above.
+		 */
+		mask-position: right var(--bridge-band-mask-anchor, center);
 
 		/**
 		 * Sized by width, so the shape keeps its own proportions rather than

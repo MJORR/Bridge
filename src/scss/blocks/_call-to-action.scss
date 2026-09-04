@@ -5,20 +5,42 @@
  * Styles tab, so there is no colour here — only the image variant, which is
  * the one background a skin cannot paint.
  */
+@use "../abstracts/band-mask" as mask;
 @use "../abstracts/section" as section;
 @use "../abstracts/on-dark" as on-dark;
 
 .bridge-cta {
-	position: relative;
+	// The decorative mask shape, when the block asks for one — the same shape,
+	// the same controls and the same mixin every other band that offers it
+	// uses. The mixin supplies the `position: relative` this band already had.
+	@include mask.band-mask;
+
 	// `bridge-section` on the wrapper already spends the section padding that
 	// Theme Options governs; nothing to repeat here.
 	overflow: hidden;
+
+	/**
+	 * Where the shape sits in this band's own stack.
+	 *
+	 * The other bands that carry a shape have nothing behind their content, so
+	 * the mixin's pseudo-element paints under it by document order and needs
+	 * no z-index. This one has a photograph and a wash over it, both absolute
+	 * and both after `::before` in the DOM — so left alone the shape would be
+	 * cut out behind the picture and never seen.
+	 *
+	 * One layer up puts it over the wash, and the content moves up with it.
+	 * Numbers rather than the mixin's document order, because this band was
+	 * already stacking on numbers before it had a shape.
+	 */
+	&.has-mask::before {
+		z-index: 1;
+	}
 
 	&__inner {
 		@include section.container(narrow);
 
 		position: relative;
-		z-index: 1;
+		z-index: 2;
 		display: flex;
 		flex-direction: column;
 		// The global rhythm, so the space inside the band follows the space
@@ -43,7 +65,7 @@
 
 	&__graphic {
 		position: relative;
-		z-index: 1;
+		z-index: 2;
 		display: block;
 		width: auto;
 		max-width: 8rem;

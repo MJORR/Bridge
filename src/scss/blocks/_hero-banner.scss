@@ -3,9 +3,10 @@
  *
  * The static counterpart to the Hero Slider: one core/cover, sized to the
  * window, laid out in columns. Deliberately its own stylesheet rather than a
- * layer shared with the slider — the two blocks size themselves differently
- * (a floor here, a fixed height there) and sharing the rules would couple two
- * things that are only superficially alike.
+ * layer shared with the slider — the two take the same measure now, a floor
+ * either side, but they arrive at it differently: the slider has a track, a
+ * stack and a transition to keep in step with it, and none of that belongs in
+ * a file this block loads on every page it appears on.
  *
  * Cover owns its own layout — background image, overlay, content positioning
  * — so this file handles sizing and the header allowance only. No flex
@@ -16,15 +17,34 @@
  */
 
 .bridge-hero-banner {
-	position: relative;
+	// An outline button on a hero has no colour of its own to fall back on:
+	// unset, the ghost mixin lands on the on-Default pair, a near-black edge
+	// and a near-black label over a photograph. The same mapping the slider
+	// makes, for the same reason — see blocks/_hero-slider.scss.
+	--bridge-button-ghost: var(--wp--custom--button--on-inverted--ghost);
+	--bridge-button-ghost-hover: var(
+		--wp--custom--button--on-inverted--ghost-hover
+	);
 
-	// A floor, not a fixed height. The slider has to pin every slide to the
-	// same box because it fades one into another; nothing here does, so
-	// content that outgrows the window makes the banner taller instead of
-	// being clipped by it. That is what keeps a two-column banner honest on a
-	// phone, where core stacks the columns and the content roughly doubles in
-	// height — the same arrangement in a fixed box would simply lose its
-	// lower half, with no scrollbar to admit it.
+	position: relative;
+	// One in-flow child, the Cover, stretched to the floor below.
+	//
+	// A grid rather than a plain block, because `min-height` on a block
+	// container gives its child nothing: a percentage height resolves against a
+	// parent that has a *height*, and this parent has a floor and some content
+	// instead, so `min-height: 100%` on the Cover computed to `auto` and the
+	// Cover stayed as tall as its own text. The banner was the height it was
+	// asked to be and the Cover — with the background image in it — ended
+	// partway down, the rest of the box empty. Stretching to a grid row asks no
+	// percentage to resolve and needs nobody up the chain to be a fixed size.
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+
+	// A floor, not a fixed height: content that outgrows the window makes the
+	// banner taller instead of being clipped by it. That is what keeps a
+	// two-column banner honest on a phone, where core stacks the columns and
+	// the content roughly doubles in height — the same arrangement in a fixed
+	// box would simply lose its lower half, with no scrollbar to admit it.
 
 	// Less whatever the header is already spending of the window: render.php
 	// decides what that is worth — it is the only place that knows whether
@@ -46,9 +66,16 @@
 	// stylelint-enable scss/operator-no-newline-after
 
 	// The Cover follows the wrapper rather than setting its own floor, so the
-	// height control in the sidebar is the only thing deciding this.
+	// height control in the sidebar is the only thing deciding this: core's
+	// 430px default and any minHeight the block was saved with are dropped, and
+	// the height comes from stretching to the row. `!important` because that
+	// saved figure arrives as an inline style, which no selector outranks.
+	//
+	// Zero rather than a length, because it must not become a ceiling: content
+	// taller than the floor stays as tall as it is and takes the banner with
+	// it, which is the whole point of measuring in floors.
 	> .wp-block-cover {
-		min-height: 100%;
+		min-height: 0 !important;
 		margin: 0;
 	}
 
@@ -57,10 +84,16 @@
 	// top. Make the inner container fill the cover, then center its own
 	// children vertically inside it.
 	> .wp-block-cover > .wp-block-cover__inner-container {
+		// Fill the Cover, for the same reason and by the same means as the
+		// wrapper fills itself: `min-height: 100%` here was resolving against a
+		// Cover with no height of its own and computing to nothing, which left
+		// the content sitting at the top of the banner however tall the banner
+		// was — and left `padding-block-start` below with no box to lead the
+		// content down inside.
+		align-self: stretch;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		min-height: 100%;
 
 		// The scale, not a bespoke clamp: these presets are fluid, and a
 		// hand-rolled one here would taper on its own schedule.

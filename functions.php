@@ -295,7 +295,37 @@ function bridge_register_blocks(): void
 
 	// --- Hero Slider -------------------------------------------------------
 	bridge_register_script('bridge-hero-slider-editor', 'hero-slider-editor.js', bridge_editor_script_deps());
+
+	/**
+	 * The slider runtime.
+	 *
+	 * Registered rather than declared as the block's `viewScript`: WordPress
+	 * enqueues a view script wherever the block renders, and a hero with one
+	 * slide renders the block without ever having a use for it. How many slides
+	 * were authored is a question only the block can answer, so it enqueues this
+	 * itself. See src/blocks/hero-slider/render.php.
+	 */
 	bridge_register_script('bridge-hero-slider-view', 'slider.js', array(), true);
+
+	/**
+	 * The call to action's backdrop reader.
+	 *
+	 * Registered rather than enqueued: it is only wanted where the header
+	 * overlays a photograph, and which templates those are is a question the
+	 * header block answers at render time. See src/blocks/header/render.php,
+	 * which enqueues this on that branch.
+	 */
+	bridge_register_script('bridge-header-cta-backdrop', 'header-cta-backdrop.js', array(), true);
+	/**
+	 * The slider's stylesheet.
+	 *
+	 * Declared as the block's `style` rather than its `viewStyle`, the way the
+	 * banner's is: a view style is enqueued from WP_Block::render(), which the
+	 * editor never calls, so the canvas was painting the slides with none of
+	 * this — the height, the column the words sit in, the stacked preview — and
+	 * an operator laying out a hero was looking at a page the site does not
+	 * serve. One handle, both contexts, one answer.
+	 */
 	bridge_register_style('bridge-hero-slider-style', 'slider.css');
 	bridge_register_block('hero-slider');
 
@@ -347,7 +377,7 @@ function bridge_register_blocks(): void
 		) . ';',
 		'before'
 	);
-	bridge_register_section_block('call-to-action');
+	bridge_register_section_block('call-to-action', true, false, array('bridge-band-mask'));
 	bridge_register_section_block('testimonials');
 	// The downloads band offers the decorative mask shape, so its editor script
 	// names the shared handle that draws those controls.
@@ -363,7 +393,7 @@ function bridge_register_blocks(): void
 	// `wp-core-data` because the edit view lists the questions the block will
 	// pull in, which are posts of a declared content type rather than blocks
 	// nested inside it.
-	bridge_register_section_block('faqs', true, false, array('wp-core-data'));
+	bridge_register_section_block('faqs', true, false, array('wp-core-data', 'bridge-band-mask'));
 
 	/**
 	 * Where the block's questions come from.
@@ -710,7 +740,7 @@ function bridge_inline_hero_slider_css(): void
 
 	// The enqueue itself is the condition, not `has_block()`: block templates
 	// and this theme's search.php both render the body before `wp_head()`, so
-	// by now the block has asked for its `viewStyle` if it is on the page at
+	// by now the block has asked for its stylesheet if it is on the page at
 	// all — including from a template part or a pattern, which a `has_block()`
 	// test against post content would miss.
 	$handle = 'bridge-hero-slider-style';
@@ -820,6 +850,49 @@ function bridge_enqueue_editor_assets(): void
 		array(
 			'wp-hooks',
 			'wp-blocks',
+		)
+	);
+
+	/*
+	 * And the two controls the lock leaves it: which of the two button designs
+	 * this is — Theme Options draws and audits both, and until this panel there
+	 * was no way to ask for the second — and which of the four compiled schemes
+	 * it is painted from. Needs the sidebar, so it asks for rather more than
+	 * its neighbours above: the components, the block editor's
+	 * InspectorControls and the HOC helper, plus wp-i18n, which
+	 * bridge_register_script() reads as the signal to hand the handle its
+	 * translations. See src/editor/button-panel.js.
+	 */
+	bridge_enqueue_script(
+		'bridge-button-panel',
+		'button-panel.js',
+		array(
+			'wp-hooks',
+			'wp-blocks',
+			'wp-element',
+			'wp-block-editor',
+			'wp-components',
+			'wp-compose',
+			'wp-i18n',
+		)
+	);
+
+	/*
+	 * The gradient a skinned band can wear. Offered on any block already
+	 * wearing one of the three section skins rather than on a list of block
+	 * names, so it reaches the sixteen section blocks and core/group alike and
+	 * needs nothing of any of them. See src/editor/band-gradient.js.
+	 */
+	bridge_enqueue_script(
+		'bridge-band-gradient',
+		'band-gradient.js',
+		array(
+			'wp-hooks',
+			'wp-element',
+			'wp-block-editor',
+			'wp-components',
+			'wp-compose',
+			'wp-i18n',
 		)
 	);
 

@@ -77,9 +77,9 @@
 			"type": "boolean",
 			"default": false
 		},
-		"maskColor": {
-			"type": "string",
-			"default": "accent"
+		"maskShade": {
+			"type": "number",
+			"default": -20
 		},
 		"maskSize": {
 			"type": "number",

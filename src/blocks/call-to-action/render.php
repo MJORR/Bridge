@@ -38,7 +38,16 @@ $has_image = $background_id > 0;
 
 $width = 'wide' === ( $attributes['width'] ?? 'narrow' ) ? 'wide' : 'narrow';
 
-$classes = 'bridge-cta bridge-cta--' . $width;
+/*
+ * The decorative mask shape, when the block asks for one. The same shape, the
+ * same three controls and the same helper the Cards, Downloads and FAQ bands
+ * use — a silhouette from Theme Options, shaded lighter or darker than
+ * whatever this band happens to be. On the image variant that is the
+ * photograph, which the stylesheet stacks it over.
+ */
+list( $mask_class, $mask_style ) = bridge_band_mask( $attributes );
+
+$classes = 'bridge-cta bridge-cta--' . $width . $mask_class;
 
 if ( $has_image ) {
 	// The old block fell back to the dark skin when the image was missing, so
@@ -67,6 +76,10 @@ if ( $has_image ) {
 		'var(--wp--preset--color--primary)'
 	);
 }
+
+// The shape's own four properties, after the wash so a band carrying both
+// keeps them in one attribute rather than two.
+$style .= $mask_style;
 
 echo bridge_section_wrapper( $attributes, $classes, $style ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 

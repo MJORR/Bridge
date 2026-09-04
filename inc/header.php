@@ -287,6 +287,128 @@ function bridge_header_contrast(string $background = ''): string
 }
 
 /**
+ * The complete colour scheme for the header's call to action.
+ *
+ * The header is a button ground the Buttons tab cannot list. Its four entries
+ * are the page and the three section skins, each standing on a fixed palette
+ * slug; the header stands on whichever slug an operator painted it, and on a
+ * hero photograph when a landing page overlays it. So the scheme is worked out
+ * per render, here, rather than compiled into theme.json with the other four.
+ *
+ * It goes through bridge_button_scheme() so it is the same arithmetic and not
+ * merely a similar one: the label picked for 4.5:1 on the fill, the border the
+ * fill is given when it has no edge of its own, the hover pair, the focus ring.
+ * A fill alone is not a button — a chosen background with the default ground's
+ * border still around it is the mismatch this exists to prevent.
+ *
+ * @param string $background `solid` or `transparent`, as being rendered.
+ * @param string $contrast   `light` or `dark`, the header's resolved text.
+ * @return array<string, mixed> A scheme in bridge_button_scheme()'s shape.
+ */
+function bridge_header_button_scheme(string $background, string $contrast): array
+{
+	$tokens  = bridge_get_tokens();
+	$palette = $tokens['brand']['palette'];
+
+	$hex = static function (string $slug) use ($palette): string {
+		return (string) ($palette[$slug]['color'] ?? '#000000');
+	};
+
+	// The band's own text, which is what a boundary and a focus ring are drawn
+	// in when the fill cannot draw its own. The header has already answered
+	// this question for its links, so the button uses the same answer.
+	$foreground = 'light' === $contrast ? $hex('background') : $hex('text');
+
+	/**
+	 * The ground under the button.
+	 *
+	 * A solid header is a palette colour and can be measured. A transparent
+	 * one is a photograph, whose brightness is not knowable server-side — so
+	 * it stands in the palette half the header's own contrast was already
+	 * decided against: light text means the header assumed a dark backdrop,
+	 * and `text` is the darkest thing the palette is guaranteed to hold. It is
+	 * an assumption either way, and this is the one the rest of the header has
+	 * already committed to, so the button cannot disagree with its own bar.
+	 */
+	$ground = 'transparent' === $background
+		? ('light' === $contrast ? $hex('text') : $hex('background'))
+		: $hex((string) $tokens['header']['backgroundColor']);
+
+	$skins = bridge_button_skins();
+	$skin  = $skins[$tokens['buttons']['skin']] ?? reset($skins);
+
+	return bridge_button_scheme(
+		$hex((string) ($tokens['header']['cta']['color'] ?? 'accent')),
+		$ground,
+		$foreground,
+		(float) ($skin['fill'] ?? 0.12),
+		// The same two candidates every other button chooses a label from.
+		array($hex('background'), $hex('text'))
+	);
+}
+
+/**
+ * The call to action's two schemes, for a header overlaying a photograph.
+ *
+ * A solid header stands on a colour the server knows, so one scheme answers
+ * it. An overlaying one stands on a hero, and on a slider it stands on a
+ * different hero every few seconds — so the server cannot answer it at all.
+ * What it can do is prepare both answers and let the page choose between them:
+ * header-cta-backdrop.js when it has read the image, and the stylesheet on its
+ * own once a sticky bar has scrolled solid.
+ *
+ * Both are real schemes from bridge_button_scheme(), so whichever gets picked
+ * is a button the design system drew rather than a colour JavaScript invented.
+ *
+ * `light` is not a light-backdrop variant computed here — it is literally the
+ * scheme a solid header renders, ground and all. Two reasons, and the second
+ * is the one that decided it: a bright hero is near enough the site's own
+ * ground that the button it wears there is the right button, and a sticky bar
+ * that has scrolled solid *is* the standard page's header, so its call to
+ * action has to be the standard page's call to action rather than something
+ * that merely resembles it on today's palette.
+ *
+ * `dark` keeps the operator's chosen fill until it cannot hold 3:1 against a
+ * dark hero — the threshold this file's boundary rule already uses. A brand
+ * amber reads on a dark photograph and a brand navy vanishes into one, and a
+ * button that has vanished is worse than one that is briefly off-brand. No
+ * such flip on the light side: there the ground is known, and a known ground
+ * is the operator's to judge.
+ *
+ * @return array{dark: array<string, mixed>, light: array<string, mixed>} The
+ *         scheme for a dark backdrop, and the solid header's own.
+ */
+function bridge_header_cta_schemes(): array
+{
+	$tokens  = bridge_get_tokens();
+	$palette = $tokens['brand']['palette'];
+
+	$hex = static function (string $slug) use ($palette): string {
+		return (string) ($palette[$slug]['color'] ?? '#000000');
+	};
+
+	$skins = bridge_button_skins();
+	$skin  = $skins[$tokens['buttons']['skin']] ?? reset($skins);
+
+	// The palette's dark end stands in for the photograph, the same way the
+	// header's own contrast treatment already assumes one.
+	$ground     = $hex('text');
+	$foreground = $hex('background');
+	$chosen     = $hex((string) ($tokens['header']['cta']['color'] ?? 'accent'));
+
+	return array(
+		'dark'  => bridge_button_scheme(
+			bridge_contrast_ratio($chosen, $ground) >= 3.0 ? $chosen : $foreground,
+			$ground,
+			$foreground,
+			(float) ($skin['fill'] ?? 0.12),
+			array($hex('background'), $hex('text'))
+		),
+		'light' => bridge_header_button_scheme('solid', bridge_header_contrast('solid')),
+	);
+}
+
+/**
  * Which logo a scrolled sticky header wants.
  *
  * A sticky header goes solid on the site's own background once it leaves the

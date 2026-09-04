@@ -719,7 +719,37 @@ function bridge_compile_theme_json(array $tokens): array
 						'radius' => 'var(--wp--custom--button--radius)',
 						'width'  => 'var(--wp--custom--button--border-width)',
 						'style'  => 'solid',
-						'color'  => 'var(--wp--custom--button--on-default--border)',
+						/*
+						 * The band's border if the band named one, and the
+						 * page's own otherwise — the same chain the `fill`
+						 * mixin reads, rather than the Default ground's answer
+						 * written out.
+						 *
+						 * It has to be the chain because this declaration wins.
+						 * Core's selector for the block is `.wp-block-button
+						 * .wp-block-button__link`, two classes; the mixin's is
+						 * `.wp-block-button__link:not(.has-background,
+						 * .has-text-color)`, which is also two — and global
+						 * styles are printed after the theme's stylesheets, so
+						 * the tie goes here. Naming the Default ground outright
+						 * therefore pinned *every* button's resting border to
+						 * it, on every band. On the three dark grounds the ring
+						 * was the button's own near-black and nobody saw it; on
+						 * Inverted it was a hard dark ring around a white
+						 * button, with the hover fill climbing inside it,
+						 * because that fill is a layer in the padding box and
+						 * the border is not part of it.
+						 *
+						 * Only the resting state was affected: the mixin's
+						 * hover rule carries `:hover` and outranks this.
+						 *
+						 * The chain resolves on the button, not here — this is
+						 * an ordinary declaration on the element rather than a
+						 * custom property declared at `:root`, so
+						 * `--bridge-button-border` is in scope, inherited from
+						 * whichever band the button landed in.
+						 */
+						'color'  => 'var(--bridge-button-border, var(--wp--custom--button--on-default--border))',
 					),
 					'spacing'    => array(
 						'padding' => array(

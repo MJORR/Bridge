@@ -20,7 +20,7 @@
 
 @mixin on-dark {
 	// Buttons are the hard part, and they are no longer answered here: the
-	// Inverted colour scheme — a light fill with a dark label, and a secondary
+	// Inverted colour scheme — a light fill with a dark label, and an Outline
 	// button that inverts into the band — is computed against the palette in
 	// bridge_button_schemes() and pointed at by this one include. A ground is
 	// nine custom properties and no rules, so a photographic call to action

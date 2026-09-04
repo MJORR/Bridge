@@ -201,6 +201,43 @@ final class ColorTest extends BridgeTestCase
 		$this->assertGreaterThanOrEqual(4.5, $worst);
 	}
 
+	// ---- bridge_hex_alpha ------------------------------------------------
+
+	/**
+	 * Eight-digit hex, because an inline style cannot carry a function.
+	 *
+	 * `safecss_filter_attr()` strips the CSS functions it knows and then throws
+	 * away any declaration with a parenthesis left in it. `color-mix()` and
+	 * `rgba()` are both absent from its list, so both vanish silently — which
+	 * is what this function exists to avoid, and why the shape of the return
+	 * value is the thing worth pinning.
+	 */
+	public function test_an_alpha_is_appended_as_two_hex_digits(): void
+	{
+		$this->assertSame('#08505999', bridge_hex_alpha('#085059', 0.6));
+		$this->assertSame('#085059ff', bridge_hex_alpha('#085059', 1.0));
+		$this->assertSame('#08505900', bridge_hex_alpha('#085059', 0.0));
+	}
+
+	public function test_an_alpha_outside_the_range_is_clamped(): void
+	{
+		$this->assertSame('#085059ff', bridge_hex_alpha('#085059', 4.0));
+		$this->assertSame('#08505900', bridge_hex_alpha('#085059', -1.0));
+	}
+
+	public function test_a_short_hex_is_expanded_before_the_alpha(): void
+	{
+		$this->assertSame('#00445599', bridge_hex_alpha('#045', 0.6));
+	}
+
+	public function test_an_alpha_hex_carries_no_parentheses(): void
+	{
+		$this->assertDoesNotMatchRegularExpression(
+			'/[()]/',
+			bridge_hex_alpha('#ffcb2e', 0.6)
+		);
+	}
+
 	// ---- bridge_shade_hex ------------------------------------------------
 
 	public function test_shading_by_zero_changes_nothing(): void

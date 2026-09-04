@@ -247,3 +247,24 @@ if (! function_exists('wp_json_encode')) {
 		return json_encode($data, $options, $depth);
 	}
 }
+
+if (! function_exists('esc_url')) {
+	/** Pass-through: no test asserts on escaping, only on the value carried. */
+	function esc_url(string $url): string
+	{
+		return $url;
+	}
+}
+
+if (! function_exists('wp_get_attachment_url')) {
+	/**
+	 * A predictable URL for any non-zero id.
+	 *
+	 * The mask helper only asks whether there is a shape and what to point at;
+	 * which attachment it is is WordPress's business, not this suite's.
+	 */
+	function wp_get_attachment_url(int $id)
+	{
+		return $id > 0 ? "https://example.test/mask-{$id}.svg" : false;
+	}
+}

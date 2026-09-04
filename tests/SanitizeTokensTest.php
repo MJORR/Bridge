@@ -557,6 +557,135 @@ final class SanitizeTokensTest extends BridgeTestCase
 		$this->assertFalse($tokens['header']['cta']['enabled']);
 	}
 
+	/**
+	 * The button's fill is a palette slug, and only a palette slug.
+	 */
+	public function test_a_cta_colour_outside_the_palette_falls_back(): void
+	{
+		$tokens = bridge_sanitize_tokens(
+			array(
+				'header' => array(
+					'cta' => array('color' => 'chartreuse'),
+				),
+			)
+		);
+
+		$this->assertSame('accent', $tokens['header']['cta']['color']);
+	}
+
+	/**
+	 * The menu bar's three colours are palette slugs, and only palette slugs.
+	 */
+	public function test_nav_colours_outside_the_palette_fall_back(): void
+	{
+		$tokens = bridge_sanitize_tokens(
+			array(
+				'header' => array(
+					'nav' => array(
+						'rollover' => 'chartreuse',
+						'child'    => '#ff0000',
+						'accent'   => array('not', 'a', 'slug'),
+					),
+				),
+			)
+		);
+
+		$this->assertSame('surface', $tokens['header']['nav']['rollover']);
+		$this->assertSame('surface', $tokens['header']['nav']['child']);
+		$this->assertSame('accent', $tokens['header']['nav']['accent']);
+	}
+
+	/**
+	 * An array where a slug belongs is rejected without a warning.
+	 *
+	 * `(string) array()` returns "Array" and raises one on the way. The suite
+	 * runs with failOnWarning, so this test is the assertion — but the bug it
+	 * pins is real outside the suite too: the sanitiser exists to turn anything
+	 * into a value the theme recognises, quietly.
+	 */
+	public function test_a_non_scalar_setting_is_rejected_quietly(): void
+	{
+		$tokens = bridge_sanitize_tokens(
+			array(
+				'header' => array(
+					'layout'          => array('left'),
+					'contrast'        => array('auto'),
+					'backgroundColor' => array('surface'),
+					'cta'             => array('color' => array('accent')),
+				),
+				'footer' => array('style' => array('simple')),
+			)
+		);
+
+		$this->assertSame('left', $tokens['header']['layout']);
+		$this->assertSame('auto', $tokens['header']['contrast']);
+		$this->assertSame('background', $tokens['header']['backgroundColor']);
+		$this->assertSame('accent', $tokens['header']['cta']['color']);
+		$this->assertSame('simple', $tokens['footer']['style']);
+	}
+
+	public function test_nav_colours_in_the_palette_are_kept(): void
+	{
+		$tokens = bridge_sanitize_tokens(
+			array(
+				'header' => array(
+					'nav' => array(
+						'rollover' => 'primary',
+						'child'    => 'background',
+						'accent'   => 'secondary',
+					),
+				),
+			)
+		);
+
+		$this->assertSame('primary', $tokens['header']['nav']['rollover']);
+		$this->assertSame('background', $tokens['header']['nav']['child']);
+		$this->assertSame('secondary', $tokens['header']['nav']['accent']);
+	}
+
+	/**
+	 * A record written before the controls existed keeps the menu it had.
+	 */
+	public function test_a_header_with_no_nav_key_takes_the_stylesheet_defaults(): void
+	{
+		$tokens = bridge_sanitize_tokens(array('header' => array('layout' => 'left')));
+
+		$this->assertSame(
+			array('rollover' => 'surface', 'child' => 'surface', 'accent' => 'accent'),
+			$tokens['header']['nav']
+		);
+	}
+
+	public function test_a_cta_colour_in_the_palette_is_kept(): void
+	{
+		$tokens = bridge_sanitize_tokens(
+			array(
+				'header' => array(
+					'cta' => array('color' => 'primary'),
+				),
+			)
+		);
+
+		$this->assertSame('primary', $tokens['header']['cta']['color']);
+	}
+
+	/**
+	 * A record written while the site-wide Solid/Transparent control still
+	 * existed must not keep an overlaid header the options screen can no longer
+	 * turn off. Transparent is the Landing Page template's to ask for, and it
+	 * asks at render time rather than through this token.
+	 */
+	public function test_a_stored_transparent_header_is_pinned_back_to_solid(): void
+	{
+		$tokens = bridge_sanitize_tokens(
+			array(
+				'header' => array('background' => 'transparent'),
+			)
+		);
+
+		$this->assertSame('solid', $tokens['header']['background']);
+	}
+
 	// ---- The stored round trip -------------------------------------------
 
 	/**

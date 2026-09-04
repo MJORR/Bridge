@@ -10,6 +10,7 @@
  * `::details-content`, which exists only on the front end. Both are inert in
  * the editor rather than wrong there.
  */
+@use "../abstracts/band-mask" as mask;
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
 
@@ -21,12 +22,26 @@
 $rule: 1px solid color-mix(in srgb, currentcolor 15%, transparent);
 
 .bridge-faqs {
+	// The decorative mask shape, when the block asks for one — the same shape,
+	// the same controls and the same mixin the Cards and Downloads bands use.
+	//
+	// Anchored to the top, which the other two are not. This band's height is
+	// the reader's to change: every answer they open makes it taller, and a
+	// centred shape would slide down the band each time. Held at the top it
+	// stays where it was drawn, and the band grows past it.
+	--bridge-band-mask-anchor: top;
+
+	@include mask.band-mask;
+
 	&__inner {
 		@include section.container(narrow);
 
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--50);
+
+		// Over the shape.
+		@include mask.band-mask-content;
 	}
 
 	&--wide &__inner {

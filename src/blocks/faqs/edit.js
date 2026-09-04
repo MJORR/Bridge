@@ -58,6 +58,11 @@
 
 const { useBlockProps, useInnerBlocksProps, InspectorControls } =
 	window.wp.blockEditor;
+
+// The mask shape's controls and preview styling, shared with every other band
+// that offers them. Its own script handle, named in this block's dependencies
+// — see src/editor/band-mask.js.
+const { MaskPanel, maskStyle, hasMask } = window.bridgeBandMaskUI || {};
 const { createElement: el, Fragment } = window.wp.element;
 const {
 	PanelBody,
@@ -218,7 +223,17 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	);
 
 	const blockProps = useBlockProps({
-		className: `bridge-faqs bridge-section bridge-band alignfull bridge-faqs--${width}`,
+		className: [
+			'bridge-faqs',
+			'bridge-section',
+			'bridge-band',
+			'alignfull',
+			`bridge-faqs--${width}`,
+			hasMask(attributes) ? 'has-mask' : '',
+		]
+			.filter(Boolean)
+			.join(' '),
+		style: maskStyle(attributes),
 	});
 
 	const innerBlocksProps = useInnerBlocksProps(
@@ -473,7 +488,8 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					onChange: (value) => setAttributes({ exclusive: value }),
 					__nextHasNoMarginBottom: true,
 				})
-			)
+			),
+			MaskPanel(attributes, setAttributes)
 		),
 		el(
 			'section',

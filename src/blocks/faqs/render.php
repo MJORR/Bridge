@@ -126,10 +126,19 @@ list( $intro_html, $label_id ) = bridge_section_intro( $content, 'bridge-faqs__i
  */
 $group = ! empty( $attributes['exclusive'] ) ? wp_unique_id( 'bridge-faqs-' ) : '';
 
+/*
+ * The decorative mask shape, when the block asks for one. The same shape, the
+ * same three controls and the same helper the Cards and Downloads bands use —
+ * a silhouette from Theme Options, shaded lighter or darker than whatever this
+ * band happens to be. A site that has not set a shape gets no decoration
+ * rather than a coloured rectangle.
+ */
+list( $mask_class, $mask_style ) = bridge_band_mask( $attributes );
+
 echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 	$attributes,
-	sprintf( 'bridge-faqs bridge-faqs--%s', $width ),
-	'',
+	sprintf( 'bridge-faqs bridge-faqs--%s', $width ) . $mask_class,
+	$mask_style,
 	$label_id
 );
 ?>

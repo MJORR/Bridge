@@ -43,18 +43,18 @@
 	// the three being named.
 	--bridge-nav-tint: color-mix(in srgb, currentcolor 10%, transparent);
 
-	// The same tint, doubled, for a row inside the dropdown. A child row is
-	// hovered against the panel's brand fill rather than against the header's
-	// ground, and 10% of the panel's own foreground barely separates from it —
-	// what reads as a clear change of state on the bar reads as a smudge in
-	// the panel. Twice the mix, the same idea.
-	--bridge-nav-tint-child: color-mix(in srgb, currentcolor 20%, transparent);
-
 	// The bar over a hovered or current item. Brand colour, because this is
 	// the one mark in the header that is about the site rather than the
 	// chrome; `currentcolor` if the palette has no accent. Deep enough to
 	// read as the lit edge of a tab rather than as a hairline.
-	--bridge-nav-marker: var(--wp--preset--color--accent, currentcolor);
+	// Read from the header's style attribute first, because that is where the
+	// Nav accent setting lands. It cannot be published under this name directly:
+	// this declaration is on the nav, the header is its ancestor, and the closer
+	// declaration wins — the setting would be shadowed before anything read it.
+	--bridge-nav-marker: var(
+		--bridge-nav-accent,
+		var(--wp--preset--color--accent, currentcolor)
+	);
 	--bridge-nav-marker-size: 5px;
 
 	// Everything in the nav that changes state — a hover surface, a marker, a
@@ -154,6 +154,30 @@
 		// template part somebody has lifted out.
 		--bridge-nav-inset: var(--bridge-header-rhythm, 1.125rem);
 
+		/**
+		 * The menu bar hovers in whichever colour Nav rollover is set to.
+		 *
+		 * An override of the translucent tint the rest of the navs keep, and only
+		 * here: a utility bar or a footer menu draws a pill inside somebody
+		 * else's band, where an opaque surface would paint over its neighbours,
+		 * and the hamburger sits on the header itself. The bar is the one nav
+		 * with a full-height column of its own to fill.
+		 *
+		 * Opaque, so it is a palette colour and not a fifth of one — which is why
+		 * the labels need saying too. The tint mixed from `currentcolor` stayed
+		 * legible on any ground by construction; a named colour does not, so the
+		 * header hands down the foreground it worked out for this one and the
+		 * hovered item takes it.
+		 *
+		 * The fallback is the setting's own default, for a nav rendered outside a
+		 * Bridge header — the editor's block preview, or a template part somebody
+		 * has lifted out — where nothing publishes the property.
+		 */
+		--bridge-nav-tint: var(
+			--bridge-nav-rollover-bg,
+			var(--wp--preset--color--surface)
+		);
+
 		// The header's own vertical padding, restated under a short name: the
 		// surface and the marker are both placed relative to it, and both of
 		// those are already long enough lines.
@@ -229,28 +253,41 @@
 				// the cursor. The timing lives on the hover rule instead.
 			}
 
-			&:hover::before,
-			&:focus-within::before {
-				background-color: var(--bridge-nav-tint);
-			}
-
-			// An item with a panel open lights at the panel's own value
-			// instead. The panel has no border, no radius and no shadow, so
-			// its fill is its entire shape — and a tab lit one step lighter
-			// than the slab hanging off it puts a seam across the join, which
-			// is the first thing the eye finds. At one value the two are a
-			// single form: a tab that got taller.
+			// Three ways in, the same three core opens a panel by: pointer on the
+			// item, focus inside it, and the caret on a click-to-open menu. The
+			// toggle is matched as a direct child so a nested panel left open
+			// cannot light its grandparent.
 			//
-			// Three ways in, the same three core opens a panel by: pointer on
-			// the item, focus inside it, and the caret on a click-to-open
-			// menu. The toggle is matched as a direct child so a nested panel
-			// left open cannot light its grandparent.
-			&.has-child:hover::before,
-			&.has-child:focus-within::before,
+			// One declaration for all of them, and for items with a panel and
+			// without. An item with children used to light at the panel's value
+			// instead, so that a tab and the slab hanging off it were one form with
+			// no seam across the join. That was one colour deciding both. They are
+			// two settings now — Nav rollover and Nav child — and a rollover that
+			// skipped every item with a dropdown under it is not a rollover
+			// setting. An operator who wants the seamless tab sets both to the same
+			// slug, which is a thing they can now say.
+			&:hover::before,
+			&:focus-within::before,
 			&:has(
 					> .wp-block-navigation-submenu__toggle[aria-expanded="true"]
 				)::before {
-				background-color: var(--bridge-nav-tint-child);
+				background-color: var(--bridge-nav-tint);
+			}
+
+			// The label, once the surface under it stopped following the header's
+			// contrast. On a solid light header this changes nothing — the
+			// foreground the header worked out for Surface is the text colour the
+			// item already had. It earns its place on a transparent one, where the
+			// bar's labels are white for the hero behind them and would otherwise
+			// stay white on a cream block.
+			&:hover > .wp-block-navigation-item__content,
+			&:focus-within > .wp-block-navigation-item__content,
+			&:has(> .wp-block-navigation-submenu__toggle[aria-expanded="true"])
+				> .wp-block-navigation-item__content {
+				color: var(
+					--bridge-nav-rollover-fg,
+					var(--wp--preset--color--text)
+				);
 			}
 
 			// The current page keeps the marker without keeping a surface: the
@@ -462,7 +499,14 @@
 
 		&:hover,
 		&:focus-visible {
-			background-color: var(--bridge-nav-tint-child);
+			// A step off the panel's own colour, worked out beside it in the
+			// header's render file. Not a tint of `currentcolor`: the panel is a
+			// named palette colour now, and a translucent grey laid over one is a
+			// colour from nowhere in the design system.
+			background-color: var(
+				--bridge-nav-drop-hover-bg,
+				color-mix(in srgb, currentcolor 12%, transparent)
+			);
 		}
 
 		// The current page, in the accent — colour on the label rather than a

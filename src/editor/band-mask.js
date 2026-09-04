@@ -11,14 +11,8 @@
  */
 
 const { createElement: el } = window.wp.element;
-const {
-	PanelBody,
-	ToggleControl,
-	RangeControl,
-	ColorPalette,
-	BaseControl,
-	ExternalLink,
-} = window.wp.components;
+const { PanelBody, ToggleControl, RangeControl, ExternalLink } =
+	window.wp.components;
 const { __ } = window.wp.i18n;
 
 const DATA = window.bridgeBandMask || {};
@@ -27,13 +21,22 @@ const MASK_URL = DATA.maskUrl || '';
 const OPTIONS_URL = DATA.optionsUrl || '';
 
 /**
- * The site's global colours, straight from the token record.
+ * The shape's colour, as an overlay rather than a palette entry.
  *
- * Not the editor's `colors` setting: these are the only colours a mask may
- * take, and reading them from where Theme Options sets them is what keeps that
- * true when core changes how it assembles its own list.
+ * Mirrors bridge_band_mask() exactly — negative darkens, positive lightens,
+ * and the magnitude is the opacity — so the canvas and the front end draw one
+ * shape rather than two that agree most of the time.
+ *
+ * @param {number} shade Signed percentage, -100 to 100.
+ * @return {string} An `#rrggbbaa` value.
  */
-const PALETTE = DATA.palette || [];
+function shadeColor(shade) {
+	const alpha = Math.round((Math.min(100, Math.abs(shade)) / 100) * 255);
+
+	return `${shade < 0 ? '#000000' : '#ffffff'}${alpha
+		.toString(16)
+		.padStart(2, '0')}`;
+}
 
 /**
  * The four custom properties the band draws the shape from.
@@ -44,14 +47,14 @@ const PALETTE = DATA.palette || [];
  * @param {Object} attributes The block's mask attributes.
  * @return {Object|undefined} A style object, or undefined when there is no shape.
  */
-function maskStyle({ mask, maskColor, maskSize, maskInset }) {
-	if (!mask || !MASK_URL) {
+function maskStyle({ mask, maskShade, maskSize, maskInset }) {
+	if (!mask || !MASK_URL || !maskShade) {
 		return undefined;
 	}
 
 	return {
 		'--bridge-band-mask-image': `url(${MASK_URL})`,
-		'--bridge-band-mask-color': `var(--wp--preset--color--${maskColor})`,
+		'--bridge-band-mask-color': shadeColor(maskShade),
 		'--bridge-band-mask-size': `${maskSize}%`,
 		'--bridge-band-mask-inset': `${maskInset}%`,
 	};
@@ -66,8 +69,8 @@ function maskStyle({ mask, maskColor, maskSize, maskInset }) {
  * @param {Object} attributes The block's mask attributes.
  * @return {boolean} True when a shape will be drawn.
  */
-function hasMask({ mask }) {
-	return !!mask && !!MASK_URL;
+function hasMask({ mask, maskShade }) {
+	return !!mask && !!MASK_URL && !!maskShade;
 }
 
 /**
@@ -78,8 +81,7 @@ function hasMask({ mask }) {
  * @return {Object} A PanelBody element.
  */
 function MaskPanel(attributes, setAttributes) {
-	const { mask, maskColor, maskSize, maskInset } = attributes;
-	const hex = PALETTE.find((entry) => entry.slug === maskColor)?.color;
+	const { mask, maskShade, maskSize, maskInset } = attributes;
 
 	return el(
 		PanelBody,
@@ -101,7 +103,7 @@ function MaskPanel(attributes, setAttributes) {
 			el(ToggleControl, {
 				label: __('Show the mask shape', 'bridge'),
 				help: __(
-					'Paints the site’s mask shape flat behind this band, in one palette colour.',
+					'Paints the site’s mask shape behind this band, as a lighter or darker shade of whatever the band is.',
 					'bridge'
 				),
 				checked: !!mask,
@@ -113,33 +115,28 @@ function MaskPanel(attributes, setAttributes) {
 		// nothing.
 		!!MASK_URL &&
 			!!mask &&
-			el(
-				BaseControl,
-				{
-					label: __('Mask colour', 'bridge'),
-					help: __(
-						'One of the site’s global colours, set in Theme Options.',
-						'bridge'
-					),
-					__nextHasNoMarginBottom: true,
-				},
-				el(ColorPalette, {
-					colors: PALETTE,
-					value: hex,
-					// The global palette and nothing else: the shape is meant
-					// to move when the palette moves, which a typed hex would
-					// not. The toggle above is what turns the shape off, so
-					// there is nothing to clear here.
-					disableCustomColors: true,
-					clearable: false,
-					onChange: (value) =>
-						setAttributes({
-							maskColor:
-								PALETTE.find((entry) => entry.color === value)
-									?.slug || 'accent',
-						}),
-				})
-			),
+			el(RangeControl, {
+				label: __('Mask shade', 'bridge'),
+				help: __(
+					'How much lighter or darker the shape is than the band behind it. It shades whatever the band happens to be, so one setting reads the same on a colour, a card ground or a photograph. At zero there is no shape.',
+					'bridge'
+				),
+				value: maskShade,
+				min: -100,
+				max: 100,
+				step: 5,
+				// No marks. "Darker" and "Lighter" at the ends of the track said
+				// which way was which, and the inspector is 280px wide — the
+				// two labels collided with each other and with the number
+				// field. The sign carries the direction, the help text below
+				// names both, and the canvas redraws as the slider moves,
+				// which is three answers to a question the labels were the
+				// worst place to answer.
+				// `?? -20` and not `|| -20`: zero is a value here, meaning no
+				// shape, and a falsy check would bounce the slider off it.
+				onChange: (value) => setAttributes({ maskShade: value ?? -20 }),
+				__nextHasNoMarginBottom: true,
+			}),
 		!!MASK_URL &&
 			!!mask &&
 			el(RangeControl, {

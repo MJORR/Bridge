@@ -246,6 +246,52 @@ export function LayoutPreview({ layout }) {
 }
 
 /**
+ * The card surface the compiler is about to publish, in the terms a preview
+ * can draw it in.
+ *
+ * Three places were deciding what a cut corner does to a card — the compiler,
+ * and each of the two previews below — and the previews had already drifted
+ * from it and from each other: one drew the notch and the other squared the
+ * corner and drew nothing, so an operator moving "Corner cut" watched a
+ * control that appeared to do nothing. One function now, mirroring the `$cut`
+ * branch of bridge_compile_theme_json() and named after it, so the next change
+ * to that branch has one place to land on this side.
+ *
+ * The three answers it carries are the compiler's, for the compiler's reasons:
+ * a card cannot be both cut and rounded, so the cut squares it; a `box-shadow`
+ * is drawn around the card's *box* and would trace the very corner the cut
+ * removed, so a cut card has none.
+ *
+ * `cqw` rather than a percentage, which is the one part of this that is not
+ * obvious. A polygon's percentages resolve per axis, so `12%` is 12% of the
+ * width across and 12% of the *height* down — a 45° cut only on a square card,
+ * and these samples are not square. `cqw` is 1% of the container's inline size
+ * on both axes, which is what makes the angle 45°, and it is what the
+ * stylesheet uses. It needs a container to measure, so the card asks to be one
+ * — but only while the cut is on, because containment fixes an element's
+ * inline size against its contents and is not worth paying for a corner
+ * nobody has turned on.
+ *
+ * @param {Object} cards   The card tokens being previewed.
+ * @param {Array}  shadows The shadow presets, from the payload.
+ * @return {Object} `cut`, `radius`, `shadow`, `clip` and `container`.
+ */
+function cardSurface(cards, shadows) {
+	const cut = Boolean(cards.cutCorner);
+	const preset = shadows?.find((s) => s.slug === cards.shadow);
+
+	return {
+		cut,
+		radius: cut ? '0px' : `${cards.radius}px`,
+		shadow: cut ? 'none' : preset?.shadow || 'none',
+		clip: cut
+			? `polygon(0 ${cards.cutSize}cqw, ${cards.cutSize}cqw 0, 100% 0, 100% 100%, 0 100%)`
+			: 'none',
+		container: cut ? 'inline-size' : undefined,
+	};
+}
+
+/**
  * A card, drawn at the padding, radius and shadow currently chosen.
  *
  * Drawn rather than described, because "Medium" is not a shadow and no
@@ -272,12 +318,10 @@ export function CardPreview({
 	const padding =
 		spacingSizes?.find((s) => String(s.slug) === String(cards.padding))
 			?.size || '1.5rem';
-	// Squared by the cut, and wearing the shadow in whichever form that mode
-	// can use — exactly as in CardStylePreview and in the compiler.
-	const preset = shadows?.find((s) => s.slug === cards.shadow);
-	const cut = Boolean(cards.cutCorner);
-	const shadow = cut ? 'none' : preset?.shadow || 'none';
-	const radius = cut ? '0px' : `${cards.radius}px`;
+	const { cut, radius, shadow, clip, container } = cardSurface(
+		cards,
+		shadows
+	);
 
 	return (
 		<div className="bridge-preview__cards">
@@ -303,9 +347,36 @@ export function CardPreview({
 							padding,
 							borderRadius: radius,
 							boxShadow: shadow,
-							background: cards.colors?.[entry.key],
+							// Once the corner is cut the colour moves to the
+							// layer below, which is the thing that can be
+							// clipped. Clipping the card itself would take its
+							// words with it, and at the widest cut the notch
+							// reaches where the title is.
+							background: cut
+								? 'transparent'
+								: cards.colors?.[entry.key],
+							// That layer sits at `z-index: -1`, which only
+							// stays inside the card in an element that
+							// establishes a stacking context — the same reason
+							// abstracts/_card.scss isolates. And the card is
+							// the container the cut is measured against.
+							position: 'relative',
+							isolation: 'isolate',
+							containerType: container,
 						}}
 					>
+						{cut && (
+							<span
+								aria-hidden="true"
+								style={{
+									position: 'absolute',
+									inset: 0,
+									zIndex: -1,
+									background: cards.colors?.[entry.key],
+									clipPath: clip,
+								}}
+							/>
+						)}
 						<span
 							className="bridge-preview__card-media"
 							style={{
@@ -394,29 +465,23 @@ export function CardStylePreview({
 		spacingSizes?.find((s) => String(s.slug) === String(cards.padding))
 			?.size || '1.5rem'
 	);
-	const preset = shadows?.find((s) => s.slug === cards.shadow);
-
-	// A card can have a cut corner or a rounded one, not both, so the cut
-	// squares the card here exactly as it does in the compiler — see the
-	// `$cut` branch in bridge_compile_theme_json(). Resolved once, at the top,
-	// because the radius is spent in three places below and a preview that
-	// squared the card but not the panel inside it would be showing a card the
-	// site never draws.
-	const cut = Boolean(cards.cutCorner);
-	const radius = scaled(cut ? '0px' : `${cards.radius}px`);
-
-	// And the shadow goes with it, for the reason the compiler gives: a box
-	// shadow is drawn around the card's box and would trace the square corner
-	// the cut just removed. A preview that drew one would be showing a card the
-	// site never renders.
-	const shadow = cut ? 'none' : preset?.shadow || 'none';
-
-	// The polygon the compiler publishes, in the preview's own terms:
-	// percentages of the sample rather than `cqw`, since these samples are
-	// square-ish and there is no container to query on this screen.
-	const clip = cut
-		? `polygon(0 ${cards.cutSize}%, ${cards.cutSize}% 0, 100% 0, 100% 100%, 0 100%)`
-		: 'none';
+	// The cut, the radius, the shadow and the polygon, from the one function
+	// that mirrors the compiler — see cardSurface() above. Resolved once, at
+	// the top, because the radius is spent in three places below and a preview
+	// that squared the card but not the panel inside it would be showing a
+	// card the site never draws.
+	//
+	// The radius is the only one this preview scales: these samples are drawn
+	// smaller than a real card, and a 24px corner on a card a third of the size
+	// is a different shape rather than the same one seen from further away.
+	const {
+		cut,
+		radius: cardRadius,
+		shadow,
+		clip,
+		container,
+	} = cardSurface(cards, shadows);
+	const radius = scaled(cardRadius);
 
 	const settings = (slug) => cards.styles?.[slug] || {};
 
@@ -499,6 +564,11 @@ export function CardStylePreview({
 										// the same reason.
 										position: 'relative',
 										isolation: 'isolate',
+										// What the cut is measured against:
+										// `cqw` is a share of this element's
+										// inline size, on both axes, which is
+										// what holds the notch at 45°.
+										containerType: container,
 										aspectRatio: isCover
 											? ratioValue(set.ratio)
 											: undefined,
@@ -993,10 +1063,10 @@ export function ButtonPreview({ grounds, schemes, custom, palette }) {
 
 						<span className="bridge-preview__button-row">
 							<span className="bridge-button-sample">
-								{__('Primary', 'bridge')}
+								{__('Solid', 'bridge')}
 							</span>
 							<span className="bridge-button-sample bridge-button-sample--ghost">
-								{__('Secondary', 'bridge')}
+								{__('Outline', 'bridge')}
 							</span>
 						</span>
 
@@ -1021,7 +1091,7 @@ export function ButtonPreview({ grounds, schemes, custom, palette }) {
 								min={3}
 							/>
 							<Ratio
-								label={__('Secondary', 'bridge')}
+								label={__('Outline', 'bridge')}
 								value={audit.ghost}
 								min={4.5}
 							/>

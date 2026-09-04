@@ -34,6 +34,22 @@
 		"count": {
 			"type": "number",
 			"default": 0
+		},
+		"mask": {
+			"type": "boolean",
+			"default": false
+		},
+		"maskShade": {
+			"type": "number",
+			"default": -20
+		},
+		"maskSize": {
+			"type": "number",
+			"default": 60
+		},
+		"maskInset": {
+			"type": "number",
+			"default": 0
 		}
 	},
 	"example": {

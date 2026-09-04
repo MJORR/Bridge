@@ -338,18 +338,46 @@ function bridge_heading_label_id(string &$html): string
  */
 function bridge_band_mask( array $attributes ): array
 {
-	$color = sanitize_key( (string) ( $attributes['maskColor'] ?? 'accent' ) );
-	$url   = ! empty( $attributes['mask'] ) ? bridge_mask_shape_url() : '';
+	$url = ! empty( $attributes['mask'] ) ? bridge_mask_shape_url() : '';
 
-	if ( '' === $url || ! isset( bridge_palette_slugs()[ $color ] ) ) {
+	if ( '' === $url ) {
 		return array( '', '' );
 	}
+
+	/**
+	 * The shape's colour, as a shade of the band rather than a colour of its
+	 * own.
+	 *
+	 * This used to be a palette slug, which made the shape a sixth brand colour
+	 * competing with the five already in the band — and left an operator
+	 * choosing between six wrong answers when what they wanted was "a bit
+	 * darker than this". A signed percentage says that directly: negative
+	 * darkens, positive lightens, zero is no shape at all.
+	 *
+	 * Drawn as black or white at that opacity rather than as a computed blend,
+	 * because the band underneath is a CSS class — a section skin, a card
+	 * ground, a photograph — and the server does not know what colour it
+	 * resolved to. An overlay does not need to know: it shades whatever it
+	 * lands on, which is what makes one setting work on all of them.
+	 *
+	 * Eight-digit hex and not `rgba()`, for the reason bridge_hex_alpha()
+	 * records: this lands in a style attribute, and `safecss_filter_attr()`
+	 * throws away any declaration with a parenthesis left standing.
+	 */
+	$shade = (int) ( $attributes['maskShade'] ?? -20 );
+	$shade = max( -100, min( 100, $shade ) );
+
+	if ( 0 === $shade ) {
+		return array( '', '' );
+	}
+
+	$color = bridge_hex_alpha( $shade < 0 ? '#000000' : '#ffffff', abs( $shade ) / 100 );
 
 	return array(
 		' has-mask',
 		sprintf(
 			'--bridge-band-mask-image:url(%s);'
-				. '--bridge-band-mask-color:var(--wp--preset--color--%s);'
+				. '--bridge-band-mask-color:%s;'
 				. '--bridge-band-mask-size:%d%%;'
 				. '--bridge-band-mask-inset:%d%%;',
 			esc_url( $url ),
@@ -377,20 +405,6 @@ function bridge_band_mask_data(): array
 	return array(
 		'maskUrl'    => bridge_mask_shape_url(),
 		'optionsUrl' => admin_url( 'admin.php?page=' . BRIDGE_OPTIONS_SLUG ),
-		'palette'    => array_values(
-			array_map(
-				static function ( string $slug ) use ( $tokens ): array {
-					$entry = $tokens['brand']['palette'][ $slug ] ?? array();
-
-					return array(
-						'slug'  => $slug,
-						'name'  => (string) ( $entry['name'] ?? $slug ),
-						'color' => (string) ( $entry['color'] ?? '#000000' ),
-					);
-				},
-				array_keys( bridge_palette_slugs() )
-			)
-		),
 	);
 }
 

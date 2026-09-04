@@ -17,6 +17,11 @@
  * the carousel controls: the first slide is readable before any script runs,
  * and nothing is on screen that does not yet work.
  *
+ * The runtime is enqueued here rather than declared as the block's
+ * `viewScript`, because a slider is not always a slider: one slide has nothing
+ * to step to, and WordPress would ship slider.js to that page all the same.
+ * See the slide count below.
+ *
  * The arithmetic behind the three lengths, the width rule and the LCP hint are
  * shared with `bridge/hero-banner` and live in inc/hero-blocks.php.
  *
@@ -35,13 +40,49 @@ if ('' === trim((string) $content)) {
 	return;
 }
 
-$effect          = isset($attributes['effect']) ? (string) $attributes['effect'] : 'fade';
-$effect          = in_array($effect, array('fade', 'slide'), true) ? $effect : 'fade';
-$autoplay        = ! empty($attributes['autoplay']);
-$autoplay_delay  = isset($attributes['autoplayDelay']) ? (int) $attributes['autoplayDelay'] : 6;
-$loop            = ! empty($attributes['loop']);
-$show_pagination = ! empty($attributes['showPagination']);
-$show_navigation = ! empty($attributes['showNavigation']);
+/*
+ * How many slides were authored.
+ *
+ * One slide is not a slider, and the same sentence slider.js writes as
+ * `stepping` is worth saying a step earlier, where it can still decide what
+ * the page is sent: nothing steps, so there is no autoplay to run, nowhere for
+ * a chevron to go and no choice for a dot to offer — and no work at all for
+ * the runtime. A single Cover in a slider stays a perfectly ordinary way to
+ * start one; it simply ships as what it is, a cover.
+ *
+ * Counted from the parsed blocks rather than the rendered markup: the track's
+ * children are exactly this block's inner blocks, and this is the count before
+ * any of them has been turned into a string.
+ */
+$slides   = isset($block->parsed_block['innerBlocks']) ? count($block->parsed_block['innerBlocks']) : 0;
+$stepping = $slides > 1;
+
+/*
+ * The runtime, on the pages that have something for it to do. Registered in
+ * functions.php and enqueued here, in the manner of the header's backdrop
+ * reader: declaring it as the block's `viewScript` would hand this decision to
+ * WordPress, which enqueues view scripts by the block being on the page and
+ * knows nothing of what is inside it.
+ *
+ * The stylesheet is not conditional and is still the block's `viewStyle`: the
+ * lone slide is sized, positioned and centred by it like any other, and the
+ * rules for the chrome cost nothing where no chrome is printed.
+ */
+if ($stepping) {
+	wp_enqueue_script('bridge-hero-slider-view');
+}
+
+$effect         = isset($attributes['effect']) ? (string) $attributes['effect'] : 'fade';
+$effect         = in_array($effect, array('fade', 'slide'), true) ? $effect : 'fade';
+$autoplay       = ! empty($attributes['autoplay']);
+$autoplay_delay = isset($attributes['autoplayDelay']) ? (int) $attributes['autoplayDelay'] : 6;
+$loop           = ! empty($attributes['loop']);
+
+// Chrome for a slider that steps. The settings stand as the operator left
+// them — a slide added later brings the dots back without anyone revisiting
+// the panel.
+$show_pagination = ! empty($attributes['showPagination']) && $stepping;
+$show_navigation = ! empty($attributes['showNavigation']) && $stepping;
 
 $metrics       = bridge_hero_metrics($attributes);
 $is_full_width = bridge_hero_is_full_width($attributes);
@@ -61,21 +102,32 @@ $label_bullet   = __('Go to slide %d', 'bridge');
 /* translators: 1: slide number, 2: total number of slides. */
 $label_slide    = __('Slide %1$d of %2$d', 'bridge');
 
-// Nothing escaped on the way in: get_block_wrapper_attributes() runs esc_attr()
-// over every value it is handed.
-$open_tag = '<div ' . get_block_wrapper_attributes(
-	array(
-		'class'                => sprintf(
-			'bridge-hero-slider is-effect-%s%s',
-			$effect,
-			$is_full_width ? ' alignfull' : ''
-		),
-		'style'                => sprintf(
-			'--bridge-slider-height: %s; --bridge-slider-inset: %s; --bridge-slider-lead: %s;',
-			$metrics['height'],
-			$metrics['inset'],
-			$metrics['lead']
-		),
+$wrapper = array(
+	'class' => sprintf(
+		'bridge-hero-slider is-effect-%s%s',
+		$effect,
+		$is_full_width ? ' alignfull' : ''
+	),
+	'style' => sprintf(
+		'--bridge-slider-height: %s; --bridge-slider-inset: %s; --bridge-slider-lead: %s;',
+		$metrics['height'],
+		$metrics['inset'],
+		$metrics['lead']
+	),
+);
+
+/*
+ * Everything that is only true of a slider that steps.
+ *
+ * The landmark, because a screen reader that announces "hero slider, carousel"
+ * over a single cover has described something the visitor cannot find; and the
+ * hook and its settings, because with the runtime not shipped there is nothing
+ * to read them — and where a second slider on the same page did bring it,
+ * leaving the hook off is what tells it this one is not its work. Without them
+ * the block is what `bridge/hero-banner` is: a cover in a sized box.
+ */
+if ($stepping) {
+	$wrapper += array(
 		// A named landmark rather than an anonymous div: a screen reader
 		// announces "hero slider, carousel" and can jump past the whole thing,
 		// which matters most for the block that opens the page.
@@ -90,8 +142,12 @@ $open_tag = '<div ' . get_block_wrapper_attributes(
 		'data-loop'            => $loop ? '1' : '0',
 		'data-label-bullet'    => $label_bullet,
 		'data-label-slide'     => $label_slide,
-	)
-) . '>';
+	);
+}
+
+// Nothing escaped on the way in: get_block_wrapper_attributes() runs esc_attr()
+// over every value it is handed.
+$open_tag = '<div ' . get_block_wrapper_attributes($wrapper) . '>';
 
 if (! $is_full_width) {
 	$open_tag = bridge_hero_strip_bare_align($open_tag);

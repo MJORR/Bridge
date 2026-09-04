@@ -13,7 +13,6 @@
  * are positional rather than cosmetic: sticky and transparent headers have to
  * escape the template-part wrapper, which is a box the theme does not emit.
  */
-@use "../abstracts/button" as button;
 @use "../abstracts/nav" as nav;
 
 .bridge-header {
@@ -187,17 +186,41 @@
  * rule above sets `display: block` through a descendant selector, and a plain
  * class would lose to it.
  */
+/**
+ * The pair, stacked so they can cross-fade.
+ *
+ * `display` cannot be transitioned, so swapping the two that way snapped the
+ * wordmark from one to the other on the frame the class landed — under a bar
+ * whose ground was still fading. Both images sit in one grid cell instead and
+ * trade opacity, which is the same swap with the frames in between.
+ *
+ * The cell is sized by whichever is larger, so a pair drawn at different
+ * widths does not move the menu beside it as they trade.
+ */
+.bridge-header__logo--dual {
+	display: inline-grid;
+	align-items: center;
+
+	> img {
+		grid-area: 1 / 1;
+
+		@media (prefers-reduced-motion: no-preference) {
+			transition: opacity 0.2s ease;
+		}
+	}
+}
+
 .bridge-header__logo img.bridge-header__logo-light {
-	display: none;
+	opacity: 0;
 }
 
 .bridge-header--contrast-light .bridge-header__logo--dual {
 	.bridge-header__logo-img {
-		display: none;
+		opacity: 0;
 	}
 
 	.bridge-header__logo-light {
-		display: block;
+		opacity: 1;
 	}
 }
 
@@ -206,21 +229,21 @@
 // that ground wants, decided server-side where the palette is known.
 .is-scrolled.bridge-header--scrolled-contrast-dark .bridge-header__logo--dual {
 	.bridge-header__logo-img {
-		display: block;
+		opacity: 1;
 	}
 
 	.bridge-header__logo-light {
-		display: none;
+		opacity: 0;
 	}
 }
 
 .is-scrolled.bridge-header--scrolled-contrast-light .bridge-header__logo--dual {
 	.bridge-header__logo-img {
-		display: none;
+		opacity: 0;
 	}
 
 	.bridge-header__logo-light {
-		display: block;
+		opacity: 1;
 	}
 }
 
@@ -381,31 +404,32 @@
 		.wp-block-navigation__container
 		.wp-block-navigation__submenu-container {
 		/**
-		 * A fifth of the header's own text colour, over the header's ground.
+		 * A palette colour, named rather than mixed.
 		 *
-		 * `currentcolor` rather than a named palette entry, so the panel
-		 * darkens off a light bar and lightens off a dark one from a single
-		 * declaration, and keeps doing the right thing when a sticky header
-		 * swaps ground mid-page. It is the same mix the menu items tint
-		 * themselves with, at the same strength the dropdown's own rows use —
-		 * one idea at three depths rather than three colours.
+		 * This was a fifth of the header's own text colour over the header's
+		 * ground, so the panel darkened off a light bar and lightened off a dark
+		 * one from a single declaration. That is the better trick and the wrong
+		 * answer here: the dropdown is a surface in the design system's sense, and
+		 * an operator setting the rest of the site's colours had no way to say
+		 * what this one was. It is the Nav child setting now, defaulting to the
+		 * Surface the cards and bands already use.
 		 *
-		 * Mixed over the ground rather than over `transparent`: with no
-		 * border, no radius and no shadow, the fill is the only thing telling
-		 * the panel from the page, and a fifth of a colour on nothing is not
-		 * a surface — it is the page showing through, with the menu's labels
-		 * lying on top of whatever happens to be scrolling past.
+		 * Both halves come from the header's style attribute rather than from the
+		 * preset directly, because a named colour no longer follows the header's
+		 * contrast the way a `currentcolor` mix did — the foreground is worked out
+		 * server-side against the chosen value and handed down with it.
 		 *
-		 * Text colour is inherited for the same reason the fill is mixed from
-		 * it: the panel follows the header's contrast treatment rather than
-		 * restating it.
+		 * `--bridge-nav-drop-*` and not `--bridge-nav-child-*`, which is what this
+		 * panel is called everywhere else: `--bridge-nav-child-bg` is already
+		 * declared on `.wp-block-navigation` for the child rows in the mobile
+		 * panel, and that element is inside the header — so a value published from
+		 * the header under that name is shadowed before this rule can read it.
 		 */
-		background: color-mix(
-			in srgb,
-			currentcolor 20%,
-			var(--bridge-header-menu-bg, var(--wp--preset--color--background))
+		background: var(
+			--bridge-nav-drop-bg,
+			var(--wp--preset--color--surface)
 		);
-		color: inherit;
+		color: var(--bridge-nav-drop-fg, var(--wp--preset--color--text));
 		min-width: 15rem;
 
 		/**
@@ -504,12 +528,14 @@
 // Contrast is a class rather than a colour so the same rule serves a palette
 // ground and a photograph.
 .bridge-header--contrast-light {
-	// A header light enough to need light text is a dark ground, so its call
-	// to action wants the Inverted scheme — the same light-on-dark button an
-	// Inverted band draws. Without this the header's button is the page's
-	// button: a near-black fill on a near-black bar.
-	@include button.ground("inverted");
-
+	// No button ground here any more. This borrowed the Inverted scheme so the
+	// call to action was not a near-black fill on a near-black bar — a fair fix
+	// while the button had no scheme of its own, and a guess: Inverted is
+	// measured against the Primary band, not against this header. The button now
+	// carries a scheme derived against the header's actual ground, and it is the
+	// only `.wp-element-button` the header renders — the search toggle and the
+	// search submit are bare buttons with their own rules — so there is nothing
+	// left for a ground here to dress.
 	color: var(--wp--preset--color--background);
 
 	a:where(:not(.wp-element-button)) {
@@ -615,9 +641,25 @@ html:has(.bridge-header--sticky) {
 }
 
 .bridge-header--sticky {
-	transition:
-		background-color 0.2s ease,
-		box-shadow 0.2s ease;
+	/**
+	 * What changes when the bar goes solid, and how long it takes.
+	 *
+	 * `color` belongs here as much as the background does. It was missing, so
+	 * the ground faded over 200ms while every label, link and icon in the bar
+	 * flipped from light to dark on the first frame — 200ms of dark text on a
+	 * photograph, which is both the least readable moment of the transition
+	 * and the one the eye is drawn to.
+	 *
+	 * Behind the motion query the rest of this file uses: the header still
+	 * goes solid for a visitor who has asked for less movement, it just
+	 * arrives rather than travels.
+	 */
+	@media (prefers-reduced-motion: no-preference) {
+		transition:
+			background-color 0.2s ease,
+			color 0.2s ease,
+			box-shadow 0.2s ease;
+	}
 }
 
 // A transparent sticky header becomes solid once it leaves the hero,
@@ -912,6 +954,60 @@ html:has(.bridge-header--sticky) {
 .bridge-header__cta {
 	display: flex;
 	align-items: center;
+
+	/**
+	 * The scheme the header's render file worked out, put into play.
+	 *
+	 * A mapping and not a copy: the values arrive on this element as
+	 * `--bridge-cta-*` in a style attribute, and are handed to the shared
+	 * `--bridge-button-*` hooks here. Written straight onto those hooks inline
+	 * they would be unbeatable — an inline declaration outranks every rule in
+	 * this file — and the override below could never take.
+	 */
+	--bridge-button-bg: var(--bridge-cta-bg);
+	--bridge-button-fg: var(--bridge-cta-fg);
+	--bridge-button-hover-bg: var(--bridge-cta-hover-bg);
+	--bridge-button-hover-fg: var(--bridge-cta-hover-fg);
+	--bridge-button-border: var(--bridge-cta-border);
+	--bridge-button-hover-border: var(--bridge-cta-hover-border);
+	--bridge-button-ghost: var(--bridge-cta-ghost);
+	--bridge-button-ghost-hover: var(--bridge-cta-ghost-hover);
+	--bridge-button-ring: var(--bridge-cta-ring);
+
+	/**
+	 * And the other answer, for the two states that mean "what is behind me is
+	 * light": a bright hero, measured by header-cta-backdrop.js, and a sticky
+	 * bar that has scrolled solid.
+	 *
+	 * The second needs no measuring — a scrolled bar *is* the standard page's
+	 * header — and what it swaps to is that page's own button, ground and all,
+	 * so the two are the same button rather than two that happen to agree on
+	 * today's palette. See bridge_header_cta_schemes().
+	 *
+	 * Seven properties and not nine: the Outline treatment has no second
+	 * answer, because the header's call to action is never the outline button.
+	 *
+	 * Scoped to `--transparent`, because a solid header publishes no alternative
+	 * and a `var()` at nothing would take the resting scheme down with it. The
+	 * colours travel because `abstracts/_button.scss` transitions all four of
+	 * them, on the same class the bar's own fade runs on.
+	 */
+	&[data-bridge-backdrop="light"],
+	.bridge-header--transparent.bridge-header--sticky.is-scrolled & {
+		--bridge-button-bg: var(--bridge-cta-alt-bg);
+		--bridge-button-fg: var(--bridge-cta-alt-fg);
+		--bridge-button-hover-bg: var(--bridge-cta-alt-hover-bg);
+		--bridge-button-hover-fg: var(--bridge-cta-alt-hover-fg);
+		--bridge-button-border: var(--bridge-cta-alt-border);
+		--bridge-button-hover-border: var(--bridge-cta-alt-hover-border);
+		--bridge-button-ring: var(--bridge-cta-alt-ring);
+	}
+
+	// The button's colours are not here: bridge_header_button_scheme() derives
+	// the whole `--bridge-button-*` set per render and this element carries it
+	// as a style attribute, because the ground it is measured against is the
+	// header's chosen background on most templates and a hero photograph on a
+	// landing page. Neither is knowable at build time.
 }
 
 .bridge-header__cta .wp-element-button {

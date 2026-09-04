@@ -1,12 +1,23 @@
 /**
  * Editor view for `bridge/hero-slider`.
  *
- * Renders InnerBlocks (core/cover slides) plus an InspectorControls panel
- * exposing slider-level settings (width, height, effect, autoplay, loop, UI
- * toggles).
+ * Renders the slides (core/cover) plus an InspectorControls panel exposing
+ * slider-level settings (width, height, effect, autoplay, loop, UI toggles).
+ *
+ * The slides are placed with `useInnerBlocksProps` rather than by rendering an
+ * `<InnerBlocks />` element, because the two produce different trees and the
+ * stylesheet has to match one of them. The element form wraps the children in
+ * `.block-editor-inner-blocks > .block-editor-block-list__layout`, which put
+ * two divs between this block and its Covers: the canvas then matched none of
+ * the rules written as `.bridge-hero-slider > .wp-block-cover` — not the
+ * narrow column the slide content sits in, and not the stacked preview either,
+ * since the Covers were not the flex children they were being laid out as.
+ * The hook applies the same behaviour to this element, so a Cover is a direct
+ * child here exactly as it is inside the track render.php prints.
  */
 
-const { useBlockProps, InnerBlocks, InspectorControls } = window.wp.blockEditor;
+const { useBlockProps, useInnerBlocksProps, InspectorControls } =
+	window.wp.blockEditor;
 const { createElement: el, Fragment } = window.wp.element;
 const { PanelBody, ToggleControl, RangeControl, SelectControl } =
 	window.wp.components;
@@ -127,6 +138,13 @@ const Edit = ({ attributes, setAttributes }) => {
 		},
 	});
 
+	const innerBlocksProps = useInnerBlocksProps(blockProps, {
+		allowedBlocks: ALLOWED_BLOCKS,
+		template: TEMPLATE,
+		templateLock: false,
+		orientation: 'vertical',
+	});
+
 	return el(
 		Fragment,
 		null,
@@ -237,16 +255,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				})
 			)
 		),
-		el(
-			'div',
-			blockProps,
-			el(InnerBlocks, {
-				allowedBlocks: ALLOWED_BLOCKS,
-				template: TEMPLATE,
-				templateLock: false,
-				orientation: 'vertical',
-			})
-		)
+		el('div', innerBlocksProps)
 	);
 };
 

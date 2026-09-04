@@ -105,8 +105,9 @@
 	@include button.ground("surface");
 
 	--bridge-card-bg: var(--wp--custom--card--on-surface);
+	--bridge-band-ground: var(--wp--preset--color--surface);
 
-	background-color: var(--wp--preset--color--surface);
+	background-color: var(--bridge-band-ground);
 }
 
 .is-style-bridge-inverted {
@@ -118,16 +119,18 @@
 	// ground the band's own light foreground is the only safe answer, and it
 	// is the same one `on-dark` gives every link in the section.
 	--bridge-card-link: currentcolor;
+	--bridge-band-ground: var(--wp--preset--color--primary);
 
-	background-color: var(--wp--preset--color--primary);
+	background-color: var(--bridge-band-ground);
 }
 
 .is-style-bridge-accent {
 	@include button.ground("accent");
 
 	--bridge-card-bg: var(--wp--custom--card--on-accent);
+	--bridge-band-ground: var(--wp--preset--color--accent);
 
-	background-color: var(--wp--preset--color--accent);
+	background-color: var(--bridge-band-ground);
 	color: var(--wp--preset--color--text);
 
 	h1,
@@ -168,6 +171,44 @@
 	.is-style-bridge-accent
 ):not(.bridge-band--flush) {
 	padding-inline: var(--wp--preset--spacing--40);
+}
+
+/**
+ * The same band, graded across.
+ *
+ * A horizontal wash of the band's own colour rather than a colour of its own:
+ * an eighth darker at the left edge, an eighth lighter at the right, and the
+ * band's actual colour nowhere except the middle. That is why the three
+ * skins above each name their ground as `--bridge-band-ground` — one rule can
+ * then grade whichever of them is on, and a skin added later joins in by
+ * declaring the same property rather than by being added to a list here.
+ *
+ * Mixed with black and white, the way the mask shades a band and for the same
+ * reason: it is one arithmetic that works on a light ground and a dark one
+ * without knowing which it landed on. The gradient interpolates in sRGB, which
+ * is where the two ends were mixed, so the middle of the sweep is the band's
+ * colour rather than something a wider space would have taken it through.
+ *
+ * `background-image` rather than `background`, so the `background-color` above
+ * stands underneath it: a browser without `color-mix()` — or a band whose
+ * ground is a value it cannot mix — draws the flat colour it always drew
+ * rather than nothing at all.
+ *
+ * Left to right, as asked. Not a logical direction: `to right` is the same
+ * sweep in an RTL document, where the darker end would land under the start of
+ * the text rather than at the end of it. If this theme is ever translated into
+ * one, that is the line to revisit.
+ */
+.has-band-gradient:is(
+	.is-style-bridge-surface,
+	.is-style-bridge-inverted,
+	.is-style-bridge-accent
+) {
+	background-image: linear-gradient(
+		to right,
+		color-mix(in srgb, #000 12.5%, var(--bridge-band-ground)),
+		color-mix(in srgb, #fff 12.5%, var(--bridge-band-ground))
+	);
 }
 
 /**

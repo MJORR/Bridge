@@ -55,10 +55,35 @@
 .wp-block-button__link:is(.has-background, .has-text-color),
 .wp-element-button:is(.has-background, .has-text-color) {
 	@include button.wash;
+
+	/**
+	 * And no edge, because there is no edge this file can work out.
+	 *
+	 * `shape` gives every button a 2px solid border and `fill` is what colours
+	 * it — matching the fill, so it is invisible on a filled button and
+	 * present only where the fill had no edge of its own. A painted button
+	 * skips `fill` by design: its colour is the editor's decision and not the
+	 * design system's. What it does not skip is theme.json, which pins
+	 * `core/button`'s border to `--wp--custom--button--on-default--bg`'s
+	 * partner on the *Default* ground — so an Accent button dropped on an
+	 * Inverted band or a photographic call to action came ringed in Primary,
+	 * a colour belonging to neither the button nor the band, while the
+	 * unpainted button beside it had no ring at all.
+	 *
+	 * Transparent rather than `border-width: 0`: the border is inside the
+	 * box, and a painted button that dropped it would sit 4px narrower and
+	 * shorter than the one next to it.
+	 *
+	 * CSS cannot read this element's own background, so matching the fill the
+	 * way `fill` does is not available here — and transparent is the same
+	 * thing to look at. A painted button is a solid block of the colour
+	 * somebody chose, which is what they were choosing.
+	 */
+	border-color: transparent;
 }
 
 /**
- * The secondary button.
+ * The Outline button.
  *
  * Both selectors are core's own arrangements of the style — the class lands on
  * the wrapper in the editor and on the link in some serialisations — and both
@@ -66,7 +91,7 @@
  * variant at `.wp-block-button.is-style-outline > .wp-block-button__link:not(
  * .has-background)`, which is a four-class selector of its own; anything
  * lighter here loses to it, and that is exactly what used to happen — the
- * secondary button had no hover state at all, because the rule meant to give
+ * Outline button had no hover state at all, because the rule meant to give
  * it one never applied.
  */
 .wp-block-button.is-style-outline
@@ -80,6 +105,28 @@
 		.has-text-color
 	) {
 	@include button.ghost;
+}
+
+/**
+ * The ground a button is standing on, chosen per button.
+ *
+ * The bands already emit `button.ground()` for the buttons inside them, and
+ * that is the right mechanism nearly always — a button should not have to be
+ * told where it is. What the cascade cannot work out is a button standing on
+ * something the band does not know about: a photograph in a hero, a slide, a
+ * call to action laid over an image. src/editor/button-ground.js is the
+ * control that says so, and these four classes are what it says it with.
+ *
+ * The same mixin the bands use, so there is one definition of what "on the
+ * Accent ground" means and a button that names it cannot drift from a band
+ * that does. Four rules of nine custom properties, which is 36 declarations
+ * that only ever cost anything on a page that uses one — they set variables
+ * and paint nothing on their own.
+ */
+@each $ground in ("default", "surface", "accent", "inverted") {
+	.bridge-button--on-#{$ground} {
+		@include button.ground($ground);
+	}
 }
 
 /**

@@ -164,6 +164,18 @@ const init = (root) => {
 		if (next) {
 			next.disabled = !loop && index === slides.length - 1;
 		}
+
+		// Said out loud, because what is behind a slide is somebody else's
+		// problem: the header's call to action reads the image under itself
+		// and cannot know when it changed. An event rather than a class for
+		// that reader to watch — the classes above are this file's own state
+		// and should stay free to change.
+		root.dispatchEvent(
+			new CustomEvent('bridge:slide', {
+				bubbles: true,
+				detail: { index },
+			})
+		);
 	};
 
 	const goTo = (to) => {

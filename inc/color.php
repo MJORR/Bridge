@@ -201,3 +201,27 @@ function bridge_shade_hex(string $hex, float $amount): string
 
 	return bridge_channels_hex($shaded);
 }
+
+/**
+ * A colour with an alpha channel, as an eight-digit hex.
+ *
+ * `#rrggbbaa` rather than `rgba()` or a `color-mix()`, and the reason is not
+ * taste. These values are printed into a `style` attribute, and WordPress runs
+ * every inline style through `safecss_filter_attr()`, which strips the CSS
+ * functions it knows — var, calc, clamp and a fixed list of others — and then
+ * throws away any declaration with a parenthesis still in it. `color-mix()` is
+ * not on that list and neither is `rgba()`, so both are silently dropped: no
+ * error, no declaration, and a setting that appears to do nothing. A hex has
+ * no parentheses to survive the test.
+ *
+ * @param string $hex   Colour to give an alpha channel.
+ * @param float  $alpha 0-1 opacity.
+ * @return string A `#rrggbbaa` value.
+ */
+function bridge_hex_alpha(string $hex, float $alpha): string
+{
+	$alpha    = min(1.0, max(0.0, $alpha));
+	$channels = bridge_hex_channels($hex);
+
+	return sprintf('%s%02x', bridge_channels_hex($channels), (int) round($alpha * 255));
+}

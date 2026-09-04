@@ -48,7 +48,7 @@ export function ButtonsTab({
 			>
 				<p className="bridge-options__subhelp">
 					{__(
-						'The fill is the only choice here, and it is the only one there is: the label, both hover colours, the boundary and the focus ring are computed from it and from the band behind it, each with one right answer. The label is whichever palette colour clears 4.5:1 on the fill, falling back to black or white — so a button that fails WCAG 1.4.3 is not reachable from this control. A fill within 3:1 of its own band is given a border, which is 1.4.11 answered. Every ratio is measured and shown in the preview.',
+						'The fill is the only choice here, and it is the only one there is: the label, both hover colours, the boundary and the focus ring are computed from it and from the band behind it, each with one right answer. The label is whichever palette colour clears 4.5:1 on the fill, falling back to black or white — so a button that fails WCAG 1.4.3 is not reachable from this control. The border follows the fill, so a chosen colour is the whole button; the exception is a fill the same colour as the band behind it, which is given an edge because it would otherwise be invisible. Every ratio is measured and shown in the preview.',
 						'bridge'
 					)}
 				</p>

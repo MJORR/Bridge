@@ -17,6 +17,11 @@ const {
 } = window.wp.blockEditor;
 const { createElement: el, Fragment } = window.wp.element;
 const { PanelBody, RangeControl, SelectControl, Button } = window.wp.components;
+
+// The mask shape's controls and preview styling, shared with every other band
+// that offers them. Its own script handle, named in this block's dependencies
+// — see src/editor/band-mask.js.
+const { MaskPanel, maskStyle, hasMask } = window.bridgeBandMaskUI || {};
 const { __ } = window.wp.i18n;
 
 const TEMPLATE = [
@@ -69,22 +74,29 @@ const Edit = ({ attributes, setAttributes }) => {
 			`bridge-cta--${width}`,
 			'bridge-section bridge-band alignfull',
 			hasImage ? 'bridge-cta--image' : '',
+			hasMask(attributes) ? 'has-mask' : '',
 		]
 			.filter(Boolean)
 			.join(' '),
-		style: hasImage
-			? {
-					'--bridge-cta-dim': dimRatio / 100,
-					'--bridge-cta-image': backgroundImageUrl
-						? `url(${backgroundImageUrl})`
-						: undefined,
-					// Primary, and not a per-block choice — see render.php.
-					// Named here rather than left to the stylesheet's own
-					// fallback so the editor and the front end are reading the
-					// same declaration.
-					'--bridge-cta-scrim': 'var(--wp--preset--color--primary)',
-				}
-			: undefined,
+		// The shape's four properties either way; the wash's only when there
+		// is a photograph for it to lie on.
+		style: {
+			...maskStyle(attributes),
+			...(hasImage
+				? {
+						'--bridge-cta-dim': dimRatio / 100,
+						'--bridge-cta-image': backgroundImageUrl
+							? `url(${backgroundImageUrl})`
+							: undefined,
+						// Primary, and not a per-block choice — see render.php.
+						// Named here rather than left to the stylesheet's own
+						// fallback so the editor and the front end are reading the
+						// same declaration.
+						'--bridge-cta-scrim':
+							'var(--wp--preset--color--primary)',
+					}
+				: {}),
+		},
 	});
 
 	// Merged onto the inner wrapper rather than nested, so the editor's tree
@@ -199,7 +211,8 @@ const Edit = ({ attributes, setAttributes }) => {
 						},
 						__('Remove graphic', 'bridge')
 					)
-				)
+				),
+			MaskPanel(attributes, setAttributes)
 		),
 		el(
 			'section',

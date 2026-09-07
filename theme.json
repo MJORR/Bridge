@@ -101,6 +101,15 @@
       ],
       "fontSizes": [
         {
+          "slug": "x-small",
+          "name": "Extra Small",
+          "size": "0.75rem",
+          "fluid": {
+            "min": "0.7188rem",
+            "max": "0.75rem"
+          }
+        },
+        {
           "slug": "small",
           "name": "Small",
           "size": "0.875rem",

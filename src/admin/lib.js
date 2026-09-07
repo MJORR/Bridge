@@ -10,6 +10,7 @@ const { __ } = wp.i18n;
 
 /** Sample text for the type-scale preview, per size slug. */
 export const SPECIMENS = {
+	'x-small': __('Labels, legal lines and overlines', 'bridge'),
 	small: __('Captions, meta and form hints', 'bridge'),
 	medium: __('Body copy sets the rhythm of every page.', 'bridge'),
 	large: __('A section subheading', 'bridge'),

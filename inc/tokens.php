@@ -1288,6 +1288,13 @@ function bridge_token_constraints(): array
 		'footer'     => array(
 			'style'           => array('options' => array('simple', 'columns')),
 			'backgroundColor' => array('options' => array_keys(bridge_palette_slugs())),
+			// How far the copyright row is pushed off the footer's own colour.
+			// Signed, because the answer runs in both directions from one
+			// control: below zero the row is lifted towards white, above it is
+			// pressed towards black, and zero is the row the footer had before
+			// this existed. Past about 60% the strip has stopped being a shade
+			// of the footer and become a second colour.
+			'legalShade'      => array('min' => -60, 'max' => 60, 'step' => 5, 'unit' => '%'),
 		),
 		// Not a range and not a list of options — the shape of a declared post
 		// type. Sent to the options page so the form can refuse a slug before
@@ -1489,6 +1496,13 @@ function bridge_token_defaults(): array
 		),
 		'footer'     => array(
 			'style'           => 'simple',
+			// The horizontal wash the three section skins can wear, on the
+			// footer's own ground. Off by default: a footer that has never
+			// been configured should look like the flat band it always was.
+			'gradient'        => false,
+			// Level with the footer, which is the strip every site had before
+			// the control existed.
+			'legalShade'      => 0,
 			// The ground the footer sits on. Surface, because that is the
 			// colour both footer parts were painted before this was a
 			// setting — a site that never opens the control keeps the footer
@@ -2342,6 +2356,14 @@ function bridge_sanitize_tokens(array $raw): array
 			'backgroundColor',
 			$raw_footer['backgroundColor'] ?? '',
 			$defaults['footer']['backgroundColor']
+		),
+		// Cast rather than defaulted, for the reason `site.feeds` is: a
+		// boolean's "missing" and "off" are the same answer.
+		'gradient'        => ! empty($raw_footer['gradient']),
+		// Rounded to an int because it is written into a percentage in a
+		// `color-mix()`, and a shade is not a place fractions buy anything.
+		'legalShade'      => (int) round(
+			bridge_clamp_token('footer', 'legalShade', $raw_footer['legalShade'] ?? null, (float) $defaults['footer']['legalShade'])
 		),
 		// Ids only, never validated against the posts here: a menu deleted
 		// after it was chosen should fall back quietly at render time rather

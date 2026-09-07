@@ -181,12 +181,27 @@ function bridge_rem(float $value): string
  * Build the font-size presets from the base size and scale ratio.
  *
  * A modular scale: `medium` is the body size, the three display steps climb
- * by the ratio, and `small` sits at a fixed fraction below the body. Small is
- * deliberately outside the ratio — it is utility text (captions, meta, form
- * hints), and tying it to a display ratio makes it illegible as soon as a
- * client picks a dramatic scale.
+ * by the ratio, and `small` and `x-small` sit at fixed fractions below the
+ * body. The two small steps are deliberately outside the ratio — they are
+ * utility text (captions, meta, form hints, the labels above a footer menu),
+ * and tying them to a display ratio makes them illegible as soon as a client
+ * picks a dramatic scale.
  *
  * Slugs are fixed. They are written into post content as `has-large-font-size`.
+ *
+ * ---- Why `taper` is written down rather than counted ----------------------
+ *
+ * How much of the fluid spread a step takes used to be `(index + 0.5) / count`
+ * — its position in this array. That made the array's *length* part of every
+ * size's output: adding `x-small` at the front under that rule would have
+ * re-tapered all five existing steps, so a step meant for one label in the
+ * footer would have quietly changed how every heading on every site scales.
+ *
+ * So the taper is a property of the step. The five values below are exactly
+ * what the old expression produced for the five steps that already existed,
+ * and `x-small` takes a little less than `small` — which is what the old rule
+ * would have given it if the array could have grown downwards without moving
+ * everything above it.
  *
  * @param array<string, mixed> $typography Sanitised typography tokens.
  * @return array<int, array<string, mixed>>
@@ -201,20 +216,21 @@ function bridge_compile_font_sizes(array $typography): array
 		// before init, and translating here would trigger just-in-time
 		// textdomain loading. WordPress translates the static theme.json's
 		// own strings through the resolver instead.
-		array('slug' => 'small', 'name' => 'Small', 'size' => $base * 0.875),
-		array('slug' => 'medium', 'name' => 'Medium', 'size' => $base),
-		array('slug' => 'large', 'name' => 'Large', 'size' => $base * $ratio),
-		array('slug' => 'x-large', 'name' => 'Extra Large', 'size' => $base * ($ratio ** 2)),
-		array('slug' => 'xx-large', 'name' => 'Huge', 'size' => $base * ($ratio ** 3)),
+		array('slug' => 'x-small', 'name' => 'Extra Small', 'size' => $base * 0.75, 'taper' => 0.05),
+		array('slug' => 'small', 'name' => 'Small', 'size' => $base * 0.875, 'taper' => 0.1),
+		array('slug' => 'medium', 'name' => 'Medium', 'size' => $base, 'taper' => 0.3),
+		array('slug' => 'large', 'name' => 'Large', 'size' => $base * $ratio, 'taper' => 0.5),
+		array('slug' => 'x-large', 'name' => 'Extra Large', 'size' => $base * ($ratio ** 2), 'taper' => 0.7),
+		array('slug' => 'xx-large', 'name' => 'Huge', 'size' => $base * ($ratio ** 3), 'taper' => 0.9),
 	);
 
-	$count     = count($steps);
 	$font_sizes = array();
 
-	foreach ($steps as $index => $step) {
-		// Half-step offset so even the smallest size gets a little fluidity
-		// rather than a clamp with identical bounds.
-		$taper = ($index + 0.5) / $count;
+	foreach ($steps as $step) {
+		// A half-step offset was the point of the old expression and is the
+		// point of these numbers: even the smallest size gets a little
+		// fluidity rather than a clamp with identical bounds.
+		$taper = (float) $step['taper'];
 		$size  = (float) $step['size'];
 
 		$font_sizes[] = array(

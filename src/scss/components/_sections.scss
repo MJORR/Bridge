@@ -198,11 +198,20 @@
  * sweep in an RTL document, where the darker end would land under the start of
  * the text rather than at the end of it. If this theme is ever translated into
  * one, that is the line to revisit.
+ *
+ * `.bridge-footer` is in the list for the same reason a skin added later would
+ * be: it declares `--bridge-band-ground`, so it is a band this rule can grade.
+ * It is not skinned and never will be — its ground is a setting rather than a
+ * block style — but the wash a site puts on its sections is the wash it wants
+ * on its footer, and a second copy of this arithmetic in _footer.scss would be
+ * a second thing to keep in step. Theme Options switches it on; there is no
+ * editor toggle for it, because the footer is not a block anyone selects.
  */
 .has-band-gradient:is(
 	.is-style-bridge-surface,
 	.is-style-bridge-inverted,
-	.is-style-bridge-accent
+	.is-style-bridge-accent,
+	.bridge-footer
 ) {
 	background-image: linear-gradient(
 		to right,
@@ -231,10 +240,10 @@
  * which is to inset its own words.
  */
 .alignfull:is(
-	.is-style-bridge-surface,
-	.is-style-bridge-inverted,
-	.is-style-bridge-accent
-):not(.bridge-band--flush) {
+		.is-style-bridge-surface,
+		.is-style-bridge-inverted,
+		.is-style-bridge-accent
+	):not(.bridge-band--flush) {
 	padding-left: var(--wp--preset--spacing--40);
 	padding-right: var(--wp--preset--spacing--40);
 }
@@ -257,22 +266,6 @@
 
 .bridge-section--wide > .bridge-section__inner {
 	@include section.container(wide);
-}
-
-// ---- Footer --------------------------------------------------------------
-
-.bridge-footer--columns .bridge-footer__legal {
-	border-top: 1px solid
-		color-mix(in srgb, var(--wp--preset--color--text) 15%, transparent);
-	padding-top: var(--wp--preset--spacing--30);
-}
-
-.bridge-footer--columns .wp-block-page-list {
-	gap: 0.35rem;
-
-	.wp-block-pages-list__item {
-		display: block;
-	}
 }
 
 /**

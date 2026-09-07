@@ -410,6 +410,34 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					__next40pxDefaultSize
 				/>
 
+				<ToggleControl
+					label={__('Gradient on/off', 'bridge')}
+					checked={Boolean(draft.footer.gradient)}
+					onChange={(on) => setGroup('footer', 'gradient', on)}
+					help={__(
+						'The same wash a skinned section can wear, on the footer’s own colour: an eighth darker at the left edge and an eighth lighter at the right.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+				/>
+
+				<RangeControl
+					label={__('Copyright row shade', 'bridge')}
+					value={draft.footer.legalShade}
+					min={constraints.footer.legalShade.min}
+					max={constraints.footer.legalShade.max}
+					step={constraints.footer.legalShade.step}
+					onChange={(value) =>
+						setGroup('footer', 'legalShade', value ?? 0)
+					}
+					help={__(
+						'How far the bottom row sits off the footer’s colour. Below zero lightens it, above zero darkens it, and zero leaves it level with the rest.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+
 				{draft.footer.style === 'columns' && (
 					<>
 						<SelectControl

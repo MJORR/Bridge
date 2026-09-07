@@ -9,15 +9,41 @@
  * the element — render.php publishes it there so the editor canvas, which runs
  * none of the theme's enqueue hooks, resolves it too — and everything else is
  * derived from `currentcolor`, which is what lets one stylesheet paint a footer
- * on any of the six palette slugs.
+ * on any of the six palette slugs. The one exception is the pair of column
+ * labels, which render.php names outright as `--bridge-footer-label`.
+ *
+ * The colour is on the outer element and the padding is not: the band reaches
+ * the window, the words inside it stop at the site's wide container. See the
+ * note in render.php for why that is two wrappers rather than one.
  */
+@use "../abstracts/section" as section;
 
 .bridge-footer {
 	background-color: var(
 		--bridge-footer-bg,
 		var(--wp--preset--color--surface)
 	);
-	padding-block: var(--wp--preset--spacing--60) var(--wp--preset--spacing--40);
+}
+
+/**
+ * The two rows, and what they line up with.
+ *
+ * The section blocks' own container, not a hand-rolled one and not core's
+ * `has-global-padding`. Both of those cap the row at `wideSize` and then put
+ * the gutter *outside* it; `section.container(wide)` spends the gutter inside,
+ * which is a whole `spacing--40` further in. Every wide band on the site is
+ * drawn by that mixin, so anything else here lines the footer up with nothing
+ * — the logo sat a gutter to the left of the section above it.
+ *
+ * One mixin, two rows, so the copyright line starts on the logo as well.
+ */
+.bridge-footer__inner,
+.bridge-footer__legal-inner {
+	@include section.container(wide);
+}
+
+.bridge-footer__body {
+	padding-block: var(--wp--preset--spacing--60) var(--wp--preset--spacing--50);
 }
 
 /**
@@ -46,13 +72,20 @@
  * footer appears inside the editor canvas at half the window's width, where a
  * viewport query would still be answering "desktop".
  *
+ * The floor is 26rem and that number is doing one job: it is wide enough that
+ * two of them plus the gap will not fit in anything narrower than the 56rem
+ * this file switches to three columns at. Below that the footer is therefore a
+ * single column, never two — which is what it used to become between about
+ * 560px and 900px, and two columns of three is a row of two and an orphan on
+ * its own line. A phone gets one list; a desktop gets three.
+ *
  * The identity column is given more of the row on wide screens, because a logo
  * and a row of icons need width where a list of links needs height.
  */
 .bridge-footer__inner {
 	display: grid;
 	gap: var(--wp--preset--spacing--50) var(--wp--preset--spacing--60);
-	grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
 
 	@media (width >= 56rem) {
 		grid-template-columns: 1.5fr 1fr 1fr;
@@ -68,12 +101,58 @@
 
 // ---- Column one: the logo and the social row -----------------------------
 
+/**
+ * The mark starts at the column's left edge.
+ *
+ * Two things had to be said for that, because there are two ways a logo ends
+ * up centred here and fixing one leaves the other:
+ *
+ *   `justify-…`  The anchor is a flex container and the image is a flex item,
+ *                so a `center` inherited from anywhere above puts the image in
+ *                the middle of whatever width the anchor has.
+ *   `object-…`   An SVG WordPress has no dimensions for gets an <img> box
+ *                wider than the artwork, and a replaced element draws its
+ *                content centred in that box by default. This is the one that
+ *                geometry alone cannot reveal — the element measures correct
+ *                while the picture inside it sits an inch to the right.
+ *
+ * `align-self: stretch` is what makes the second of those reachable, and it is
+ * why the anchor is not shrunk to the mark instead. Shrink it — with
+ * `align-self: start`, or by letting an `align-items: center` above do it —
+ * and the image's `max-inline-size: 100%` below becomes a percentage of a
+ * width being derived from the image itself; a browser resolves that circle at
+ * zero and the logo disappears. Stretched, the anchor has a width that does
+ * not depend on its contents, and the two rules above can place the artwork
+ * inside it. Measured, not reasoned about: with `start` here the element
+ * reports 0×0 while every rule still looks right.
+ *
+ * `start`, not `left`: these are logical properties, and a footer in an RTL
+ * document should anchor its logo to the edge its text starts on.
+ */
 .bridge-footer__logo {
 	display: inline-flex;
+	align-self: stretch;
+	justify-content: start;
 	// A logo is a link to the home page, not a piece of running text; the
 	// underline the site puts on links would sit under the image.
 	text-decoration: none;
 	color: inherit;
+	// On top of the column's own gap, not instead of it. The logo is the one
+	// thing in the footer that is a mark rather than a line of text, and the
+	// space under it is what separates the identity from the accounts beside
+	// it — at the column's gap alone the social row read as the logo's second
+	// line.
+	//
+	// Two values, at the width the columns split at rather than at a viewport
+	// size of its own: stacked, everything in the footer is one running list
+	// and 3XL under the logo would read as a gap in it; in three columns the
+	// identity column has a whole column of height to spend and the space is
+	// what gives the mark room.
+	margin-block-end: var(--wp--preset--spacing--50);
+
+	@media (width >= 56rem) {
+		margin-block-end: var(--wp--preset--spacing--80);
+	}
 
 	&--text {
 		font-size: var(--wp--preset--font-size--large);
@@ -88,6 +167,13 @@
 	max-block-size: 3rem;
 	inline-size: auto;
 	max-inline-size: 100%;
+	// Where the artwork sits when the box is bigger than it is — which is what
+	// an SVG with no width and height attributes gives you, and what a browser
+	// otherwise centres. `contain` so the shape is never stretched to fill the
+	// difference either.
+	object-fit: contain;
+	object-position: left center;
+	margin-inline: 0;
 }
 
 /**
@@ -126,28 +212,41 @@
 	padding: 0;
 }
 
+/**
+ * A drawn chip, not a bare glyph.
+ *
+ * The touch target was always 44px and always invisible until hovered, which
+ * left the row reading as a scatter of small marks — and the first one was
+ * pulled a third of an inch out of the column by a negative margin, so on a
+ * footer whose content is now capped at the wide container it sat outside it.
+ *
+ * Giving the target a permanent tint solves both: the row starts exactly on
+ * the container's edge with the logo above it, and each account reads at 44px
+ * rather than at the size of the glyph inside it.
+ *
+ * The tint is mixed from `currentcolor` rather than named, so it works on all
+ * six grounds — and on the gradient — without a rule per ground.
+ */
 .bridge-footer__social-link {
 	display: grid;
 	place-items: center;
 	// The 44px minimum touch target, which an icon on its own is well under.
 	inline-size: 2.75rem;
 	block-size: 2.75rem;
-	margin-inline-start: -0.6rem;
 	border-radius: 50%;
 	color: inherit;
 	text-decoration: none;
-	// A tint of the text colour rather than a named colour, so the hover works
-	// on all six grounds without a rule per ground.
+	background-color: color-mix(in srgb, currentcolor 12%, transparent);
 	transition: background-color 200ms ease;
 
 	&:hover,
 	&:focus-visible {
-		background-color: color-mix(in srgb, currentcolor 14%, transparent);
+		background-color: color-mix(in srgb, currentcolor 26%, transparent);
 	}
 
 	svg {
-		inline-size: 1.5rem;
-		block-size: 1.5rem;
+		inline-size: 1.625rem;
+		block-size: 1.625rem;
 		// Core's social icons are solid shapes, not strokes.
 		fill: currentcolor;
 	}
@@ -157,25 +256,34 @@
 	}
 }
 
-// The first icon's negative margin pulls its touch target back to the column's
-// edge so the row lines up with the logo above it; the rest sit inside the row.
-.bridge-footer__social-item + .bridge-footer__social-item {
-	.bridge-footer__social-link {
-		margin-inline-start: 0;
-	}
-}
-
 // ---- Columns two and three: the menus ------------------------------------
 
 .bridge-footer__heading {
 	margin: 0;
-	font-size: var(--wp--preset--font-size--small);
-	font-weight: 700;
-	letter-spacing: 0.06em;
+	// The body face, not the heading one. An <h2> takes the heading family
+	// from global styles, and a display serif set at the size of the links
+	// under it reads as a different voice rather than as their label — these
+	// are signposts in a footer, not titles on a page. The element stays an
+	// h2, because what it is to a screen reader has not changed.
+	font-family: var(--wp--preset--font-family--sans);
+	// One step below the links it names, which is a step the site's scale did
+	// not have until this asked for it — see bridge_compile_font_sizes().
+	font-size: var(--wp--preset--font-size--x-small);
+	// One step down the same ladder the heading weight control offers, so the
+	// label is a weight the design system knows rather than a number picked
+	// here.
+	font-weight: 600;
+	// Wide, because the label is short, uppercase and set at the same size as
+	// the list beneath it: letterspacing is what separates it from the links
+	// now that the typeface no longer does.
+	letter-spacing: 0.12em;
 	text-transform: uppercase;
-	// The label is a signpost, not a voice. Held back from the links it names
-	// so the eye lands on what is clickable.
-	opacity: 0.7;
+	// Surface, published by render.php — which also decides what the label
+	// falls back to on a footer whose ground is surface, the one case where
+	// naming the colour outright would draw the heading in its own background.
+	// A named colour rather than the dimmed inherit this was: a signpost held
+	// back by opacity reads as disabled text on a strong ground.
+	color: var(--bridge-footer-label, currentcolor);
 }
 
 .bridge-footer__nav {
@@ -199,19 +307,89 @@
 	}
 }
 
+/**
+ * A Page List inside a footer menu.
+ *
+ * core/page-list is a nav item that expands into several, and its own layout
+ * is a row: in a column each page has to be its own line, and the gap between
+ * them is the one the container above sets rather than a menu bar's.
+ */
+.bridge-footer__nav .wp-block-page-list {
+	gap: 0.35rem;
+
+	.wp-block-pages-list__item {
+		display: block;
+	}
+}
+
+/**
+ * The links line up with the label above them.
+ *
+ * Every nav that is not the primary one wears a pill — components/_primary-nav.
+ * scss, section 2 — and a pill insets its label by `--bridge-nav-inset`. In a
+ * row that is invisible; in a column it holds every link a padding's width to
+ * the right of the heading they belong to, which is the one thing they are
+ * read against.
+ *
+ * So the footer's menus opt out of the pill entirely rather than being pulled
+ * back out of it by a negative margin: the surface it draws on hover is a
+ * second signal on top of the underline this file already gives them, and its
+ * vertical padding was doubling the gap between rows on top of that.
+ *
+ * Three classes to match the rule it is overriding, and this file is `@use`d
+ * after that one — see main.scss, where the order is the point.
+ */
+.bridge-footer .bridge-footer__nav .wp-block-navigation-item__content {
+	padding: 0;
+	background-color: transparent;
+
+	&:hover,
+	&:focus-visible {
+		background-color: transparent;
+	}
+}
+
 // ---- The line underneath -------------------------------------------------
 
+/**
+ * The copyright strip.
+ *
+ * Its own row across the whole band, so the shade an operator can give it
+ * reaches the window rather than stopping at the container — a tinted strip
+ * with bare footer either side of it would read as a mistake.
+ *
+ * The shade is an overlay, not a colour: `--bridge-footer-legal-ink` is white
+ * below zero and black above it and `--bridge-footer-legal-shade` is how much
+ * of it, both published by render.php from one signed setting. Mixed with
+ * `transparent` so it lies over whatever is underneath — the flat ground, or
+ * the section gradient when the footer is wearing one — instead of replacing
+ * it. At the default 0% the mix is fully transparent and this is the strip the
+ * footer always had.
+ */
 .bridge-footer__legal {
-	margin-block-start: var(--wp--preset--spacing--50);
-	padding-block-start: var(--wp--preset--spacing--30);
+	padding-block: var(--wp--preset--spacing--30);
+	background-color: color-mix(
+		in srgb,
+		var(--bridge-footer-legal-ink, #000)
+			var(--bridge-footer-legal-shade, 0%),
+		transparent
+	);
 	// Derived from the text colour for the reason the hover tint is: one rule
-	// that works on a white footer and an inverted one alike.
+	// that works on a white footer and an inverted one alike. It is what
+	// separates the strip at the default shade, where there is no step in
+	// colour to do it.
 	border-block-start: 1px solid
 		color-mix(in srgb, currentcolor 15%, transparent);
 }
 
 .bridge-footer__copyright {
 	margin: 0;
+	// Already the smallest step in the site's scale — there is nothing below
+	// `small` in theme.json, and a hand-picked length here would be the one
+	// size on the page that the typography settings cannot move.
 	font-size: var(--wp--preset--font-size--small);
+	// Centred in the strip, which is the whole wide container: the line is one
+	// short sentence and the row it sits in has nothing else in it.
+	text-align: center;
 	opacity: 0.75;
 }

@@ -84,6 +84,34 @@
 // ---- The head of an article -------------------------------------------------
 
 /**
+ * An article on its own ground.
+ *
+ * Theme Options → Posts, switched on, and `bridge_post_body_class()` puts the
+ * class here. `surface` is the palette's near-neighbour of the page colour, so
+ * this sets an article slightly apart from the rest of the site rather than
+ * recolouring it — a long read on a tint, with the header and the footer, which
+ * both paint their own ground, unchanged either side of it.
+ *
+ * On <body> rather than on the article's wrapper, because <body> is what core's
+ * global styles paint (`body { background-color: var(--wp--preset--color--
+ * background) }`) and what shows under a short post, past the end of the
+ * content. Painting the wrapper instead would leave the page colour showing
+ * below the article on exactly the pages this is for.
+ *
+ * `body.…` is two of specificity against core's one, which is all it takes —
+ * global styles are printed after the theme's stylesheet, so a bare class here
+ * would lose.
+ *
+ * Nothing else changes. Cards carry their own ground (see
+ * `bridge_card_grounds()` — the light card is its own colour, not the page's),
+ * and every skinned band paints itself, so nothing on the page resolves to the
+ * colour this replaces.
+ */
+body.bridge-single--surface {
+	background-color: var(--wp--preset--color--surface);
+}
+
+/**
  * The three article layouts.
  *
  * One template, three grids. `templates/single.html` puts the title and the

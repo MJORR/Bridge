@@ -26,6 +26,30 @@
 }
 
 /**
+ * The footer meets the section above it.
+ *
+ * WordPress puts `margin-block-start: var(--wp--style--block-gap)` on every
+ * direct child of `.wp-site-blocks`, and the template part wrapping this block
+ * is one of them — so a coloured footer sat a block gap below the band above
+ * it with a strip of page background showing between the two.
+ *
+ * The wrapper is core's, not the theme's, so it is matched by what it contains
+ * — the same `:has()` on `:where(.wp-block-template-part)` the header uses for
+ * its own position rules, and for the same reason: there is no element of ours
+ * up there to put a class on. `:where()` keeps the wrapper itself weightless,
+ * and `:has()` still carries the specificity of `.bridge-footer`, which is all
+ * it takes to beat the zero-specificity `:where(.wp-site-blocks) > *` core
+ * writes the gap in.
+ *
+ * Only this footer. The simple variant is a core Group in its own template
+ * part and never carries this class, so a site on that layout keeps the
+ * spacing it has always had.
+ */
+:where(.wp-block-template-part):has(> .bridge-footer) {
+	margin-block-start: 0;
+}
+
+/**
  * The two rows, and what they line up with.
  *
  * The section blocks' own container, not a hand-rolled one and not core's

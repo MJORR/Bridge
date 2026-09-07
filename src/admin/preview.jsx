@@ -813,6 +813,7 @@ export function CardStylePreview({
  */
 export function PostTemplatePreview({
 	template,
+	surface = false,
 	breadcrumb = true,
 	meta,
 	image = 'rounded',
@@ -939,7 +940,10 @@ export function PostTemplatePreview({
 			className={`bridge-preview__post bridge-preview__post--${template}`}
 			style={{
 				fontFamily: body,
-				background: color('background'),
+				// The ground the article actually sits on, so the switch in the
+				// Background section shows its own consequence rather than
+				// being the one setting on this tab the preview ignores.
+				background: color(surface ? 'surface' : 'background'),
 				color: color('text'),
 			}}
 		>

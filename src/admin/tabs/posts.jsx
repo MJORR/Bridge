@@ -120,6 +120,35 @@ export function PostsTab({ draft, payload, setGroup }) {
 			</Section>
 
 			{/*
+			 * ---- Why a switch and not a colour picker ------------------------
+			 *
+			 * The question is whether an article is set apart from the rest of
+			 * the site, and the palette already has the slug whose job that is:
+			 * `surface` is the near-neighbour of the page colour. A free choice
+			 * of six would let a long read end up on `primary` with body text
+			 * over it, which is not a setting so much as a way to break one
+			 * template.
+			 */}
+			<Section
+				title={__('Background', 'bridge')}
+				description={__(
+					'The colour behind a single post. Posts only — pages, archives and the front page keep the site’s page colour, which is what makes this read as an article rather than as a second theme.',
+					'bridge'
+				)}
+			>
+				<ToggleControl
+					label={__('Surface background', 'bridge')}
+					checked={Boolean(draft.posts?.surface)}
+					onChange={(on) => setGroup('posts', 'surface', on)}
+					help={__(
+						'Puts every post on the palette’s Surface colour instead of the page colour. The header and the footer paint their own ground and are unchanged; so are cards and skinned bands, which each carry a colour of their own.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+				/>
+			</Section>
+
+			{/*
 			 * ---- Why the trail is a switch and not a layout ------------------
 			 *
 			 * It is a second decision about the head of an article, not a fourth
@@ -221,6 +250,7 @@ export function PostsPreview({ draft, preview }) {
 			<h3>{__('A post, in this layout', 'bridge')}</h3>
 			<PostTemplatePreview
 				template={draft.posts?.template || 'classic'}
+				surface={Boolean(draft.posts?.surface)}
 				breadcrumb={false !== draft.posts?.breadcrumb}
 				meta={draft.posts?.meta}
 				image={draft.posts?.image || 'rounded'}

@@ -269,7 +269,8 @@ add_action('init', 'bridge_register_section_skins');
  * is excluded explicitly rather than left to `is_singular('post')`, which
  * already excludes it, so the intent survives someone widening the check.
  *
- * Two classes, not one: the arrangement and the shape of the photograph are
+ * Two classes, not one — three when the article is on its own ground: the
+ * arrangement, the shape of the photograph and the colour under them are
  * separate decisions and the stylesheet answers them separately.
  */
 function bridge_post_body_class(array $classes): array
@@ -301,6 +302,15 @@ function bridge_post_body_class(array $classes): array
 	$classes[] = 'bridge-single';
 	$classes[] = 'bridge-single--' . $template;
 	$classes[] = 'bridge-single--image-' . $image;
+
+	// The ground the article sits on, carried the same way as the two above
+	// and for the same reason: the template is static markup and this is a
+	// value from the record. A third independent decision, so a third class
+	// rather than a variant of either — any of the three layouts is correct on
+	// either ground.
+	if (! empty($tokens['posts']['surface'])) {
+		$classes[] = 'bridge-single--surface';
+	}
 
 	return $classes;
 }

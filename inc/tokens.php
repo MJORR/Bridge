@@ -1451,6 +1451,18 @@ function bridge_token_defaults(): array
 			// theme drew before this was a setting, so a site that never opens
 			// the control keeps the picture it had.
 			'image'      => 'rounded',
+			// Whether a single post sits on `surface` rather than on the page
+			// colour every other template uses. Off, because the page colour
+			// is what the theme drew before this was a setting.
+			//
+			// A boolean rather than a palette slug, and deliberately: the
+			// question this answers is "is an article set apart from the rest
+			// of the site", and the theme's answer to that is surface — the
+			// slug whose job in the palette is exactly to be the near-neighbour
+			// of the page. A free choice of six would let an operator put a
+			// long read on `primary` with black text on it, which is not a
+			// setting so much as a way to break one template.
+			'surface'    => false,
 		),
 		'header'     => array(
 			'layout'          => 'left',
@@ -2231,6 +2243,10 @@ function bridge_sanitize_tokens(array $raw): array
 			$raw_posts['image'] ?? '',
 			$defaults['posts']['image']
 		),
+		// Cast rather than defaulted, the way `site.feeds` is: this one
+		// defaults to *off*, so "missing" and "off" are the same answer and
+		// there is nothing for a fallback to disambiguate.
+		'surface'    => ! empty($raw_posts['surface']),
 	);
 
 	// ---- Structure --------------------------------------------------------

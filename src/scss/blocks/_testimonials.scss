@@ -21,6 +21,17 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--50);
+
+		// What the swipe row below measures itself against, for the same
+		// reason and in the same shape as the Cards band's own container: this
+		// element and the track inside it are the same width, and a band in a
+		// narrow column on a wide monitor has as little room as one on a
+		// phone. A window-width media query would answer for the wrong one.
+		//
+		// Named, so the query below cannot resolve against a testimonial —
+		// `card.surface` makes each card a container of its own once the cut
+		// corner is switched on.
+		container: bridge-testimonials / inline-size;
 	}
 
 	// The wide setting.
@@ -65,6 +76,32 @@
 		// an attribution with no image in it, so a wide one is a comfortable
 		// measure rather than an oversized picture.
 		grid-auto-columns: #{section.track-width(18rem, section.$grid-gap, 80%)};
+
+		/**
+		 * One card to a view, once only one card fits.
+		 *
+		 * The 80% peek above is the right affordance while there is a second
+		 * card to peek at. Below two tracks there is not: what shows past the
+		 * edge is the gap and the corner of the card the reader has just been
+		 * given four-fifths of, which reads as the row having been cut off
+		 * rather than as something to swipe. At 100% the gap falls outside the
+		 * viewport entirely and only appears while a swipe is in flight, which
+		 * is what makes the next card arrive rather than uncover itself.
+		 *
+		 * The threshold is the wrapped grid's own arithmetic, not a phone
+		 * size: two 18rem tracks and the gap between them is the width at
+		 * which `auto-fit` stops placing a second column. So the two overflow
+		 * styles change their mind at the same width — the promise the note
+		 * above this rule makes, and one no window-width breakpoint could
+		 * keep, since the same band is narrow in a sidebar and wide on a phone
+		 * held sideways.
+		 *
+		 * The Cards band carries this rule already; testimonials and feature
+		 * panels were left with the peek at every width.
+		 */
+		@container bridge-testimonials (width < 37rem) {
+			grid-auto-columns: 100%;
+		}
 	}
 
 	// A focusable scroll container needs a visible focus ring, or keyboard

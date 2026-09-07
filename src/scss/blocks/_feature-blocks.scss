@@ -44,6 +44,17 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--50);
+
+		// What the swipe row below measures itself against — the Cards band's
+		// container, in the block that borrows the rest of its card rules too.
+		// This element and the list inside it are the same width, so it asks
+		// the only question worth asking: how much room the band actually has,
+		// which a window-width media query answers for a band in a narrow
+		// column and gets wrong.
+		//
+		// Named, so the query cannot resolve against a panel — `card.surface`
+		// makes each one a container of its own with the cut corner on.
+		container: bridge-features / inline-size;
 	}
 
 	&--narrow &__inner {
@@ -216,6 +227,28 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 	&--carousel:not(.is-editor-preview) &__list {
 		@include section.snap-row(section.$grid-gap);
 		@include carousel.track;
+
+		/**
+		 * One panel to a view, once only one panel fits.
+		 *
+		 * `snap-row` sizes its tracks at `min(20rem, 80%)`, so on a phone a
+		 * panel takes four-fifths of the row and the last fifth is the gap
+		 * plus the corner of the panel the reader is already looking at three
+		 * quarters of. That reads as the row having been cut off rather than
+		 * as something to swipe. At 100% the gap sits outside the viewport and
+		 * is seen only while a swipe is in flight, which is what makes the
+		 * next panel slide in rather than uncover itself.
+		 *
+		 * The threshold is `snap-row`'s own floor doubled with a gap between —
+		 * the width at which a second track stops fitting — so the row keeps
+		 * the peek for exactly as long as there is a second panel to peek at.
+		 *
+		 * The Cards band carries the same rule against its own floor; see the
+		 * note there, and the matching one in the testimonials swipe row.
+		 */
+		@container bridge-features (width < 41rem) {
+			grid-auto-columns: 100%;
+		}
 	}
 
 	@include carousel.controls;

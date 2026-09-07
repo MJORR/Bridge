@@ -1,9 +1,18 @@
 /**
  * Bridge — Logo Slider.
  *
- * A CSS marquee. The track holds each logo twice; the animation moves it by
+ * A CSS marquee. The track holds each logo twice and the animation moves it by
  * exactly half its own width, so at the moment it loops the second copy is
  * standing where the first began and the seam is invisible.
+ *
+ * That only holds if the track's two halves are identical, which is why the
+ * space between logos is carried by each logo as trailing padding rather than
+ * sitting between them as a flex `gap`. A gap falls *between* items, so a
+ * track of 2n logos holds 2n-1 of them: the halves are then not the same
+ * width, half the track is not one set of logos, and the loop lands short by
+ * half a gap every time round. The row standing still has the opposite need —
+ * no trailing space after the last logo, or a centred set sits off-centre —
+ * so that state puts the gap back and takes the padding off.
  */
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
@@ -11,6 +20,22 @@
 @include intro.section-intro;
 
 .bridge-logos {
+	/**
+	 * The defaults every logo band starts at, and what the block's own sliders
+	 * write over — inline on this element, which beats a declaration made here
+	 * for the same element.
+	 *
+	 * The height is a flat rem here and fluid on the page: render.php prints
+	 * it through bridge_logo_fluid() on every render, moved slider or not, so
+	 * what is written here is what the editor's own preview draws and what
+	 * anything rendering this markup without PHP would fall back to. The
+	 * spacing needs no such help — the presets it defaults to further down are
+	 * generated fluid by inc/theme-json.php.
+	 */
+	--bridge-logo-size: 3rem;
+	// A divisor on the animation, so 2 is twice as fast and a half is half.
+	--bridge-logo-speed: 1;
+
 	&__inner {
 		display: flex;
 		flex-direction: column;
@@ -33,7 +58,71 @@
 		@include section.container(wide);
 	}
 
+	/**
+	 * The label above the logos, when there is one.
+	 *
+	 * Tracking, and nothing else. The logos are what this band is for, so the
+	 * line above them takes no colour of its own, no weight and no change of
+	 * case — it inherits whatever the band's skin is already setting and is
+	 * told apart from ordinary text by being spaced and, at the size it
+	 * starts at, small.
+	 *
+	 * The tracking is a proportion of the size, and the bigger the type the
+	 * less of it a line needs. These are mixed-case values: letters that are
+	 * not all capitals sit closer together to begin with, so the same setting
+	 * that reads as deliberate on a word like CLIENTS reads as a fault on one
+	 * like Clients.
+	 *
+	 * Size and alignment are classes rather than inline styles, so the sets
+	 * the toolbar offers are the sets that exist. The alignment ranges the
+	 * label within the intro's column and not the window, which is what makes
+	 * `left` line up with the text column of the page above even where the
+	 * logos beneath it run to both edges.
+	 */
+	&__label {
+		font-size: var(--wp--preset--font-size--medium);
+		letter-spacing: 0.05em;
+		text-align: left;
+
+		&.is-align-center {
+			text-align: center;
+		}
+
+		&.is-align-right {
+			text-align: right;
+		}
+
+		&.is-size-small {
+			font-size: var(--wp--preset--font-size--small);
+			letter-spacing: 0.06em;
+		}
+
+		&.is-size-large {
+			font-size: var(--wp--preset--font-size--large);
+			letter-spacing: 0.04em;
+		}
+
+		&.is-size-x-large {
+			font-size: var(--wp--preset--font-size--x-large);
+			letter-spacing: 0.03em;
+		}
+	}
+
 	&__row {
+		// Two names, because "what the editor asked for" and "what this row
+		// uses" are different questions. The slider writes
+		// `--bridge-logo-space` inline on the section; the row resolves it
+		// here, falling back to the preset its fit mode wants, into the
+		// `--bridge-logo-gap` that the track and the keyframe both read.
+		//
+		// The fallback cannot live on the track instead: a declaration on a
+		// descendant beats an inherited inline value, so the slider would
+		// move nothing.
+		--bridge-logo-gap: var(
+			--bridge-logo-space,
+			var(--wp--preset--spacing--50)
+		);
+
 		overflow: hidden;
 		// Fades the logos out at both ends rather than cutting them off at a
 		// hard edge, which makes the row read as continuing past the section
@@ -48,60 +137,110 @@
 	}
 
 	&__track {
-		--bridge-logo-gap: var(--wp--preset--spacing--50);
-
 		display: flex;
 		align-items: center;
-		gap: var(--bridge-logo-gap);
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		width: max-content;
+		// A layer of its own, so the loop is the compositor moving a texture
+		// rather than the page being painted again every frame. Browsers
+		// promote a transform animation on their own most of the time; this
+		// row is the case where they may not, because the mask on its parent
+		// puts the animation inside a masked subtree.
+		will-change: transform;
 		// Duration scales with how many logos there are, so adding one makes
-		// the row longer rather than faster.
-		animation: bridge-logos-scroll calc(var(--bridge-logo-count, 6) * 3s)
+		// the row longer rather than faster — and then divides by the speed
+		// the block asked for, which is why that is a multiplier and not a
+		// number of seconds: it means the same thing to a row of four logos
+		// and a row of forty.
+		animation: bridge-logos-scroll
+			calc(var(--bridge-logo-count, 6) * 3s / var(--bridge-logo-speed))
 			linear infinite;
 	}
 
-	// `cover` gives every logo the same 8rem tile, and the crop leaves each
-	// one filling its box edge to edge. `contain` does the opposite: a wide
+	// `cover` crops every logo to the same tile, and the crop leaves each one
+	// filling its box edge to edge. `contain` does the opposite: a wide
 	// wordmark and a square badge sit at their own widths, and two marks that
 	// both run to the edge of their artwork end up almost touching. The wider
-	// gap is what keeps a contained row reading as separate logos rather than
-	// one continuous strip.
-	&__row.is-contain &__track {
-		--bridge-logo-gap: var(--wp--preset--spacing--60);
+	// default is what keeps a contained row reading as separate logos rather
+	// than one continuous strip — until an editor names a gap of their own,
+	// which answers the question for both.
+	&__row.is-contain {
+		--bridge-logo-gap: var(
+			--bridge-logo-space,
+			var(--wp--preset--spacing--60)
+		);
 	}
 
 	&__row.is-reverse &__track {
 		animation-direction: reverse;
 	}
 
-	// The editor preview, and any row short enough that scrolling it would be
-	// silly.
+	// The editor preview, and — via logo-slider-view.js — any row whose logos
+	// already fit the space they are in. A row that fits has nowhere to travel
+	// to: sliding it would take a set of logos out of the window and bring an
+	// identical set back in, which reads as a fault rather than as a band. So
+	// it stands still in the middle instead.
+	&__row.is-static {
+		// Nothing is being clipped, so there is no edge to soften — and the
+		// fade would otherwise wash out the first and last logo of a row that
+		// is complete as it stands.
+		mask-image: none;
+	}
+
 	&__row.is-static &__track {
 		animation: none;
+		// Nothing is moving, so nothing needs a layer holding open for it.
+		will-change: auto;
 		flex-wrap: wrap;
+		// `max-content` is what makes the track a line long enough to travel;
+		// standing still it takes the row's width instead, which is what
+		// `justify-content` needs before it can centre anything.
 		width: auto;
 		justify-content: center;
+		// Between the logos now rather than after each of them, so the set
+		// centres on the logos themselves — with the padding still on, the
+		// last logo's trailing space would be counted into what is being
+		// centred and the row would sit half a gap to the left.
+		gap: var(--bridge-logo-gap);
+	}
+
+	&__row.is-static &__item {
+		padding-inline-end: 0;
+	}
+
+	// With the track standing still the second set has nothing to hide behind:
+	// it would read as the logos repeating. It is the copy a screen reader was
+	// already told to ignore.
+	&__row.is-static &__item[aria-hidden="true"] {
+		display: none;
 	}
 
 	&__item {
 		margin: 0;
 		flex: 0 0 auto;
+		// The space after a logo belongs to the logo, so that half the track
+		// is exactly one set of them. See the note at the top of this file.
+		padding-inline-end: var(--bridge-logo-gap);
 	}
 
 	&__image {
 		display: block;
 		width: auto;
-		height: 3rem;
-		// Logos arrive at every proportion. A fixed height with `contain`
-		// makes a wide wordmark and a square badge occupy the same optical
-		// weight, which is the only way a row of them looks deliberate.
+		height: var(--bridge-logo-size);
+		// Logos arrive at every proportion. One height with `contain` makes a
+		// wide wordmark and a square badge occupy the same optical weight,
+		// which is the only way a row of them looks deliberate.
 		object-fit: contain;
 
+		// `cover` crops to a tile instead, and the tile keeps the 8:3 shape it
+		// had when the height was fixed at 3rem — so the size slider moves the
+		// whole tile rather than stretching it. An aspect ratio rather than a
+		// width, because the width is then one number the slider need not
+		// know about.
 		&.is-cover {
-			width: 8rem;
+			aspect-ratio: 8 / 3;
 			object-fit: cover;
 		}
 	}
@@ -119,12 +258,13 @@
 	}
 
 	to {
-		// Half the track, plus half a gap. The track carries a gap between
-		// every adjacent pair, so it holds one fewer gap than it does logos —
-		// and 50% of its width therefore lands half a gap short of where the
-		// second set begins, jumping by that much on every loop. Invisible at
-		// a tight gap; not at a wide one.
-		transform: translateX(calc(-50% - var(--bridge-logo-gap, 0px) / 2));
+		// Half the track, and nothing else. The two halves hold the same
+		// logos with the same trailing space, so the browser lays the second
+		// out at exactly half the track's width and rounds both the same way
+		// — which is what makes this land on the seam rather than a fraction
+		// of a pixel to one side of it. There is no arithmetic here to get
+		// wrong, and nothing for the spacing slider to fall out of step with.
+		transform: translateX(-50%);
 	}
 }
 
@@ -134,11 +274,21 @@
  * is what it was always trying to show.
  */
 @media (prefers-reduced-motion: reduce) {
+	.bridge-logos__row {
+		mask-image: none;
+	}
+
 	.bridge-logos__track {
 		animation: none;
+		will-change: auto;
 		flex-wrap: wrap;
 		width: auto;
 		justify-content: center;
+		gap: var(--bridge-logo-gap);
+	}
+
+	.bridge-logos__item {
+		padding-inline-end: 0;
 	}
 
 	// With the track static, the duplicated half is visible — and it is the

@@ -1,0 +1,72 @@
+/**
+ * Bridge — the breadcrumb trail.
+ *
+ * Furniture rather than content: it sits above the page's heading and has to
+ * stay quieter than it. So it is set small, and drawn in the page's own text
+ * colour at reduced strength rather than in a brand colour — the trail appears
+ * on every template, including the ones whose head sits on a coloured band,
+ * and `currentcolor` is the only value that reads on all of them.
+ *
+ * The separator is a pseudo-element on each step but the first, which keeps it
+ * out of the accessibility tree — a screen reader reading "slash" between
+ * every step is describing the punctuation rather than the path.
+ */
+
+.bridge-breadcrumb {
+	font-size: var(--wp--preset--font-size--small);
+	// The trail belongs to the heading below it, so the space under it is
+	// smaller than the space above.
+	margin-block: 0 var(--wp--preset--spacing--20);
+
+	&__list {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		// Half the gap: the separator's own margin supplies the other half, so
+		// the space either side of a slash is equal.
+		gap: 0 0.25em;
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	&__item {
+		display: flex;
+		align-items: center;
+		margin: 0;
+
+		& + &::before {
+			content: "/";
+			margin-inline-end: 0.25em;
+			// The separator is decoration, and it is drawn fainter than the
+			// words it separates so a long trail reads as steps rather than as
+			// a line of punctuation.
+			opacity: 0.5;
+		}
+
+		a {
+			// Quieter than the step the visitor is on, and derived from the
+			// band's own foreground rather than named, so the trail reads on a
+			// white page and on a coloured head alike.
+			color: color-mix(in srgb, currentcolor 75%, transparent);
+			// Underlined only under the pointer. A row of underlined links
+			// above a headline competes with it, and the trail is the one
+			// piece of navigation on the page whose position already says
+			// what it is.
+			text-decoration: none;
+
+			&:hover,
+			&:focus-visible {
+				text-decoration: underline;
+				text-underline-offset: 0.2em;
+			}
+		}
+
+		// The last step is the current page and is not a link, so it is the
+		// one step drawn at full strength — the end of the trail reads
+		// loudest, which is where the visitor is standing.
+		[aria-current="page"] {
+			color: currentcolor;
+		}
+	}
+}

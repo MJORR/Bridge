@@ -43,6 +43,7 @@ $bridge_quick = bridge_footer_menu_id( 'quick' );
 $bridge_legal = bridge_footer_menu_id( 'legal' );
 
 $bridge_social = bridge_footer_social();
+$bridge_contact = bridge_footer_contact();
 
 $bridge_classes = array(
 	'bridge-footer',
@@ -73,6 +74,7 @@ $bridge_wrapper = get_block_wrapper_attributes(
 	<div class="bridge-footer__inner">
 		<div class="bridge-footer__col bridge-footer__col--identity">
 			<?php echo bridge_footer_logo(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>
+			<?php echo $bridge_contact; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>
 			<?php echo $bridge_social; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>
 		</div>
 

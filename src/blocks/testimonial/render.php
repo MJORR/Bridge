@@ -39,12 +39,24 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'bridge-testimonial' 
  * `itemReviewed` is the site itself. A Review with nothing under review is
  * incomplete and is discarded, which would make the whole block a silent
  * no-op; the thing being reviewed here is the business whose page this is.
+ *
+ * It points at the Organization node in the head by `@id` rather than
+ * describing a second one here — see inc/schema.php. One entity named twice
+ * was two entities as far as a consumer was concerned, and the copy in this
+ * file was the one with no logo, no address and no social profiles.
+ *
+ * Worth knowing what this will and will not do: Google has ignored an
+ * organisation's reviews of itself for rich results since 2019, so these stars
+ * will not appear in a search result however the markup is written. It is
+ * published for the consumers that do read it, and because the block already
+ * holds every field it needs.
  */
 $schema = array(
 	'@context'     => 'https://schema.org',
 	'@type'        => 'Review',
 	'itemReviewed' => array(
 		'@type' => 'Organization',
+		'@id'   => bridge_schema_id( 'organization' ),
 		'name'  => get_bloginfo( 'name' ),
 	),
 );
@@ -119,7 +131,10 @@ if ( '' !== $name ) {
 		</figcaption>
 	<?php endif; ?>
 
-	<script type="application/ld+json">
-		<?php echo wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — wp_json_encode escapes for this context. ?>
-	</script>
+	<?php
+	// Through the shared encoder, which escapes `<` — a quote containing
+	// `</script>` used to close this element and put whatever followed it into
+	// the page as markup. See bridge_schema_json().
+	echo bridge_schema_json( $schema ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — encoded for this context by bridge_schema_json().
+	?>
 </figure>

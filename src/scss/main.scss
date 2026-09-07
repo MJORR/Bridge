@@ -63,6 +63,7 @@
 @use "components/primary-nav";
 @use "blocks/cards";
 @use "blocks/page-title";
+@use "blocks/breadcrumb";
 @use "blocks/post";
 @use "blocks/icon";
 @use "components/sections";
@@ -74,5 +75,4 @@
 // Inspector sidebar, and main.css reaches the editor through
 // add_editor_style(), which only ever paints the canvas iframe. It ships in
 // inspector.scss instead.
-@use "editor/landing-mode";
 @use "editor/title-banner";

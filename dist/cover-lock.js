@@ -1,0 +1,1 @@
+(function(){"use strict";const{addFilter:r}=window.wp.hooks,e="core/cover";r("blocks.registerBlockType","bridge/cover-lock",(o,n)=>{if(n!==e)return o;const c={...o.supports};return delete c.spacing,{...o,supports:c}})})();

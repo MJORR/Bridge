@@ -2,13 +2,13 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/feature-blocks",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"title": "Feature Blocks",
 	"category": "design",
 	"icon": "grid-view",
-	"description": "A grid of feature panels, each with a graphic, a title and a line of copy.",
+	"description": "A grid of feature panels, each with a graphic, a title and a line of copy — or a numbered run of steps.",
 	"textdomain": "bridge",
-	"keywords": ["features", "services", "grid", "panels", "blocks"],
+	"keywords": ["features", "services", "grid", "panels", "steps", "blocks"],
 	"supports": {
 		"anchor": true,
 		"html": false,
@@ -19,6 +19,11 @@
 			"type": "string",
 			"default": "wide"
 		},
+		"layout": {
+			"type": "string",
+			"enum": ["grid", "numbered"],
+			"default": "grid"
+		},
 		"columns": {
 			"type": "number",
 			"default": 3
@@ -27,18 +32,20 @@
 			"type": "boolean",
 			"default": true
 		},
+		"overflowStyle": {
+			"type": "string",
+			"enum": ["wrap", "carousel"],
+			"default": "wrap"
+		},
+		"panelStyle": {
+			"type": "string",
+			"enum": ["card", "plain", "outline"],
+			"default": "card"
+		},
 		"textAlignment": {
 			"type": "string",
 			"default": "left"
-		},
-		"alignImageTop": {
-			"type": "boolean",
-			"default": false
 		}
-	},
-	"providesContext": {
-		"bridge/textAlignment": "textAlignment",
-		"bridge/alignImageTop": "alignImageTop"
 	},
 	"example": {
 		"attributes": {
@@ -78,5 +85,6 @@
 	},
 	"editorScript": "bridge-feature-blocks-editor",
 	"style": "bridge-feature-blocks-style",
+	"viewScript": "bridge-carousel",
 	"render": "file:./render.php"
 }

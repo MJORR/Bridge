@@ -268,3 +268,212 @@ if (! function_exists('wp_get_attachment_url')) {
 		return $id > 0 ? "https://example.test/mask-{$id}.svg" : false;
 	}
 }
+
+// ---- Site identity and the current request ---------------------------------
+//
+// The schema layer asks WordPress two kinds of question: what the site is
+// called and where it lives, and what page is being viewed. Neither has any
+// arithmetic in it, so these doubles are the smallest thing that answers
+// truthfully — each reads a global the test sets, and defaults to the state of
+// a site nobody has configured. That is the state most of the assertions are
+// about: a theme that publishes an empty phone number or a one-step trail is
+// the regression worth catching.
+
+if (! function_exists('home_url')) {
+	function home_url(string $path = ''): string
+	{
+		return 'https://example.test' . ('' === $path ? '' : $path);
+	}
+}
+
+if (! function_exists('get_bloginfo')) {
+	function get_bloginfo(string $show = '', string $filter = 'raw'): string
+	{
+		$info = array_merge(
+			array(
+				'name'        => 'Example Site',
+				'description' => 'Just another site',
+				'language'    => 'en-GB',
+			),
+			(array) ($GLOBALS['bridge_test_bloginfo'] ?? array())
+		);
+
+		return (string) ($info[$show] ?? '');
+	}
+}
+
+if (! function_exists('get_theme_mod')) {
+	function get_theme_mod(string $name, $default = false)
+	{
+		return $GLOBALS['bridge_test_theme_mods'][$name] ?? $default;
+	}
+}
+
+if (! function_exists('wp_get_attachment_image_src')) {
+	/** A predictable 512×256 image for any non-zero id, false for none. */
+	function wp_get_attachment_image_src(int $id, $size = 'thumbnail')
+	{
+		return $id > 0
+			? array("https://example.test/logo-{$id}.png", 512, 256, false)
+			: false;
+	}
+}
+
+if (! function_exists('esc_html')) {
+	/** Pass-through: the assertions are about which words are carried. */
+	function esc_html(string $text): string
+	{
+		return $text;
+	}
+}
+
+if (! function_exists('esc_attr')) {
+	function esc_attr(string $text): string
+	{
+		return $text;
+	}
+}
+
+if (! function_exists('esc_attr__')) {
+	function esc_attr__(string $text, string $domain = 'default'): string
+	{
+		return $text;
+	}
+}
+
+if (! function_exists('wp_strip_all_tags')) {
+	function wp_strip_all_tags(string $text, bool $remove_breaks = false): string
+	{
+		return trim(strip_tags($text));
+	}
+}
+
+// The current request, as four booleans and a post id. `bridge_test_view` is
+// the whole of it: a test sets `singular` or `archive`, and everything else
+// answers no.
+
+if (! function_exists('is_front_page')) {
+	function is_front_page(): bool
+	{
+		return 'front' === ($GLOBALS['bridge_test_view'] ?? 'front');
+	}
+}
+
+if (! function_exists('is_singular')) {
+	function is_singular($types = ''): bool
+	{
+		return 'singular' === ($GLOBALS['bridge_test_view'] ?? 'front');
+	}
+}
+
+if (! function_exists('is_archive')) {
+	function is_archive(): bool
+	{
+		return 'archive' === ($GLOBALS['bridge_test_view'] ?? 'front');
+	}
+}
+
+if (! function_exists('is_search')) {
+	function is_search(): bool
+	{
+		return 'search' === ($GLOBALS['bridge_test_view'] ?? 'front');
+	}
+}
+
+if (! function_exists('get_the_ID')) {
+	function get_the_ID()
+	{
+		return $GLOBALS['bridge_test_post_id'] ?? 0;
+	}
+}
+
+if (! function_exists('get_post_ancestors')) {
+	/** Nearest parent first, which is the order core returns them in. */
+	function get_post_ancestors($post): array
+	{
+		return (array) ($GLOBALS['bridge_test_ancestors'] ?? array());
+	}
+}
+
+if (! function_exists('get_the_title')) {
+	function get_the_title($post = 0): string
+	{
+		return (string) ($GLOBALS['bridge_test_titles'][(int) $post] ?? '');
+	}
+}
+
+if (! function_exists('get_permalink')) {
+	function get_permalink($post = 0, bool $leavename = false)
+	{
+		return 'https://example.test/?p=' . (int) $post;
+	}
+}
+
+if (! function_exists('get_the_archive_title')) {
+	function get_the_archive_title(): string
+	{
+		return (string) ($GLOBALS['bridge_test_archive_title'] ?? 'Archives');
+	}
+}
+
+if (! function_exists('get_search_query')) {
+	function get_search_query(bool $escaped = true): string
+	{
+		return (string) ($GLOBALS['bridge_test_search'] ?? '');
+	}
+}
+
+// ---- Blocks ----------------------------------------------------------------
+//
+// Enough of a WP_Block to hand `bridge_prime_item_images()` a band with items
+// in it. The real class carries a parsed block, its context and a renderer;
+// what the priming walks is the two properties below, so those are what this
+// has. Nothing here renders anything.
+
+if (! function_exists('absint')) {
+	function absint($maybeint): int
+	{
+		return abs((int) $maybeint);
+	}
+}
+
+if (! function_exists('_prime_post_caches')) {
+	/**
+	 * A spy, not a double: there is no object cache here to warm, so what a
+	 * test can assert is that the theme asked for the right ids once.
+	 */
+	function _prime_post_caches(array $ids, bool $update_term_cache = true, bool $update_meta_cache = true): void
+	{
+		$GLOBALS['bridge_test_primed'][] = array(
+			'ids'   => $ids,
+			'terms' => $update_term_cache,
+			'meta'  => $update_meta_cache,
+		);
+	}
+}
+
+if (! class_exists('WP_Block')) {
+	class WP_Block
+	{
+		/** @var string */
+		public $name;
+
+		/** @var array<string, mixed> */
+		public $attributes;
+
+		/** @var array<int, WP_Block> */
+		public $inner_blocks;
+
+		/**
+		 * @param string               $name
+		 * @param array<string, mixed> $attributes
+		 * @param array<int, WP_Block> $inner_blocks
+		 */
+		public function __construct(string $name = '', array $attributes = array(), array $inner_blocks = array())
+		{
+			$this->name         = $name;
+			$this->attributes   = $attributes;
+			$this->inner_blocks = $inner_blocks;
+		}
+	}
+}

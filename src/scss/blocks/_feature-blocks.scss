@@ -1,11 +1,41 @@
 /**
  * Bridge — Feature Blocks and their panels.
+ *
+ * A feature panel is a card, and this file's job is to stop it being a card
+ * that merely resembles the others. Everything that decides what a card *is* —
+ * the crop of its photograph, the corner, the padding, the surface, the shadow
+ * and the lift under the pointer — comes from Theme Options through
+ * abstracts/card and the same `--wp--custom--card--*` properties the Cards
+ * band spends. Nothing here invents a second answer to any of them.
+ *
+ * The two shapes a panel can take are the two the Cards band already draws:
+ *
+ *   with an image      A Summary card. Photograph in a frame at the top, words
+ *                      underneath in the card's padding, button last.
+ *   with a background  A Cover card. The panel *is* the photograph, a gradient
+ *                      rises from the bottom edge, and the words sit on it.
+ *
+ * What the panel keeps for itself is the per-panel part of the second one: the
+ * wash's colour and its strength, because a photograph is a different ground on
+ * every panel. render.php resolves both, along with the ink the wash needs; see
+ * the note there.
+ *
+ * No colour below is a named one. A band can be standing on the page, on a
+ * Surface band or on an Inverted one, and only `currentcolor` knows which — so
+ * every tint, border and badge is mixed from the band's own foreground.
  */
 @use "../abstracts/card" as card;
+@use "../abstracts/carousel" as carousel;
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
 
 @include intro.section-intro;
+
+// The furniture drawn from the band's own foreground: the numbered badge, the
+// outline, the tint on a panel that has been picked out. Named once because
+// three rules want the same idea at three strengths.
+$edge: color-mix(in srgb, currentcolor 25%, transparent);
+$tint: color-mix(in srgb, currentcolor 12%, transparent);
 
 .bridge-features {
 	&__inner {
@@ -22,10 +52,10 @@
 
 	// The gap between panels is the global block gap, so the space in this grid
 	// is the space between blocks everywhere else on the site rather than a
-	// number chosen here. The toggle below still exists, because flush panels
-	// are a different design and not merely a smaller gap.
+	// number chosen here. 16rem is the Cards band's floor, and the panels are
+	// the same kind of object.
 	&__list {
-		@include section.auto-grid(15rem, section.$grid-gap);
+		@include section.auto-grid(16rem, section.$grid-gap);
 
 		list-style: none;
 		margin: 0;
@@ -41,116 +71,471 @@
 	// Touching panels are one surface, so neither the corners nor the shadow
 	// that separate a card from the page belong to them.
 	&--flush .bridge-feature {
+		/**
+		 * And the cut corner goes with them.
+		 *
+		 * `border-radius: 0` above only answers the rounded mode; the cut is a
+		 * `clip-path`, and a chamfer survives it. On a grid with gaps that
+		 * chamfer is the site's card corner and belongs on every panel — with
+		 * the gaps closed the panels are one surface, and a notch taken out of
+		 * the top-left of each one reads as a row of holes punched through it
+		 * rather than as a corner treatment.
+		 *
+		 * `--bridge-card-clip` is the per-card override the surface layer and
+		 * `cut-corner-child` both read, so this one declaration reaches the
+		 * panel's ground, its photograph and its background image together —
+		 * the same hook the outlined testimonial and the team card use to opt
+		 * out. Nothing here knows whether the site has the cut switched on at
+		 * all; with it off, this replaces `none` with `none`.
+		 */
+		--bridge-card-clip: none;
+
 		border-radius: 0;
 		box-shadow: none;
 	}
 
 	&--text-center .bridge-feature {
 		text-align: center;
-		align-items: center;
+
+		.bridge-feature__button,
+		.bridge-feature__link {
+			align-self: center;
+		}
+	}
+
+	// ---- Numbered steps --------------------------------------------------
+	/**
+	 * The layout the old block built its sidebar around: a column of steps,
+	 * each carrying its position.
+	 *
+	 * The number is a CSS counter on the list rather than a field on the
+	 * panel, which is the whole reason this is worth having as a layout at
+	 * all. Nothing numbers anything — an editor dragging the third step above
+	 * the first renumbers both, deleting one closes the gap, and no panel
+	 * holds a number that can disagree with where it sits.
+	 *
+	 * It is drawn in `::after` and not `::before`, which is not a style
+	 * preference: `::before` is spoken for by abstracts/card, where it is the
+	 * card's clipped surface.
+	 *
+	 * The step is a grid rather than a row, so a step that has a photograph
+	 * keeps it above its words instead of putting it between the number and
+	 * the sentence the number introduces. With no image the media row collapses
+	 * to nothing and the step is the number beside the words.
+	 */
+	&--numbered &__list {
+		// One column, whatever `--columns` says. Steps read down; two columns
+		// of them ask a visitor to work out whether 3 follows 2 across or
+		// under, which is the one question a numbered list should never raise.
+		grid-template-columns: minmax(0, 1fr);
+		counter-reset: bridge-feature;
+	}
+
+	&--numbered .bridge-feature {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		grid-template-areas:
+			"badge media"
+			"badge body";
+
+		&::after {
+			counter-increment: bridge-feature;
+			content: counter(bridge-feature);
+			grid-area: badge;
+			align-self: start;
+			display: grid;
+			place-items: center;
+			// Square, and sized against the type rather than in pixels, so a
+			// site with a larger scale gets a larger badge.
+			inline-size: 3em;
+			block-size: 3em;
+			// The card's own padding, so the badge is inset from the panel's
+			// edges by exactly what the words beside it are. The body supplies
+			// the space between the two.
+			margin: var(--wp--custom--card--padding, 1.5rem);
+			margin-inline-end: 0;
+			font-size: var(--wp--preset--font-size--medium);
+			font-weight: 700;
+			line-height: 1;
+			background-color: $tint;
+		}
+
+		.bridge-feature__media {
+			grid-area: media;
+		}
+
+		.bridge-feature__body {
+			grid-area: body;
+		}
+	}
+
+	/**
+	 * A step whose panel is a photograph.
+	 *
+	 * There is no column to put the number beside — the picture is the panel —
+	 * so the badge goes over the corner of it instead, and the step keeps the
+	 * single stacking area a cover panel is built on. Without this the two
+	 * grids fight: the numbered template wins on specificity, and the panel's
+	 * own children are placed into an area it does not define.
+	 *
+	 * The badge takes its colours from the ink rather than from the band's
+	 * foreground, because what it is standing on here is the photograph and its
+	 * wash, which is the pairing the ink was chosen against.
+	 */
+	&--numbered .bridge-feature--cover {
+		grid-template-columns: none;
+		grid-template-areas: "cover";
+
+		&::after {
+			grid-area: cover;
+			justify-self: start;
+			align-self: start;
+			position: relative;
+			z-index: 2;
+			color: var(--bridge-feature-ink);
+			background-color: color-mix(
+				in srgb,
+				var(--bridge-feature-ink) 22%,
+				transparent
+			);
+		}
+	}
+
+	// A step is a row of text with a number at its left. Centring it would
+	// leave the words drifting away from the badge that introduces them.
+	&--numbered.bridge-features--text-center .bridge-feature {
+		text-align: left;
+	}
+
+	// ---- The swipe row ---------------------------------------------------
+	// The row scrolls with CSS alone; abstracts/carousel adds the drag cursor
+	// and hides the scrollbar, and carousel.js fills the strip below once it
+	// has measured how many pages the panels make. The editor keeps the grid —
+	// authoring inside a scroll container fights the editor — which is what
+	// `is-editor-preview` holds back.
+	&--carousel:not(.is-editor-preview) &__list {
+		@include section.snap-row(section.$grid-gap);
+		@include carousel.track;
+	}
+
+	@include carousel.controls;
+
+	// ---- Panel styles ----------------------------------------------------
+	// Card needs no rule of its own: `card.surface` on the panel already
+	// paints the shared card ground, which is what card means. The other two
+	// are departures from it.
+	&--panels-plain .bridge-feature,
+	&--panels-outline .bridge-feature {
+		// Both layers, because with a cut corner the ground is painted by the
+		// surface inside the card rather than by the card itself — a panel
+		// that went transparent on one layer only would still be filled by the
+		// other. Same reason as the outlined testimonial.
+		--bridge-card-layer-bg: transparent;
+		// And the lift's shadow with it. `card.raise` sets this on hover at a
+		// higher specificity than any flat `box-shadow` here could answer, so
+		// the switch has to be the property it reads.
+		--wp--custom--card--shadow-hover: none;
+
+		background-color: transparent;
+		box-shadow: none;
+	}
+
+	&--panels-outline .bridge-feature {
+		border: 1px solid $edge;
+	}
+
+	/**
+	 * Except a panel with a photograph in it, which keeps the card's ground.
+	 *
+	 * A picture sitting on nothing is not a design decision, it is a picture
+	 * with a gap under it: the words below it would be printed straight onto
+	 * the band while the image above them still reads as the top of a card, and
+	 * the panel comes apart into two unrelated objects.
+	 *
+	 * So the ground follows the *content* rather than the panel style — an
+	 * image means a card, and a card takes whichever colour the section's skin
+	 * gave it, on Accent, Surface, Inverted or the page itself. Plain and
+	 * Outline still do what they say for the panels they were meant for: the
+	 * ones that are words alone.
+	 *
+	 * The Cover shape is deliberately not here. There the photograph *is* the
+	 * panel, so a ground behind it would never be seen — see `&--cover`, which
+	 * gives up both layers for the same reason these two do.
+	 *
+	 * `card.$ground` rather than the colour: it is the same chain
+	 * `card.surface` resolves, so this restores exactly what the rule above
+	 * took away rather than a second opinion about what a card ground is. Both
+	 * layers, because with the corner cut on it is the surface inside the card
+	 * that paints, and with it off it is the card itself.
+	 */
+	&--panels-plain .bridge-feature--summary,
+	&--panels-outline .bridge-feature--summary {
+		/*
+		 * Both layers, and the second one through `card.ground` rather than as
+		 * a colour.
+		 *
+		 * A flat `background-color` here paints the panel's own box, which is
+		 * the one box the cut does *not* clip — so with the corner switched on
+		 * it filled the chamfer back in and the notch stopped showing the band
+		 * through it. `card.ground` restores the same chain `card.surface`
+		 * writes: transparent while the cut is on, so the clipped `::before`
+		 * below paints the colour and the corner survives; the colour itself
+		 * when the cut is off and there is nothing to clip.
+		 */
+		--bridge-card-layer-bg: #{card.$ground};
+
+		@include card.ground;
+	}
+
+	// The panel keeps its padding when it has a ground to sit on. Without one
+	// the words would be indented from the band's own column for no reason a
+	// reader can see — a plain panel is text on the page, so it is aligned
+	// like text on the page.
+	&--panels-plain .bridge-feature__body {
+		padding-inline: 0;
+	}
+
+	// And comes back on a panel that has a ground again. Padding is what keeps
+	// words off the edge of a colour; without one there is no edge, and with
+	// one there is.
+	&--panels-plain .bridge-feature--summary .bridge-feature__body {
+		@include card.padding;
+	}
+
+	// The badge's own inset goes with it, and the space it was leaving between
+	// the number and the words has to come from somewhere else: on a card that
+	// space is the body's left padding, which a plain panel no longer has.
+	&--panels-plain.bridge-features--numbered
+		.bridge-feature:not(.bridge-feature--summary) {
+		column-gap: var(--wp--preset--spacing--30);
+
+		&::after {
+			margin-inline-start: 0;
+		}
+	}
+
+	// A cover panel is a photograph, so it is never any of this: there is no
+	// surface to strip, and taking the padding off would put the words on the
+	// edge of the picture.
+	&--panels-plain .bridge-feature--cover,
+	&--panels-outline .bridge-feature--cover {
+		border: 0;
+
+		.bridge-feature__body {
+			@include card.padding;
+		}
 	}
 }
 
 .bridge-feature {
-	// The panel's padding sits on `__body`, not here: a background photograph
-	// has to reach the edges of the panel.
+	/**
+	 * What Theme Options set for the card this panel is.
+	 *
+	 * Two lines rather than a rule in each shape, and the Summary card's group
+	 * is the one a panel with a picture at the top of it belongs to — it is
+	 * that card. The Cover group is picked up by the modifier below. Each
+	 * `var()` carries the same fallback the cards do, so an unsaved token
+	 * changes nothing.
+	 */
+	--bridge-feature-ratio: var(--wp--custom--card--summary--ratio, 16 / 9);
+	--bridge-feature-heading: var(
+		--wp--custom--card--summary--heading,
+		var(--wp--preset--font-size--large)
+	);
+
+	// The panel's padding sits on `__body`, not here: a photograph has to reach
+	// the edges of the panel.
 	@include card.surface;
+	// The lift, on the same terms as the post cards — it is the shadow pair
+	// from Theme Options, and it does nothing on a site whose cards are flat.
+	@include card.raise(true);
 
 	position: relative;
 	display: flex;
 	flex-direction: column;
 	margin: 0;
+
+	/**
+	 * The panel fills the track it was given, and there is deliberately no
+	 * ceiling on it.
+	 *
+	 * The Cards band caps a card at `section.$item-max` and centres it, because
+	 * a post card is one of a set of six or twelve and a sparse row of them
+	 * should stay card-sized rather than becoming billboards. A feature panel
+	 * is the opposite kind of object: there are two, three or four of them, an
+	 * editor has chosen how many, and the number is a layout decision rather
+	 * than however many posts happened to be published.
+	 *
+	 * With the cap in place, a two-column band drew two 24rem panels floating
+	 * in half-page tracks — space at both ends of the row and a gap between the
+	 * panels several times the one the band was set to. So the cap is gone: the
+	 * grid hands out equal shares of the container, the panel takes its share
+	 * whole, and the only space in the row is `section.$grid-gap` — the site's
+	 * own block gap, which is the same value the Cards, Downloads, Price and
+	 * Testimonial grids space their items by.
+	 */
 	overflow: hidden;
 
+	// ---- The photograph --------------------------------------------------
+	&__media {
+		// The photograph runs to the top edge, so it covers the corner the
+		// card's surface just had cut out of it. Cut to match; `none` while
+		// the setting is off.
+		@include card.cut-corner-child;
+
+		margin: 0;
+		position: relative;
+		// The crop, from Theme Options. This is the whole of what the band's
+		// old "graphic size" control was reaching for, answered once for every
+		// card on the site instead of per band.
+		aspect-ratio: var(--bridge-feature-ratio);
+		overflow: hidden;
+
+		> img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: block;
+			transition: transform 400ms ease;
+		}
+	}
+
+	// The same 4% the post cards use, and for the same reason: the panel says
+	// it is worth pointing at without moving anything the reader is reading.
+	&:hover &__media > img {
+		transform: scale(1.04);
+	}
+
+	// ---- The words -------------------------------------------------------
 	&__body {
 		@include card.padding;
 
-		position: relative;
-		z-index: 1;
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--20);
-		// Fills the panel so panels in a row are the same height and their
-		// links sit on one line.
-		height: 100%;
-	}
-
-	&__graphic {
-		display: block;
-		width: auto;
-		max-width: 3.5rem;
-		height: auto;
+		// Fills what the photograph left, so panels in a row are the same
+		// height and the rule below can put their buttons on one line.
+		flex: 1;
 	}
 
 	&__title {
 		margin: 0;
-		// The panel's own heading level. Set here rather than left to the
-		// theme's h3 rule so a feature title never outweighs the section
-		// headline above it.
-		font-size: var(--wp--preset--font-size--medium);
+		// The card's heading size, so a feature title and a post card title on
+		// the same page are the same size.
+		font-size: var(--bridge-feature-heading);
 	}
 
 	&__text {
 		margin: 0;
-		flex-grow: 1;
 	}
 
+	// Both cues sit on the bottom edge of the panel, whatever the copy above
+	// them does, so a row of panels has a row of buttons rather than a
+	// staircase.
+	&__button,
 	&__link {
+		margin-top: auto;
 		align-self: flex-start;
-		font-weight: 600;
+	}
+
+	&__button {
+		// `wp-element-button` carries the site's button skin; what is left here
+		// is the space above it, which the button component measures from a
+		// paragraph and this panel measures from the gap.
+		margin-block-start: var(--wp--preset--spacing--10);
+	}
+
+	// Not a button, and deliberately not shaped like one: this is the line that
+	// says the panel is clickable, and giving it a fill would promise a second,
+	// separate action. The same cue the Summary card draws.
+	&__link {
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 500;
 		text-decoration: underline;
 		text-underline-offset: 0.2em;
 	}
 
-	// ---- Background image ------------------------------------------------
-	// Both of these cover the whole panel, so both cover the cut corner the
-	// card's surface has underneath them. Cut to match; `none` while the
-	// setting is off.
-	&__background {
-		@include card.cut-corner-child;
+	// ---- The cover panel -------------------------------------------------
+	/**
+	 * A photograph with the words on it, drawn the way a Cover card is.
+	 *
+	 * The gradient's shape is fixed — clear at the top, solid where the words
+	 * are — and the panel's own strength setting scales the whole of it, so a
+	 * light photograph can be pushed darker and a dark one left almost bare
+	 * without either becoming a second gradient to maintain.
+	 *
+	 * The wash and the ink both fall back to the site's Cover card values, so
+	 * a panel whose colour has not been touched is the same design as the
+	 * cards it is sitting near.
+	 */
+	&--cover {
+		--bridge-feature-ratio: var(--wp--custom--card--cover--ratio, 3 / 4);
+		--bridge-feature-wash: var(
+			--wp--custom--card--cover--wash,
+			var(--wp--preset--color--primary, #0f172a)
+		);
+		--bridge-feature-ink: var(
+			--wp--custom--card--cover--ink,
+			var(--wp--preset--color--background, #fff)
+		);
+		// A photograph with a wash over it is a ground of its own: the card's
+		// surface colour would never be seen, and its shadow would sit under an
+		// opaque rectangle. Both layers, for the reason the panel styles give.
+		--bridge-card-layer-bg: transparent;
 
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		// Centre by default; the section's "align to top" setting moves the
-		// crop up for photographs whose subject sits high in the frame.
-		object-position: center;
+		background-color: transparent;
+		// The panel takes the crop, because here the panel *is* the image.
+		aspect-ratio: var(--bridge-feature-ratio);
 
-		&.is-aligned-top {
-			object-position: top;
-		}
-	}
+		display: grid;
+		grid-template-areas: "cover";
 
-	&__scrim {
-		@include card.cut-corner-child;
-
-		position: absolute;
-		inset: 0;
-		background-color: var(--wp--preset--color--primary);
-		opacity: 0.55;
-	}
-
-	&.has-background-image {
-		color: var(--wp--preset--color--background);
-		// The editor paints the same photograph through a custom property
-		// rather than duplicating render.php's <img> in JavaScript.
-		background-image: var(--bridge-feature-image, none);
-		background-size: cover;
-		background-position: center;
-
-		// The section's "align background images to the top" setting reaches
-		// the panel through block context. The front end spends it on the
-		// <img>'s object-position; this is the editor's half, which was
-		// missing — so the toggle appeared to do nothing until the page was
-		// saved and viewed.
-		&.is-image-top {
-			background-position: top;
+		> * {
+			grid-area: cover;
 		}
 
-		:where(h1, h2, h3, h4, h5, h6) {
-			color: inherit;
+		.bridge-feature__background {
+			@include card.cut-corner-child;
+
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: block;
+		}
+
+		.bridge-feature__wash {
+			@include card.cut-corner-child;
+
+			opacity: var(--bridge-feature-wash-opacity, 0.65);
+			background: linear-gradient(
+				to top,
+				var(--bridge-feature-wash) 0%,
+				color-mix(in srgb, var(--bridge-feature-wash) 88%, transparent)
+					28%,
+				color-mix(in srgb, var(--bridge-feature-wash) 45%, transparent)
+					55%,
+				color-mix(in srgb, var(--bridge-feature-wash) 12%, transparent)
+					78%,
+				transparent 100%
+			);
+		}
+
+		.bridge-feature__body {
+			// Above the photograph and its wash. The only z-index this shape
+			// needs, because everything else is in the same grid area.
+			position: relative;
+			z-index: 1;
+			// Everything sits on the bottom edge, where the gradient is at
+			// full strength and the contrast check in render.php applies.
+			justify-content: flex-end;
+			color: var(--bridge-feature-ink);
+		}
+
+		// Not `inherit`: the base takes the title from the band, and on a light
+		// band that would be dark text on a photograph.
+		.bridge-feature__title,
+		.bridge-feature__link {
+			color: var(--bridge-feature-ink);
 		}
 	}
 
@@ -158,7 +543,8 @@
 	// The click target is the whole panel; the accessible name is only the
 	// link's own text. A stretched pseudo-element does both — wrapping the
 	// panel in an anchor instead would make the link's name the entire
-	// contents, graphic and all.
+	// contents, photograph and all. Only the quiet cue stretches: a button is
+	// a target already. See the note in the child's render.php.
 	&.is-linked {
 		.bridge-feature__link::after {
 			content: "";
@@ -181,6 +567,37 @@
 
 		.bridge-feature__link:focus-visible {
 			outline: none;
+		}
+	}
+
+	/**
+	 * The one panel in the set being pointed at.
+	 *
+	 * Last in the file on purpose. It carries the same specificity as the
+	 * band's panel styles — one class on the section, one on the panel — so
+	 * source order is what decides, and the tint has to survive a plain or
+	 * outlined band rather than be cancelled by it.
+	 *
+	 * The tint is translucent, so it darkens a light band and lightens a dark
+	 * one from a single declaration. A cover panel is excluded: its ground is a
+	 * photograph, and a tint over that is a second wash fighting the first.
+	 */
+	&.is-highlighted:not(&--cover) {
+		--bridge-card-layer-bg: #{$tint};
+
+		background-color: var(
+			--bridge-card-own-bg,
+			var(--wp--custom--card--own-bg, #{$tint})
+		);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		&__media > img {
+			transition: none;
+		}
+
+		&:hover &__media > img {
+			transform: none;
 		}
 	}
 }

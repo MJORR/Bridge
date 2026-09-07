@@ -40,7 +40,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 			<Section
 				title={__('Header', 'bridge')}
 				description={__(
-					'One setting drives every template. No layout puts the menu in a fixed centre column — that caps how many items it can hold, and a service list only ever grows.',
+					'What the header is made of, and which menus fill it. One setting drives every template. No layout puts the menu in a fixed centre column — that caps how many items it can hold, and a service list only ever grows.',
 					'bridge'
 				)}
 			>
@@ -177,7 +177,54 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						/>
 					</>
 				)}
+			</Section>
 
+			<Section
+				title={__('Header logo', 'bridge')}
+				description={__(
+					'The mark, and how tall it is drawn. Two images rather than one: the header can sit on a light ground or a dark one, and a logo that reads on both is rarer than a pair that each read on one.',
+					'bridge'
+				)}
+			>
+				<LogoPicker
+					label={__('Dark logo', 'bridge')}
+					value={header.logo.id}
+					onChange={(id) => setHeader('logo.id', id)}
+					help={__(
+						'Used wherever the header sits on a light background.',
+						'bridge'
+					)}
+				/>
+
+				<LogoPicker
+					label={__('Light logo', 'bridge')}
+					value={header.logo.lightId}
+					onChange={(id) => setHeader('logo.lightId', id)}
+					help={__(
+						'Used when the header background is dark, including a transparent header over a hero. Optional — without one the dark logo is used everywhere.',
+						'bridge'
+					)}
+				/>
+
+				<RangeControl
+					label={__('Logo height (px)', 'bridge')}
+					value={header.logo.height}
+					min={constraints.header.logoHeight.min}
+					max={constraints.header.logoHeight.max}
+					step={constraints.header.logoHeight.step}
+					onChange={(value) => setHeader('logo.height', value ?? 40)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+			</Section>
+
+			<Section
+				title={__('Header colours', 'bridge')}
+				description={__(
+					'The header\u2019s own ground and the four colours the navigation spends on it. Every label colour follows automatically from what it is standing on, so nothing here can be set to an unreadable pair.',
+					'bridge'
+				)}
+			>
 				{/*
 				 * There is no Solid/Transparent choice here any more. A transparent
 				 * header is a fact about a template rather than about a site: the
@@ -187,6 +234,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 				 * slid underneath. There was nothing the setting could usefully be
 				 * set to: the one template it would have helped never read it.
 				 */}
+
 				<SelectControl
 					label={__('Header background', 'bridge')}
 					value={header.backgroundColor}
@@ -197,32 +245,6 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					onChange={(value) => setHeader('backgroundColor', value)}
 					help={__(
 						'The ground the header sits on everywhere except the Landing Page template, whose header overlays the hero instead.',
-						'bridge'
-					)}
-					__nextHasNoMarginBottom
-					__next40pxDefaultSize
-				/>
-
-				<SelectControl
-					label={__('Landing page header text', 'bridge')}
-					value={header.contrast}
-					options={[
-						{
-							label: __('Auto', 'bridge'),
-							value: 'auto',
-						},
-						{
-							label: __('Light text', 'bridge'),
-							value: 'light',
-						},
-						{
-							label: __('Dark text', 'bridge'),
-							value: 'dark',
-						},
-					]}
-					onChange={(value) => setHeader('contrast', value)}
-					help={__(
-						'On the Landing Page template the header sits over the hero rather than on a colour, so its text is chosen against a photograph. Auto assumes a dark one; a photograph\u2019s brightness cannot be known in advance, so set it here if auto reads wrong.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -277,72 +299,40 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					__next40pxDefaultSize
 				/>
 
-				<ToggleControl
-					label={__('Stick to the top on scroll', 'bridge')}
-					checked={Boolean(header.sticky)}
-					onChange={(on) => setHeader('sticky', on)}
+				<SelectControl
+					label={__('Landing page header text', 'bridge')}
+					value={header.contrast}
+					options={[
+						{
+							label: __('Auto', 'bridge'),
+							value: 'auto',
+						},
+						{
+							label: __('Light text', 'bridge'),
+							value: 'light',
+						},
+						{
+							label: __('Dark text', 'bridge'),
+							value: 'dark',
+						},
+					]}
+					onChange={(value) => setHeader('contrast', value)}
 					help={__(
-						'On a landing page the sticky header turns solid once it leaves the hero, so its links stay readable.',
+						'On the Landing Page template the header sits over the hero rather than on a colour, so its text is chosen against a photograph. Auto assumes a dark one; a photograph\u2019s brightness cannot be known in advance, so set it here if auto reads wrong.',
 						'bridge'
 					)}
-					__nextHasNoMarginBottom
-				/>
-
-				<ToggleControl
-					label={__('Bottom border', 'bridge')}
-					checked={Boolean(header.border)}
-					onChange={(on) => setHeader('border', on)}
-					__nextHasNoMarginBottom
-				/>
-
-				<LogoPicker
-					label={__('Dark logo', 'bridge')}
-					value={header.logo.id}
-					onChange={(id) => setHeader('logo.id', id)}
-					help={__(
-						'Used wherever the header sits on a light background.',
-						'bridge'
-					)}
-				/>
-
-				<LogoPicker
-					label={__('Light logo', 'bridge')}
-					value={header.logo.lightId}
-					onChange={(id) => setHeader('logo.lightId', id)}
-					help={__(
-						'Used when the header background is dark, including a transparent header over a hero. Optional — without one the dark logo is used everywhere.',
-						'bridge'
-					)}
-				/>
-
-				{/*
-				 * Stored on `brand` rather than on `header`, though the control
-				 * stands here: it is a shape belonging to the site's identity,
-				 * not to the header, and nothing has been built on it yet. A
-				 * general home can serve a specific use later; a home under
-				 * `header` could not have served a general one.
-				 */}
-				<LogoPicker
-					label={__('Mask shape', 'bridge')}
-					value={draft.brand.maskShapeId}
-					onChange={(id) => setGroup('brand', 'maskShapeId', id)}
-					help={__(
-						'A shape imagery can be clipped to. Nothing draws it yet — it is here so the site has one place to set it.',
-						'bridge'
-					)}
-				/>
-
-				<RangeControl
-					label={__('Logo height (px)', 'bridge')}
-					value={header.logo.height}
-					min={constraints.header.logoHeight.min}
-					max={constraints.header.logoHeight.max}
-					step={constraints.header.logoHeight.step}
-					onChange={(value) => setHeader('logo.height', value ?? 40)}
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
+			</Section>
 
+			<Section
+				title={__('Header shape and behaviour', 'bridge')}
+				description={__(
+					'How tall it stands, where it ends, and whether it follows the page down.',
+					'bridge'
+				)}
+			>
 				<RangeControl
 					label={__('Vertical padding (px)', 'bridge')}
 					value={header.paddingBlock}
@@ -356,6 +346,24 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					)}
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
+				/>
+
+				<ToggleControl
+					label={__('Bottom border', 'bridge')}
+					checked={Boolean(header.border)}
+					onChange={(on) => setHeader('border', on)}
+					__nextHasNoMarginBottom
+				/>
+
+				<ToggleControl
+					label={__('Stick to the top on scroll', 'bridge')}
+					checked={Boolean(header.sticky)}
+					onChange={(on) => setHeader('sticky', on)}
+					help={__(
+						'On a landing page the sticky header turns solid once it leaves the hero, so its links stay readable.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
 				/>
 			</Section>
 
@@ -445,6 +453,31 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 				)}
 			>
 				<TemplateList templates={templates} />
+			</Section>
+
+			<Section
+				title={__('Brand shapes', 'bridge')}
+				description={__(
+					'An image the content bands can use, kept with the rest of the design system rather than inside any one band.',
+					'bridge'
+				)}
+			>
+				{/*
+				 * Stored on `brand` rather than on `header`, which is why it
+				 * is no longer filed under one: the shape belongs to the site's
+				 * identity and four bands draw it. It stood in the Header
+				 * section only because that is where it was added.
+				 */}
+
+				<LogoPicker
+					label={__('Mask shape', 'bridge')}
+					value={draft.brand.maskShapeId}
+					onChange={(id) => setGroup('brand', 'maskShapeId', id)}
+					help={__(
+						'A silhouette the Cards, Downloads, FAQs and Call to action bands can paint behind their content. Each band decides whether to show it and how light or dark to shade it; the shape itself is set once, here.',
+						'bridge'
+					)}
+				/>
 			</Section>
 
 			<Section

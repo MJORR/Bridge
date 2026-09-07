@@ -731,11 +731,15 @@ function bridge_card_shadow_choices(): array
  *                  covers it — see the `fill` mixin. Suppressed under
  *                  `prefers-reduced-motion`, where the same colour arrives
  *                  without the movement.
- *   wipeWidth      The moving layer's resting width and height, which is what
- *   wipeHeight     decides the direction it grows in: `100%`/`0` climbs from
- *                  the bottom edge, `0`/`100%` sweeps in from the leading one.
- *                  Both go to 100% under the pointer. Ignored where `wipe` is
- *                  0, since nothing is drawn to move.
+ *   wipeWidth      How much of the layer is uncovered at rest, which is what
+ *   wipeHeight     decides the direction it grows in: `100%`/`0px` climbs from
+ *                  the bottom edge, `0px`/`100%` sweeps in from the leading
+ *                  one. Both go to 100% under the pointer. A length or a
+ *                  percentage, never a bare `0` — the clip that reveals the
+ *                  layer subtracts these from 100% and `calc()` cannot take a
+ *                  number off a percentage; bridge_button_wipe_extent() is
+ *                  what stops an old filtered skin from breaking on it.
+ *                  Ignored where `wipe` is 0, since nothing is drawn to move.
  *
  * There was a `lift` here too — a vertical nudge under the pointer, and a 1px
  * sink on the press. Both are gone: a button that moves under the cursor moves
@@ -777,7 +781,7 @@ function bridge_button_skins(): array
 				'wipe'          => '1',
 				// Up from the floor.
 				'wipeWidth'     => '100%',
-				'wipeHeight'    => '0',
+				'wipeHeight'    => '0px',
 				'fill'          => 0.12,
 			),
 			'edge'    => array(
@@ -800,7 +804,7 @@ function bridge_button_skins(): array
 				// A moving fill as well would be two of them.
 				'wipe'          => '0',
 				'wipeWidth'     => '100%',
-				'wipeHeight'    => '0',
+				'wipeHeight'    => '0px',
 				'fill'          => 0.18,
 			),
 			'pill'    => array(
@@ -823,7 +827,7 @@ function bridge_button_skins(): array
 				// A fill climbing inside a 999px radius reads as a vessel
 				// filling; travelling the long way along a shape that is
 				// mostly length reads as the button answering.
-				'wipeWidth'     => '0',
+				'wipeWidth'     => '0px',
 				'wipeHeight'    => '100%',
 				'fill'          => 0.12,
 			),

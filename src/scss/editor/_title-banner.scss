@@ -66,6 +66,43 @@ body.bridge-title-hidden {
 	.editor-post-title__input {
 		display: none !important;
 	}
+
+	/**
+	 * Air above the prompt on an empty canvas.
+	 *
+	 * With the title field gone, core's appender — "Add a Hero Slider to start
+	 * this page" on a landing page, its own wording elsewhere — starts hard
+	 * against the top edge of the canvas. That is not what the published page
+	 * looks like, and it reads as the editor having cut something off.
+	 *
+	 * Both halves are spent from one value, and neither alone is enough.
+	 *
+	 * Padding, because a top margin on a first child with nothing above it
+	 * collapses out to the parent: the whole canvas moved down and the sentence
+	 * stayed exactly where it was inside it.
+	 *
+	 * And the inserter moved with it, because core pins the "+" inside this box
+	 * as `position: absolute; top: 0`. Padding grows the box downwards from a
+	 * top edge that has not moved, so the sentence went down and the button
+	 * stayed behind. One custom property drives both, so they cannot drift.
+	 *
+	 * Only while the canvas is empty. The appender is also what sits *under*
+	 * the last block once there is content, and a gap there would be a hole in
+	 * the middle of the page rather than air at the top of it — `:first-child`
+	 * is the difference between the two.
+	 *
+	 * Editor-only: this file is loaded into the canvas by add_editor_style(),
+	 * and nothing here reaches the front end.
+	 */
+	.block-editor-default-block-appender:first-child {
+		--bridge-appender-offset: var(--wp--preset--spacing--50, 2.25rem);
+
+		padding-block-start: var(--bridge-appender-offset);
+
+		.block-editor-inserter {
+			top: var(--bridge-appender-offset);
+		}
+	}
 }
 
 // The stand-in the block prints in the template editor, where an empty render

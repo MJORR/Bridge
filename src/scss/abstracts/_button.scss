@@ -92,22 +92,19 @@
 	isolation: isolate;
 
 	/*
-	 * And the button is what rounds that fill off, rather than the fill
-	 * wearing the radius itself.
+	 * And nothing clips the fill any more, because there is no longer
+	 * anything to trim: the layer is drawn at the size of the button's border
+	 * box and wears the button's own radius, and what moves is a clip inside
+	 * it rather than the box itself. See `fill`'s `::before`.
 	 *
-	 * A layer carrying `border-radius: inherit` looks right at full size and
-	 * wrong on the way in or out: CSS scales a radius down when it no longer
-	 * fits its box, so a 999px pill layer narrowing past its own height keeps
-	 * collapsing the radius with it and the last stretch of the sweep renders
-	 * as a rounded blob rather than a straight edge retreating. Clipping to
-	 * the button instead leaves the layer a plain rectangle, and the only
-	 * curve in it is the button's own.
-	 *
-	 * Safe on all three: `overflow` clips descendants, never the element's own
-	 * border, background or shadow, so the Pill skin keeps its resting
-	 * elevation. The focus ring is an `outline`, which is not clipped either.
+	 * `overflow: hidden` was doing that job, and it is exactly what held the
+	 * fill off the edge: an overflow clip stops at the *padding* edge, so the
+	 * button's own 2px border was 2px the layer could never paint. A 150px
+	 * button rolled over to a 146px panel with a ring of its resting edge
+	 * still drawn around it — most visible on the Pill skin, where a light
+	 * hairline traced the whole shape all the way through the sweep.
 	 */
-	overflow: hidden;
+
 	// Flex rather than inline-block so the label centres against the 44px
 	// floor instead of sitting at the top of a box the padding did not fill.
 	display: inline-flex;
@@ -225,53 +222,88 @@
 	 * The hover fill, as a layer that moves into the button rather than a
 	 * colour that changes.
 	 *
-	 * A band of the hover colour anchored at the bottom-left corner and grown
-	 * to cover the box, so the fill arrives from an edge instead of appearing
-	 * everywhere at once. Which edge is the skin's to say, and it says it by
-	 * giving the layer a resting size: full width and no height climbs from
-	 * the floor, full height and no width sweeps in from the leading edge.
-	 * Both dimensions go to 100% under the pointer, so only the one that was
-	 * not already there moves.
+	 * A panel of the hover colour, the size of the whole button, revealed from
+	 * an edge rather than appearing everywhere at once. Which edge is the
+	 * skin's to say, and it says it with the extent the panel rests at: full
+	 * width and no height is uncovered from the floor up, full height and no
+	 * width from the leading edge across. Both go to 100% under the pointer,
+	 * so only the axis that was not already there moves.
 	 *
-	 * One anchor serves both, which is why there is one layer here and not
-	 * two. `inset-inline-start` rather than `left`, so the sweep runs from the
-	 * side the reader starts on in either direction.
+	 * ---- Why it is the border box, and not 100% -----------------------------
 	 *
-	 * `width`/`height` rather than a `transform: scale()` because the layer is
-	 * a flat colour: there is nothing in it to distort, and a scaled box would
-	 * carry the button's corners out of shape as it grew.
+	 * An absolutely positioned layer resolves its percentages against the
+	 * containing block's *padding* box, and the button carries a 2px border
+	 * outside that. So `width: 100%` is 4px short of the button on the cross
+	 * axis and 4px short of covering it on the main one, and the difference is
+	 * not nothing: it is a ring of the button's resting colour left drawn
+	 * around a button that has already rolled over. Pulling the layer out by
+	 * the border width on every side is what makes a 150px button a 150px
+	 * panel — `box-sizing: border-box` is already on the button, but sizing an
+	 * absolute child was never what that governed.
 	 *
-	 * `z-index: -1` puts it over the button's own background and under its
-	 * label — the painting order inside a stacking context, which is why
-	 * `shape` opens one. The label needs no wrapper and no z-index of its own,
-	 * which matters: the markup is core's and this file does not get to add to
-	 * it.
+	 * ---- Why a clip, and not a width ---------------------------------------
 	 *
-	 * No radius of its own: it is a rectangle, and the button clips it to the
-	 * shape — see `overflow` in `shape` for what went wrong when the layer
-	 * wore the radius itself.
+	 * Because a full-size panel has to keep the button's corners, and a box
+	 * that changes size cannot: CSS scales a radius down when it no longer
+	 * fits, so a 999px pill layer narrowing past its own height collapses the
+	 * radius with it and the sweep ends as a rounded blob rather than a
+	 * straight edge retreating. `clip-path` leaves the box alone — the panel
+	 * is always the button, always exactly its shape — and moves a straight
+	 * edge across it. A `transform: scale()` would do neither: it distorts the
+	 * curve it is carrying.
+	 *
+	 * `z-index: -1` puts it over the button's own background *and its border*
+	 * — negative layers paint after the element's background and border, and
+	 * before its content — which is the painting order inside a stacking
+	 * context, and why `shape` opens one. The label needs no wrapper and no
+	 * z-index of its own, which matters: the markup is core's and this file
+	 * does not get to add to it.
 	 */
 	&::before {
 		content: "";
 		position: absolute;
 		z-index: -1;
-		inset-block-end: 0;
-		inset-inline-start: 0;
-		width: var(--wp--custom--button--wipe-width, 100%);
-		height: var(--wp--custom--button--wipe-height, 0);
+		inset: calc(var(--wp--custom--button--border-width, 2px) * -1);
+		// The layer is the border box, so the button's own radius describes it
+		// exactly: the same curve, on the same box.
+		border-radius: inherit;
 		background-color: var(
 			--bridge-button-hover-bg,
 			var(--wp--custom--button--on-default--hover-bg)
 		);
 		// 0 on the skins that answer with a colour change instead, which costs
-		// them one transparent box that never grows.
+		// them one transparent box that is never uncovered.
 		opacity: var(--wp--custom--button--wipe, 0);
+		// Hidden from the top down by whatever height it is not resting at,
+		// and from the end in by whatever width it is not — so `100%`/`0`
+		// waits along the bottom edge and `0`/`100%` waits along the leading
+		// one. Both extents are lengths or percentages, never a bare `0`:
+		// `calc()` cannot subtract a number from a percentage, and the
+		// declaration would be dropped. bridge_button_wipe_extent() is what
+		// guarantees it.
+		clip-path: inset(
+			calc(100% - var(--wp--custom--button--wipe-height, 0px))
+				calc(100% - var(--wp--custom--button--wipe-width, 100%)) 0 0
+		);
 		// Long enough to read as a movement, short enough that a button
 		// clicked twice is not waiting on it.
-		transition:
-			width 400ms ease,
-			height 400ms ease;
+		transition: clip-path 400ms ease;
 		pointer-events: none;
+	}
+
+	/**
+	 * And the same clip, told which side to start from.
+	 *
+	 * `inset()` is physical where the `inset-inline-start` it replaced was
+	 * logical, so a right-to-left document has to be given the mirror or the
+	 * Pill skin's sweep runs backwards into the label. The vertical skins are
+	 * unaffected by the swap and share the rule rather than opting out of it.
+	 */
+	[dir="rtl"] &::before {
+		clip-path: inset(
+			calc(100% - var(--wp--custom--button--wipe-height, 0px)) 0 0
+				calc(100% - var(--wp--custom--button--wipe-width, 100%))
+		);
 	}
 
 	&:hover,
@@ -309,9 +341,11 @@
 			var(--wp--custom--button--on-default--hover-fg)
 		);
 
-		&::before {
-			width: 100%;
-			height: 100%;
+		// Uncovered, in both directions at once. Only the axis that was
+		// clipped has anywhere to travel.
+		&::before,
+		[dir="rtl"] &::before {
+			clip-path: inset(0 0 0 0);
 		}
 	}
 }

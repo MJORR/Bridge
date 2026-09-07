@@ -2,11 +2,11 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/feature-block",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"title": "Feature",
 	"category": "design",
 	"icon": "screenoptions",
-	"description": "One feature panel.",
+	"description": "One feature panel: an image, a title, a line of copy and a button.",
 	"textdomain": "bridge",
 	"parent": ["bridge/feature-blocks"],
 	"supports": { "anchor": false, "html": false, "reusable": false },
@@ -17,10 +17,17 @@
 		"graphicUrl": { "type": "string", "default": "" },
 		"backgroundId": { "type": "number" },
 		"backgroundUrl": { "type": "string", "default": "" },
+		"overlayColor": { "type": "string", "default": "" },
+		"overlayOpacity": { "type": "number", "default": 65 },
 		"linkUrl": { "type": "string", "default": "" },
-		"linkText": { "type": "string", "default": "" }
+		"linkText": { "type": "string", "default": "" },
+		"linkStyle": {
+			"type": "string",
+			"enum": ["button", "text"],
+			"default": "button"
+		},
+		"highlight": { "type": "boolean", "default": false }
 	},
-	"usesContext": ["bridge/textAlignment", "bridge/alignImageTop"],
 	"editorScript": "bridge-feature-block-editor",
 	"render": "file:./render.php"
 }

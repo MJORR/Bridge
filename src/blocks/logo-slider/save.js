@@ -1,8 +1,9 @@
 /**
- * Save for `bridge/logo-slider` — the intro's inner blocks; render.php wraps
- * them and prints the logo rows from attributes.
+ * Save for `bridge/logo-slider`.
+ *
+ * Nothing. The intro used to be inner blocks, so this returned their content;
+ * it is three attributes now, and render.php draws every part of the block
+ * from them. deprecated.js is what carries a block saved under the old shape
+ * across to this one.
  */
-const { InnerBlocks } = window.wp.blockEditor;
-const { createElement: el } = window.wp.element;
-
-export default () => el(InnerBlocks.Content);
+export default () => null;

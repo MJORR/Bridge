@@ -114,11 +114,28 @@
 				return;
 			}
 
+			/*
+			 * A landing page is always "No title", whatever is stored.
+			 *
+			 * Its template holds no `bridge/page-title` block, so no banner can
+			 * draw there — and the canvas has no use for a title field either,
+			 * because the hero is the page's heading and two headlines stacked
+			 * is one of them being ignored.
+			 *
+			 * The page still needs a name. That field is in the sidebar, in the
+			 * "Page title" panel — see page-banner-panel.js. Hiding it here
+			 * without that panel would be hiding the only way to set it, which
+			 * is what this file did until the panel existed.
+			 */
+			const landing =
+				'page-landing' === editor.getEditedPostAttribute('template');
+
 			const meta = editor.getEditedPostAttribute('meta') || {};
+
 			apply(
-				meta.bridge_banner_style || 'none',
+				landing ? 'hidden' : meta.bridge_banner_style || 'none',
 				meta.bridge_title_align || 'left',
-				meta.bridge_banner_color || ''
+				landing ? '' : meta.bridge_banner_color || ''
 			);
 		});
 	};

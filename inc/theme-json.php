@@ -327,6 +327,29 @@ function bridge_compile_font_families(array $typography): array
 }
 
 /**
+ * A wipe extent, as something `calc()` can subtract.
+ *
+ * The hover fill is revealed by a `clip-path: inset()` whose sides are
+ * `calc(100% - <extent>)`, and CSS cannot subtract a number from a percentage:
+ * a bare `0` makes the whole declaration invalid, the clip is dropped, and the
+ * layer sits over the button at rest instead of waiting at an edge — a button
+ * permanently stuck in its hover colour. The skins here say `0px`, but skins
+ * are filterable and one written against the old `width`/`height` fill would
+ * have said `0`, which was valid there. So the zero is normalised on the way
+ * out rather than trusted, and anything else is passed through: an extent is
+ * the skin's to choose and this is not the place to police units.
+ *
+ * @param mixed $value The skin's `wipeWidth` or `wipeHeight`.
+ * @return string A length or percentage.
+ */
+function bridge_button_wipe_extent($value): string
+{
+	$value = trim((string) $value);
+
+	return ('' === $value || '0' === $value) ? '0px' : $value;
+}
+
+/**
  * The button half of `settings.custom`.
  *
  * Split out because it is two things joined: the geometry of the chosen skin,
@@ -369,8 +392,8 @@ function bridge_compile_button_custom(array $tokens): array
 		 * hover rather than a button with no width to its hover layer.
 		 */
 		'wipe'          => (string) ( $skin['wipe'] ?? '0' ),
-		'wipeWidth'     => (string) ( $skin['wipeWidth'] ?? '100%' ),
-		'wipeHeight'    => (string) ( $skin['wipeHeight'] ?? '0' ),
+		'wipeWidth'     => bridge_button_wipe_extent($skin['wipeWidth'] ?? '100%'),
+		'wipeHeight'    => bridge_button_wipe_extent($skin['wipeHeight'] ?? '0px'),
 		'sweep'         => (string) $skin['sweep'],
 		'minSize'       => '44px',
 	);

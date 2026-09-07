@@ -123,6 +123,11 @@ so they run anywhere PHP does.
   `writeBundle` (after `emptyOutDir` has run, so the file survives the build
   that made it). PHP renders each icon inline rather than through an external
   sprite.
+- **`dist/blocks-manifest.php`** — every block's `block.json` in one PHP file,
+  registered through `wp_register_block_metadata_collection()`. Without it
+  WordPress reads and decodes one JSON file per block on every request, admin
+  and REST included. It is generated, and it wins over the JSON at runtime, so
+  **a `block.json` edit does nothing until the next build**.
 - **Source maps in development only.** They're deploy bloat in production, and
   browsers fetch them only with devtools open.
 
@@ -144,7 +149,12 @@ and activate — running the site needs no Node toolchain.
    script (`<slug>-editor`) and, if it has styles, its SCSS entry (`<slug>`).
 3. Register it in `functions.php` through `bridge_register_section_block()`,
    which registers the script, the stylesheet and the type in one call.
-4. Run `npm run build`.
+4. Run `npm run build` — which is also what puts the block into
+   `dist/blocks-manifest.php`, the file WordPress reads its metadata from.
+
+If the item block holds a media library id, name that attribute in
+`bridge_item_image_attributes()`. The band then fetches every item's image in
+one round trip rather than one per item.
 
 ### Rebranding the theme
 
@@ -172,7 +182,7 @@ visible to a client. The brand lives in the three files above.
 ```
 functions.php      Bootstrap: constants, asset registration, block registration
 inc/               PHP by concern — tokens, colour, options screens, post types,
-                   capabilities, header/footer, REST, lockdown
+                   capabilities, header/footer, schema, REST, lockdown
 src/blocks/        One directory per block: block.json, edit/save/index, render.php
 src/scss/          abstracts (mixins), base, components, blocks, editor, admin
 src/admin/         The Theme Options app (JSX, wp.element)

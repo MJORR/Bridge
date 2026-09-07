@@ -1,0 +1,20 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/breadcrumb",
+	"version": "1.0.0",
+	"title": "Breadcrumbs",
+	"category": "design",
+	"icon": "arrow-right-alt",
+	"description": "The trail from the front page down to this one, and the structured data that puts it in a search result.",
+	"textdomain": "bridge",
+	"keywords": ["breadcrumb", "trail", "navigation", "schema", "seo"],
+	"supports": {
+		"anchor": false,
+		"html": false,
+		"multiple": false,
+		"reusable": false
+	},
+	"editorScript": "bridge-breadcrumb-editor",
+	"render": "file:./render.php"
+}

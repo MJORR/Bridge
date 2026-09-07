@@ -64,4 +64,11 @@ require_once $bridge_theme_dir . '/inc/activation.php';
 // from a test.
 require_once $bridge_theme_dir . '/inc/enquiries.php';
 
+// Site Options and the JSON-LD built from them. Both are loaded rather than
+// doubled: the schema layer's whole job is to publish what an operator typed
+// into that screen, so a test that faked the reading half would be asserting
+// against its own fixture rather than against the fields the site has.
+require_once $bridge_theme_dir . '/inc/site-options.php';
+require_once $bridge_theme_dir . '/inc/schema.php';
+
 require_once __DIR__ . '/BridgeTestCase.php';

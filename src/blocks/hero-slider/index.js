@@ -9,6 +9,9 @@
 
 import edit from './edit.js';
 import save from './save.js';
+// The "Add slide" button on a slide's own toolbar. Imported here so it travels
+// in this block's bundle and shares one definition of what a slide is.
+import './slide-tools.js';
 
 const { registerBlockType } = window.wp.blocks;
 

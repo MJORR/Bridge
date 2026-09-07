@@ -63,16 +63,34 @@ $ground: var(--bridge-card-bg, var(--wp--custom--card--on-light, #f5f5f4));
 // Which mode the card is in — rounded or cut — was decided in PHP and arrives
 // as the *values*: see the `$cut` block in bridge_compile_theme_json(). Nothing
 // here branches, and there is no second ruleset for the feature being off.
-@mixin surface {
-	// The card's own ground, and `transparent` once the cut has moved the
-	// colour to the layer below. With the cut off the compiler publishes
-	// `initial` for that switch, which is the guaranteed-invalid value — so
-	// `var()` falls through to the ground and the card paints exactly what it
-	// painted before this feature existed.
+/**
+ * The card's own ground, and nothing else.
+ *
+ * A mixin rather than a line inside `surface`, because it is not only `surface`
+ * that needs it: a block that has taken the ground away and wants it back — the
+ * feature panel with a photograph on a Plain band — has to put back *this*, not
+ * the colour.
+ *
+ * The distinction is the whole of the cut corner. With the cut on, the compiler
+ * publishes `transparent` for the switch below and the colour is painted by the
+ * clipped `::before` instead, so the card's own box stays clear and the chamfer
+ * is a hole through to the band. Anything that sets a flat colour here fills
+ * that hole straight back in, and the corner silently stops being cut.
+ *
+ * With the cut off the switch is `initial` — the guaranteed-invalid value — so
+ * `var()` falls through to the ground and the card paints exactly what it
+ * painted before the feature existed.
+ */
+@mixin ground {
 	background-color: var(
 		--bridge-card-own-bg,
 		var(--wp--custom--card--own-bg, #{$ground})
 	);
+}
+
+@mixin surface {
+	@include ground;
+
 	border-radius: var(--wp--custom--card--radius, 6px);
 	box-shadow: var(
 		--bridge-card-shadow,

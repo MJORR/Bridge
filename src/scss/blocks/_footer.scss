@@ -90,6 +90,33 @@
 	max-inline-size: 100%;
 }
 
+/**
+ * The contact details, between the logo and the social row.
+ *
+ * `<address>` is italic in every user-agent stylesheet, which is a convention
+ * for a letterhead rather than for a footer column, so it is reset — the lines
+ * read as an address because of where they are and what they say.
+ */
+.bridge-footer__contact {
+	font-style: normal;
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20);
+	margin: 0;
+
+	p {
+		margin: 0;
+	}
+
+	// The number is the one line in the column a visitor may want to act on,
+	// so it is the one that looks like a link.
+	.bridge-footer__phone a {
+		color: inherit;
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+}
+
 .bridge-footer__social {
 	display: flex;
 	flex-wrap: wrap;

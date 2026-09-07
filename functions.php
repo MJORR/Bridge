@@ -76,6 +76,9 @@ require_once get_theme_file_path('inc/rest.php');
 // handler and the two emails. After site-options.php, because it asks that
 // file where notifications should go.
 require_once get_theme_file_path('inc/enquiries.php');
+// The site's identity as JSON-LD. After site-options.php, which holds every
+// field it publishes, and after tokens.php, which holds the logo it names.
+require_once get_theme_file_path('inc/schema.php');
 
 require_once get_theme_file_path('inc/cli.php');
 
@@ -125,6 +128,32 @@ function bridge_enqueue_assets(): void
 	}
 }
 add_action('wp_enqueue_scripts', 'bridge_enqueue_assets');
+
+/**
+ * Ship the core block styles the page actually uses, and no others.
+ *
+ * `wp_should_load_separate_core_block_assets()` defaults to **false** — still,
+ * in WordPress 7.1 — so a page carrying a heading and a paragraph loads the
+ * whole of `block-library/style.min.css`: 137KB, 18.7KB over the wire, against
+ * 10.9KB for the entirety of this theme's own CSS. Nearly all of it styles
+ * blocks a Bridge page has never held. The assumption that a block theme opts
+ * into this automatically is a common one and it is wrong; the default is what
+ * it was in 5.8.
+ *
+ * With the filter on, core enqueues each block's stylesheet as that block
+ * renders, and inlines the small ones. Nothing here is deferred to a plugin:
+ * a page's payload is the theme's business.
+ *
+ * The one thing it can change is the cascade. A rule that used to win because
+ * every core block stylesheet was present on every page may now land on a page
+ * where it is not — which is worth a look across a few templates after
+ * deploying, and is why this is a filter in the theme rather than something
+ * folded into an unrelated commit.
+ *
+ * Core answers false for admin, feeds and REST before this filter runs, so
+ * `__return_true` only ever speaks for a front-end page view.
+ */
+add_filter('should_load_separate_core_block_assets', '__return_true');
 
 /**
  * Register a compiled script from /dist, if the build produced it.
@@ -222,6 +251,42 @@ function bridge_register_style(string $handle, string $file, array $deps = array
  *
  * @param string $slug Directory name under src/blocks.
  */
+/**
+ * Hand WordPress every block's metadata in one file instead of twenty-eight.
+ *
+ * `register_block_type_from_metadata()` asks WP_Block_Metadata_Registry first
+ * and only falls back to reading and decoding a block.json when no collection
+ * covers the path. Without this, each of the theme's blocks costs a file read
+ * and a JSON decode on every request — including admin screens, REST calls and
+ * cron, none of which render a single one of them.
+ *
+ * The manifest is written by the Vite build from the same block.json files, so
+ * it cannot describe a block that does not exist; what it can do is describe an
+ * older version of one, which is why it is generated on every build alongside
+ * the rest of dist/ and why a block.json edit needs a rebuild to take effect.
+ * Missing manifest, missing collection: WordPress reads the JSON as it always
+ * did, so a half-built checkout is slower rather than broken.
+ *
+ * On `init` at priority 0 because it has to be in place before the first
+ * `register_block_type()` call, and those run on `init` at 10 — here, in
+ * inc/header.php and in inc/footer.php.
+ */
+function bridge_register_block_metadata(): void
+{
+	if (! function_exists('wp_register_block_metadata_collection')) {
+		return;
+	}
+
+	$manifest = get_theme_file_path('dist/blocks-manifest.php');
+
+	if (! file_exists($manifest)) {
+		return;
+	}
+
+	wp_register_block_metadata_collection(get_theme_file_path('src/blocks'), $manifest);
+}
+add_action('init', 'bridge_register_block_metadata', 0);
+
 function bridge_register_block(string $slug): void
 {
 	$dir = get_theme_file_path('src/blocks/' . $slug);
@@ -294,7 +359,13 @@ function bridge_register_blocks(): void
 	);
 
 	// --- Hero Slider -------------------------------------------------------
-	bridge_register_script('bridge-hero-slider-editor', 'hero-slider-editor.js', bridge_editor_script_deps());
+	// `wp-hooks` and `wp-compose` beyond the shared set: the bundle also filters
+	// core/cover's edit view, to put "Add slide" on a slide's own toolbar.
+	bridge_register_script(
+		'bridge-hero-slider-editor',
+		'hero-slider-editor.js',
+		array_merge(bridge_editor_script_deps(), array('wp-hooks', 'wp-compose'))
+	);
 
 	/**
 	 * The slider runtime.
@@ -385,7 +456,11 @@ function bridge_register_blocks(): void
 	bridge_register_section_block('price-table');
 	bridge_register_section_block('feature-blocks');
 	bridge_register_section_block('gallery', true, true);
-	bridge_register_section_block('logo-slider');
+	// A view script, and the row reads without it: the marquee is CSS, and a
+	// page that never receives the file gets the sliding row it always got.
+	// What it adds is the measurement CSS cannot make — whether the logos
+	// already fit, in which case they stand still. See src/js/logo-slider-view.js.
+	bridge_register_section_block('logo-slider', true, true);
 	bridge_register_section_block('alternating-content');
 	// No view script: the accordion is a <details> element, so the opening,
 	// the closing and the "one at a time" all ship with the browser.
@@ -579,6 +654,14 @@ function bridge_register_blocks(): void
 	// --- Page Title --------------------------------------------------------
 	bridge_register_script('bridge-page-title-editor', 'page-title-editor.js', $previewed);
 	bridge_register_block('page-title');
+
+	// --- Breadcrumbs -------------------------------------------------------
+	// Not in `$previewed`: the trail is drawn in the canvas by the block's own
+	// edit view rather than fetched from the block renderer, because a REST
+	// request has no main query to build a trail from. See its index.js.
+	// Styled by main.css, which every page loads, so there is no style handle.
+	bridge_register_script('bridge-breadcrumb-editor', 'breadcrumb-editor.js', bridge_editor_script_deps());
+	bridge_register_block('breadcrumb');
 }
 add_action('init', 'bridge_register_blocks');
 
@@ -778,13 +861,16 @@ add_action('wp_head', 'bridge_inline_hero_slider_css', 0);
 /**
  * Editor scripts that belong only to the Page edit screen.
  *
- *   template-watcher    Subscribes to template changes and, when "Landing
- *                       Page" is selected, hides the post-title field and
- *                       auto-inserts a Hero Slider with the page title seeded
- *                       into the first slide's H1.
+ *   template-watcher    Subscribes to template changes and hides the
+ *                       post-title field on a Landing Page that has a hero,
+ *                       which is the block carrying the headline there. It
+ *                       used to insert that hero as well; see the note in the
+ *                       file for why nothing does that any more.
  *   page-banner-panel   The "Title Banner" document panel: banner style,
  *                       alignment and background colour, stored as post meta
- *                       and rendered by `bridge/page-title`.
+ *                       and rendered by `bridge/page-title`. It also takes the
+ *                       Featured image panel off the Page editor, which is a
+ *                       control for a value no page template draws.
  *   banner-preview      Draws the chosen banner on the editor's native title
  *                       field, so the setting is visible where it applies.
  *
@@ -799,10 +885,16 @@ function bridge_enqueue_page_editor_assets(): void
 		return;
 	}
 
+	/*
+	 * `wp-data` and nothing else. It read `wp-blocks` for `createBlock()` and
+	 * the slider's own editor script so the block type existed before it built
+	 * one; it builds nothing now, and only ever reads block *names* out of the
+	 * store.
+	 */
 	bridge_enqueue_script(
 		'bridge-template-watcher',
 		'template-watcher.js',
-		array('wp-data', 'wp-blocks', 'bridge-hero-slider-editor')
+		array('wp-data')
 	);
 
 	bridge_enqueue_script(
@@ -829,9 +921,9 @@ add_action('enqueue_block_editor_assets', 'bridge_enqueue_page_editor_assets');
  * Editor scripts that belong to every screen with a block editor on it.
  *
  * Unlike the three above, these are not about the Page screen: they take the
- * spacing and border controls off core/paragraph and the styling controls off
- * core/button, so they have to run wherever either block can be written —
- * posts, patterns and the site editor included.
+ * spacing and border controls off core/paragraph, the spacing off core/cover
+ * and the styling controls off core/button, so they have to run wherever any of
+ * them can be written — posts, patterns and the site editor included.
  */
 function bridge_enqueue_editor_assets(): void
 {
@@ -847,6 +939,16 @@ function bridge_enqueue_editor_assets(): void
 	bridge_enqueue_script(
 		'bridge-button-lock',
 		'button-lock.js',
+		array(
+			'wp-hooks',
+			'wp-blocks',
+		)
+	);
+
+	// And the spacing controls off core/cover, which is what a hero slide is.
+	bridge_enqueue_script(
+		'bridge-cover-lock',
+		'cover-lock.js',
 		array(
 			'wp-hooks',
 			'wp-blocks',

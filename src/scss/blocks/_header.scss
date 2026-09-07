@@ -706,6 +706,101 @@ html:has(.bridge-header--sticky) {
 	}
 }
 
+/**
+ * The phone, where the toolbar stops being fixed.
+ *
+ * At 600px and below WordPress switches `#wpadminbar` to `position: absolute`
+ * (see the "Smartphone" block in wp-includes/css/admin-bar.css) so the toolbar
+ * scrolls away with the page instead of holding the top of the screen. The
+ * offset above was written for the fixed toolbar and kept applying: the header
+ * stayed pinned a toolbar's height down, and once the toolbar had scrolled off
+ * there was a 46px strip of page sliding past above the header.
+ *
+ * 782px was the wrong boundary for it, not the wrong idea — between 601 and
+ * 782 the toolbar is still fixed, just taller, and the rule above is right
+ * there. Only the smartphone band needs undoing.
+ *
+ * And undoing it is the whole fix, because a sticky header already does the
+ * thing that has to happen here. It sits below the toolbar at rest, rides up
+ * with the page as the toolbar scrolls off, and pins at the top of the screen
+ * at the moment the toolbar clears it — the handoff is exact, because the
+ * distance the header travels is the toolbar's height. No script, and nothing
+ * of the visitor's screen spent on it.
+ *
+ * Not the transparent one, which is `position: fixed` and cannot follow
+ * something that scrolls. That case is answered below by pinning the toolbar
+ * instead.
+ */
+@media screen and (max-width: 600px) {
+	.admin-bar
+		:where(.wp-block-template-part):has(
+			> .bridge-header--sticky:not(.bridge-header--transparent)
+		) {
+		top: 0;
+	}
+
+	/**
+	 * A transparent sticky header is fixed to the viewport, so the toolbar has
+	 * to be fixed too or the two cannot stay together: pinned at 46px it holds
+	 * a gap the toolbar has left, and pinned at 0 it hides under a toolbar
+	 * that is still there.
+	 *
+	 * Pinning the toolbar costs a logged-in visitor 46px of a phone screen and
+	 * costs everybody else nothing — `.admin-bar` is on <body> only while the
+	 * toolbar renders. The alternative, moving the header a pixel at a time
+	 * from a scroll listener, spends a handler on every scroll of every page
+	 * to buy back 46px for the person editing the site.
+	 *
+	 * Scoped to the pages that have such a header, so the toolbar behaves the
+	 * way WordPress intends everywhere else. The specificity — an element, a
+	 * `:has()` counted at its two classes, and an id — clears core's lone
+	 * `#wpadminbar` whatever order the stylesheets load in.
+	 *
+	 * This also makes the containing-block note further up moot for these
+	 * pages: a fixed toolbar is positioned against the viewport and no longer
+	 * cares what `.wp-site-blocks` is doing. That rule stays because the
+	 * non-sticky transparent header still needs it.
+	 */
+	body:has(.bridge-header--sticky.bridge-header--transparent) #wpadminbar {
+		position: fixed;
+	}
+}
+
+/**
+ * The toolbar's height, for anything measuring itself against the window.
+ *
+ * WordPress reserves this with `margin-top` on <html>, which moves the
+ * document down without making the window any shorter — so `100dvh` is still a
+ * windowful, and a hero asking for one is a windowful *plus* a toolbar,
+ * overflowing the bottom of the screen by exactly this much. The heroes
+ * subtract it; see the floor in blocks/_hero-banner and blocks/_hero-slider.
+ *
+ * It lives here rather than in base/ because this file is where everything
+ * else the theme knows about the toolbar is written down, and main.css — which
+ * carries it — is on every page and in the editor canvas. In the canvas
+ * `.admin-bar` is on the document outside the iframe, so the value stays 0px
+ * there, which is correct: the canvas has no toolbar in it.
+ */
+:root {
+	// `0px`, never a bare `0`: the heroes subtract this inside a calc(), and
+	// CSS cannot take a number off a length — the expression would be invalid
+	// and the min-height dropped altogether, which is a full-height hero
+	// collapsing to its content for every logged-out visitor. The same trap
+	// bridge_button_wipe_extent() exists for.
+	// stylelint-disable-next-line length-zero-no-unit
+	--bridge-admin-bar: 0px;
+}
+
+.admin-bar {
+	--bridge-admin-bar: 32px;
+}
+
+@media screen and (max-width: 782px) {
+	.admin-bar {
+		--bridge-admin-bar: 46px;
+	}
+}
+
 // ---- Border ----------------------------------------------------------------
 
 .bridge-header--border {

@@ -258,6 +258,8 @@ function bridge_section_split(WP_Block $block, string $child): array
 	$intro = '';
 	$items = '';
 
+	bridge_prime_item_images($block);
+
 	foreach ($block->inner_blocks as $inner) {
 		if ($child === $inner->name) {
 			$items .= $inner->render();
@@ -267,6 +269,67 @@ function bridge_section_split(WP_Block $block, string $child): array
 	}
 
 	return array($intro, $items);
+}
+
+/**
+ * The attributes an item block keeps an attachment id in.
+ *
+ * One list for every repeating block in the theme, because the thing being
+ * primed is the same thing in each: a media library id the item is about to
+ * ask WordPress for. A new item block joins by naming its id attribute here.
+ *
+ * @return string[]
+ */
+function bridge_item_image_attributes(): array
+{
+	return array( 'imageId', 'graphicId', 'backgroundId', 'previewId', 'fileId' );
+}
+
+/**
+ * Fetch every image a band's items are going to draw, in one round trip.
+ *
+ * The N+1 the Cards band already avoids, closed for the other five. Each item
+ * renders itself, so each one was calling `wp_get_attachment_image()` on an id
+ * nothing had fetched yet — the attachment post, then its metadata, then its
+ * alt text: two queries per image, and a twenty-image gallery spent forty of
+ * them where two would do. The items are still the things that draw the
+ * pictures; this only makes sure the pictures are already in memory when they
+ * do.
+ *
+ * It has to run before the first item renders, which is why it sits here
+ * rather than in each render.php: `bridge_section_split()` is the one place
+ * every one of these blocks passes through, and it walks the children once
+ * before rendering them anyway.
+ *
+ * Below two ids there is nothing to save — priming one attachment is the same
+ * two queries the item was going to make — so a band with a single image is
+ * left alone rather than paying for the arithmetic.
+ *
+ * @param WP_Block $block The band whose items are about to render.
+ */
+function bridge_prime_item_images(WP_Block $block): void
+{
+	$ids  = array();
+	$keys = bridge_item_image_attributes();
+
+	foreach ($block->inner_blocks as $inner) {
+		foreach ($keys as $key) {
+			$id = absint($inner->attributes[$key] ?? 0);
+
+			if ($id > 0) {
+				$ids[$id] = true;
+			}
+		}
+	}
+
+	if (count($ids) < 2) {
+		return;
+	}
+
+	// Posts and their meta, which is what an image needs; no terms, which an
+	// attachment rarely has and no item block reads. The same call, and the
+	// same two arguments, as the Cards band's.
+	_prime_post_caches(array_keys($ids), false, true);
 }
 
 /**
@@ -466,6 +529,37 @@ function bridge_section_intro(string $intro, string $class): array
 }
 
 /**
+ * How much of a logo's desktop size survives on the narrowest screen.
+ *
+ * Gentler than the header's padding gives up, because a logo is a picture of
+ * a name: past a certain point it stops being smaller and starts being
+ * unreadable, and the row can afford the width where a band of padding
+ * cannot.
+ */
+define('BRIDGE_LOGO_MIN_SCALE', 0.8);
+
+/**
+ * A logo-slider length, fluid.
+ *
+ * What an editor sets on the block's sliders is the size on a desktop; this
+ * puts it on the theme's own fluid curve, so it falls away as the window
+ * narrows in step with the type and spacing around it rather than on a curve
+ * of its own. bridge_fluid_clamp() is that curve, and it is the only one —
+ * see inc/theme-json.php.
+ *
+ * @param float $max_rem The desktop size, in rem.
+ * @return string A CSS length.
+ */
+function bridge_logo_fluid(float $max_rem): string
+{
+	return bridge_fluid_clamp(
+		$max_rem * BRIDGE_LOGO_MIN_SCALE,
+		$max_rem,
+		(float) bridge_get_tokens()['layout']['wideSize']
+	);
+}
+
+/**
  * One logo-slider row, printed twice.
  *
  * The animation slides the track by exactly half its width, so the second copy
@@ -485,9 +579,29 @@ function bridge_logo_slider_row(array $images, string $display, bool $reverse = 
 {
 	// The display mode reaches the row as well as the image: `contain` leaves
 	// every logo at its own width, so the row is what has to open the gaps up.
+	//
+	// The data attribute is what logo-slider-view.js finds the row by, to
+	// decide whether these logos need to travel at all. It renders as a
+	// marquee either way; the script only ever adds `is-static`.
 	$classes = 'bridge-logos__row is-' . $display . ($reverse ? ' is-reverse' : '');
+
+	// The same round trip the item bands make, for a row that is not made of
+	// blocks: the logos are one block's attribute list, so there are no inner
+	// blocks for bridge_prime_item_images() to walk. Every logo is drawn twice
+	// — the marquee needs a seam copy — and without this the first pass was
+	// two queries per logo.
+	$logo_ids = array_filter(array_map(
+		static function ($image): int {
+			return absint(((array) $image)['id'] ?? 0);
+		},
+		$images
+	));
+
+	if (count($logo_ids) > 1) {
+		_prime_post_caches(array_values(array_unique($logo_ids)), false, true);
+	}
 ?>
-	<div class="<?php echo esc_attr($classes); ?>" style="--bridge-logo-count: <?php echo (int) count($images); ?>;">
+	<div class="<?php echo esc_attr($classes); ?>" style="--bridge-logo-count: <?php echo (int) count($images); ?>;" data-bridge-logos-row>
 		<ul class="bridge-logos__track" role="list">
 			<?php foreach ($images as $image) : ?>
 				<?php bridge_logo_slider_item((array) $image, $display, false); ?>
@@ -529,7 +643,20 @@ function bridge_logo_slider_item(array $image, string $display, bool $duplicate)
 				// escapes.
 				'class'    => 'bridge-logos__image is-' . $display,
 				'alt'      => $duplicate ? '' : (string) get_post_meta($id, '_wp_attachment_image_alt', true),
-				'loading'  => 'lazy',
+				/*
+				 * Eager, both halves of the track.
+				 *
+				 * The seam copy is parked past the right edge of a row that
+				 * cannot be scrolled, so a lazy loader has no reason to fetch
+				 * it until the animation carries it in — at which point the
+				 * loop shows blank space where a logo should be and then pops
+				 * it in, which is the one thing a marquee must not do.
+				 *
+				 * Lazily loading the first half instead would save nothing:
+				 * both halves name the same file, so the eager copy is what
+				 * makes the single request either way.
+				 */
+				'loading'  => 'eager',
 				'decoding' => 'async',
 			)
 		);
@@ -539,23 +666,29 @@ function bridge_logo_slider_item(array $image, string $display, bool $duplicate)
 }
 
 /**
- * A breadcrumb trail for the current page, as an ordered list.
+ * The steps of the current page's trail, from the front page down.
  *
- * An <ol> inside a labelled <nav>, because the order is the meaning — each
- * step is one level nearer the front page — and a screen-reader user needs to
- * be able to skip the whole trail, which an unlabelled row of links does not
- * allow. The current page is the last item and is not a link: linking a page
- * to itself gives a keyboard user somewhere to go that they already are.
+ * The list, not the markup: `bridge_breadcrumb_html()` draws it and
+ * `bridge_breadcrumb_schema()` describes it, and both read this so the trail a
+ * visitor sees and the trail a search engine is told about cannot drift apart.
+ * A breadcrumb in the markup that disagrees with the one in the JSON-LD is
+ * worse than neither, because only one of them is checkable by looking.
  *
  * Only ancestors are walked, so this is a hierarchy trail rather than a
  * history one — the same thing the old block drew, minus the plugin.
  *
- * @return string
+ * Fewer than two steps is not a trail: the front page, and any page that turns
+ * out to sit directly under it, get an empty array rather than a lone "Home"
+ * pointing at where the visitor already is.
+ *
+ * @return array<int, array{label:string,url:string}> The last step is the
+ *                                                    current page and carries
+ *                                                    no URL.
  */
-function bridge_breadcrumb_html(): string
+function bridge_breadcrumb_items(): array
 {
 	if (is_front_page()) {
-		return '';
+		return array();
 	}
 
 	$crumbs = array(
@@ -592,7 +725,31 @@ function bridge_breadcrumb_html(): string
 		);
 	}
 
-	if (count($crumbs) < 2) {
+	return count($crumbs) < 2 ? array() : $crumbs;
+}
+
+/**
+ * A breadcrumb trail for the current page, as an ordered list.
+ *
+ * An <ol> inside a labelled <nav>, because the order is the meaning — each
+ * step is one level nearer the front page — and a screen-reader user needs to
+ * be able to skip the whole trail, which an unlabelled row of links does not
+ * allow. The current page is the last item and is not a link: linking a page
+ * to itself gives a keyboard user somewhere to go that they already are.
+ *
+ * @param string $nav_attributes Attributes for the <nav>, already escaped —
+ *                               `bridge/breadcrumb` passes the block wrapper's,
+ *                               so the trail carries the block's own classes
+ *                               and anchor rather than being wrapped in a
+ *                               second element to hold them. Empty for the
+ *                               plain trail.
+ * @return string
+ */
+function bridge_breadcrumb_html(string $nav_attributes = ''): string
+{
+	$crumbs = bridge_breadcrumb_items();
+
+	if (! $crumbs) {
 		return '';
 	}
 
@@ -616,9 +773,61 @@ function bridge_breadcrumb_html(): string
 		);
 	}
 
+	if ('' === $nav_attributes) {
+		$nav_attributes = 'class="bridge-breadcrumb"';
+	}
+
 	return sprintf(
-		'<nav class="bridge-breadcrumb" aria-label="%s"><ol class="bridge-breadcrumb__list">%s</ol></nav>',
+		'<nav %s aria-label="%s"><ol class="bridge-breadcrumb__list">%s</ol></nav>',
+		$nav_attributes,
 		esc_attr__('Breadcrumb', 'bridge'),
 		$items
+	);
+}
+
+/**
+ * The same trail as a BreadcrumbList, or an empty array when there is none.
+ *
+ * Breadcrumbs are one of the few enrichments Google still grants any site, and
+ * what it does with them is replace the URL line of the result with the path —
+ * so this is the one node in the theme that changes what a search result looks
+ * like rather than only what a machine understands about it.
+ *
+ * `position` counts from 1, and every step carries an `item` except the last.
+ * That omission is deliberate and is what the vocabulary asks for: the final
+ * entry is the page the result is already about, and giving it a URL that
+ * points at itself is the same self-reference the markup avoids by not linking
+ * it.
+ *
+ * @return array<string, mixed>
+ */
+function bridge_breadcrumb_schema(): array
+{
+	$crumbs = bridge_breadcrumb_items();
+
+	if (! $crumbs) {
+		return array();
+	}
+
+	$elements = array();
+
+	foreach (array_values($crumbs) as $index => $crumb) {
+		$element = array(
+			'@type'    => 'ListItem',
+			'position' => $index + 1,
+			'name'     => (string) $crumb['label'],
+		);
+
+		if ('' !== $crumb['url']) {
+			$element['item'] = (string) $crumb['url'];
+		}
+
+		$elements[] = $element;
+	}
+
+	return array(
+		'@context'        => 'https://schema.org',
+		'@type'           => 'BreadcrumbList',
+		'itemListElement' => $elements,
 	);
 }

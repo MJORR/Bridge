@@ -217,6 +217,70 @@ function bridge_footer_social(): string
 }
 
 /**
+ * The address and phone number, or an empty string when Site Options holds
+ * neither.
+ *
+ * Both have been in Site Options since the theme shipped and neither reached
+ * the front end: the contact details were being collected and then kept. A
+ * business address in the footer is the first thing a visitor looks for when
+ * they want to know whether a company is near them, and it is what the
+ * Organization node in the head is asserting — a claim in the markup with
+ * nothing on the page to back it up is the one shape of structured data worth
+ * avoiding. See inc/schema.php.
+ *
+ * An <address> element, which is what it is for: the contact details of the
+ * document it sits in. Not for postal addresses in general — a location
+ * mentioned in an article is not one — which is why this is the only place in
+ * the theme that uses it.
+ *
+ * The lines are the operator's own. The field says "one line per line, as it
+ * would be written on an envelope", so they are printed that way rather than
+ * being run together or parsed into parts nobody typed.
+ */
+function bridge_footer_contact(): string
+{
+	$address = bridge_site_option('address');
+	$phone   = bridge_site_option('phone');
+
+	if ('' === $address && '' === $phone) {
+		return '';
+	}
+
+	$parts = '';
+	$lines = '' !== $address
+		? array_values(array_filter(array_map('trim', preg_split('/\R/', $address) ?: array())))
+		: array();
+
+	if ($lines) {
+		$parts .= sprintf(
+			'<p class="bridge-footer__address">%s</p>',
+			implode('<br>', array_map('esc_html', $lines))
+		);
+	}
+
+	if ('' !== $phone) {
+		// The dialling link is built from the number rather than asked for
+		// separately, which is what the field's help text promises: a phone
+		// number is written to be read — "01234 567 890", "+44 (0)20 7946
+		// 0000" — and `tel:` takes digits and a leading plus. Typing it twice
+		// would be two chances to mistype the one that matters.
+		$dial = preg_replace('/[^0-9+]/', '', $phone);
+
+		$parts .= '' !== $dial
+			? sprintf(
+				'<p class="bridge-footer__phone"><a href="%s">%s</a></p>',
+				esc_url('tel:' . $dial),
+				esc_html($phone)
+			)
+			// A "number" with no digits in it is not one to dial, but it may
+			// still be something an operator meant to say.
+			: sprintf('<p class="bridge-footer__phone">%s</p>', esc_html($phone));
+	}
+
+	return sprintf('<address class="bridge-footer__contact">%s</address>', $parts);
+}
+
+/**
  * The copyright line.
  *
  * The year is the site's own current year, not the server's: wp_date() applies

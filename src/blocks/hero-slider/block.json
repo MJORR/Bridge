@@ -6,7 +6,7 @@
 	"title": "Hero Slider",
 	"category": "media",
 	"icon": "format-gallery",
-	"description": "Full-screen hero slider. Drop Cover blocks inside to author slides.",
+	"description": "A full-screen hero. Choose an image and it becomes the first slide; add more images to make it step. One slide shows as a plain hero \u2014 the arrows and dots appear only when there is a second.",
 	"textdomain": "bridge",
 	"keywords": ["slider", "hero", "carousel"],
 	"supports": {
@@ -62,7 +62,29 @@
 			"align": "full",
 			"heightPreset": "medium",
 			"autoplay": false
-		}
+		},
+		"innerBlocks": [
+			{
+				"name": "core/cover",
+				"attributes": {
+					"dimRatio": 50,
+					"minHeight": 80,
+					"minHeightUnit": "vh",
+					"contentPosition": "center center",
+					"customOverlayColor": "#0f172a"
+				},
+				"innerBlocks": [
+					{
+						"name": "core/heading",
+						"attributes": {
+							"level": 1,
+							"textAlign": "center",
+							"content": "A headline over a photograph"
+						}
+					}
+				]
+			}
+		]
 	},
 	"editorScript": "bridge-hero-slider-editor",
 	"style": "bridge-hero-slider-style",

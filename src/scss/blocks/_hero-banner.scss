@@ -57,11 +57,20 @@
 	// stylelint-disable scss/operator-no-newline-after -- prettier wraps this
 	// calc and puts the operator at the end of the line; prettier is what runs
 	// on save, so it wins.
+	//
+	// And less the admin toolbar, for the same reason and a different culprit:
+	// WordPress reserves the toolbar's height with `margin-top` on <html>,
+	// which moves the document down without making the window shorter. So
+	// `100dvh` is still a windowful, and a full-height banner came out a
+	// windowful *plus* a toolbar — overflowing the bottom of the screen by
+	// exactly that much, and scrolling a page that was meant to fit. `0px` for
+	// a logged-out visitor, which is everybody the site is built for; see
+	// `--bridge-admin-bar` in blocks/_header.
 	min-height: calc(
 		var(--bridge-hero-banner-height, 100dvh) - var(
 				--bridge-hero-banner-inset,
 				0px
-			)
+			) - var(--bridge-admin-bar, 0px)
 	);
 	// stylelint-enable scss/operator-no-newline-after
 

@@ -52,8 +52,17 @@
 	// page occupies its own band or floats over this one — and publishes the
 	// answer as a length. Zero in every case where neither applies, so this
 	// stays one expression rather than a set of variants.
+	//
+	// The third term is the admin toolbar, which is reserved with `margin-top`
+	// on <html> — that moves the document down without making the window any
+	// shorter, so a full-height slider came out a windowful plus a toolbar and
+	// hung off the bottom of the screen. `0px` for a logged-out visitor; see
+	// `--bridge-admin-bar` in blocks/_header.
 	--bridge-slider-floor: calc(
-		var(--bridge-slider-height, 100dvh) - var(--bridge-slider-inset, 0px)
+		var(--bridge-slider-height, 100dvh) - var(
+				--bridge-slider-inset,
+				0px
+			) - var(--bridge-admin-bar, 0px)
 	);
 
 	// A hero is a photograph with words on it, which is the case this mixin
@@ -454,9 +463,20 @@
 // Editor preview — stack slides vertically so each is editable.
 // ---------------------------------------------------------------------------
 .bridge-hero-slider.is-editor-preview {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
+	/**
+	 * Plain document flow, and nothing cleverer.
+	 *
+	 * The front end is a grid, because there every slide is in the same cell.
+	 * The editor was a flex column, which stacks correctly — but only while
+	 * every assumption underneath it holds, and a slide that ends up on top of
+	 * another is the one failure that makes the block unusable.
+	 *
+	 * `display: block` has no such assumptions. Two block-level boxes in normal
+	 * flow cannot overlap: the second begins where the first ends, and the only
+	 * things that could change that — positioning, floats, transforms, grid
+	 * placement — are reset by name on the slide below.
+	 */
+	display: block;
 	// The floor belongs to the front end, where the slides are stacked and one
 	// of them is the hero. Here they are a column of blocks being written, and
 	// a window's worth of minimum before the first of them would be a canvas
@@ -464,13 +484,115 @@
 	min-height: 0;
 	overflow: visible;
 
-	// In the editor each Cover is a block being written, not a slide being
-	// shown: stacked, at a realistic preview height, with none of the
-	// positioning or fading the front end applies.
+	// Whatever the block's own height setting says, the editor stack is as
+	// tall as the slides in it. A fixed height here would make two slides
+	// share the room for one, and the second would be squashed or clipped
+	// depending on which of the two the browser decided to honour.
+	height: auto;
+
+	/**
+	 * In the editor a slide is a block being written, not a slide being shown.
+	 *
+	 * Every slide is drawn identically and in a column, one under the next,
+	 * with none of the positioning or fading the front end applies. The second
+	 * slide has to be the first slide again, lower down — an editor comparing
+	 * two of them is the whole reason for showing more than one at a time.
+	 *
+	 * ---- Why this resets more than it looks like it needs to ----------------
+	 *
+	 * Because a slide that lands on top of another is worse than a slide drawn
+	 * slightly wrong, and there are four different ways for one to get there:
+	 *
+	 *   position/inset  the front end's own way of stacking, in older markup
+	 *   grid-area       the current one — `1 / 1` puts every slide in one cell
+	 *   transform       what a slide effect moves the strip with
+	 *   flex            a shrinking item, which overlaps nothing but does read
+	 *                   as one slide swallowing another
+	 *
+	 * Each is neutralised by name rather than relied upon not to apply. The
+	 * front-end rules are written against `__track`, which the editor never
+	 * builds — but "never" here would be a claim about markup this file does
+	 * not print, and the cost of being wrong about it is the bug that keeps
+	 * coming back.
+	 */
 	.wp-block-cover {
-		position: static;
+		/**
+		 * `relative`, and this is the line the whole block turned on.
+		 *
+		 * It was `static`, to undo the front end's stacking. But a Cover's
+		 * photograph is `position: absolute; inset: 0` *inside* it, and an
+		 * absolute box is placed against its nearest positioned ancestor — so
+		 * a static slide sent its own picture up to the slider and stretched it
+		 * over the whole thing. One slide looked perfect. Two, and the second
+		 * one's photograph covered the first: not because the slides
+		 * overlapped, but because both pictures had left their slides and the
+		 * last one painted over everything.
+		 *
+		 * `relative` is what core gives a Cover for exactly this reason. It
+		 * takes nothing out of the flow, so it cannot stack anything — that job
+		 * belongs to the four resets below.
+		 */
+		position: relative;
+		inset: auto;
+		grid-area: auto;
+		transform: none;
+		float: none;
+		clear: both;
+
+		// And every slide the same size, whatever height each one carries in
+		// its own attributes: in the editor they are a set being compared, and
+		// two slides of different heights read as two different things.
+		display: flex;
+		width: auto;
+		min-height: 60vh !important;
+		height: auto !important;
+		margin: 0;
 		opacity: 1;
 		visibility: visible;
-		min-height: 60vh !important;
+	}
+
+	// The space between them, spent as a margin because there is no flex gap
+	// to spend now. On the slides only, so the placeholder in an empty slider
+	// is not pushed down by a rule meant for the gap between two of them.
+	> .wp-block-cover + .wp-block-cover {
+		margin-block-start: 1rem;
+	}
+
+	/**
+	 * The "+" inside a slide, kept on screen.
+	 *
+	 * Core hides the inserter at the end of a block's children until that block
+	 * is selected:
+	 *
+	 *   .block-editor-block-list__block .block-list-appender
+	 *     .block-editor-inserter__toggle.components-button.has-icon
+	 *       { display: none }
+	 *
+	 * which is right for a paragraph in a column and wrong here. A slide is a
+	 * headline, a subtitle and then whatever the hero is actually for — a pair
+	 * of buttons, most often — and that third thing is added from this button.
+	 * Hidden until the Cover happens to be selected, it reads as a slide that
+	 * cannot hold anything else.
+	 *
+	 * Seven classes to core's five, so it outranks the rule above without an
+	 * `!important`, and scoped to the slider so no other Cover on the site is
+	 * affected.
+	 */
+	.wp-block-cover
+		.block-list-appender
+		.block-editor-inserter__toggle.components-button.has-icon {
+		display: flex;
+	}
+
+	// And centred under the words, because the words are centred. Left-aligned
+	// it reads as belonging to the slide's edge rather than to the run of
+	// blocks it adds to.
+	//
+	// Centring only. It already sits where the next block will land — measured
+	// with and without a margin here, the button did not move — so a spacing
+	// declaration would be a line that changes nothing.
+	.wp-block-cover .block-list-appender {
+		display: flex;
+		justify-content: center;
 	}
 }

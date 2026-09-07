@@ -76,7 +76,10 @@ final class CompileThemeJsonTest extends BridgeTestCase
 				'borderWidth',
 				'shadow',
 				'shadowHover',
-				'lift',
+				// No `lift`. It was a vertical nudge under the pointer and it
+				// was deliberately removed — see the note in
+				// bridge_button_skins() — so asserting it here kept the suite
+				// red for a property nothing publishes and nothing reads.
 				'sweep',
 				'minSize',
 			) as $key
@@ -84,6 +87,49 @@ final class CompileThemeJsonTest extends BridgeTestCase
 			$this->assertArrayHasKey($key, $button);
 			$this->assertIsString($button[$key]);
 			$this->assertNotSame('', $button[$key], "Empty value for {$key}");
+		}
+	}
+
+	/**
+	 * The wipe extents are lengths, and never a bare `0`.
+	 *
+	 * They are published into `calc(100% - <extent>)` in the clip that
+	 * reveals the hover fill, and `calc()` cannot subtract a number from a
+	 * percentage: a bare zero invalidates the declaration, the clip is
+	 * dropped, and the button sits in its hover colour at rest. A filter is
+	 * allowed to say `0` — bridge_button_wipe_extent() is what makes it
+	 * safe — so this asserts the output, not the skin.
+	 */
+	public function test_wipe_extents_are_lengths(): void
+	{
+		add_filter(
+			'bridge_button_skins',
+			static function (array $skins): array {
+				$skins['legacy'] = array_merge(
+					$skins['solid'],
+					array(
+						'name'       => 'Legacy',
+						'wipeWidth'  => '0',
+						'wipeHeight' => '0',
+					)
+				);
+
+				return $skins;
+			}
+		);
+
+		foreach (array_keys(bridge_button_skins()) as $slug) {
+			$button = bridge_compile_button_custom(
+				bridge_sanitize_tokens(array('buttons' => array('skin' => $slug)))
+			);
+
+			foreach (array('wipeWidth', 'wipeHeight') as $key) {
+				$this->assertMatchesRegularExpression(
+					'/(%|[a-z]+)$/',
+					$button[$key],
+					"{$slug}: {$key} is not a length or a percentage"
+				);
+			}
 		}
 	}
 

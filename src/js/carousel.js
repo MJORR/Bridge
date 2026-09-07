@@ -1,12 +1,12 @@
 /**
  * Bridge — carousel controls, for any band that offers a swipe layout.
  *
- * One script for every block with a carousel — cards and testimonials today —
- * registered under a single handle, so a page carrying both loads it once. It
- * knows nothing about either block: it finds its work through `data-bridge-
- * carousel-*` attributes and styles it through classes the shared
- * `abstracts/carousel` mixin defines. A third block joins by emitting the same
- * markup, with no edit here.
+ * One script for every block with a carousel — cards, testimonials and feature
+ * panels today — registered under a single handle, so a page carrying two of
+ * them loads it once. It knows nothing about any of them: it finds its work
+ * through `data-bridge-carousel-*` attributes and styles it through classes the
+ * shared `abstracts/carousel` mixin defines. A fourth block joins by emitting
+ * the same markup, with no edit here.
  *
  * Loaded only on pages that render a block whose overflow style is carousel.
  *

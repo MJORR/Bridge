@@ -1,5 +1,12 @@
 /**
  * Editor view for `bridge/feature-block`.
+ *
+ * The panel draws itself here rather than through the block renderer, so the
+ * canvas shows the real thing: the photograph in its frame at the crop Theme
+ * Options set, the words in the card's padding, the button where it will be.
+ * The one thing the editor cannot know is the ink the wash needs — that is a
+ * contrast check PHP does against the palette — so a cover panel previews with
+ * the site's Cover ink and settles on the exact value when it renders.
  */
 
 const {
@@ -11,10 +18,20 @@ const {
 	__experimentalLinkControl: LinkControl,
 } = window.wp.blockEditor;
 const { createElement: el, Fragment } = window.wp.element;
-const { PanelBody, Button, TextControl } = window.wp.components;
+const {
+	PanelBody,
+	BaseControl,
+	Button,
+	ColorPalette,
+	RangeControl,
+	SelectControl,
+	TextControl,
+	ToggleControl,
+} = window.wp.components;
+const { useSelect } = window.wp.data;
 const { __ } = window.wp.i18n;
 
-const MediaField = ({ label, id, url, onSelect, onClear }) =>
+const MediaField = ({ label, help, id, url, onSelect, onClear }) =>
 	el(
 		MediaUploadCheck,
 		null,
@@ -25,24 +42,32 @@ const MediaField = ({ label, id, url, onSelect, onClear }) =>
 			onSelect,
 			render: ({ open }) =>
 				el(
-					'div',
-					{ className: 'bridge-media-field' },
-					el(Button, { variant: 'secondary', onClick: open }, label),
-					url &&
+					BaseControl,
+					{ help, __nextHasNoMarginBottom: true },
+					el(
+						'div',
+						{ className: 'bridge-media-field' },
 						el(
 							Button,
-							{
-								variant: 'link',
-								isDestructive: true,
-								onClick: onClear,
-							},
-							__('Remove', 'bridge')
-						)
+							{ variant: 'secondary', onClick: open },
+							label
+						),
+						url &&
+							el(
+								Button,
+								{
+									variant: 'link',
+									isDestructive: true,
+									onClick: onClear,
+								},
+								__('Remove', 'bridge')
+							)
+					)
 				),
 		})
 	);
 
-const Edit = ({ attributes, setAttributes, context }) => {
+const Edit = ({ attributes, setAttributes }) => {
 	const {
 		title,
 		text,
@@ -50,27 +75,63 @@ const Edit = ({ attributes, setAttributes, context }) => {
 		graphicUrl,
 		backgroundId,
 		backgroundUrl,
+		overlayColor,
+		overlayOpacity,
 		linkUrl,
 		linkText,
+		linkStyle,
+		highlight,
 	} = attributes;
 
-	// The section's setting, handed down as block context. It was read here
-	// and then never used, so the toggle did nothing an editor could see until
-	// the page was saved — the class it drives on the front end had no
-	// counterpart in the preview.
-	const alignTop = !!context['bridge/alignImageTop'];
+	// The site's palette, which is the only set of colours a wash may take —
+	// custom colours are off in theme.json, so this is the whole choice.
+	const themeColors = useSelect((select) => {
+		const settings = select('core/block-editor').getSettings();
+
+		return settings.colors || settings.colorPalette || [];
+	}, []);
+
+	const slugToHex = (slug) =>
+		themeColors.find((color) => color.slug === slug)?.color || undefined;
+
+	const onWashChange = (hex) => {
+		const match = themeColors.find((color) => color.color === hex);
+
+		// The slug, never the hex: a stored colour has to follow a rebrand, and
+		// a hex written into a panel would still be the old brand's blue.
+		setAttributes({ overlayColor: match ? match.slug : '' });
+	};
+
+	const isCover = !!backgroundUrl;
+
+	/*
+	 * The Summary shape: a photograph on the card rather than instead of it.
+	 *
+	 * The same test render.php makes, and it has to be made here too or the
+	 * canvas draws a panel the page will not. It decides one thing — that the
+	 * panel keeps the section's card ground even where the band's panel style
+	 * is Plain or Outline — and that is visible, so an editor choosing between
+	 * those styles has to be looking at the real answer.
+	 */
+	const isSummary = !isCover && !!graphicUrl;
 
 	const blockProps = useBlockProps({
 		className: [
 			'bridge-feature',
-			backgroundUrl ? 'has-background-image' : '',
-			backgroundUrl && alignTop ? 'is-image-top' : '',
-			linkUrl ? 'is-linked' : '',
+			isCover ? 'bridge-feature--cover' : '',
+			isSummary ? 'bridge-feature--summary' : '',
+			linkUrl && linkStyle === 'text' ? 'is-linked' : '',
+			highlight ? 'is-highlighted' : '',
 		]
 			.filter(Boolean)
 			.join(' '),
-		style: backgroundUrl
-			? { '--bridge-feature-image': `url(${backgroundUrl})` }
+		style: isCover
+			? {
+					'--bridge-feature-wash': overlayColor
+						? `var(--wp--preset--color--${overlayColor})`
+						: undefined,
+					'--bridge-feature-wash-opacity': overlayOpacity / 100,
+				}
 			: undefined,
 	});
 
@@ -82,20 +143,24 @@ const Edit = ({ attributes, setAttributes, context }) => {
 			null,
 			el(
 				PanelBody,
-				{ title: __('Images', 'bridge'), initialOpen: true },
+				{ title: __('Panel', 'bridge'), initialOpen: true },
 				el(MediaField, {
 					label: graphicUrl
-						? __('Replace graphic', 'bridge')
-						: __('Choose graphic', 'bridge'),
+						? __('Replace image', 'bridge')
+						: __('Choose image', 'bridge'),
+					help: __(
+						'Sits at the top of the panel, cropped to the card shape set in Theme Options.',
+						'bridge'
+					),
 					id: graphicId,
 					url: graphicUrl,
 					onSelect: (media) =>
 						setAttributes({
 							graphicId: media.id,
-							// The sizes the front end renders, not the
-							// originals: a grid of full-size photographs is a
-							// slow editor and a different crop.
-							graphicUrl: media.sizes?.medium?.url || media.url,
+							// The size the front end renders, not the original:
+							// a grid of full-size photographs is a slow editor
+							// and a different crop.
+							graphicUrl: media.sizes?.large?.url || media.url,
 						}),
 					onClear: () =>
 						setAttributes({ graphicId: undefined, graphicUrl: '' }),
@@ -104,6 +169,10 @@ const Edit = ({ attributes, setAttributes, context }) => {
 					label: backgroundUrl
 						? __('Replace background', 'bridge')
 						: __('Choose background', 'bridge'),
+					help: __(
+						'Fills the whole panel and takes the place of the image above, with the words laid over it.',
+						'bridge'
+					),
 					id: backgroundId,
 					url: backgroundUrl,
 					onSelect: (media) =>
@@ -116,8 +185,60 @@ const Edit = ({ attributes, setAttributes, context }) => {
 							backgroundId: undefined,
 							backgroundUrl: '',
 						}),
+				}),
+				el(ToggleControl, {
+					label: __('Pick this one out', 'bridge'),
+					help: __(
+						'Tints the panel so it stands out from the others in the set.',
+						'bridge'
+					),
+					checked: !!highlight,
+					onChange: (value) => setAttributes({ highlight: value }),
+					__nextHasNoMarginBottom: true,
 				})
 			),
+			// Only where there is a photograph to lay it over. A wash with no
+			// background is two controls that change nothing.
+			isCover &&
+				el(
+					PanelBody,
+					{
+						title: __('Over the photograph', 'bridge'),
+						initialOpen: true,
+					},
+					el(
+						BaseControl,
+						{
+							label: __('Wash colour', 'bridge'),
+							help: __(
+								'The colour the gradient rises in. Left empty it takes the one the site’s Cover cards use, and the text colour is chosen for contrast against whichever it ends up being.',
+								'bridge'
+							),
+							__nextHasNoMarginBottom: true,
+						},
+						el(ColorPalette, {
+							colors: themeColors,
+							value: slugToHex(overlayColor),
+							onChange: onWashChange,
+							disableCustomColors: true,
+							clearable: true,
+						})
+					),
+					el(RangeControl, {
+						label: __('Wash strength', 'bridge'),
+						help: __(
+							'How much of the photograph the wash takes. Lower for a picture that is already dark.',
+							'bridge'
+						),
+						value: overlayOpacity,
+						onChange: (value) =>
+							setAttributes({ overlayOpacity: value }),
+						min: 0,
+						max: 100,
+						step: 5,
+						__nextHasNoMarginBottom: true,
+					})
+				),
 			el(
 				PanelBody,
 				{ title: __('Link', 'bridge'), initialOpen: false },
@@ -130,29 +251,58 @@ const Edit = ({ attributes, setAttributes, context }) => {
 				el(TextControl, {
 					label: __('Link text', 'bridge'),
 					value: linkText,
-					placeholder: __('Read more', 'bridge'),
+					placeholder:
+						linkStyle === 'button'
+							? __('Find out more', 'bridge')
+							: __('Read more', 'bridge'),
 					onChange: (value) => setAttributes({ linkText: value }),
 					__nextHasNoMarginBottom: true,
+				}),
+				el(SelectControl, {
+					label: __('Show it as', 'bridge'),
+					help:
+						linkStyle === 'button'
+							? __(
+									'A button is its own target, so the rest of the panel is not clickable.',
+									'bridge'
+								)
+							: __(
+									'A quiet line of text, with the whole panel as the click target.',
+									'bridge'
+								),
+					value: linkStyle,
+					options: [
+						{ label: __('Button', 'bridge'), value: 'button' },
+						{ label: __('Text link', 'bridge'), value: 'text' },
+					],
+					onChange: (value) => setAttributes({ linkStyle: value }),
 				})
 			)
 		),
 		el(
 			'li',
 			blockProps,
-			backgroundUrl &&
+			isCover &&
+				el('img', {
+					className: 'bridge-feature__background',
+					src: backgroundUrl,
+					alt: '',
+				}),
+			isCover &&
 				el('div', {
-					className: 'bridge-feature__scrim',
+					className: 'bridge-feature__wash',
 					'aria-hidden': true,
 				}),
+			!isCover &&
+				graphicUrl &&
+				el(
+					'figure',
+					{ className: 'bridge-feature__media' },
+					el('img', { src: graphicUrl, alt: '' })
+				),
 			el(
 				'div',
 				{ className: 'bridge-feature__body' },
-				graphicUrl &&
-					el('img', {
-						className: 'bridge-feature__graphic',
-						src: graphicUrl,
-						alt: '',
-					}),
 				el(RichText, {
 					tagName: 'h3',
 					className: 'bridge-feature__title',
@@ -170,11 +320,20 @@ const Edit = ({ attributes, setAttributes, context }) => {
 					placeholder: __('A line about it', 'bridge'),
 				}),
 				linkUrl &&
-					el(
-						'span',
-						{ className: 'bridge-feature__link' },
-						linkText || __('Read more', 'bridge')
-					)
+					(linkStyle === 'button'
+						? el(
+								'span',
+								{
+									className:
+										'bridge-feature__button wp-element-button',
+								},
+								linkText || __('Find out more', 'bridge')
+							)
+						: el(
+								'span',
+								{ className: 'bridge-feature__link' },
+								linkText || __('Read more', 'bridge')
+							))
 			)
 		)
 	);

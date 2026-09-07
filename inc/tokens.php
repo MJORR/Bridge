@@ -373,6 +373,48 @@ function bridge_post_templates(): array
 }
 
 /**
+ * The shapes a post's lead image may be cut to.
+ *
+ * A second decision about the head of an article, and deliberately not a
+ * fourth layout: all three arrangements put a photograph on the page and all
+ * three can wear any of these corners, so folding the two together would have
+ * made nine tiles out of two questions.
+ *
+ * Three and not a radius slider. A number would let an operator draw a 40px
+ * corner on a lead image while every other picture on the site wears the card
+ * radius, which is not a design decision so much as a way to break one. These
+ * are the three shapes the design system already knows how to draw: its own
+ * corner, no corner, and the cut the cards take.
+ *
+ * Filterable for the same reason `bridge_post_templates()` is, and with the
+ * same warning: the slugs are what the token record stores and what the body
+ * class is built from, so a filter that renames one strands the sites already
+ * using it.
+ *
+ * @return array<string, array<string, string>>
+ */
+function bridge_post_image_shapes(): array
+{
+	return (array) apply_filters(
+		'bridge_post_image_shapes',
+		array(
+			'rounded' => array(
+				'name'        => __('Rounded', 'bridge'),
+				'description' => __('The same small corner every other picture on the site has, taken from the card radius — so a post does not introduce a second idea of what a photograph looks like. The default, and the safe answer.', 'bridge'),
+			),
+			'square'  => array(
+				'name'        => __('Square', 'bridge'),
+				'description' => __('No corner at all. Reads as editorial rather than as a card, and it is the one shape that never fights a photograph whose subject runs to the edge of the frame.', 'bridge'),
+			),
+			'cut'     => array(
+				'name'        => __('Cut corner', 'bridge'),
+				'description' => __('The top left taken off at 45°, the same cut the cards can wear. The most deliberate of the three and the one that asks the most of a photograph: it takes a bite out of the frame, so a picture whose subject sits at the top left will lose part of it.', 'bridge'),
+			),
+		)
+	);
+}
+
+/**
  * The post templates as a list, for the options page.
  *
  * @return array<int, array<string, string>>
@@ -382,6 +424,26 @@ function bridge_post_template_choices(): array
 	$choices = array();
 
 	foreach (bridge_post_templates() as $slug => $entry) {
+		$choices[] = array(
+			'slug'        => (string) $slug,
+			'name'        => (string) ($entry['name'] ?? $slug),
+			'description' => (string) ($entry['description'] ?? ''),
+		);
+	}
+
+	return $choices;
+}
+
+/**
+ * The lead-image shapes as a list, for the options page.
+ *
+ * @return array<int, array<string, string>>
+ */
+function bridge_post_image_shape_choices(): array
+{
+	$choices = array();
+
+	foreach (bridge_post_image_shapes() as $slug => $entry) {
 		$choices[] = array(
 			'slug'        => (string) $slug,
 			'name'        => (string) ($entry['name'] ?? $slug),
@@ -1209,6 +1271,7 @@ function bridge_token_constraints(): array
 		),
 		'posts'      => array(
 			'template' => array('options' => array_keys(bridge_post_templates())),
+			'image'    => array('options' => array_keys(bridge_post_image_shapes())),
 		),
 		'header'     => array(
 			// Every layout stacks or rows the same two elements; none puts the
@@ -1359,7 +1422,28 @@ function bridge_token_defaults(): array
 		// this was a setting, so a site that never opens the control keeps the
 		// article it had.
 		'posts'      => array(
-			'template' => 'classic',
+			'template'   => 'classic',
+			// The trail above the headline. On by default because a post is
+			// the one template a visitor arrives at from outside the site,
+			// with no idea where in it they have landed; a brochure site whose
+			// posts are all one flat category can switch it off.
+			'breadcrumb' => true,
+			// Which of the three facts the byline states. All three on,
+			// because that is the byline the theme drew before they were
+			// separable — a site that never opens the control keeps the
+			// article it had. Each is a real editorial decision and not a
+			// tidying-up: an evergreen guide is worse for carrying a date, a
+			// site with one category says nothing by naming it, and a
+			// single-author site has no byline worth printing.
+			'meta'       => array(
+				'date'     => true,
+				'category' => true,
+				'author'   => true,
+			),
+			// The corner the lead image is cut to. The card radius is what the
+			// theme drew before this was a setting, so a site that never opens
+			// the control keeps the picture it had.
+			'image'      => 'rounded',
 		),
 		'header'     => array(
 			'layout'          => 'left',
@@ -2091,17 +2175,47 @@ function bridge_sanitize_tokens(array $raw): array
 	);
 
 	// ---- Posts ------------------------------------------------------------
-	// One setting: which of the three article layouts every post wears. The
-	// slug becomes a class on <body> (see bridge_post_body_class()), so it has
-	// to be one the theme actually draws — an unrecognised value would produce
-	// a class no stylesheet answers and a post with no layout at all.
+	// Which of the three article layouts every post wears, and whether the
+	// trail above the headline is drawn. The slug becomes a class on <body>
+	// (see bridge_post_body_class()), so it has to be one the theme actually
+	// draws — an unrecognised value would produce a class no stylesheet
+	// answers and a post with no layout at all.
 	$raw_posts = isset($raw['posts']) && is_array($raw['posts']) ? $raw['posts'] : array();
+	$raw_meta  = isset($raw_posts['meta']) && is_array($raw_posts['meta']) ? $raw_posts['meta'] : array();
+
+	// The byline's switches, keyed off the defaults rather than a literal list
+	// of three: a fourth fact added to the default record is sanitised without
+	// a second edit here, and one removed cannot be left behind in a saved
+	// record as a key nothing draws.
+	$post_meta = array();
+
+	foreach ($defaults['posts']['meta'] as $part => $on) {
+		$post_meta[$part] = array_key_exists($part, $raw_meta)
+			? (bool) $raw_meta[$part]
+			: (bool) $on;
+	}
+
 	$posts     = array(
-		'template' => bridge_pick_token(
+		'template'   => bridge_pick_token(
 			'posts',
 			'template',
 			$raw_posts['template'] ?? '',
 			$defaults['posts']['template']
+		),
+		// `array_key_exists` rather than `! empty()`, which is what the
+		// default-off booleans above can afford: this one defaults to *on*, so
+		// an absent key has to resolve to true and a saved `false` has to
+		// survive. `! empty()` would read both as off and the switch would
+		// never stay where it was put.
+		'breadcrumb' => array_key_exists('breadcrumb', $raw_posts)
+			? (bool) $raw_posts['breadcrumb']
+			: (bool) $defaults['posts']['breadcrumb'],
+		'meta'       => $post_meta,
+		'image'      => bridge_pick_token(
+			'posts',
+			'image',
+			$raw_posts['image'] ?? '',
+			$defaults['posts']['image']
 		),
 	);
 

@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/post-meta",
+	"version": "1.0.0",
+	"title": "Post Meta",
+	"category": "theme",
+	"icon": "info-outline",
+	"description": "The byline: the date, the categories and the author, separated by slashes. Which of the three it states is set once for the whole site in Theme Options.",
+	"textdomain": "bridge",
+	"keywords": ["byline", "meta", "date", "author", "category"],
+	"supports": {
+		"align": false,
+		"anchor": false,
+		"html": false,
+		"layout": false,
+		"multiple": false,
+		"reusable": false
+	},
+	"editorScript": "bridge-post-meta-editor",
+	"render": "file:./render.php"
+}

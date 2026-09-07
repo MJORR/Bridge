@@ -21,16 +21,22 @@
 /**
  * The three article layouts.
  *
- * One template, three grids. `templates/single.html` puts the title, the byline
- * and the featured image inside one full-width band with a constrained inner —
- * the same shape every section block on this site has — and which of the three
+ * One template, three grids. `templates/single.html` puts the title and the
+ * featured image inside one full-width band with a constrained inner — the same
+ * shape every section block on this site has — and which of the three
  * arrangements that inner takes is decided by a class on <body>, written by
  * `bridge_post_body_class()` from the token record.
  *
+ * The head holds the headline and the photograph and nothing else. The byline
+ * used to sit under the title inside it, differently placed in each of the
+ * three layouts and, in Cover, laid over a photograph; it now opens the article
+ * itself, in the text column, above a rule. One position instead of three, and
+ * the one place it is always the same width as the words it describes.
+ *
  * The DOM order is the same in all three and it is the reading order: title,
- * byline, image. Only Cover shows the image first, and it does that by
- * overlaying rather than reordering, so a screen reader and a search engine get
- * the headline before the picture in every layout.
+ * image. Only Cover shows the image first, and it does that by overlaying
+ * rather than reordering, so a screen reader and a search engine get the
+ * headline before the picture in every layout.
  *
  * Nothing here names a colour or a size. The title is `post-title` wearing the
  * site's own h1, the byline is the `small` preset, the corner is the card
@@ -39,11 +45,53 @@
  * three layouts and none of them can drift from the rest of the site.
  */
 
+/**
+ * The trail's own rail.
+ *
+ * A full-width wrapper rather than the bare block, because the trail has to
+ * start where the *title* starts and the title's left edge is not the same in
+ * all three layouts. Classic and Cover cap their header at the text column, so
+ * the trail takes the same column — which is where a constrained `main` was
+ * already putting it, and why this rail changes nothing for them. Feature runs
+ * its two columns out to the wide container, and there the old trail began a
+ * third of the way across the page, indented from a headline it is supposed to
+ * label.
+ *
+ * A band and an inner column, exactly as the head below it is, and not one
+ * element doing both jobs. `alignfull` bleeds by way of a negative inline
+ * margin — core's `.has-global-padding > .alignfull` — and `container()` sets
+ * `margin-inline: auto`, so an element carrying both cancels the bleed and
+ * lands one root padding in from where it should be. Two elements, one job
+ * each, is also what makes the pair below correct; this one was written as one
+ * and drew the trail 13px right of the headline it is supposed to label.
+ *
+ * Empty when the trail is switched off in Theme Options, or on any page whose
+ * trail is a single step — `bridge/breadcrumb` renders nothing at all in both
+ * cases. An empty div is zero-height but still a child of a constrained
+ * `main`, which would spend a block gap on it, so it is taken out of the flow
+ * entirely. `:has()` rather than `:empty`, which the template's own
+ * indentation defeats: the wrapper always holds a whitespace text node.
+ */
+.bridge-article__crumbs:not(:has(.bridge-breadcrumb)) {
+	display: none;
+}
+
+.bridge-article__crumbs-inner {
+	@include section.container(narrow);
+}
+
 // The band. Full width in all three — `alignfull` in the template does the
 // breakout, which is core's own layout support rather than a `100vw` trick that
 // overflows whenever a scrollbar is present.
+//
+// Air on both sides, not just below. The head is the one band on the site that
+// is not a `bridge-section` and so does not get the section padding, and with
+// only a bottom margin the headline sat hard against the trail above it while
+// the photograph beside it had a whole band's worth of room below. A spacing
+// preset rather than a length, so a site opened up in Theme Options opens this
+// join with everything else.
 .bridge-article__head {
-	margin-block-end: var(--wp--preset--spacing--40);
+	margin-block: var(--wp--preset--spacing--60);
 }
 
 // The column inside it. Wide rather than narrow: two of the three layouts run
@@ -53,9 +101,8 @@
 	@include section.container(wide);
 }
 
-// The lead image takes the corner every other image on the site has, so a post
-// does not introduce a second idea of what a picture looks like. Cover, which
-// is a bled band rather than a picture on a page, takes it off again.
+// The lead image. The corner it takes is a setting — see below — so nothing is
+// said about it here.
 .bridge-article__media {
 	margin: 0;
 
@@ -63,7 +110,68 @@
 		display: block;
 		width: 100%;
 		height: auto;
+	}
+}
+
+/**
+ * The shape of the lead image.
+ *
+ * A second class on <body> beside the layout's, written by
+ * `bridge_post_body_class()` from the token record, because the corner and the
+ * arrangement are independent decisions: any of the three shapes is correct on
+ * any of the three layouts, and folding them together would be nine rules
+ * answering two questions.
+ *
+ * Cover is excluded, and that is the one place the two decisions touch. Its
+ * photograph is not a picture on a page, it is the band — bled to both window
+ * edges, with the headline laid over it — and a band has no corners to shape:
+ * a radius there would round against the edge of the screen, and a cut would
+ * take a bite out of the top of the page. `:not()` on the wrapper rather than
+ * a reset inside Cover's own block, so the exception is stated once, next to
+ * the rules it is an exception to.
+ */
+.bridge-single:not(.bridge-single--cover) {
+	// The corner every other picture on the site has. Named from the card
+	// radius rather than given a length of its own, so a site that rounds its
+	// cards rounds its lead images by the same amount and cannot drift.
+	&.bridge-single--image-rounded .bridge-article__media img {
 		border-radius: var(--wp--custom--card--radius, 6px);
+	}
+
+	&.bridge-single--image-square .bridge-article__media img {
+		border-radius: 0;
+	}
+
+	/**
+	 * The cut corner: the top left taken off at 45°.
+	 *
+	 * The same gesture the cards can wear, drawn differently on purpose. A
+	 * card sizes its cut in `cqw` — a share of its own width — because a card
+	 * is a third of a row on one page and the whole of it on another, and a
+	 * fixed cut would read as a detail on one and a gesture on the other. A
+	 * lead image has no such range: it is one large picture at the head of an
+	 * article, so the cut is a length, and being a length it spends the same
+	 * value on both axes and comes out at a true 45° without the container
+	 * query the cards need.
+	 *
+	 * A spacing preset rather than a number, so the cut is on the site's own
+	 * scale and grows with everything else when the spacing is opened up. It
+	 * is a clamp already, which is what keeps the corner from being half the
+	 * picture on a phone.
+	 *
+	 * `border-radius` is cleared as well as clipped. The two do not compose —
+	 * a rounded corner inside a clipped polygon leaves the rounding visible on
+	 * the three corners the cut does not touch, which reads as an accident.
+	 */
+	&.bridge-single--image-cut .bridge-article__media img {
+		border-radius: 0;
+		clip-path: polygon(
+			0 var(--wp--preset--spacing--60),
+			var(--wp--preset--spacing--60) 0,
+			100% 0,
+			100% 100%,
+			0 100%
+		);
 	}
 }
 
@@ -95,10 +203,6 @@
  * cover at both ends.
  */
 .bridge-single--cover {
-	.bridge-article__head {
-		margin-block-end: var(--wp--preset--spacing--50);
-	}
-
 	// Bled, so no container — the photograph is the band.
 	.bridge-article__head-inner {
 		max-width: none;
@@ -169,13 +273,6 @@
 		padding-block: var(--wp--preset--spacing--50);
 	}
 
-	// The byline is `currentcolor` at reduced strength everywhere; on a
-	// photograph that is not enough separation, so it keeps the full
-	// foreground and is set apart by size alone.
-	.bridge-article__meta {
-		color: inherit;
-	}
-
 	/**
 	 * A post with no featured image.
 	 *
@@ -224,6 +321,14 @@
  * splitting, so they stack and the layout becomes Classic in all but name.
  */
 .bridge-single--feature {
+	// The one layout whose title does not start at the text column, so the one
+	// layout whose trail has to move out with it. Same container as the head
+	// below, so the trail, the headline and the left edge of the two-up grid
+	// are one line down the page.
+	.bridge-article__crumbs-inner {
+		@include section.container(wide);
+	}
+
 	.bridge-article__head-inner {
 		display: grid;
 		gap: var(--wp--preset--spacing--40);
@@ -253,14 +358,38 @@
 /**
  * The byline.
  *
- * Pulled up under the title rather than spaced from it by the block gap: it is
- * part of the heading, not the first thing after it, and at a full gap's
- * distance it read as an orphaned line of small print.
+ * The first line of the article rather than the last line of the heading. It
+ * sits inside the constrained content group, so it takes the text column
+ * without asking for a width of its own — the same measure as the paragraph
+ * beneath it, in all three layouts, which is the point: a byline as wide as the
+ * words it introduces reads as belonging to them.
+ *
+ * A rule under it, and only under it. A hairline is the cheapest way to say
+ * "the article starts here" without spending a heading or a band on it, and it
+ * is drawn in `currentcolor` at low strength like every other line in this
+ * file, so it survives being put on a dark ground. The padding above the rule
+ * is smaller than the gap below it: the line belongs to the byline, and the
+ * article is what it is being separated from.
+ *
+ * Which facts it states is set once in Theme Options and rendered by
+ * `bridge/post-meta`, so the parts an operator switched off are absent from
+ * the markup rather than hidden in it. That is what makes the separators
+ * below correct — see the block's render.php for why hiding them could not
+ * have been.
  */
 .bridge-article__meta {
-	gap: 0.35rem 1.25rem;
-	margin-block: calc(var(--wp--preset--spacing--20) * -0.5)
-		var(--wp--preset--spacing--30);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	// Half the gap between items: the separator's own margin supplies the
+	// other half, so the space either side of a slash is equal. The same
+	// arithmetic the breadcrumb does, and the same slash, because the two sit
+	// a few lines apart on the page and a reader should not have to decide
+	// whether they mean different things.
+	gap: 0.35rem 0.45em;
+	margin-block: 0 var(--wp--preset--spacing--40);
+	padding-block-end: var(--wp--preset--spacing--20);
+	border-bottom: 1px solid color-mix(in srgb, currentcolor 15%, transparent);
 	color: color-mix(in srgb, currentcolor 70%, transparent);
 	font-size: var(--wp--preset--font-size--small);
 
@@ -273,6 +402,26 @@
 		&:hover {
 			color: var(--wp--preset--color--secondary);
 		}
+	}
+}
+
+/**
+ * One fact, and the slash before it.
+ *
+ * A pseudo-element rather than a character in the markup, which keeps it out
+ * of the accessibility tree: a screen reader reading "slash" between every
+ * fact is reading the punctuation rather than the byline. The breadcrumb
+ * separates its steps the same way and the note there says the rest.
+ *
+ * Drawn fainter than the words either side of it. The byline is already the
+ * quietest line on the page and the separators are the quietest thing in it —
+ * three facts with three slashes at equal weight reads as six things.
+ */
+.bridge-article__meta-item {
+	& + &::before {
+		content: "/";
+		margin-inline-end: 0.45em;
+		opacity: 0.55;
 	}
 }
 

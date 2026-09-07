@@ -662,6 +662,28 @@ function bridge_register_blocks(): void
 	// Styled by main.css, which every page loads, so there is no style handle.
 	bridge_register_script('bridge-breadcrumb-editor', 'breadcrumb-editor.js', bridge_editor_script_deps());
 	bridge_register_block('breadcrumb');
+
+	// --- Post Meta ---------------------------------------------------------
+	// Not in `$previewed` either, and for the same reason as the breadcrumb: a
+	// block-renderer request has no post in the loop, so a server preview of a
+	// byline would be describing nothing. The canvas draws the shape.
+	bridge_register_script('bridge-post-meta-editor', 'post-meta-editor.js', bridge_editor_script_deps());
+
+	/**
+	 * Which of the three facts the byline states, for the canvas.
+	 *
+	 * The one part of this block that is a decision rather than a sample, so
+	 * it is the one part the editor is told the truth about. Printed as data
+	 * rather than fetched: three booleans already in memory are not worth a
+	 * REST round trip on every editor load.
+	 */
+	wp_add_inline_script(
+		'bridge-post-meta-editor',
+		'window.bridgePostMeta = ' . wp_json_encode(bridge_post_meta_parts()) . ';',
+		'before'
+	);
+
+	bridge_register_block('post-meta');
 }
 add_action('init', 'bridge_register_blocks');
 

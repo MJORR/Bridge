@@ -364,6 +364,10 @@ export default defineConfig(({ mode }) => ({
 					__dirname,
 					'src/blocks/breadcrumb/index.js'
 				),
+				'post-meta-editor': resolve(
+					__dirname,
+					'src/blocks/post-meta/index.js'
+				),
 				'template-watcher': resolve(
 					__dirname,
 					'src/editor/template-watcher.js'

@@ -478,6 +478,28 @@ const LAYOUT_ART = {
 		],
 		logo: [[62, 10, 48, 30]],
 	},
+	/**
+	 * The three lead-image corners.
+	 *
+	 * One photograph each and nothing else on the tile, because the corner is
+	 * the whole of the choice — a headline and body copy beside it would be
+	 * three drawings of the same article with a detail changed, and the detail
+	 * is what the operator is picking.
+	 *
+	 * Drawn at the `logo` weight, which is the solid one the photograph takes
+	 * in the layout tiles above, so the three sets read as the same hand.
+	 */
+	rounded: {
+		box: [24, 12, 72, 40, 4],
+	},
+	square: {
+		box: [24, 12, 72, 40, 0],
+	},
+	cut: {
+		// The pentagon a rectangle cannot be: across the top from the end of
+		// the cut, round the other three corners, and back up the 45° line.
+		path: 'M36 12 H96 V52 H24 V24 Z',
+	},
 	columns: {
 		logo: [[10, 12, 22, 9]],
 		nav: [
@@ -501,6 +523,12 @@ const LAYOUT_ART = {
  */
 export function LayoutArt({ name }) {
 	const art = LAYOUT_ART[name] || {};
+
+	// A drawing whose whole subject is a corner cannot be made of the four
+	// fixed weights below, because the radius is baked into each of them. Two
+	// entries answer that: `box` is one solid rectangle carrying its own
+	// radius, and `path` is an outline for a shape a rectangle cannot be — the
+	// cut corner is a pentagon.
 	const draw = (rects, opacity, radius) =>
 		(rects || []).map(([x, y, w, h], i) => (
 			<rect
@@ -526,6 +554,17 @@ export function LayoutArt({ name }) {
 			{draw(art.util, 0.35, 1.5)}
 			{draw(art.nav, 0.45, 2.5)}
 			{draw(art.logo, 1, 3)}
+			{art.box && (
+				<rect
+					x={art.box[0]}
+					y={art.box[1]}
+					width={art.box[2]}
+					height={art.box[3]}
+					rx={art.box[4]}
+					fill="currentColor"
+				/>
+			)}
+			{art.path && <path d={art.path} fill="currentColor" />}
 		</svg>
 	);
 }

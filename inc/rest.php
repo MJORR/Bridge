@@ -237,6 +237,9 @@ function bridge_rest_tokens_payload(): array
 		// asks of a photograph — which is the whole of the decision, and not
 		// something a name alone can carry.
 		'postTemplates'  => bridge_post_template_choices(),
+		// The three lead-image corners, each with the sentence that says what
+		// it asks of a photograph — the same reason the layouts carry one.
+		'postImages'     => bridge_post_image_shape_choices(),
 		'version'        => bridge_tokens_version(),
 	);
 }

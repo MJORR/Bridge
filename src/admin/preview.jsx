@@ -813,6 +813,9 @@ export function CardStylePreview({
  */
 export function PostTemplatePreview({
 	template,
+	breadcrumb = true,
+	meta,
+	image = 'rounded',
 	palette,
 	fontSizes,
 	fontFamilies,
@@ -841,12 +844,56 @@ export function PostTemplatePreview({
 		margin: 0,
 	};
 
-	const meta = {
+	// The type the byline and the trail are both set in — `metaType` rather than
+	// `meta`, which is now the prop saying which facts the byline states.
+	const metaType = {
 		fontSize: scaled(size('small') || '0.875rem'),
 		// The same 70% of the band's foreground the stylesheet uses.
 		opacity: 0.7,
-		marginTop: '0.35rem',
 	};
+
+	// The trail, when it is switched on. Drawn at the byline's size and
+	// strength, because on the page it is the same `small` preset at the same
+	// reduced foreground — furniture, quieter than the headline under it.
+	const crumbs = breadcrumb ? (
+		<p
+			className="bridge-preview__post-crumbs"
+			style={{ ...metaType, margin: 0 }}
+		>
+			{__('Home / This post', 'bridge')}
+		</p>
+	) : null;
+
+	// The byline, in the one place it now sits in all three layouts: the top of
+	// the article, in the text column, over a rule. The rule is a class rather
+	// than an inline border so it can be `currentcolor` at strength, which is
+	// what the stylesheet draws and what keeps it correct on a dark palette.
+	//
+	// The facts, and the slashes between them, are the real ones: which parts
+	// are on is the whole of what the Byline switches decide, so a preview that
+	// always drew three of them would be showing the operator a byline the site
+	// does not have. Absent means on, matching bridge_post_meta_parts().
+	const facts = [
+		[__('12 August', 'bridge'), false !== meta?.date],
+		[__('Category', 'bridge'), false !== meta?.category],
+		[__('A. Author', 'bridge'), false !== meta?.author],
+	]
+		.filter(([, on]) => on)
+		.map(([label]) => label);
+
+	// All three off renders nothing at all on the page, rule included — so the
+	// preview shows nothing either, rather than an empty line with a rule under
+	// it that the site will never draw.
+	const byline = facts.length ? (
+		<p className="bridge-preview__post-meta" style={metaType}>
+			{facts.map((label, i) => (
+				<span key={label} className="bridge-preview__post-fact">
+					{i > 0 ? <span aria-hidden="true">{' / '}</span> : null}
+					{label}
+				</span>
+			))}
+		</p>
+	) : null;
 
 	// Stands in for the photograph. Surface rather than a mid grey, so it is a
 	// colour from the palette like everything else on screen.
@@ -854,6 +901,30 @@ export function PostTemplatePreview({
 		background: color('surface'),
 		boxShadow: 'inset 0 0 0 1px rgb(0 0 0 / 10%)',
 	};
+
+	/**
+	 * The corner the photograph is cut to.
+	 *
+	 * The real declarations, not a schematic: a radius is a radius and a
+	 * polygon is a polygon, so the preview can draw the actual shape rather
+	 * than an impression of it. The cut is in per-cent of the swatch here
+	 * where the page spends a spacing preset — the swatch is a tenth of the
+	 * size, and a 2rem bite out of it would be most of the picture.
+	 *
+	 * Cover takes none of them and passes `photo` straight through: its
+	 * photograph is the band, and the stylesheet leaves it square for the
+	 * reason its own block gives.
+	 */
+	const shaped = {
+		rounded: { borderRadius: radius },
+		square: { borderRadius: 0 },
+		cut: {
+			borderRadius: 0,
+			clipPath: 'polygon(0 14%, 14% 0, 100% 0, 100% 100%, 0 100%)',
+		},
+	};
+
+	const photoShape = { ...photo, ...(shaped[image] || shaped.rounded) };
 
 	const lines = (
 		<div className="bridge-preview__post-lines" aria-hidden="true">
@@ -874,6 +945,16 @@ export function PostTemplatePreview({
 		>
 			{'cover' === template ? (
 				<>
+					{/*
+					 * The trail is above the band in Cover, not on it: the
+					 * photograph is bled and the trail belongs to the page,
+					 * not to the picture.
+					 */}
+					{crumbs && (
+						<div className="bridge-preview__post-rail">
+							{crumbs}
+						</div>
+					)}
 					<div className="bridge-preview__post-cover">
 						<span
 							className="bridge-preview__post-photo"
@@ -899,34 +980,28 @@ export function PostTemplatePreview({
 							>
 								{__('The headline of a post', 'bridge')}
 							</h4>
-							<p
-								style={{
-									...meta,
-									color: color('background'),
-								}}
-							>
-								{__('12 August · Category', 'bridge')}
-							</p>
 						</div>
 					</div>
-					<div className="bridge-preview__post-body">{lines}</div>
+					<div className="bridge-preview__post-body">
+						{byline}
+						{lines}
+					</div>
 				</>
 			) : (
 				<div className="bridge-preview__post-body">
+					{crumbs}
 					<div className="bridge-preview__post-head">
 						<div>
 							<h4 style={title}>
 								{__('The headline of a post', 'bridge')}
 							</h4>
-							<p style={meta}>
-								{__('12 August · Category', 'bridge')}
-							</p>
 						</div>
 						<span
 							className="bridge-preview__post-photo"
-							style={{ ...photo, borderRadius: radius }}
+							style={photoShape}
 						/>
 					</div>
+					{byline}
 					{lines}
 				</div>
 			)}

@@ -1695,6 +1695,37 @@ $slot-error: #d63638;
 	display: block;
 }
 
+// The trail, above the head. The space under it is smaller than the space
+// over the headline, which is the relationship `_breadcrumb.scss` draws on the
+// page: the trail belongs to the title it labels.
+.bridge-preview__post-crumbs {
+	margin: 0 0 0.75rem;
+}
+
+// The strip that carries the trail in Cover, where the band below it is bled
+// and cannot hold it.
+.bridge-preview__post-rail {
+	padding: 1rem 1rem 0;
+}
+
+// The byline, over its rule. `currentcolor` at strength rather than a grey:
+// the element already carries the band's foreground and its own 70% opacity,
+// so this lands at roughly the 15% the stylesheet draws whatever the palette
+// is — and stays correct when the ground is dark.
+.bridge-preview__post-meta {
+	margin: 1rem 0 0;
+	padding-bottom: 0.4rem;
+	border-bottom: 1px solid color-mix(in srgb, currentcolor 22%, transparent);
+}
+
+// One fact and the slash before it. Text here rather than a pseudo-element,
+// unlike the page: this is a schematic in a sidebar, not a document anybody
+// reads with a screen reader, and the separator has to be visible in a preview
+// whose whole job is showing which facts are on.
+.bridge-preview__post-fact span {
+	opacity: 0.55;
+}
+
 // Body copy, stood in for by three rules at the band's own foreground. Not
 // lorem: a preview about layout should not ask anyone to read.
 .bridge-preview__post-lines {

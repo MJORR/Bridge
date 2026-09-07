@@ -666,6 +666,32 @@ function bridge_logo_slider_item(array $image, string $display, bool $duplicate)
 }
 
 /**
+ * Whether the trail is drawn on the page being rendered.
+ *
+ * Only posts can switch it off, and only through the Posts tab, because that
+ * is the template the setting was asked for and the only one whose head the
+ * tab describes. A page or an archive keeps its trail: those are reached from
+ * inside the site, where the trail is saying where you have got to, whereas a
+ * post is usually arrived at cold from a search result and the trail is the
+ * only thing on it that says what site this is.
+ *
+ * @return bool
+ */
+function bridge_breadcrumb_enabled(): bool
+{
+	if (! is_singular('post')) {
+		return true;
+	}
+
+	$tokens = bridge_get_tokens();
+
+	// `?? true` rather than `?? false`: a token record written before this
+	// setting existed has no key, and a site that upgrades should keep the
+	// trail it has been showing rather than lose it silently.
+	return ! empty($tokens['posts']['breadcrumb'] ?? true);
+}
+
+/**
  * The steps of the current page's trail, from the front page down.
  *
  * The list, not the markup: `bridge_breadcrumb_html()` draws it and
@@ -681,6 +707,13 @@ function bridge_logo_slider_item(array $image, string $display, bool $duplicate)
  * out to sit directly under it, get an empty array rather than a lone "Home"
  * pointing at where the visitor already is.
  *
+ * A post whose site has switched the trail off in Theme Options gets the same
+ * empty array. Gated here rather than in the block's render, so the markup and
+ * the JSON-LD are switched off by one decision — a site that hid the trail but
+ * kept telling Google about it would be making a claim about the page that
+ * nobody can check by looking, which is the failure this whole pair is built
+ * to avoid.
+ *
  * @return array<int, array{label:string,url:string}> The last step is the
  *                                                    current page and carries
  *                                                    no URL.
@@ -688,6 +721,10 @@ function bridge_logo_slider_item(array $image, string $display, bool $duplicate)
 function bridge_breadcrumb_items(): array
 {
 	if (is_front_page()) {
+		return array();
+	}
+
+	if (! bridge_breadcrumb_enabled()) {
 		return array();
 	}
 
@@ -830,4 +867,101 @@ function bridge_breadcrumb_schema(): array
 		'@type'           => 'BreadcrumbList',
 		'itemListElement' => $elements,
 	);
+}
+
+/**
+ * Which of the three facts the byline states.
+ *
+ * One record read by three callers — `bridge_post_meta_html()` on the front
+ * end, the block's canvas preview through `window.bridgePostMeta`, and the
+ * Posts tab that writes it — so what an operator switched, what the editor
+ * draws and what a visitor reads cannot disagree.
+ *
+ * `?? true` on each: a token record written before the byline was separable
+ * has none of these keys, and a site upgrading into this should keep the
+ * byline it has been printing rather than lose two thirds of it silently.
+ *
+ * @return array<string, bool>
+ */
+function bridge_post_meta_parts(): array
+{
+	$tokens = bridge_get_tokens();
+	$meta   = isset($tokens['posts']['meta']) && is_array($tokens['posts']['meta'])
+		? $tokens['posts']['meta']
+		: array();
+
+	return array(
+		'date'     => ! empty($meta['date'] ?? true),
+		'category' => ! empty($meta['category'] ?? true),
+		'author'   => ! empty($meta['author'] ?? true),
+	);
+}
+
+/**
+ * The byline for the post being rendered.
+ *
+ * Only the parts that are switched on, and only the ones that have something
+ * to say: a post with no categories contributes no item rather than an empty
+ * one, which would otherwise show as a slash with nothing after it.
+ *
+ * The slashes are pseudo-elements on every item but the first — see
+ * `_post.scss` — and not text in the markup, for the reason the breadcrumb
+ * separates its steps the same way: a screen reader reading "slash" between
+ * every fact is describing the punctuation rather than the byline.
+ *
+ * @param string $attributes Attributes for the wrapper, already escaped.
+ *                           `bridge/post-meta` passes the block wrapper's, so
+ *                           the byline carries the block's own classes rather
+ *                           than being wrapped in a second element to hold
+ *                           them. Empty for the plain byline.
+ * @return string
+ */
+function bridge_post_meta_html(string $attributes = ''): string
+{
+	$parts = bridge_post_meta_parts();
+	$items = array();
+
+	if ($parts['date']) {
+		$items[] = sprintf(
+			'<time datetime="%s">%s</time>',
+			esc_attr((string) get_the_date('c')),
+			esc_html((string) get_the_date())
+		);
+	}
+
+	if ($parts['category']) {
+		// Already escaped, and already links — the one item that is somewhere
+		// to go rather than a fact. `false` on a post with no categories, and
+		// a WP_Error on an unregistered taxonomy, so both are tested for
+		// rather than assuming a string.
+		$terms = get_the_term_list(get_the_ID(), 'category', '', ', ');
+
+		if (is_string($terms) && '' !== $terms) {
+			$items[] = $terms;
+		}
+	}
+
+	if ($parts['author']) {
+		$author = (string) get_the_author();
+
+		if ('' !== $author) {
+			$items[] = esc_html($author);
+		}
+	}
+
+	if (! $items) {
+		return '';
+	}
+
+	$list = '';
+
+	foreach ($items as $item) {
+		$list .= '<span class="bridge-article__meta-item">' . $item . '</span>';
+	}
+
+	if ('' === $attributes) {
+		$attributes = 'class="bridge-article__meta"';
+	}
+
+	return sprintf('<div %s>%s</div>', $attributes, $list);
 }

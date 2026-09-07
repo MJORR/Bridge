@@ -268,6 +268,9 @@ add_action('init', 'bridge_register_section_skins');
  * either no featured image or no single title for one to sit behind. `is_page()`
  * is excluded explicitly rather than left to `is_singular('post')`, which
  * already excludes it, so the intent survives someone widening the check.
+ *
+ * Two classes, not one: the arrangement and the shape of the photograph are
+ * separate decisions and the stylesheet answers them separately.
  */
 function bridge_post_body_class(array $classes): array
 {
@@ -285,8 +288,19 @@ function bridge_post_body_class(array $classes): array
 		$template = 'classic';
 	}
 
+	// The corner the lead image is cut to, carried the same way and for the
+	// same reason. A second class rather than a compound one: the shape and
+	// the arrangement are two independent decisions, and a
+	// `bridge-single--feature-cut` would need nine rules to say what four say.
+	$image = (string) ($tokens['posts']['image'] ?? 'rounded');
+
+	if (! isset(bridge_post_image_shapes()[$image])) {
+		$image = 'rounded';
+	}
+
 	$classes[] = 'bridge-single';
 	$classes[] = 'bridge-single--' . $template;
+	$classes[] = 'bridge-single--image-' . $image;
 
 	return $classes;
 }

@@ -47,6 +47,23 @@
 
 		// Above the shape — see the mixin for why no z-index is involved.
 		@include mask.band-mask-content;
+
+		// What the carousel below measures itself against.
+		//
+		// This element and the grid inside it are the same width, so asking it
+		// how much room there is asks the only question that matters: a card
+		// row sitting in a narrow column on a wide monitor has as little space
+		// as one on a phone, and a window-width media query would answer for
+		// the wrong one. Named, so the query below cannot accidentally resolve
+		// against a card — `card.surface` makes each card a container of its
+		// own whenever the cut corner is switched on.
+		//
+		// `inline-size` and not `size`: the height of a card row is whatever
+		// the cards come to, and containing that would need a height this
+		// block has no business fixing. Inline containment costs nothing here
+		// — the width already comes from `container()` above, never from the
+		// contents.
+		container: bridge-cards / inline-size;
 	}
 
 	&--narrow &__inner {
@@ -68,15 +85,41 @@
 
 		// The same track width the wrapped layout uses, so the two overflow
 		// styles show the same number of cards at the same container width.
-		// The 80% cap rather than 100% is the difference: on a phone a row
-		// that stops just short of the edge shows the corner of the next card,
-		// which is how a reader learns there is one.
+		// The 80% cap rather than 100% is the difference: once there is room
+		// for two, a row that stops just short of the edge shows the corner of
+		// the next card, which is how a reader learns there is one.
 		// Capped like the wrapped layout below, so a row of two or three cards
 		// on a wide screen is a row of cards rather than a row of billboards.
 		grid-auto-columns: min(
 			#{section.track-width(16rem, section.$grid-gap, 80%)},
 			#{section.$item-max}
 		);
+
+		/**
+		 * One card to a view, once only one card fits.
+		 *
+		 * The peek above is an affordance and it is the right one while there
+		 * is a second card to peek at. Below two tracks there is not: the
+		 * corner on show is the same card the reader has just been given
+		 * three-quarters of, so a phone got a card and a slice of the next
+		 * one with no room to be either — which reads as the row having been
+		 * cut off rather than as something to swipe.
+		 *
+		 * The threshold is the wrapped grid's own arithmetic, not a phone
+		 * size: two 16rem tracks and the gap between them is the width at
+		 * which `auto-fit` above stops placing a second column. So the two
+		 * overflow styles change their mind at exactly the same width, which
+		 * is what the note above this rule promises and what a window-width
+		 * breakpoint could not deliver — the same band is narrow in a sidebar
+		 * and wide on a phone held sideways.
+		 *
+		 * `100%` is the track, not the card: `.post-card` keeps its 24rem cap
+		 * and centres itself, so this fills a phone edge to edge and still
+		 * does not draw a billboard on a 500px column.
+		 */
+		@container bridge-cards (width < 33rem) {
+			grid-auto-columns: 100%;
+		}
 	}
 
 	// A focusable scroll container needs a visible focus ring, or a keyboard

@@ -16,6 +16,71 @@
 @use "../abstracts/on-dark" as on-dark;
 @use "../abstracts/section" as section;
 
+// ---- The gutter the article keeps -------------------------------------------
+
+/**
+ * How far the article holds its content off the edge of a phone.
+ *
+ * Every band on this site that carries words sits two gutters in from the
+ * window on a narrow screen, and it is worth writing down why, because one
+ * looks like the right number. `alignfull` bleeds a band out to the window by
+ * a negative margin of one root padding — that is what makes it full width —
+ * and a section band then pays that root padding straight back as padding of
+ * its own before its inner column spends the gutter that centres the text.
+ * Bleed, restore, gutter: the background reaches both window edges and the
+ * words stop two gutters short of them.
+ *
+ * The article's bands did the bleed and skipped the restore. The trail, the
+ * headline and the body all ran one root padding in — 14px on a 390px phone,
+ * against the 27px every section band on the same site keeps — which reads on
+ * a phone as text pinned to the glass. Desktop never showed it: these
+ * containers cap hundreds of pixels short of the window, so the gutter is not
+ * what holds the column off the edge there.
+ *
+ * Restored on the inner column rather than as padding on the band, which is
+ * where a section puts it. Cover is why: its photograph *is* the band, bled to
+ * both window edges on purpose, and padding on that band would inset the
+ * picture from them. Spending it on the inner instead leaves Cover — which
+ * drops the container altogether — untouched, and moves only its title, which
+ * is the one thing in it that has to line up with the article below.
+ */
+// stylelint-disable at-rule-empty-line-before -- `} @else {` is one construct
+// with `@if`; a blank line between them would break the pair apart.
+@mixin article-container($width: wide) {
+	// Both widths grow by exactly the two root paddings the rule below adds,
+	// so the content box comes out the width it always was and no layout moves
+	// on a screen wide enough for the container to cap. This is a narrow-screen
+	// correction and only a narrow screen can see it.
+	@if $width == narrow {
+		// stylelint-disable scss/operator-no-newline-after -- prettier wraps
+		// these calcs and leaves the operator at the end of the line; prettier
+		// is what runs on save, so it wins.
+		max-width: calc(
+			var(--wp--style--global--content-size) +
+				2 *
+				var(--wp--preset--spacing--40) +
+				2 *
+				var(--wp--style--root--padding-left, 0px)
+		);
+	} @else {
+		max-width: calc(
+			var(--wp--style--global--wide-size) +
+				2 *
+				var(--wp--style--root--padding-left, 0px)
+		);
+	}
+
+	margin-inline: auto;
+	// One value for both sides, as `section.container()` does: theme.json sets
+	// the left and right root padding from the same preset.
+	padding-inline: calc(
+		var(--wp--preset--spacing--40) +
+			var(--wp--style--root--padding-left, 0px)
+	);
+	// stylelint-enable scss/operator-no-newline-after
+}
+// stylelint-enable at-rule-empty-line-before
+
 // ---- The head of an article -------------------------------------------------
 
 /**
@@ -77,7 +142,7 @@
 }
 
 .bridge-article__crumbs-inner {
-	@include section.container(narrow);
+	@include article-container(narrow);
 }
 
 // The band. Full width in all three — `alignfull` in the template does the
@@ -98,7 +163,7 @@
 // the photograph past the text column, and the one that does not caps its own
 // header instead. Cover drops the container entirely — see below.
 .bridge-article__head-inner {
-	@include section.container(wide);
+	@include article-container(wide);
 }
 
 // The lead image. The corner it takes is a setting — see below — so nothing is
@@ -265,7 +330,7 @@
 
 	.bridge-article__header {
 		@include on-dark.on-dark;
-		@include section.container(narrow);
+		@include article-container(narrow);
 
 		z-index: 2;
 		align-self: end;
@@ -283,7 +348,7 @@
 	 * correct.
 	 */
 	.bridge-article__head-inner:not(:has(.bridge-article__media)) {
-		@include section.container(narrow);
+		@include article-container(narrow);
 
 		display: block;
 		min-height: 0;
@@ -326,7 +391,7 @@
 	// below, so the trail, the headline and the left edge of the two-up grid
 	// are one line down the page.
 	.bridge-article__crumbs-inner {
-		@include section.container(wide);
+		@include article-container(wide);
 	}
 
 	.bridge-article__head-inner {
@@ -354,6 +419,58 @@
 }
 
 // ---- The article -----------------------------------------------------------
+
+/**
+ * The text column.
+ *
+ * The same line down the page as the two bands above it, reached by spending
+ * one gutter rather than two. This is not a bled band: it is an ordinary child
+ * of a constrained `main`, so the root padding is still there and only the
+ * section gutter is missing — which is exactly what `container()` adds, and why
+ * this rule uses it and not the mixin at the top of this file. Two gutters here
+ * would put the words a gutter to the right of the headline that introduces
+ * them.
+ *
+ * It is here at all because the byline, the words and the previous/next pair
+ * have to start on the line the headline starts on, and the headline has just
+ * moved.
+ *
+ * Both classes named, and that is deliberate rather than tidy: core writes
+ * `padding-inline: 0` at one class of specificity onto every nested
+ * `.has-global-padding`, which this group is, and a single class here would win
+ * or lose on source order alone.
+ */
+.bridge-content.bridge-article {
+	@include section.container(narrow);
+}
+
+/**
+ * A full-bleed block inside the article, still reaching the window.
+ *
+ * Core breaks `alignfull` out by a negative margin of one root padding, which
+ * is the right number everywhere else on the site because everywhere else the
+ * root padding is the only thing standing between the block and the glass.
+ * Inside the article there is now a second gutter above it, so core's bleed
+ * stops short of the edge by exactly that much — a full-width image or a
+ * section band dropped into a post would have sat in from the window with a
+ * hairline of page showing either side of it.
+ *
+ * Restated in the gutter this file actually spends. Written against the child
+ * of a child because the block that bleeds is inside `post-content`, which is
+ * itself a constrained group and contributes no padding of its own.
+ */
+.bridge-content.bridge-article > * > .alignfull {
+	// stylelint-disable scss/operator-no-newline-after -- prettier wraps this
+	// calc and leaves the operator at the end of the line.
+	margin-inline: calc(
+		(
+				var(--wp--preset--spacing--40) +
+					var(--wp--style--root--padding-left, 0px)
+			) *
+			-1
+	);
+	// stylelint-enable scss/operator-no-newline-after
+}
 
 /**
  * The byline.

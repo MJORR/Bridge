@@ -88,10 +88,14 @@ $classes = sprintf(
 
 list( $intro_html, $label_id ) = bridge_section_intro( $intro, 'bridge-features__intro' );
 
+// The decorative shape behind the panels, if this band asks for one. Shared
+// with the cards band — see bridge_band_mask().
+list( $mask_class, $mask_style ) = bridge_band_mask( $attributes );
+
 echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 	$attributes,
-	$classes,
-	sprintf( '--columns: %d;', $columns ),
+	$classes . $mask_class,
+	sprintf( '--columns: %d;', $columns ) . $mask_style,
 	$label_id
 );
 ?>

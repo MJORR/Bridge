@@ -24,6 +24,7 @@
  * Surface band or on an Inverted one, and only `currentcolor` knows which — so
  * every tint, border and badge is mixed from the band's own foreground.
  */
+@use "../abstracts/band-mask" as mask;
 @use "../abstracts/card" as card;
 @use "../abstracts/carousel" as carousel;
 @use "../abstracts/section" as section;
@@ -38,12 +39,19 @@ $edge: color-mix(in srgb, currentcolor 25%, transparent);
 $tint: color-mix(in srgb, currentcolor 12%, transparent);
 
 .bridge-features {
+	// The decorative mask shape, when the block asks for one — the same shape,
+	// the same four controls and the same mixin the cards band uses.
+	@include mask.band-mask;
+
 	&__inner {
 		@include section.container(wide);
 
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--50);
+
+		// Over the shape.
+		@include mask.band-mask-content;
 
 		// What the swipe row below measures itself against — the Cards band's
 		// container, in the block that borrows the rest of its card rules too.
@@ -376,6 +384,11 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 		var(--wp--preset--font-size--large)
 	);
 
+	// The space between a panel's own lines. Named because two rules spend it
+	// and they have to agree: `__body` sets it as the flex gap, and the floor
+	// under the cue subtracts it from L to work out what it still owes.
+	--bridge-feature-gap: var(--wp--preset--spacing--20);
+
 	// The panel's padding sits on `__body`, not here: a photograph has to reach
 	// the edges of the panel.
 	@include card.surface;
@@ -445,7 +458,7 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 
 		display: flex;
 		flex-direction: column;
-		gap: var(--wp--preset--spacing--20);
+		gap: var(--bridge-feature-gap);
 		// Fills what the photograph left, so panels in a row are the same
 		// height and the rule below can put their buttons on one line.
 		flex: 1;
@@ -476,18 +489,58 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 	 * the same line across the row — including the panel that has no picture,
 	 * or three lines of copy where its neighbour has one.
 	 *
-	 * `margin-block-start` rather than `margin-top`, and both cues in the one
-	 * rule. The button used to take a fixed space above it in a later rule of
-	 * equal specificity, and a logical property beats a physical one on source
-	 * order alone — so `margin-top: auto` was overwritten on the only cue that
-	 * is drawn as a button, and the buttons sat wherever the copy ended. The
-	 * space above one is the body’s own `gap` now, which is the space between
-	 * every other pair of lines in the panel.
+	 * Two things about the selector and the property, both of them scars.
+	 *
+	 * The cues are addressed through `__body` rather than on their own, which
+	 * buys a second class and with it the argument against
+	 * components/_button.scss. That file sets `margin-block` on every
+	 * `.wp-element-button` on the site — the standing room a button gets when
+	 * it follows a paragraph — and one class against one class is settled by
+	 * whichever stylesheet the page happens to load last. It was this one once;
+	 * it is the button component now, so the auto margin was being overwritten
+	 * with a fixed 10.7px and the buttons sat wherever the copy above them
+	 * ended. Winning on specificity is the only version of this that does not
+	 * depend on the order two enqueues come out in.
+	 *
+	 * And `margin-block`, not `margin-block-start`: the rule being answered is
+	 * the shorthand, so the end margin has to be named here too or the button
+	 * floats that same 10.7px above the padding it is supposed to be standing
+	 * on. Zero, because the padding is the space — `card.padding` on `__body`
+	 * already holds the button off the panel’s bottom edge by exactly what
+	 * holds the title off its left one.
 	 */
-	&__button,
-	&__link {
-		margin-block-start: auto;
+	&__body > &__button,
+	&__body > &__link {
+		margin-block: auto 0;
 		align-self: flex-start;
+	}
+
+	/**
+	 * And never closer than L to the copy it follows.
+	 *
+	 * The auto margin above only opens up where the panel has slack to give,
+	 * which is every panel in a row except the one that set the row's height —
+	 * and that one had its cue sitting on the body's own XS gap, hard against
+	 * the last line of its paragraph. A cue that close to a sentence reads as
+	 * the end of it rather than as the thing to press.
+	 *
+	 * The floor sits on whatever the cue follows and not on the cue itself,
+	 * because the cue's start margin is already spoken for: `auto` is the
+	 * whole of the pin above, and one property cannot be both a minimum and a
+	 * claim on the free space. Flex margins add to the container's gap rather
+	 * than collapsing into it, so the gap plus this is exactly L — which is
+	 * what the subtraction is, and it stays positive at every viewport because
+	 * both steps are the same clamp taper.
+	 *
+	 * `:has()` rather than a margin on `__text`, because the cue is not always
+	 * what follows the copy: a panel with no button ends on its paragraph, and
+	 * an unconditional margin there would hang dead space below the last line
+	 * on every one of them.
+	 */
+	&__body > *:has(+ &__button, + &__link) {
+		margin-block-end: calc(
+			var(--wp--preset--spacing--50) - var(--bridge-feature-gap)
+		);
 	}
 
 	// Not a button, and deliberately not shaped like one: this is the line that

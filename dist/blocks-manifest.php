@@ -773,6 +773,22 @@ return array(
 				'type' => 'string',
 				'default' => 'left',
 			),
+			'mask' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'maskShade' => array(
+				'type' => 'number',
+				'default' => -20,
+			),
+			'maskSize' => array(
+				'type' => 'number',
+				'default' => 60,
+			),
+			'maskInset' => array(
+				'type' => 'number',
+				'default' => 0,
+			),
 		),
 		'example' => array(
 			'attributes' => array(

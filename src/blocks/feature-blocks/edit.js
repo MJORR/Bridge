@@ -27,6 +27,11 @@ const { PanelBody, RangeControl, SelectControl, ToggleControl } =
 	window.wp.components;
 const { __ } = window.wp.i18n;
 
+// The mask shape's controls and preview styling, shared with every other band
+// that offers them. Its own script handle, named in this block's dependencies
+// — see src/editor/band-mask.js.
+const { MaskPanel, maskStyle, hasMask } = window.bridgeBandMaskUI || {};
+
 const ALLOWED_BLOCKS = [
 	'bridge/feature-block',
 	'core/heading',
@@ -73,11 +78,12 @@ const Edit = ({ attributes, setAttributes }) => {
 				? 'bridge-features--carousel'
 				: '',
 			gutters || isNumbered ? '' : 'bridge-features--flush',
+			hasMask(attributes) ? 'has-mask' : '',
 			'is-editor-preview',
 		]
 			.filter(Boolean)
 			.join(' '),
-		style: { '--columns': columns },
+		style: { '--columns': columns, ...maskStyle(attributes) },
 	});
 
 	// The same element render.php prints, for the same reason: a numbered run
@@ -212,7 +218,8 @@ const Edit = ({ attributes, setAttributes }) => {
 					onChange: (value) =>
 						setAttributes({ textAlignment: value }),
 				})
-			)
+			),
+			MaskPanel(attributes, setAttributes)
 		),
 		el(
 			'section',

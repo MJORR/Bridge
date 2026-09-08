@@ -462,20 +462,32 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 		margin: 0;
 	}
 
-	// Both cues sit on the bottom edge of the panel, whatever the copy above
-	// them does, so a row of panels has a row of buttons rather than a
-	// staircase.
+	/**
+	 * Both cues sit on the bottom edge of the panel, whatever the copy above
+	 * them does, so a row of panels has a row of buttons rather than a
+	 * staircase.
+	 *
+	 * The auto margin is the whole mechanism, and it lands the button on the
+	 * card’s own padding rather than on a number chosen here: `__body` fills
+	 * whatever the photograph left, and its padding is `card.padding` on every
+	 * side, so the free space the margin eats stops exactly one
+	 * `--wp--custom--card--padding` above the panel’s bottom edge. Panels in a
+	 * row are the same height because the grid stretches them, so that edge is
+	 * the same line across the row — including the panel that has no picture,
+	 * or three lines of copy where its neighbour has one.
+	 *
+	 * `margin-block-start` rather than `margin-top`, and both cues in the one
+	 * rule. The button used to take a fixed space above it in a later rule of
+	 * equal specificity, and a logical property beats a physical one on source
+	 * order alone — so `margin-top: auto` was overwritten on the only cue that
+	 * is drawn as a button, and the buttons sat wherever the copy ended. The
+	 * space above one is the body’s own `gap` now, which is the space between
+	 * every other pair of lines in the panel.
+	 */
 	&__button,
 	&__link {
-		margin-top: auto;
+		margin-block-start: auto;
 		align-self: flex-start;
-	}
-
-	&__button {
-		// `wp-element-button` carries the site's button skin; what is left here
-		// is the space above it, which the button component measures from a
-		// paragraph and this panel measures from the gap.
-		margin-block-start: var(--wp--preset--spacing--10);
 	}
 
 	// Not a button, and deliberately not shaped like one: this is the line that

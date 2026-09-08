@@ -12,13 +12,30 @@
 	// Row to row.
 	--bridge-alternating-gap: var(--wp--preset--spacing--70);
 
-	// Media to words, inside a row. The global block gap, so the space between
-	// a picture and the sentence beside it is set once in Global Styles for
-	// every block on the site — where it used to be a yes/no toggle on this
-	// block alone, offering two values and agreeing with nothing else.
-	--bridge-alternating-row-gap: var(
-		--wp--style--block-gap,
-		var(--wp--preset--spacing--50)
+	/**
+	 * Media to words, inside a row.
+	 *
+	 * The global block gap, so the space between a picture and the sentence
+	 * beside it is set once in Global Styles for every block on the site —
+	 * where it used to be a yes/no toggle on this block alone, offering two
+	 * values and agreeing with nothing else.
+	 *
+	 * With a floor under it, because the two are not quite the same
+	 * measurement. The block gap is the space between two things stacked in a
+	 * column, where a line of type carries most of the separation on its own;
+	 * here it is a *gutter*, holding a paragraph off the edge of a photograph
+	 * with nothing between them. On this site the block gap is M — 16px — and
+	 * at that width the words read as running into the picture rather than as
+	 * sitting beside it. XL is the floor: comfortably clear of the picture,
+	 * and still visibly tighter than the 2XL between one row and the next, so
+	 * a row still reads as one thing rather than as two.
+	 *
+	 * A floor and not a replacement, so a site that has opened its rhythm up
+	 * past XL still opens this up with it.
+	 */
+	--bridge-alternating-row-gap: max(
+		var(--wp--preset--spacing--60),
+		var(--wp--style--block-gap, var(--wp--preset--spacing--50))
 	);
 
 	&__inner {

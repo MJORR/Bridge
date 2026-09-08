@@ -75,6 +75,19 @@
  */
 @mixin controls {
 	.bridge-carousel__controls {
+		/**
+		 * The band under the strip, which is what the chevrons are cut in.
+		 *
+		 * The skins in components/_sections.scss each publish
+		 * `--bridge-band-ground`; an unskinned band publishes nothing and is
+		 * the page, so that is the fallback. Named once here rather than
+		 * written out at each of the three places below that spend it.
+		 */
+		--bridge-carousel-ground: var(
+			--bridge-band-ground,
+			var(--wp--preset--color--background)
+		);
+
 		display: none;
 		align-items: center;
 		justify-content: space-between;
@@ -85,8 +98,28 @@
 		}
 	}
 
-	// A 2.4rem circle with a small chevron in it — the shape the old ACF
-	// blocks used, which is what a client coming from one of those recognises.
+	/**
+	 * A 2.4rem disc with a small chevron in it — the shape the old ACF blocks
+	 * used, which is what a client coming from one of those recognises.
+	 *
+	 * ---- Why the disc is solid ------------------------------------------
+	 *
+	 * It was a 12% wash of the band's foreground with the chevron drawn on
+	 * top, which is a control that has to be hunted for: on an Inverted band
+	 * that is white at 12% over a dark green, and the chevron inside it was
+	 * the only part with any contrast at all. Filling the disc and cutting
+	 * the chevron out of it swaps the ratio the right way round — the control
+	 * is now the thing with the contrast, and the chevron reads because it is
+	 * a hole in it rather than a line over a tint.
+	 *
+	 * `currentcolor` and not a named colour, which is what makes one rule
+	 * right on all four grounds: the band's foreground is the site's light
+	 * colour on an Inverted band, so the disc is white there, and it is the
+	 * dark text colour on the page, on Surface and on Accent, so the disc is
+	 * that. Every band's foreground has already been checked against its own
+	 * ground — that is what makes it the foreground — so the disc inherits a
+	 * contrast decision rather than making a new one.
+	 */
 	.bridge-carousel__arrow {
 		// `display: grid` from an author stylesheet beats the `[hidden] {
 		// display: none }` in every user-agent sheet, whatever the
@@ -105,13 +138,23 @@
 		padding: 0;
 		border: 0;
 		border-radius: 50%;
+		// The band's foreground, kept on the button itself: the disc is
+		// painted from it, and so is the ring under a keyboard focus.
 		color: inherit;
-		background-color: color-mix(in srgb, currentcolor 12%, transparent);
+		background-color: currentcolor;
 		cursor: pointer;
 		transition: background-color 150ms ease;
 
+		// A step back towards the band, because there is nowhere further
+		// forward to go — the disc is already at full strength. Enough to
+		// register under the pointer, not enough to read as the control
+		// switching off.
 		&:hover {
-			background-color: color-mix(in srgb, currentcolor 22%, transparent);
+			background-color: color-mix(
+				in srgb,
+				currentcolor 85%,
+				var(--bridge-carousel-ground)
+			);
 		}
 
 		&:focus-visible {
@@ -120,7 +163,9 @@
 		}
 
 		// At an end of the row. Kept in place rather than hidden, so the dots
-		// do not shuffle sideways every time the row reaches a stop.
+		// do not shuffle sideways every time the row reaches a stop — and
+		// faded rather than recoloured, so the one control that cannot be
+		// pressed is the one control that is not at full contrast.
 		&:disabled {
 			opacity: 0.35;
 			cursor: default;
@@ -131,6 +176,10 @@
 			// 2.4rem button, which is furniture rather than content.
 			width: 1rem;
 			height: 1rem;
+			// Cut out of the disc. The icon is `stroke="currentColor"`, so
+			// this is the whole of it: the button keeps the band's foreground
+			// for its fill, and the chevron alone takes the ground.
+			color: var(--bridge-carousel-ground);
 		}
 	}
 
@@ -153,6 +202,19 @@
 		padding: 0;
 		border: 0;
 		border-radius: 50%;
+
+		/**
+		 * The band's foreground, said out loud.
+		 *
+		 * A `<button>` does not inherit its colour: every user-agent sheet
+		 * gives it `buttontext`, which is near-black — so the dots were drawn
+		 * in the system colour rather than in the band's, and on an Inverted
+		 * band that is black on dark green, which is the strip's own page
+		 * indicator invisible. The hero slider's dots carry this same line for
+		 * the same reason; the arrows above need it too and already had it.
+		 */
+		color: inherit;
+
 		background-color: currentcolor;
 		opacity: 0.3;
 		cursor: pointer;

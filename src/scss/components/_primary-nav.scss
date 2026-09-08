@@ -200,7 +200,19 @@
 		// The item is the surface — not the anchor. Core renders the dropdown
 		// caret as a *sibling* of the anchor, so an anchor-painted hover stops
 		// short and leaves the caret sitting outside its own item.
-		.wp-block-navigation__container > .wp-block-navigation-item {
+		//
+		// Every item except the call to action, which is not a row of this bar
+		// at all: render.php puts it in core's list so the mobile panel can
+		// hold it — see bridge_header_nav_cta() — and the rule further down
+		// hides it up here, where the header's own button is already showing.
+		// That rule is four classes and this one was five, so this `display:
+		// flex` was winning it, and the site's one call to action was drawn
+		// twice in the bar: a plain menu link and, beside it, the button.
+		// Excluding it here is the honest version of the fix — the exception
+		// belongs to the rule that lists the bar's rows, not to the rule that
+		// hides this one.
+		.wp-block-navigation__container
+			> .wp-block-navigation-item:not(.bridge-nav__cta) {
 			position: relative;
 			display: flex;
 			align-items: center;

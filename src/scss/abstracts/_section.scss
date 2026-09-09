@@ -149,9 +149,46 @@ $two-column: 48rem;
 	overflow-x: auto;
 	scroll-snap-type: x mandatory;
 	overscroll-behavior-inline: contain;
-	// Room for the focus ring on the first and last card, which a plain
-	// overflow container would clip.
-	padding-block: 2px;
+
+	/**
+	 * Room for what the cards draw outside themselves — the focus ring on the
+	 * first and last of them, and the card shadow on every one.
+	 *
+	 * A scroll container clips on both axes. `overflow-x: auto` is the whole
+	 * of what this row asks for, but the block axis cannot stay `visible`
+	 * beside it — the used value becomes `auto` — so the row cut every card's
+	 * shadow off square at its top and bottom edges while the same cards in a
+	 * wrapped grid kept theirs. It was 2px here, which is a focus ring and
+	 * nothing else; Theme Options' Medium shadow reaches 28px below a resting
+	 * card and 54px below one being hovered.
+	 *
+	 * So the reach travels from the shadow presets as a length —
+	 * `--wp--custom--card--shadow-room-*`, published beside the shadow itself
+	 * in bridge_compile_theme_json() — rather than being a number guessed here
+	 * that a later change to the presets would silently leave behind. Nothing
+	 * publishes it on a site whose cards have no shadow, and the `max()` keeps
+	 * the focus ring's 2px under it in that case.
+	 *
+	 * The padding is given back as a negative margin of exactly the same size,
+	 * so this moves nothing: the row's content sits where it sat, the flex gap
+	 * above and below is unchanged, and all the padding does is give the
+	 * shadow somewhere to be painted. What it does change is the row's *box*,
+	 * which now reaches into its neighbours' space — see the `z-index` on the
+	 * control strip in abstracts/_carousel.scss, which is what keeps the
+	 * chevrons clickable underneath it.
+	 */
+	--bridge-row-room-above: max(
+		2px,
+		var(--wp--custom--card--shadow-room-above, 0px)
+	);
+	--bridge-row-room-below: max(
+		2px,
+		var(--wp--custom--card--shadow-room-below, 0px)
+	);
+
+	padding-block: var(--bridge-row-room-above) var(--bridge-row-room-below);
+	margin-block: calc(-1 * var(--bridge-row-room-above))
+		calc(-1 * var(--bridge-row-room-below));
 	scrollbar-width: thin;
 
 	> * {

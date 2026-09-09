@@ -3,6 +3,16 @@
  */
 @use "../abstracts/section" as section;
 
+/**
+ * How far the wide container's media column is centred from the middle of a
+ * full-window half. Named once because two rules spend it with opposite signs
+ * — see "Where the mask sits" below, which is where the arithmetic is
+ * explained.
+ */
+$mask-shift: calc(
+	var(--bridge-alternating-edge) / 2 - var(--bridge-alternating-row-gap) / 4
+);
+
 .bridge-alternating {
 	// One shape for every row's media. An image cropped to 4/3 beside a 16/9
 	// video made a section that mixed the two come out ragged, and two of the
@@ -210,7 +220,17 @@
 	&__media.has-mask &__image {
 		mask-image: var(--bridge-mask-image);
 		mask-repeat: no-repeat;
-		mask-position: center;
+
+		/*
+		 * Centred in the media's box, unless the row has said otherwise.
+		 *
+		 * A contained row never does: the picture is a rectangle inside the
+		 * page's column with air on both sides of it, so a shape centred in
+		 * that rectangle is centred in everything a reader can see. The
+		 * full-window layout is the case where centring stops being neutral —
+		 * see `--bridge-alternating-mask-x` below.
+		 */
+		mask-position: var(--bridge-alternating-mask-x, center) center;
 		mask-size: auto calc(var(--bridge-mask-scale, 1) * 100%);
 		border-radius: 0;
 	}
@@ -352,6 +372,35 @@
 	&--full &__media {
 		@include section.two-column {
 			aspect-ratio: var(--bridge-alternating-ratio);
+
+			/**
+			 * And never wider than the half of the window it was given.
+			 *
+			 * The paragraph above says the ratio "stops applying" once
+			 * `align-items: stretch` has handed the media the row's height.
+			 * It does not — that is the one thing a ratio will not do. A box
+			 * with an aspect ratio and a definite height computes its *width*
+			 * from the two, and a grid item is not stretched along an axis
+			 * whose size a ratio has already decided. So the media took the
+			 * row's height, multiplied by 16/9, and came out wider than its
+			 * track: on a 1440px window, a 566px row made a 1006px picture in
+			 * a 720px column, overflowing 286px across the words beside it.
+			 *
+			 * It was invisible for as long as the picture was the taller half
+			 * of every row, because then the height *is* the ratio's own
+			 * answer and the width lands back on the track. It showed the
+			 * moment a row's copy was the taller — the case this block's whole
+			 * full-window layout is built to handle — and it showed loudest
+			 * with a mask on, where the shape is drawn against the edge of the
+			 * element rather than filling it, so the overflow arrived as a
+			 * shape sitting on top of the text.
+			 *
+			 * Clamping the inline axis is the whole fix: the ratio still gives
+			 * the row its height contribution, and where the words ask for
+			 * more the picture is stretched to fill rather than scaled to
+			 * overflow, which is what the note above meant to say.
+			 */
+			max-inline-size: 100%;
 		}
 	}
 
@@ -402,6 +451,100 @@
 		// media, not for a paragraph pinned to the top of a tall cell.
 		@include section.two-column {
 			align-self: center;
+
+			/**
+			 * And held off the row's top and bottom edges.
+			 *
+			 * A flush band has no vertical padding of its own — that is what
+			 * `bridge-band--flush` means, and it is right: the pictures are
+			 * supposed to reach the sections above and below. The band hands
+			 * that job to its words instead, and it was only half done. The
+			 * copy inset itself from the glass and from the picture, and not
+			 * at all from the row's own edges — so as soon as a row's copy was
+			 * the taller of the two it set the row's height exactly, and its
+			 * first line sat on the bottom edge of the row above while its
+			 * last button sat on the section below. Air on three sides and
+			 * none on the fourth reads as text that has overflowed.
+			 *
+			 * The section padding rather than a number of this block's own:
+			 * "how far content sits from the vertical edge of a band" is a
+			 * question the site has already answered once, and this band is
+			 * only unusual in having had to give that padding up. So the words
+			 * end up exactly where they would have been in any other band.
+			 *
+			 * It costs nothing on a row whose picture is the taller of the
+			 * two: `align-self: center` leaves the copy its own height, and
+			 * the padding is simply part of the box being centred.
+			 */
+			padding-block: var(
+				--wp--custom--section-padding,
+				var(--wp--preset--spacing--70)
+			);
+		}
+	}
+
+	/**
+	 * ---- Where the mask sits, across the window --------------------------
+	 *
+	 * Full window is the layout worth choosing when a row has a mask on it:
+	 * the media is half the window rather than half a container, so the shape
+	 * is drawn at the largest size the page can give it. What that costs is
+	 * the alignment — the media's box no longer has anything to do with the
+	 * column every other block on the page is set in, so a shape centred in it
+	 * lands a quarter of the way in from the glass, out of step with the
+	 * headings and paragraphs above and below the band.
+	 *
+	 * So the shape keeps the size the full-window layout bought it and takes
+	 * its *position* from the wide container: it is centred where the media
+	 * would have been centred had this been a contained row. The picture still
+	 * bleeds to the window, and the shape on it lines up with the page.
+	 *
+	 * ---- The offset ------------------------------------------------------
+	 *
+	 * One number, mirrored. The wide media column runs from the container's
+	 * outer edge to half a row-gap short of the middle of the window:
+	 *
+	 *   wide column      edge  →  50vw - gap/2      centre  edge/2 + 25vw - gap/4
+	 *   full media box   0     →  50vw              centre  25vw
+	 *
+	 * The difference between the two centres is `edge/2 - gap/4`, and it does
+	 * not mention the window — which is the point. Both terms are already
+	 * named: `--bridge-alternating-edge` is the distance from the glass in to
+	 * the wide container, the same measure the copy's outer padding spends,
+	 * and `--bridge-alternating-row-gap` is what separates the two halves.
+	 * Below `wideSize` the edge falls back to the page gutter and the shape
+	 * follows it in, which is what the copy does too.
+	 *
+	 * `calc()` mixing a percentage with a length is exactly what
+	 * `mask-position` wants here: the 50% resolves against the box the way a
+	 * keyword would, and the length shifts that result — so this is "centred,
+	 * then moved inward by the offset" rather than arithmetic on an edge.
+	 *
+	 * Two rules and a property rather than the mask rule written out four
+	 * times. The default is the general answer — media on the left is what a
+	 * row is unless it has been flipped, and the wide column it wants is to
+	 * the right of the half-window's centre — and the pair below counts the
+	 * flipped rows exactly the way the `order` rule does: same selectors, same
+	 * `of` clause. They win on specificity, four classes to two, which is what
+	 * lets the default stand as a default.
+	 *
+	 * Only in two columns. Stacked, the media is the full width of the window
+	 * and there is no half of anything to line up with — the words are above
+	 * and below it, not beside it — so the property is never set and the shape
+	 * stays centred.
+	 */
+	@include section.two-column {
+		&--full &__media {
+			--bridge-alternating-mask-x: calc(50% + #{$mask-shift});
+		}
+
+		&--full:not(.is-first-right)
+			&__row:nth-child(even of .bridge-alternating__row)
+			&__media,
+		&--full.is-first-right
+			&__row:nth-child(odd of .bridge-alternating__row)
+			&__media {
+			--bridge-alternating-mask-x: calc(50% - #{$mask-shift});
 		}
 	}
 

@@ -46,6 +46,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/*
+ * The line above the title — a step number, most often, but any short label
+ * that introduces the panel's heading rather than replacing it. Free text and
+ * not a counter: `bridge-features--numbered` already draws a counter for a
+ * band that wants one, and the two answer different questions. This one is
+ * whatever the editor typed, on whichever panel they typed it.
+ */
+$prefix     = trim( (string) ( $attributes['prefix'] ?? '' ) );
+// A palette slug or nothing. Left empty the line takes a quieter shade of the
+// band's own foreground, which is the only colour that is right on a light
+// band, a dark one and over a photograph at the same time — so an empty value
+// here is a working default rather than a missing setting.
+$prefix_ink = sanitize_key( (string) ( $attributes['prefixColor'] ?? '' ) );
 $title      = trim( (string) ( $attributes['title'] ?? '' ) );
 $text       = trim( (string) ( $attributes['text'] ?? '' ) );
 // `graphicId` rather than `imageId`, and the name is the only thing left of
@@ -131,6 +144,26 @@ if ( $background > 0 ) {
 }
 
 /*
+ * The prefix's colour, on any shape of panel — which is why it is resolved
+ * out here rather than in the cover branch above, where the wash lives.
+ *
+ * Checked against the palette for the same reason the wash is: a slug a
+ * rebrand renamed or a filter dropped has to paint nothing and leave the
+ * stylesheet's fallback standing, rather than write a custom property that
+ * resolves to nothing and paints the line in the browser's initial colour.
+ */
+if ( '' !== $prefix && '' !== $prefix_ink ) {
+	$prefix_ink_hex = function_exists( 'bridge_palette_hex' ) ? bridge_palette_hex( $prefix_ink ) : '';
+
+	if ( '' !== $prefix_ink_hex ) {
+		$style .= sprintf(
+			'--bridge-feature-prefix-ink:var(--wp--preset--color--%s);',
+			$prefix_ink
+		);
+	}
+}
+
+/*
  * The whole panel as a click target, and only for the quiet cue.
  *
  * A text link is the Summary card's read-more: it names the destination and
@@ -197,6 +230,18 @@ $wrapper = get_block_wrapper_attributes(
 	<?php endif; ?>
 
 	<div class="bridge-feature__body">
+		<?php if ( '' !== $prefix ) : ?>
+			<?php
+			/*
+			 * A <span> rather than a heading of its own: "01" is part of the
+			 * title it sits over, and a second heading above every panel would
+			 * put a row of numbers into the document outline for a screen
+			 * reader to walk through.
+			 */
+			?>
+			<span class="bridge-feature__prefix"><?php echo esc_html( $prefix ); ?></span>
+		<?php endif; ?>
+
 		<?php if ( '' !== $title ) : ?>
 			<h3 class="bridge-feature__title"><?php echo esc_html( $title ); ?></h3>
 		<?php endif; ?>

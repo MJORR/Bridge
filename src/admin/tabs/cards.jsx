@@ -114,31 +114,45 @@ export function CardsTab({
 		wash: __('Wash colour', 'bridge'),
 	};
 
+	/**
+	 * What a field means, said once.
+	 *
+	 * Every style takes a heading size and a crop, so the same two paragraphs
+	 * were printed under all three — six blocks of prose to explain two
+	 * controls, and the repetition pushed the third style off the screen. The
+	 * text is worth having the first time an operator meets a field and is
+	 * noise every time after, so `seen` below shows it once and the styles
+	 * under it get the label alone.
+	 */
 	const helpFor = {
 		heading: __(
-			'A step on the site’s own type scale, so a card heading moves with the rest of the typography rather than carrying a size of its own.',
+			'A step on the site’s own type scale, so card headings move with the rest of the typography.',
 			'bridge'
 		),
 		ratio: __(
-			'How the featured image is cut. Every card in a grid gets the same crop, which is what keeps a row of photographs reading as a row.',
+			'How the featured image is cut. Every card in a grid gets the same crop.',
 			'bridge'
 		),
 		avatar: __(
-			'How much of the card the circular photograph takes. The panel’s arch is drawn around it, so this moves the whole shape of the card.',
+			'How much of the card the circular photograph takes; the panel’s arch is drawn around it.',
 			'bridge'
 		),
 		wash: __(
-			'The brand colour the gradient rises in, from opaque at the foot of the card to clear at the top. The title takes whichever of the palette’s light or dark colours reads against it — that is worked out for you and checked at 4.5:1, so every choice here is legible.',
+			'The brand colour the gradient rises in. The title colour is derived from it and checked at 4.5:1, so every choice here is legible.',
 			'bridge'
 		),
 	};
+
+	// Reset on each render, so the help lands on the first style that uses a
+	// field rather than wherever the last render happened to leave it.
+	const seen = new Set();
 
 	return (
 		<>
 			<Section
 				title={__('Card styles', 'bridge')}
 				description={__(
-					'The three shapes the Cards block can draw. An editor picks one per band; these are what each of them looks like everywhere it is used. Settings are per style rather than per section skin — a heading is the same size whatever colour is behind it.',
+					'The three shapes the Cards block can draw. An editor picks one per band. Settings are per style, not per section skin — a heading is the same size whatever colour is behind it.',
 					'bridge'
 				)}
 			>
@@ -152,12 +166,21 @@ export function CardsTab({
 						</p>
 
 						<div className="bridge-options__cardstyle-fields">
-							{(style.fields || []).map((field) =>
-								optionsFor[field] ? (
+							{(style.fields || []).map((field) => {
+								if (!optionsFor[field]) {
+									return null;
+								}
+
+								const first = !seen.has(field);
+								seen.add(field);
+
+								return (
 									<SelectControl
 										key={field}
 										label={labelFor[field] || field}
-										help={helpFor[field]}
+										help={
+											first ? helpFor[field] : undefined
+										}
 										value={
 											draft.cards.styles?.[style.slug]?.[
 												field
@@ -174,8 +197,8 @@ export function CardsTab({
 										__nextHasNoMarginBottom
 										__next40pxDefaultSize
 									/>
-								) : null
-							)}
+								);
+							})}
 						</div>
 					</div>
 				))}

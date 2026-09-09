@@ -88,6 +88,23 @@
 			var(--wp--preset--color--background)
 		);
 
+		/*
+		 * Over the track, not under it.
+		 *
+		 * The track pads itself by the card shadow's reach and takes the
+		 * padding back as a negative margin, so its box now extends down over
+		 * this strip — and a scroll container's padding takes the clicks that
+		 * land on it. Static boxes are hit-tested in paint order and the track
+		 * comes first, so without this the strongest shadow preset puts 48px
+		 * of scroll container over the chevrons and they stop responding.
+		 *
+		 * One step is enough: nothing else here is positioned, and the
+		 * stacking context this makes holds only the strip's own furniture —
+		 * it is not in the cards' way. See `snap-row` in abstracts/_section.
+		 */
+		position: relative;
+		z-index: 1;
+
 		display: none;
 		align-items: center;
 		justify-content: space-between;

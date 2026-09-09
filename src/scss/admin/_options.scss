@@ -1,9 +1,25 @@
 /**
  * Bridge — Theme Options screen.
  *
- * Layout only. Colour and control styling come from wp-components, so the
- * screen keeps looking like WordPress across core updates instead of drifting
- * into a bespoke admin theme we would have to maintain.
+ * ---- The design system ----------------------------------------------------
+ *
+ * One token layer, declared once on the screen and consumed by every rule
+ * below. Nothing here names a colour, a radius, a shadow or a step of space
+ * twice: a value that appears in two places is a value that will disagree with
+ * itself the first time either is touched, and the previous stylesheet had
+ * eleven greys doing the work of four.
+ *
+ * The tokens are scoped to `#bridge-options-root` and the screen's own body
+ * class rather than `:root`, so nothing leaks into the rest of wp-admin, and a
+ * plugin that paints the admin cannot reach in here either.
+ *
+ * Controls are still wp-components — the screen keeps working the way
+ * WordPress works, and a core update keeps fixing its own bugs for us. What
+ * changed is that wp-components is now *themed* through the custom properties
+ * core already reads (`--wp-components-color-accent`, `--wp-admin-theme-color`,
+ * the `--wpds-*` layer WP 7 introduced) rather than fought with overrides. Set
+ * the accent once and buttons, toggles, focus rings and the tab indicator all
+ * follow.
  *
  * The one exception is the button preview, which shares abstracts/_button.scss
  * with the front end on purpose: a drawing of a button would be a second
@@ -12,13 +28,329 @@
  */
 @use "../abstracts/button" as button;
 
+/**
+ * ---- Tokens ---------------------------------------------------------------
+ *
+ * Greys are one cool ramp, so a border, a rule and a sunken panel are three
+ * steps of the same colour rather than three unrelated hexes. Everything else
+ * is a role — surface, border, text, accent, and the three states — because a
+ * rule that says `var(--bo-danger)` still reads correctly after the brand
+ * changes, and `#d63638` does not.
+ */
+@mixin bridge-options-tokens {
+	// Neutral ramp.
+	--bo-gray-25: #fbfcfd;
+	--bo-gray-50: #f6f8fa;
+	--bo-gray-100: #eef1f5;
+	--bo-gray-200: #e3e7ee;
+	--bo-gray-300: #cfd6e0;
+	--bo-gray-400: #a6b0c0;
+	--bo-gray-500: #788395;
+	--bo-gray-600: #5a6575;
+	--bo-gray-700: #3e4756;
+	--bo-gray-800: #29313d;
+	--bo-gray-900: #151a22;
+
+	// Surfaces, from the page ground inwards.
+	--bo-canvas: #f4f6f9;
+	--bo-surface: #fff;
+	--bo-sunken: #f8fafc;
+	--bo-border: #e3e7ee;
+	--bo-border-strong: #cfd6e0;
+
+	// Text, three levels and no more. A fourth grey is how a screen ends up
+	// with body copy nobody can read.
+	--bo-text: #151a22;
+	--bo-text-secondary: #5a6575;
+	--bo-text-muted: #788395;
+
+	// Accent. WordPress 7's own admin blue, so the themed wp-components
+	// controls and anything we draw ourselves are the same blue.
+	--bo-accent: #3858e9;
+	--bo-accent-hover: #2b45c4;
+	--bo-accent-soft: #eef1fe;
+	--bo-accent-border: #c6d0fc;
+
+	// States.
+	--bo-success: #0c7148;
+	--bo-success-soft: #e9f6ef;
+	--bo-success-border: #b4e0c9;
+	--bo-warn: #92620a;
+	--bo-warn-soft: #fdf6e5;
+	--bo-warn-border: #efd9a3;
+	--bo-danger: #b42318;
+	--bo-danger-soft: #fef3f2;
+	--bo-danger-border: #f6cec9;
+
+	// Radii. Four steps: a chip, a control, a panel, a card.
+	--bo-r-xs: 4px;
+	--bo-r-sm: 6px;
+	--bo-r-md: 8px;
+	--bo-r-lg: 12px;
+	--bo-r-pill: 999px;
+
+	// Elevation. Two-part shadows — a tight contact shadow and a soft spread —
+	// because a single large blur reads as fog rather than as height.
+	--bo-shadow-xs: 0 1px 2px rgb(16 24 40 / 5%);
+	--bo-shadow-sm:
+		0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px -1px rgb(16 24 40 / 6%);
+	--bo-shadow-md:
+		0 2px 4px -2px rgb(16 24 40 / 6%), 0 6px 16px -4px rgb(16 24 40 / 8%);
+	--bo-shadow-lg:
+		0 4px 8px -4px rgb(16 24 40 / 6%), 0 16px 32px -8px rgb(16 24 40 / 12%);
+	--bo-ring: 0 0 0 3px rgb(56 88 233 / 16%);
+	--bo-ring-danger: 0 0 0 3px rgb(180 35 24 / 14%);
+
+	// Space, on a 4px grid. Named by step rather than by use, so the same
+	// scale serves a gap, a padding and a margin.
+	--bo-space-1: 4px;
+	--bo-space-2: 8px;
+	--bo-space-3: 12px;
+	--bo-space-4: 16px;
+	--bo-space-5: 20px;
+	--bo-space-6: 24px;
+	--bo-space-7: 32px;
+	--bo-space-8: 40px;
+
+	// Type. Five sizes; the screen needs no more, and every one it grew
+	// beyond these was a rounding error away from one of them.
+	--bo-text-2xs: 0.6875rem;
+	--bo-text-xs: 0.75rem;
+	--bo-text-sm: 0.8125rem;
+	--bo-text-md: 0.875rem;
+	--bo-text-lg: 1rem;
+	--bo-text-xl: 1.5rem;
+	--bo-mono: ui-monospace, sfmono-regular, "SF Mono", menlo, consolas,
+		monospace;
+
+	// One duration and one curve, so nothing on the screen moves at a speed
+	// nothing else moves at.
+	--bo-ease: cubic-bezier(0.2, 0, 0.13, 1);
+	--bo-fast: 120ms;
+}
+
+/**
+ * The screen itself.
+ *
+ * `toplevel_page_bridge-theme-options` is the body class core derives from the
+ * menu slug, so the ground can be repainted without a wrapper of our own —
+ * and it applies to this screen alone.
+ */
+// stylelint-disable-next-line selector-class-pattern
+body.toplevel_page_bridge-theme-options {
+	@include bridge-options-tokens;
+
+	background: var(--bo-canvas);
+
+	// `html.wp-toolbar` paints core's own grey behind the body, which shows
+	// through wherever the body is shorter than the viewport. Painting the
+	// wrapper as well means the canvas reaches the bottom of a short screen
+	// rather than stopping in a seam halfway down it.
+	#wpwrap {
+		background: var(--bo-canvas);
+	}
+
+	// Core's `.wrap` opens with a 10px top margin sized for a notice that is
+	// not there. The screen's own header supplies the space instead.
+	.wrap {
+		margin-block-start: 0;
+		padding-block-end: var(--bo-space-8);
+	}
+}
+
+/**
+ * ---- Controls ------------------------------------------------------------
+ *
+ * The typography and the resting shape of every wp-components control, set in
+ * one place. Behaviour is untouched — this is the label, the help text, the
+ * border and the focus ring, which is all a control's *design* is once the
+ * component is doing the work.
+ *
+ * A label at 13px semibold over a 13px help line in secondary grey is the
+ * whole hierarchy a form needs: the label names the setting, the help says
+ * what it does, and nothing else on the row competes with either.
+ *
+ * The accent is set through the two custom properties wp-components documents
+ * and reads itself, which is the whole of the colour theming: primary buttons,
+ * toggles, focus rings and the range track all follow from it.
+ *
+ * WordPress 7 also ships a `--wpds-*` token layer, and its stylelint plugin
+ * forbids a theme setting one — reasonably, since they are internal and can be
+ * renamed. Nothing here needs to: `--bo-accent` *is* WP 7's own #3858e9, so
+ * every `--wpds-` default already resolves to the accent this screen wants,
+ * and the one place it does not — the tab indicator, which core draws in grey
+ * — is repainted by a rule of our own further down.
+ */
+#bridge-options-root {
+	@include bridge-options-tokens;
+
+	--wp-components-color-accent: var(--bo-accent);
+	--wp-components-color-accent-darker-10: var(--bo-accent-hover);
+	--wp-components-color-accent-darker-20: var(--bo-accent-hover);
+	--wp-admin-theme-color: var(--bo-accent);
+	--wp-admin-theme-color-darker-10: var(--bo-accent-hover);
+	--wp-admin-theme-color-darker-20: var(--bo-accent-hover);
+
+	color: var(--bo-text);
+	font-size: var(--bo-text-md);
+	line-height: 1.5;
+
+	// Both names are live: BaseControl labels the plain controls, InputControl
+	// labels the ones built on the newer primitive. They are the same thing on
+	// screen and have to be the same thing to read.
+	//
+	// Every rule in this block is qualified by the ID on purpose. wp-components
+	// styles these through emotion, which injects into <head> at runtime and so
+	// wins any tie on source order — an ID beats it without an `!important`.
+	.components-base-control__label,
+	.components-input-control__label {
+		margin-bottom: var(--bo-space-2);
+		font-size: var(--bo-text-sm);
+		font-weight: 600;
+		line-height: 1.4;
+		text-transform: none;
+		letter-spacing: 0;
+		color: var(--bo-text);
+	}
+
+	.components-base-control__help {
+		margin-top: var(--bo-space-2);
+		font-size: var(--bo-text-xs);
+		font-style: normal;
+		line-height: 1.5;
+		color: var(--bo-text-secondary);
+	}
+
+	// One resting shape for every field: a real border rather than core's
+	// inset shadow, so a row of inputs and a row of panels line up on the
+	// same hairline.
+	.components-text-control__input,
+	.components-select-control__input,
+	.components-textarea-control,
+	.components-input-control__backdrop {
+		border-color: var(--bo-border-strong);
+		border-radius: var(--bo-r-sm);
+	}
+
+	.components-input-control__container:focus-within
+		.components-input-control__backdrop {
+		border-color: var(--bo-accent);
+		box-shadow: var(--bo-ring);
+	}
+
+	.components-select-control__input:focus,
+	.components-textarea-control:focus {
+		border-color: var(--bo-accent);
+		box-shadow: var(--bo-ring);
+	}
+
+	.components-button {
+		border-radius: var(--bo-r-md);
+
+		&:focus-visible {
+			box-shadow: var(--bo-ring);
+			outline: 2px solid transparent;
+		}
+	}
+
+	// A secondary button reads as a button: a border, not a blue outline that
+	// competes with the primary beside it.
+	.components-button.is-secondary {
+		border: 1px solid var(--bo-border-strong);
+		box-shadow: none;
+		color: var(--bo-text);
+
+		&:not(:disabled):hover {
+			border-color: var(--bo-gray-400);
+			background: var(--bo-gray-50);
+			color: var(--bo-text);
+		}
+	}
+
+	// The filled part of a slider, in the accent — the same blue the Widths
+	// bars in the preview column use, so a setting and its readout are
+	// recognisably the same measurement.
+	.components-range-control__track {
+		background: var(--bo-accent);
+	}
+
+	.components-range-control__thumb {
+		border-color: var(--bo-accent);
+	}
+}
+
+/**
+ * ---- Notices -------------------------------------------------------------
+ *
+ * The screen's four outcomes — saved, clamped, failed, and the stranded Global
+ * Styles warning core prints — drawn as one thing. Core's admin notice is a
+ * square white box with a coloured left edge; the wp-components notice is a
+ * different square box with a different coloured edge. Both become a tinted
+ * card in the state's own colour, which is the vocabulary the contrast rows
+ * and the unsaved-changes strip already use.
+ */
+#bridge-options-root .components-notice,
+// stylelint-disable-next-line selector-class-pattern
+body.toplevel_page_bridge-theme-options .wrap > .notice {
+	margin: 0 0 var(--bo-space-4);
+	padding: var(--bo-space-3) var(--bo-space-4);
+	border: 1px solid var(--bo-border);
+	border-left-width: 1px;
+	border-radius: var(--bo-r-md);
+	background: var(--bo-sunken);
+	box-shadow: none;
+	font-size: var(--bo-text-sm);
+	line-height: 1.55;
+	color: var(--bo-text-secondary);
+
+	p {
+		margin: 0;
+		font-size: inherit;
+		line-height: inherit;
+	}
+
+	strong {
+		color: var(--bo-text);
+	}
+}
+
+#bridge-options-root .components-notice.is-success {
+	border-color: var(--bo-success-border);
+	background: var(--bo-success-soft);
+	color: var(--bo-success);
+}
+
+#bridge-options-root .components-notice.is-warning,
+// stylelint-disable-next-line selector-class-pattern
+body.toplevel_page_bridge-theme-options .wrap > .notice-warning {
+	border-color: var(--bo-warn-border);
+	background: var(--bo-warn-soft);
+	color: var(--bo-warn);
+}
+
+#bridge-options-root .components-notice.is-error,
+// stylelint-disable-next-line selector-class-pattern
+body.toplevel_page_bridge-theme-options .wrap > .notice-error {
+	border-color: var(--bo-danger-border);
+	background: var(--bo-danger-soft);
+	color: var(--bo-danger);
+}
+
+// The strong in a tinted notice inherits the state's colour rather than
+// reverting to near-black, which read as two messages in one box.
+#bridge-options-root .components-notice:not(.is-info) strong,
+// stylelint-disable-next-line selector-class-pattern
+body.toplevel_page_bridge-theme-options .wrap > .notice-warning strong {
+	color: inherit;
+}
+
 .bridge-options {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
-	gap: 2rem;
+	gap: var(--bo-space-6);
 	align-items: start;
-	margin-top: 1.5rem;
-	max-width: 78rem;
+	margin-top: var(--bo-space-6);
+	max-width: 84rem;
 
 	@media (max-width: 1180px) {
 		grid-template-columns: minmax(0, 1fr);
@@ -54,75 +386,126 @@
 
 .bridge-options__main {
 	display: grid;
-	gap: 1.5rem;
+	gap: var(--bo-space-6);
 	min-width: 0;
 }
 
+/**
+ * ---- The card ------------------------------------------------------------
+ *
+ * The one repeated container on the screen, and the reason everything else can
+ * be quiet. A header zone carrying the title and the sentence that explains
+ * it, a hairline, then the controls — so the eye can find the subject of a
+ * panel without reading it, and a section with eleven controls in it still
+ * looks like a section rather than a form.
+ *
+ * The padding is on the children rather than the card, which is what lets the
+ * rule run edge to edge. A card with a description and one without both come
+ * out with the same 20px above the rule.
+ */
 .bridge-options__section {
-	background: #fff;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
-	padding: 1.25rem 1.5rem 1.5rem;
+	background: var(--bo-surface);
+	border: 1px solid var(--bo-border);
+	border-radius: var(--bo-r-lg);
+	box-shadow: var(--bo-shadow-sm);
+	padding: 0;
 }
 
 .bridge-options__section-title {
 	margin: 0;
-	font-size: 1rem;
-	line-height: 1.4;
+	padding: var(--bo-space-5) var(--bo-space-6) 0;
+	font-size: var(--bo-text-lg);
+	font-weight: 600;
+	line-height: 1.35;
+	letter-spacing: -0.011em;
+	color: var(--bo-text);
 }
 
 .bridge-options__section-description {
-	margin: 0.35rem 0 0;
-	max-width: 60ch;
-	color: #50575e;
+	margin: var(--bo-space-2) 0 0;
+	padding-inline: var(--bo-space-6);
+	max-width: 68ch;
+	font-size: var(--bo-text-md);
+	line-height: 1.55;
+	color: var(--bo-text-secondary);
 }
 
 .bridge-options__controls {
 	display: grid;
-	gap: 1.25rem;
-	margin-top: 1.25rem;
+	gap: var(--bo-space-5);
+	margin-top: var(--bo-space-5);
+	padding: var(--bo-space-6);
+	border-top: 1px solid var(--bo-border);
 }
 
 // ---- Palette slots -------------------------------------------------------
 
 .bridge-options__slots {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-	gap: 1.25rem;
+	// 13rem, not 15: six slots want to be three across on a laptop with the
+	// admin menu open, and a slot only has to hold a 40px swatch and eight
+	// monospace characters. At 15rem the grid dropped to two columns and the
+	// palette stopped reading as one set of six.
+	grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+	gap: var(--bo-space-4);
 }
 
 $slot-height: 40px;
-$slot-border: #949494;
-$slot-focus: #2271b1;
-$slot-error: #d63638;
 
+/**
+ * One slot: a name, and a colour.
+ *
+ * Boxed, and the box is the point. Six loose pairs of fields in a grid read as
+ * twelve fields, and the eye has to work out which name belongs to which hex
+ * every time it lands. One tinted panel per slot, with the slug as its
+ * heading, makes the pairing structural instead of a matter of proximity.
+ */
 .bridge-slot {
 	display: grid;
-	gap: 0.375rem;
+	gap: var(--bo-space-2);
 	min-width: 0;
+	padding: var(--bo-space-3);
+	border: 1px solid var(--bo-border);
+	border-radius: var(--bo-r-md);
+	background: var(--bo-sunken);
+	transition: border-color var(--bo-fast) var(--bo-ease);
+
+	&:focus-within {
+		border-color: var(--bo-border-strong);
+	}
 }
 
 .bridge-slot__slug {
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	font-size: 0.6875rem;
+	font-family: var(--bo-mono);
+	font-size: var(--bo-text-2xs);
+	font-weight: 500;
 	letter-spacing: 0.04em;
-	color: #787c82;
+	color: var(--bo-text-muted);
 }
 
 // A card background has a fixed label instead of an editable name, so its slug
 // line is prose rather than a slug.
 .bridge-slot--fixed .bridge-slot__slug {
 	font-family: inherit;
-	font-size: 0.75rem;
+	font-size: var(--bo-text-sm);
+	font-weight: 500;
 	letter-spacing: 0;
-	color: #1e1e1e;
+	color: var(--bo-text);
 }
 
 // The name field sits above the colour field and should read as its equal:
 // same height, same radius, same border weight.
 .bridge-slot .components-text-control__input {
 	height: $slot-height;
-	border-radius: 4px;
+	border: 1px solid var(--bo-border-strong);
+	border-radius: var(--bo-r-sm);
+	background: var(--bo-surface);
+	box-shadow: none;
+
+	&:focus {
+		border-color: var(--bo-accent);
+		box-shadow: var(--bo-ring);
+	}
 }
 
 // Swatch and hex input share one border so they read as a single colour
@@ -131,30 +514,30 @@ $slot-error: #d63638;
 	display: flex;
 	align-items: stretch;
 	height: $slot-height;
-	border: 1px solid $slot-border;
-	border-radius: 4px;
-	background: #fff;
+	border: 1px solid var(--bo-border-strong);
+	border-radius: var(--bo-r-sm);
+	background: var(--bo-surface);
 	overflow: hidden;
 	transition:
-		border-color 0.1s ease-in-out,
-		box-shadow 0.1s ease-in-out;
+		border-color var(--bo-fast) var(--bo-ease),
+		box-shadow var(--bo-fast) var(--bo-ease);
 
 	&:hover {
-		border-color: #646970;
+		border-color: var(--bo-gray-400);
 	}
 
 	// One ring around the pair, so tabbing to either half highlights the
 	// whole control rather than lighting up half of it.
 	&:focus-within {
-		border-color: $slot-focus;
-		box-shadow: 0 0 0 1px $slot-focus;
+		border-color: var(--bo-accent);
+		box-shadow: var(--bo-ring);
 	}
 
 	&.is-invalid {
-		border-color: $slot-error;
+		border-color: var(--bo-danger);
 
 		&:focus-within {
-			box-shadow: 0 0 0 1px $slot-error;
+			box-shadow: var(--bo-ring-danger);
 		}
 	}
 }
@@ -212,14 +595,14 @@ $slot-error: #d63638;
 	height: 100%;
 	min-height: 0;
 	margin: 0;
-	padding: 0 0.625rem;
+	padding: 0 var(--bo-space-3);
 	border: 0;
 	border-radius: 0;
 	box-shadow: none;
 	background: transparent;
-	color: #1e1e1e;
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	font-size: 0.8125rem;
+	color: var(--bo-text);
+	font-family: var(--bo-mono);
+	font-size: var(--bo-text-sm);
 	line-height: 1;
 	letter-spacing: 0.03em;
 	text-transform: lowercase;
@@ -231,82 +614,221 @@ $slot-error: #d63638;
 	}
 
 	&::placeholder {
-		color: #a7aaad;
+		color: var(--bo-gray-400);
 	}
 }
 
 .bridge-slot__picker {
-	padding: 0.5rem;
+	padding: var(--bo-space-2);
+}
+
+/**
+ * ---- A nested panel ------------------------------------------------------
+ *
+ * The shape a group of controls takes when it belongs inside a card rather
+ * than beside it — the Google Fonts block, the hint strips, the read-only
+ * inventories. Sunken rather than raised: a panel inside a card that carries
+ * its own shadow reads as a card that has come loose.
+ */
+@mixin bridge-panel {
+	border: 1px solid var(--bo-border);
+	border-radius: var(--bo-r-md);
+	background: var(--bo-sunken);
+}
+
+/**
+ * ---- A choosable tile ----------------------------------------------------
+ *
+ * One shape for every pick-one-of-these on the screen: the header layouts, the
+ * button skins, the icon weights, the header and footer schematics. They were
+ * four slightly different selected states — one an inset ring, one an outer
+ * ring, one a tint, one a tint and a colour — which meant an operator had to
+ * relearn "this is the chosen one" on each tab.
+ *
+ * Selected is a doubled accent edge and a tint, everywhere. The edge is drawn
+ * with a shadow rather than a second border so the tile does not change size
+ * when it is picked, which is what made the old pickers jump.
+ */
+@mixin bridge-selectable {
+	border: 1px solid var(--bo-border);
+	border-radius: var(--bo-r-md);
+	background: var(--bo-surface);
+	color: var(--bo-text);
+	cursor: pointer;
+	text-align: left;
+	transition:
+		border-color var(--bo-fast) var(--bo-ease),
+		background-color var(--bo-fast) var(--bo-ease),
+		box-shadow var(--bo-fast) var(--bo-ease);
+
+	&:hover {
+		border-color: var(--bo-border-strong);
+		background: var(--bo-sunken);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--bo-accent);
+		outline-offset: 2px;
+	}
+
+	&.is-active {
+		border-color: var(--bo-accent);
+		background: var(--bo-accent-soft);
+		box-shadow: inset 0 0 0 1px var(--bo-accent);
+	}
 }
 
 // ---- Google Fonts --------------------------------------------------------
 
 .bridge-google {
+	@include bridge-panel;
+
 	display: grid;
-	gap: 0.75rem;
-	padding: 0.9rem 1rem;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
-	background: #f6f7f7;
+	gap: var(--bo-space-3);
+	padding: var(--bo-space-4);
 }
 
 .bridge-google__pickers {
 	display: grid;
-	gap: 1rem;
-	padding-top: 0.25rem;
-	border-top: 1px solid #dcdcde;
+	gap: var(--bo-space-4);
+	padding-top: var(--bo-space-4);
+	border-top: 1px solid var(--bo-border);
 }
 
 .bridge-google__note {
 	margin: 0;
-	font-size: 0.75rem;
-	color: #646970;
+	font-size: var(--bo-text-xs);
+	color: var(--bo-text-muted);
 }
 
-// ---- Preview column ------------------------------------------------------
-
+/**
+ * ---- Preview column ------------------------------------------------------
+ *
+ * Sticky, and scrollable in its own right. The old column stuck to the top of
+ * the viewport and then simply ran off the bottom of it: on the Design tab the
+ * type scale is taller than a laptop screen, and the Widths panel underneath
+ * it could not be reached at all without scrolling the settings past their
+ * end. Capping the column at the viewport and letting it scroll internally
+ * makes the whole preview reachable from anywhere in the form.
+ */
 .bridge-options__preview {
 	min-width: 0;
 }
 
 .bridge-options__preview-inner {
 	position: sticky;
-	top: 2rem;
-	background: #fff;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
-	padding: 1.25rem;
+	// Under the admin bar and the sticky tab strip.
+	top: calc(32px + 48px + var(--bo-space-6));
+	max-height: calc(100vh - 32px - 48px - var(--bo-space-8));
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	background: var(--bo-surface);
+	border: 1px solid var(--bo-border);
+	border-radius: var(--bo-r-lg);
+	box-shadow: var(--bo-shadow-sm);
+	padding: var(--bo-space-5);
 	display: grid;
-	gap: 0.75rem;
+	gap: var(--bo-space-3);
+	align-content: start;
 
+	@media (max-width: 1180px) {
+		position: static;
+		max-height: none;
+	}
+
+	// A quiet scrollbar — the column is a panel, not a document.
+	scrollbar-width: thin;
+	scrollbar-color: var(--bo-gray-300) transparent;
+
+	/**
+	 * A group heading inside the preview.
+	 *
+	 * An eyebrow rather than a heading: it names what is underneath at a size
+	 * that cannot compete with the specimen it labels, and the rule above it
+	 * does the separating that a larger type size would otherwise have to.
+	 */
 	h3 {
-		margin: 0.75rem 0 0;
-		font-size: 0.75rem;
+		margin: var(--bo-space-4) 0 var(--bo-space-1);
+		padding-top: var(--bo-space-4);
+		border-top: 1px solid var(--bo-border);
+		font-size: var(--bo-text-2xs);
+		font-weight: 650;
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: #50575e;
+		letter-spacing: 0.07em;
+		color: var(--bo-text-muted);
 	}
 }
 
+/**
+ * ---- The save bar --------------------------------------------------------
+ *
+ * The one thing on the screen that must never be hunted for. It sits at the
+ * top of the sticky column, on its own ground and over its own rule, so it
+ * reads as the screen's commit control rather than as the first item of the
+ * preview — which is what it looked like when it shared a background with the
+ * swatches underneath it.
+ */
 .bridge-options__actions {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 0.5rem;
+	align-items: center;
+	gap: var(--bo-space-2);
+
+	.components-button.is-primary {
+		border-radius: var(--bo-r-md);
+		box-shadow: var(--bo-shadow-xs);
+		font-weight: 600;
+	}
+
+	.components-button.is-tertiary {
+		border-radius: var(--bo-r-md);
+		color: var(--bo-text-secondary);
+
+		&:not(:disabled):hover {
+			background: var(--bo-gray-100);
+			color: var(--bo-text);
+		}
+	}
 }
 
+/**
+ * Unsaved changes.
+ *
+ * A status, so it is drawn as one: a tinted strip with a dot, rather than a
+ * line of orange text that reads as a validation error. It says what is true
+ * of the screen, which is that the preview is ahead of the site.
+ */
 .bridge-options__dirty {
+	display: flex;
+	align-items: center;
+	gap: var(--bo-space-2);
 	margin: 0;
-	font-size: 0.8rem;
-	color: #996800;
+	padding: var(--bo-space-2) var(--bo-space-3);
+	border: 1px solid var(--bo-warn-border);
+	border-radius: var(--bo-r-md);
+	background: var(--bo-warn-soft);
+	font-size: var(--bo-text-sm);
+	line-height: 1.45;
+	color: var(--bo-warn);
+
+	&::before {
+		content: "";
+		flex: none;
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: currentcolor;
+	}
 }
 
 .bridge-options__loading {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
-	padding: 2rem 0;
+	gap: var(--bo-space-2);
+	padding: var(--bo-space-8) 0;
 	justify-content: center;
-	color: #50575e;
+	font-size: var(--bo-text-sm);
+	color: var(--bo-text-secondary);
 }
 
 // ---- Brand preview -------------------------------------------------------
@@ -547,35 +1069,69 @@ $slot-error: #d63638;
  * panels.
  */
 .bridge-options__cardstyle {
+	// The styles are grid children of `__controls`, so the gap between them is
+	// already there; the rule only has to divide, not space.
 	& + & {
-		margin-top: 1.5rem;
-		padding-top: 1.25rem;
-		border-top: 1px solid rgb(0 0 0 / 8%);
+		padding-top: var(--bo-space-5);
+		border-top: 1px solid var(--bo-border);
 	}
 }
 
 .bridge-options__cardstyle-fields {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-	gap: 0 1rem;
-	margin-top: 0.75rem;
+	gap: var(--bo-space-5) var(--bo-space-5);
+	margin-top: var(--bo-space-4);
 }
 
-// A heading inside a section, for a group of controls that belongs to it
-// rather than to a section of its own.
+/**
+ * A heading inside a section, for a group of controls that belongs to it
+ * rather than to a section of its own.
+ *
+ * Sentence case at text weight rather than the uppercase eyebrow it was: a
+ * subheading inside a card is subordinate to the card's title, and shouting it
+ * in small caps put it at the same volume as the thing it sits under. The rule
+ * above does the separating instead.
+ */
 .bridge-options__subhead {
-	margin: 1.25rem 0 0.25rem;
-	font-size: 0.8125rem;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	color: #50575e;
+	margin: 0;
+	font-size: var(--bo-text-md);
+	font-weight: 600;
+	letter-spacing: -0.006em;
+	color: var(--bo-text);
 }
 
 .bridge-options__subhelp {
-	margin: 0 0 0.75rem;
-	max-width: 46rem;
-	font-size: 0.8125rem;
-	color: #50575e;
+	margin: var(--bo-space-1) 0 0;
+	max-width: 68ch;
+	font-size: var(--bo-text-sm);
+	line-height: 1.55;
+	color: var(--bo-text-secondary);
+}
+
+/**
+ * The two of them as direct children of `__controls`, which is the only place
+ * they need a rule and the only place the grid gap is between them.
+ *
+ * Both of these used to be unconditional, and that broke the Cards tab: a card
+ * style wraps its own heading in a `__cardstyle` div that already carries the
+ * dividing rule, so the heading drew a second one — and the sentence under it,
+ * written to be pulled back against a 20px grid gap it no longer had, was
+ * pulled straight into the heading instead. A rule that assumes its parent has
+ * to say which parent.
+ */
+.bridge-options__controls > .bridge-options__subhead {
+	margin-top: var(--bo-space-2);
+	padding-top: var(--bo-space-5);
+	border-top: 1px solid var(--bo-border);
+}
+
+.bridge-options__controls
+	> .bridge-options__subhead
+	+ .bridge-options__subhelp {
+	// The heading and its sentence are one unit; the 20px gap that is right
+	// between two controls reads as two things between these.
+	margin-top: calc(var(--bo-space-1) - var(--bo-space-5));
 }
 
 // ---- Type scale ----------------------------------------------------------
@@ -589,7 +1145,7 @@ $slot-error: #d63638;
 	display: grid;
 	gap: 0.15rem;
 	padding-bottom: 0.9rem;
-	border-bottom: 1px solid #f0f0f1;
+	border-bottom: 1px solid var(--bo-gray-100);
 
 	&:last-child {
 		border-bottom: 0;
@@ -602,7 +1158,7 @@ $slot-error: #d63638;
 	justify-content: space-between;
 	gap: 1rem;
 	font-size: 0.65rem;
-	color: #787c82;
+	color: var(--bo-text-muted);
 
 	code {
 		background: none;
@@ -615,7 +1171,7 @@ $slot-error: #d63638;
 	// The whole point is showing real sizes, so let big steps be big — but
 	// never let one push the sticky column sideways.
 	overflow-wrap: break-word;
-	color: #1e1e1e;
+	color: var(--bo-text);
 }
 
 // ---- Icon weights --------------------------------------------------------
@@ -628,17 +1184,18 @@ $slot-error: #d63638;
 .bridge-preview__icon-row {
 	display: grid;
 	gap: 0.3rem;
-	padding: 0.55rem 0.65rem;
-	border: 1px solid #f0f0f1;
-	border-radius: 4px;
-	color: #50575e;
+	padding: var(--bo-space-3);
+	border: 1px solid var(--bo-border);
+	border-radius: var(--bo-r-md);
+	color: var(--bo-text-secondary);
 
 	// The active weight gets the accent treatment so the comparison always
 	// answers "and which one am I actually shipping?".
 	&.is-active {
-		border-color: #2271b1;
-		background: #f0f6fc;
-		color: #1e1e1e;
+		border-color: var(--bo-accent);
+		background: var(--bo-accent-soft);
+		box-shadow: inset 0 0 0 1px var(--bo-accent);
+		color: var(--bo-text);
 	}
 }
 
@@ -649,13 +1206,13 @@ $slot-error: #d63638;
 	font-size: 0.68rem;
 	text-transform: uppercase;
 	letter-spacing: 0.07em;
-	color: #787c82;
+	color: var(--bo-text-muted);
 
 	em {
 		font-style: normal;
 		text-transform: none;
 		letter-spacing: 0;
-		color: #2271b1;
+		color: var(--bo-accent);
 	}
 }
 
@@ -668,8 +1225,8 @@ $slot-error: #d63638;
 
 .bridge-preview__empty {
 	margin: 0;
-	font-size: 0.8rem;
-	color: #757575;
+	font-size: var(--bo-text-sm);
+	color: var(--bo-text-muted);
 	font-style: italic;
 }
 
@@ -686,12 +1243,12 @@ $slot-error: #d63638;
 	align-items: center;
 	gap: 0.5rem;
 	font-size: 0.7rem;
-	color: #50575e;
+	color: var(--bo-text-secondary);
 }
 
 .bridge-preview__bar-track {
-	background: #f0f0f1;
-	border-radius: 2px;
+	background: var(--bo-gray-100);
+	border-radius: var(--bo-r-xs);
 	height: 0.6rem;
 	overflow: hidden;
 }
@@ -699,8 +1256,8 @@ $slot-error: #d63638;
 .bridge-preview__bar-fill {
 	display: block;
 	height: 100%;
-	background: #2271b1;
-	border-radius: 2px;
+	background: var(--bo-accent);
+	border-radius: var(--bo-r-xs);
 }
 
 .bridge-preview__bar-value {
@@ -708,31 +1265,85 @@ $slot-error: #d63638;
 	font-variant-numeric: tabular-nums;
 }
 
-// ---- Screen title --------------------------------------------------------
-
-.bridge-options__title {
-	font-weight: 700;
-	letter-spacing: -0.015em;
+/**
+ * ---- Screen header -------------------------------------------------------
+ *
+ * The title and the tab strip read as one band: a display-sized name, then the
+ * seven subjects the screen divides into, on a hairline that runs the width of
+ * the page. Core's `.wrap h1` is a 23px normal-weight line of text lost in
+ * grey; this is the name of a tool.
+ *
+ * Qualified by `.wrap` because that is what it has to beat: core sets the size
+ * and weight at `.wrap h1`, which outranks a bare class and quietly discards
+ * half of this rule.
+ */
+.wrap h1.bridge-options__title {
+	margin: 0;
+	padding: var(--bo-space-7) 0 var(--bo-space-5);
+	font-size: var(--bo-text-xl);
+	font-weight: 650;
+	line-height: 1.2;
+	letter-spacing: -0.02em;
+	color: var(--bo-text);
 }
 
-// ---- Tabs ----------------------------------------------------------------
-
+/**
+ * ---- Tabs ----------------------------------------------------------------
+ *
+ * Underlined rather than pilled, because there are seven of them and a
+ * segmented control with seven segments is a segmented control nobody can
+ * scan. The strip sticks under the admin bar, so the last section of a long
+ * tab is one click from the next tab rather than one scroll and one click.
+ *
+ * The indicator is core's own `::after`, recoloured — core animates its height
+ * on selection already, and reimplementing that would be a second animation to
+ * keep in step with the first.
+ */
 .bridge-options__tabs {
-	.components-tab-panel__tabs {
-		border-bottom: 1px solid #dcdcde;
-		gap: 0.25rem;
+	> .components-tab-panel__tabs {
+		position: sticky;
+		// Clear of the admin bar, which is 32px on a desktop viewport.
+		top: 32px;
+		z-index: 10;
+		gap: var(--bo-space-1);
+		margin-inline: calc(var(--bo-space-5) * -1);
+		padding-inline: var(--bo-space-5);
+		border-bottom: 1px solid var(--bo-border);
+		background: var(--bo-canvas);
+
+		@media (max-width: 782px) {
+			position: static;
+		}
 	}
 
 	.components-tab-panel__tabs-item {
+		padding: 0 var(--bo-space-3);
+		font-size: var(--bo-text-md);
 		font-weight: 500;
-		padding: 0 1rem;
+		color: var(--bo-text-secondary);
+		transition: color var(--bo-fast) var(--bo-ease);
+
+		&:not(:disabled, [aria-disabled="true"]):hover {
+			color: var(--bo-text);
+		}
+
+		// The resting indicator is core's grey; on hover it should read as the
+		// accent it is about to become rather than as a second colour.
+		&::after {
+			background: var(--bo-accent);
+		}
+
+		&.is-active {
+			font-weight: 600;
+			color: var(--bo-accent);
+		}
 	}
 }
 
 .bridge-options__panel {
 	display: grid;
-	gap: 1.5rem;
-	padding-top: 1.25rem;
+	gap: var(--bo-space-6);
+	padding-top: var(--bo-space-5);
 }
 
 // ---- Read-only inventories (Templates tab) -------------------------------
@@ -746,11 +1357,11 @@ $slot-error: #d63638;
 
 	> li {
 		display: grid;
-		gap: 0.3rem;
-		padding: 0.7rem 0.85rem;
-		border: 1px solid #f0f0f1;
-		border-radius: 4px;
-		background: #fbfbfb;
+		gap: var(--bo-space-1);
+		padding: var(--bo-space-3) var(--bo-space-4);
+		border: 1px solid var(--bo-border);
+		border-radius: var(--bo-r-md);
+		background: var(--bo-sunken);
 	}
 }
 
@@ -765,16 +1376,16 @@ $slot-error: #d63638;
 	}
 
 	code {
-		font-size: 0.72rem;
-		color: #787c82;
+		font-size: var(--bo-text-xs);
+		color: var(--bo-text-muted);
 		background: none;
 		padding: 0;
 	}
 }
 
 .bridge-inventory__desc {
-	font-size: 0.82rem;
-	color: #50575e;
+	font-size: var(--bo-text-sm);
+	color: var(--bo-text-secondary);
 	max-width: 62ch;
 }
 
@@ -788,33 +1399,36 @@ $slot-error: #d63638;
 	display: inline-flex;
 	align-items: center;
 	gap: 0.35rem;
-	font-size: 0.72rem;
+	font-size: var(--bo-text-xs);
 
 	code {
-		background: #f0f0f1;
-		padding: 0.1em 0.4em;
-		border-radius: 2px;
+		background: var(--bo-gray-100);
+		padding: 2px var(--bo-space-1);
+		border-radius: var(--bo-r-xs);
+		font-family: var(--bo-mono);
 		font-size: inherit;
+		color: var(--bo-text-secondary);
 	}
 
 	em {
 		font-style: normal;
-		color: #996800;
+		color: var(--bo-warn);
 	}
 }
 
 .bridge-lock {
-	font-size: 0.68rem;
+	font-size: var(--bo-text-2xs);
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	padding: 0.15em 0.45em;
-	border-radius: 2px;
-	background: #f0f0f1;
-	color: #757575;
+	font-weight: 600;
+	padding: 2px var(--bo-space-2);
+	border-radius: var(--bo-r-pill);
+	background: var(--bo-gray-100);
+	color: var(--bo-text-muted);
 
 	&.is-locked {
-		background: #edf7ed;
-		color: #2c6e2f;
+		background: var(--bo-success-soft);
+		color: var(--bo-success);
 	}
 }
 
@@ -825,10 +1439,10 @@ $slot-error: #d63638;
 
 .bridge-family__name {
 	margin: 0 0 0.5rem;
-	font-size: 0.7rem;
+	font-size: var(--bo-text-2xs);
 	text-transform: uppercase;
 	letter-spacing: 0.09em;
-	color: #787c82;
+	color: var(--bo-text-muted);
 }
 
 .bridge-skins {
@@ -843,7 +1457,7 @@ $slot-error: #d63638;
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		font-size: 0.85rem;
+		font-size: var(--bo-text-md);
 	}
 }
 
@@ -851,14 +1465,14 @@ $slot-error: #d63638;
 	display: block;
 	width: 2.5rem;
 	height: 1.6rem;
-	border-radius: 3px;
+	border-radius: var(--bo-r-sm);
 	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
 	padding: 0;
 }
 
 .bridge-empty {
 	margin: 0;
-	color: #757575;
+	color: var(--bo-text-muted);
 	font-style: italic;
 }
 
@@ -872,13 +1486,14 @@ $slot-error: #d63638;
 .bridge-schema {
 	display: grid;
 	gap: 0.35rem;
-	padding: 0.55rem 0.65rem;
-	border: 1px solid #f0f0f1;
-	border-radius: 4px;
+	padding: var(--bo-space-3);
+	border: 1px solid var(--bo-border);
+	border-radius: var(--bo-r-md);
 
 	&.is-active {
-		border-color: #2271b1;
-		background: #f0f6fc;
+		border-color: var(--bo-accent);
+		background: var(--bo-accent-soft);
+		box-shadow: inset 0 0 0 1px var(--bo-accent);
 	}
 }
 
@@ -889,13 +1504,13 @@ $slot-error: #d63638;
 	font-size: 0.68rem;
 	text-transform: uppercase;
 	letter-spacing: 0.07em;
-	color: #787c82;
+	color: var(--bo-text-muted);
 
 	em {
 		font-style: normal;
 		text-transform: none;
 		letter-spacing: 0;
-		color: #2271b1;
+		color: var(--bo-accent);
 	}
 }
 
@@ -903,9 +1518,9 @@ $slot-error: #d63638;
 	display: grid;
 	gap: 0.25rem;
 	padding: 0.4rem;
-	border-radius: 3px;
-	background: #fff;
-	box-shadow: inset 0 0 0 1px #e0e0e0;
+	border-radius: var(--bo-r-sm);
+	background: var(--bo-surface);
+	box-shadow: inset 0 0 0 1px var(--bo-border);
 }
 
 .bridge-schema__row {
@@ -919,12 +1534,12 @@ $slot-error: #d63638;
 .bridge-schema__cell {
 	display: block;
 	height: 0.5rem;
-	border-radius: 2px;
-	background: #c3c4c7;
+	border-radius: var(--bo-r-xs);
+	background: var(--bo-gray-300);
 
 	&.is-logo {
 		width: 2.75rem;
-		background: #1e1e1e;
+		background: var(--bo-text);
 	}
 
 	&.is-nav {
@@ -933,7 +1548,7 @@ $slot-error: #d63638;
 
 	&.is-cta {
 		width: 2rem;
-		background: #2271b1;
+		background: var(--bo-accent);
 	}
 
 	&.is-col {
@@ -954,14 +1569,14 @@ $slot-error: #d63638;
 
 .bridge-schema__note {
 	margin: 0;
-	font-size: 0.72rem;
-	color: #2271b1;
+	font-size: var(--bo-text-xs);
+	color: var(--bo-accent);
 }
 
 .bridge-schema__rule {
 	margin: 0.35rem 0;
 	border: 0;
-	border-top: 1px solid #f0f0f1;
+	border-top: 1px solid var(--bo-gray-100);
 }
 
 // ---- Skin previews (Templates tab preview) -------------------------------
@@ -976,7 +1591,7 @@ $slot-error: #d63638;
 	gap: 0.3rem;
 	justify-items: start;
 	padding: 0.85rem 0.9rem;
-	border-radius: 4px;
+	border-radius: var(--bo-r-md);
 	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
 	font-size: 0.8rem;
 
@@ -989,7 +1604,7 @@ $slot-error: #d63638;
 .bridge-skin-preview__button {
 	margin-top: 0.15rem;
 	padding: 0.3rem 0.7rem;
-	border-radius: 3px;
+	border-radius: var(--bo-r-sm);
 	font-size: 0.72rem;
 }
 
@@ -1001,9 +1616,9 @@ $slot-error: #d63638;
 }
 
 .bridge-logo__label {
-	font-size: 0.8125rem;
-	font-weight: 500;
-	color: #1e1e1e;
+	font-size: var(--bo-text-sm);
+	font-weight: 600;
+	color: var(--bo-text);
 }
 
 .bridge-logo__row {
@@ -1021,24 +1636,24 @@ $slot-error: #d63638;
 	justify-content: center;
 	width: 5.5rem;
 	height: 2.5rem;
-	padding: 0.25rem;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
-	background-color: #fff;
+	padding: var(--bo-space-1);
+	border: 1px solid var(--bo-border-strong);
+	border-radius: var(--bo-r-md);
+	background-color: var(--bo-surface);
 	background-image:
 		linear-gradient(
 			45deg,
-			#f0f0f1 25%,
+			var(--bo-gray-100) 25%,
 			transparent 25%,
 			transparent 75%,
-			#f0f0f1 75%
+			var(--bo-gray-100) 75%
 		),
 		linear-gradient(
 			45deg,
-			#f0f0f1 25%,
+			var(--bo-gray-100) 25%,
 			transparent 25%,
 			transparent 75%,
-			#f0f0f1 75%
+			var(--bo-gray-100) 75%
 		);
 	background-size: 10px 10px;
 	background-position:
@@ -1052,16 +1667,16 @@ $slot-error: #d63638;
 	}
 
 	em {
-		font-size: 0.7rem;
-		color: #a7aaad;
+		font-size: var(--bo-text-2xs);
+		color: var(--bo-gray-400);
 		font-style: normal;
 	}
 }
 
 .bridge-logo__help {
 	margin: 0;
-	font-size: 0.75rem;
-	color: #646970;
+	font-size: var(--bo-text-xs);
+	color: var(--bo-text-secondary);
 }
 
 // ---- Full-width tab ------------------------------------------------------
@@ -1073,15 +1688,31 @@ $slot-error: #d63638;
 	grid-template-columns: minmax(0, 1fr);
 }
 
+/**
+ * The save bar, where there is no sidebar to hold it.
+ *
+ * Sticky under the tab strip for the same reason the sidebar's copy is sticky
+ * in the two-column tabs: Blocks is seventy switches and Templates is nine
+ * layout pickers, and a Save button at the top of either is a Save button
+ * nobody can reach from where they made the change.
+ */
 .bridge-options__bar {
+	position: sticky;
+	top: calc(32px + 48px);
+	z-index: 5;
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
-	gap: 0.75rem;
-	padding: 0.75rem 1rem;
-	background: #fff;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
+	gap: var(--bo-space-3);
+	padding: var(--bo-space-3) var(--bo-space-4);
+	background: var(--bo-surface);
+	border: 1px solid var(--bo-border);
+	border-radius: var(--bo-r-lg);
+	box-shadow: var(--bo-shadow-md);
+
+	@media (max-width: 782px) {
+		position: static;
+	}
 
 	.bridge-options__dirty {
 		margin-left: auto;
@@ -1096,9 +1727,9 @@ $slot-error: #d63638;
 }
 
 .bridge-layouts__label {
-	font-size: 0.8125rem;
-	font-weight: 500;
-	color: #1e1e1e;
+	font-size: var(--bo-text-sm);
+	font-weight: 600;
+	color: var(--bo-text);
 }
 
 .bridge-layouts__grid {
@@ -1112,36 +1743,17 @@ $slot-error: #d63638;
 // The whole tile is the target. Colour is set once here and the drawing
 // inherits it through currentColor, so the selected state is a single change.
 .bridge-layout {
+	@include bridge-selectable;
+
 	display: grid;
-	gap: 0.15rem;
+	gap: 2px;
 	justify-items: start;
-	padding: 0.75rem;
-	border: 1px solid #dcdcde;
-	border-radius: 6px;
-	background: #fff;
-	color: #1e1e1e;
-	cursor: pointer;
-	text-align: left;
-	transition:
-		border-color 0.12s ease,
-		background-color 0.12s ease,
-		box-shadow 0.12s ease;
+	padding: var(--bo-space-3);
 
-	&:hover {
-		border-color: #a7aaad;
-		background: #fbfbfb;
-	}
-
-	&:focus-visible {
-		outline: 2px solid #2271b1;
-		outline-offset: 1px;
-	}
-
+	// The drawing inherits its ink through `currentColor`, so the whole tile
+	// turns accent when it is chosen rather than only its label.
 	&.is-active {
-		border-color: #2271b1;
-		background: #f0f6fc;
-		color: #2271b1;
-		box-shadow: inset 0 0 0 1px #2271b1;
+		color: var(--bo-accent);
 	}
 }
 
@@ -1154,25 +1766,25 @@ $slot-error: #d63638;
 	// the tinted panel behind it still reads as the header's own frame.
 	max-height: 9rem;
 	margin-bottom: 0.4rem;
-	border-radius: 3px;
+	border-radius: var(--bo-r-sm);
 	background: color-mix(in srgb, currentcolor 5%, transparent);
 }
 
 .bridge-layout__name {
-	font-size: 0.8125rem;
+	font-size: var(--bo-text-sm);
 	font-weight: 600;
 }
 
 .bridge-layout__hint {
-	font-size: 0.72rem;
+	font-size: var(--bo-text-xs);
 	// Stays legible on both the resting and selected grounds.
 	opacity: 0.7;
 }
 
 .bridge-layouts__help {
 	margin: 0;
-	font-size: 0.75rem;
-	color: #646970;
+	font-size: var(--bo-text-xs);
+	color: var(--bo-text-secondary);
 }
 
 // ---- Menu slots ----------------------------------------------------------
@@ -1189,12 +1801,13 @@ $slot-error: #d63638;
 }
 
 .bridge-options__hint {
+	@include bridge-panel;
+
 	margin: 0;
-	padding: 0.6rem 0.75rem;
-	border-radius: 4px;
-	background: #f6f7f7;
-	font-size: 0.8rem;
-	color: #50575e;
+	padding: var(--bo-space-3);
+	font-size: var(--bo-text-sm);
+	line-height: 1.5;
+	color: var(--bo-text-secondary);
 }
 
 /**
@@ -1271,13 +1884,13 @@ $slot-error: #d63638;
  */
 .bridge-cpt__url {
 	margin: 0.75rem 0 0;
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	font-size: 0.75rem;
-	color: #787c82;
+	font-family: var(--bo-mono);
+	font-size: var(--bo-text-xs);
+	color: var(--bo-text-muted);
 	overflow-wrap: anywhere;
 
 	strong {
-		color: #1e1e1e;
+		color: var(--bo-text);
 	}
 }
 
@@ -1308,8 +1921,8 @@ $slot-error: #d63638;
 
 .bridge-cpt__count {
 	margin: 0.4rem 0 0;
-	font-size: 0.8125rem;
-	color: #50575e;
+	font-size: var(--bo-text-sm);
+	color: var(--bo-text-secondary);
 }
 
 .bridge-cpt__add {
@@ -1335,12 +1948,16 @@ $slot-error: #d63638;
 	align-items: flex-end;
 	justify-content: space-between;
 	flex-wrap: wrap;
-	gap: 1rem;
+	gap: var(--bo-space-4);
 	position: sticky;
-	top: 32px;
+	// Below the screen's own save bar, which is the thing that must stay on
+	// top when both are stuck — hence the lower z-index as well as the offset.
+	top: calc(32px + 48px + 64px);
 	z-index: 2;
-	padding: 0.75rem 0;
-	background: #fff;
+	margin-inline: calc(var(--bo-space-6) * -1);
+	padding: var(--bo-space-3) var(--bo-space-6);
+	background: var(--bo-surface);
+	border-bottom: 1px solid var(--bo-border);
 
 	.components-base-control {
 		flex: 1 1 18rem;
@@ -1349,9 +1966,9 @@ $slot-error: #d63638;
 }
 
 .bridge-blocks__tally {
-	margin: 0 0 0.35rem;
-	font-size: 0.82rem;
-	color: #50575e;
+	margin: 0 0 var(--bo-space-1);
+	font-size: var(--bo-text-sm);
+	color: var(--bo-text-secondary);
 	font-variant-numeric: tabular-nums;
 }
 
@@ -1363,20 +1980,21 @@ $slot-error: #d63638;
 .bridge-blocks__group-head {
 	display: flex;
 	align-items: baseline;
-	gap: 0.6rem;
-	border-bottom: 1px solid #e0e0e0;
-	padding-bottom: 0.4rem;
+	gap: var(--bo-space-2);
+	border-bottom: 1px solid var(--bo-border);
+	padding-bottom: var(--bo-space-2);
 }
 
 .bridge-blocks__group-title {
 	margin: 0;
-	font-size: 0.95rem;
+	font-size: var(--bo-text-md);
 	font-weight: 600;
+	letter-spacing: -0.006em;
 }
 
 .bridge-blocks__group-tally {
-	font-size: 0.78rem;
-	color: #787c82;
+	font-size: var(--bo-text-xs);
+	color: var(--bo-text-muted);
 	font-variant-numeric: tabular-nums;
 }
 
@@ -1386,7 +2004,7 @@ $slot-error: #d63638;
 	gap: 0.5rem;
 
 	.components-button.is-link {
-		font-size: 0.78rem;
+		font-size: var(--bo-text-xs);
 	}
 }
 
@@ -1396,26 +2014,36 @@ $slot-error: #d63638;
 	list-style: none;
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-	gap: 0.5rem;
+	gap: var(--bo-space-2);
 }
 
+/**
+ * One block, one switch.
+ *
+ * Off is the sunken ground, on is the accent tint — so the shape of what the
+ * library offers reads down a column of seventy rows without anyone checking
+ * a single toggle. A readout rather than a picker: no pointer, and no ring.
+ */
 .bridge-block {
 	display: grid;
-	gap: 0.15rem;
-	padding: 0.6rem 0.75rem;
-	border: 1px solid #f0f0f1;
-	border-radius: 4px;
-	background: #fbfbfb;
+	gap: 2px;
+	padding: var(--bo-space-3);
+	border: 1px solid var(--bo-border);
+	border-radius: var(--bo-r-md);
+	background: var(--bo-sunken);
+	transition:
+		border-color var(--bo-fast) var(--bo-ease),
+		background-color var(--bo-fast) var(--bo-ease);
 
 	&.is-on {
-		border-color: #dbe4ee;
-		background: #f6f9fc;
+		border-color: var(--bo-accent-border);
+		background: var(--bo-accent-soft);
 	}
 
 	// A theme block is the theme's own work rather than core's, which is worth
 	// knowing before switching one off.
 	&.is-theme .bridge-block__name {
-		color: #2271b1;
+		color: var(--bo-accent);
 	}
 
 	.components-toggle-control .components-base-control__field {
@@ -1424,15 +2052,16 @@ $slot-error: #d63638;
 }
 
 .bridge-block__name {
-	font-size: 0.72rem;
-	color: #787c82;
+	font-size: var(--bo-text-2xs);
+	font-family: var(--bo-mono);
+	color: var(--bo-text-muted);
 	background: none;
 	padding: 0;
 }
 
 .bridge-block__note {
-	font-size: 0.72rem;
-	color: #787c82;
+	font-size: var(--bo-text-xs);
+	color: var(--bo-text-muted);
 }
 
 // ---- Buttons tab -----------------------------------------------------------
@@ -1453,20 +2082,12 @@ $slot-error: #d63638;
 }
 
 .bridge-button-skin {
-	display: grid;
-	gap: 0.6rem;
-	align-content: start;
-	padding: 0.9rem 1rem 1rem;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
-	background: #fbfbfb;
-	cursor: pointer;
+	@include bridge-selectable;
 
-	&.is-active {
-		border-color: #2271b1;
-		box-shadow: 0 0 0 1px #2271b1;
-		background: #f6f9fc;
-	}
+	display: grid;
+	gap: var(--bo-space-3);
+	align-content: start;
+	padding: var(--bo-space-4);
 }
 
 .bridge-button-skin__head {
@@ -1476,9 +2097,9 @@ $slot-error: #d63638;
 }
 
 .bridge-button-skin__description {
-	font-size: 0.78rem;
+	font-size: var(--bo-text-sm);
 	line-height: 1.5;
-	color: #50575e;
+	color: var(--bo-text-secondary);
 }
 
 /**
@@ -1494,8 +2115,8 @@ $slot-error: #d63638;
 	gap: 0.75rem;
 	align-items: center;
 	padding: 1.35rem 1.25rem;
-	border-radius: 4px;
-	background: #fff;
+	border-radius: var(--bo-r-md);
+	background: var(--bo-surface);
 	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
 }
 
@@ -1535,7 +2156,7 @@ $slot-error: #d63638;
 
 .bridge-preview__button-band {
 	padding: 0.85rem 0.9rem 0.9rem;
-	border-radius: 4px;
+	border-radius: var(--bo-r-md);
 	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
 }
 
@@ -1564,17 +2185,18 @@ $slot-error: #d63638;
 
 .bridge-ratio {
 	display: inline-flex;
-	gap: 0.3rem;
+	gap: var(--bo-space-1);
 	align-items: baseline;
-	padding: 0.15rem 0.4rem;
-	border-radius: 3px;
-	font-size: 0.68rem;
+	padding: 2px var(--bo-space-2);
+	border-radius: var(--bo-r-xs);
+	font-size: var(--bo-text-2xs);
+	font-variant-numeric: tabular-nums;
 	// Tinted from the band's own foreground rather than a fixed grey, so the
 	// readout stays legible on all four grounds without naming four colours.
 	background: color-mix(in srgb, currentcolor 12%, transparent);
 
 	&.is-fail {
-		background: #d63638;
+		background: var(--bo-danger);
 		color: #fff;
 	}
 }
@@ -1591,7 +2213,7 @@ $slot-error: #d63638;
 	display: grid;
 	gap: 0.6rem;
 	margin: 0;
-	font-size: 0.82rem;
+	font-size: var(--bo-text-sm);
 	line-height: 1.5;
 
 	li {
@@ -1617,28 +2239,28 @@ $slot-error: #d63638;
  */
 .bridge-audit {
 	display: grid;
-	gap: 0.4rem;
-	margin: 0 0 0.5rem;
+	gap: var(--bo-space-2);
+	margin: 0 0 var(--bo-space-2);
 	padding: 0;
 	list-style: none;
 
 	li {
 		display: flex;
-		gap: 0.75rem;
+		gap: var(--bo-space-3);
 		align-items: center;
 		margin: 0;
-		padding: 0.5rem 0.6rem;
-		border: 1px solid #dcdcde;
-		border-radius: 4px;
-		background: #fbfbfb;
+		padding: var(--bo-space-2) var(--bo-space-3);
+		border: 1px solid var(--bo-border);
+		border-radius: var(--bo-r-md);
+		background: var(--bo-sunken);
 	}
 
 	// A failure is marked twice: the row is tinted and the chip goes red. One
 	// of the two is colour alone, which is the thing this panel exists to
 	// object to — so the chip carries the ratio as text as well.
 	li.is-fail {
-		border-color: #f0b7b8;
-		background: #fcf0f1;
+		border-color: var(--bo-danger-border);
+		background: var(--bo-danger-soft);
 	}
 }
 
@@ -1650,24 +2272,29 @@ $slot-error: #d63638;
 	flex: 0 0 auto;
 	width: 2.5rem;
 	height: 2rem;
-	border-radius: 3px;
+	border-radius: var(--bo-r-sm);
 	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
-	font-size: 0.8rem;
+	font-size: var(--bo-text-md);
 	font-weight: 600;
 }
 
 .bridge-audit__pair {
 	display: grid;
-	gap: 0.1rem;
+	gap: 1px;
 	flex: 1 1 auto;
 	min-width: 0;
-	font-size: 0.78rem;
+	font-size: var(--bo-text-sm);
 	line-height: 1.4;
 
+	strong {
+		font-weight: 600;
+		color: var(--bo-text);
+	}
+
 	em {
-		color: #646970;
+		color: var(--bo-text-secondary);
 		font-style: normal;
-		font-size: 0.72rem;
+		font-size: var(--bo-text-xs);
 	}
 }
 
@@ -1683,7 +2310,7 @@ $slot-error: #d63638;
  */
 .bridge-preview__post {
 	overflow: hidden;
-	border-radius: 4px;
+	border-radius: var(--bo-r-md);
 	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
 }
 

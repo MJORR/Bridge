@@ -639,7 +639,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/feature-block',
-		'version' => '2.0.0',
+		'version' => '2.2.0',
 		'title' => 'Feature',
 		'category' => 'design',
 		'icon' => 'screenoptions',
@@ -654,6 +654,14 @@ return array(
 			'reusable' => false,
 		),
 		'attributes' => array(
+			'prefix' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'prefixColor' => array(
+				'type' => 'string',
+				'default' => '',
+			),
 			'title' => array(
 				'type' => 'string',
 				'default' => '',

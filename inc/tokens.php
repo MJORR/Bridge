@@ -290,6 +290,29 @@ function bridge_card_shadows(): array
 	 * all rather than a shadow that disagrees with its shape. That rule lives in
 	 * bridge_compile_theme_json(), so nothing on this list has to know about it.
 	 */
+	/**
+	 * `room` is how far each preset's shadow actually reaches past the card, in
+	 * pixels: `above` and `below`.
+	 *
+	 * It exists because one place on the site clips: a carousel is a scroll
+	 * container, and `overflow-x: auto` drags the block axis to `auto` with it
+	 * whatever the stylesheet asks for — so a row of cards had its shadow cut
+	 * off square at the top and bottom edges of the track while the same cards
+	 * in a wrapped grid kept theirs. The track opens up that much padding and
+	 * takes it straight back as a negative margin, which costs the layout
+	 * nothing and gives the shadow somewhere to land.
+	 *
+	 * Derived from the values beside it rather than guessed: the reach of a
+	 * `box-shadow` is its vertical offset plus its blur, taken from whichever
+	 * of the two layers reaches furthest, and measured against the *hover*
+	 * shadow because that is the biggest either card ever draws. The hover
+	 * state also lifts the card 2px, which is added above and would have been
+	 * subtracted below — left in, as the margin the rounding was going to need
+	 * anyway.
+	 *
+	 * So it is a figure to keep in step with the shadows, not an independent
+	 * setting: change a preset's blur and change its room in the same edit.
+	 */
 	return (array) apply_filters(
 		'bridge_card_shadows',
 		array(
@@ -297,21 +320,25 @@ function bridge_card_shadows(): array
 				'name'   => __('None', 'bridge'),
 				'shadow' => 'none',
 				'hover'  => 'none',
+				'room'   => array('above' => 0, 'below' => 0),
 			),
 			'soft'   => array(
 				'name'   => __('Soft', 'bridge'),
 				'shadow' => '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06)',
 				'hover'  => '0 4px 12px rgba(0, 0, 0, 0.1), 0 12px 24px rgba(0, 0, 0, 0.08)',
+				'room'   => array('above' => 14, 'below' => 36),
 			),
 			'medium' => array(
 				'name'   => __('Medium', 'bridge'),
 				'shadow' => '0 2px 6px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(0, 0, 0, 0.08)',
 				'hover'  => '0 6px 16px rgba(0, 0, 0, 0.12), 0 18px 36px rgba(0, 0, 0, 0.1)',
+				'room'   => array('above' => 20, 'below' => 54),
 			),
 			'strong' => array(
 				'name'   => __('Strong', 'bridge'),
 				'shadow' => '0 4px 10px rgba(0, 0, 0, 0.12), 0 14px 32px rgba(0, 0, 0, 0.12)',
 				'hover'  => '0 8px 20px rgba(0, 0, 0, 0.16), 0 24px 48px rgba(0, 0, 0, 0.14)',
+				'room'   => array('above' => 26, 'below' => 72),
 			),
 		)
 	);
@@ -626,14 +653,14 @@ function bridge_card_styles(): array
 			),
 			'tile'     => array(
 				'name'        => __('Tile', 'bridge'),
-				'description' => __('A large heading over a photograph, with a chip carrying the post’s “distance” field. For places rather than articles.', 'bridge'),
+				'description' => __('A large heading over a photograph, with a chip carrying the “distance” field. For places rather than articles.', 'bridge'),
 				'fields'      => array('heading', 'ratio'),
 				'heading'     => 'x-large',
 				'ratio'       => '16-9',
 			),
 			'cover'   => array(
 				'name'        => __('Cover', 'bridge'),
-				'description' => __('The photograph is the whole card, with the title and a link marker laid over it. A poster rather than a summary — it carries no words but the headline, so it wants a strong image and a short title.', 'bridge'),
+				'description' => __('The photograph is the whole card, with the title laid over it. A poster rather than a summary: it wants a strong image and a short title.', 'bridge'),
 				'fields'      => array('heading', 'ratio', 'wash'),
 				'heading'     => 'x-large',
 				'ratio'       => '3-4',
@@ -660,7 +687,7 @@ function bridge_card_styles(): array
 			 */
 			'team'    => array(
 				'name'        => __('Team', 'bridge'),
-				'description' => __('A circular photograph arching over a panel, a name, the post’s “subtitle” field as a role line, and a button. For people.', 'bridge'),
+				'description' => __('A circular photograph arching over a panel, a name, a role line and a button. For people.', 'bridge'),
 				'hidden'      => true,
 				'fields'      => array('heading', 'avatar'),
 				'heading'     => 'large',

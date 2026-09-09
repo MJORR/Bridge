@@ -262,11 +262,38 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 	@include carousel.controls;
 
 	// ---- Panel styles ----------------------------------------------------
-	// Card needs no rule of its own: `card.surface` on the panel already
-	// paints the shared card ground, which is what card means. The other two
-	// are departures from it.
-	&--panels-plain .bridge-feature,
-	&--panels-outline .bridge-feature {
+	/**
+	 * Card needs no rule of its own: `card.surface` on the panel already paints
+	 * the shared card ground and hangs Theme Options' card shadow off it, which
+	 * is what card means. The other two are departures from it.
+	 *
+	 * And the departure stops at a panel with a photograph in it, which is why
+	 * the exception is written into this selector rather than as a rule that
+	 * puts things back afterwards.
+	 *
+	 * A picture sitting on nothing is not a design decision, it is a picture
+	 * with a gap under it: the words below it would be printed straight onto
+	 * the band while the image above them still reads as the top of a card, and
+	 * the panel comes apart into two unrelated objects. So a Summary panel is a
+	 * card whatever the band's panel style says, and being a card is all of it
+	 * at once — the ground the section's skin gave it, the elevation Theme
+	 * Options set for every card on the site, and the lift under the pointer.
+	 *
+	 * It used to be a restore rule below, and that only ever put the ground
+	 * back. The shadow it could not: the strip sets
+	 * `--wp--custom--card--shadow-hover` to `none` on the panel itself, so a
+	 * later rule on the same element reading that property reads the `none` and
+	 * has no way back to the token. A panel with the card's colour, the card's
+	 * padding and no shadow standing beside a post card that had one was the
+	 * visible half of that; the hover lift silently not happening was the rest.
+	 * Not taking it away is the only version that keeps the token reachable.
+	 *
+	 * The Cover shape is deliberately not excepted. There the photograph *is*
+	 * the panel, so a ground behind it would never be seen — see `&--cover`,
+	 * which gives up both layers for the same reason these two do.
+	 */
+	&--panels-plain .bridge-feature:not(.bridge-feature--summary),
+	&--panels-outline .bridge-feature:not(.bridge-feature--summary) {
 		// Both layers, because with a cut corner the ground is painted by the
 		// surface inside the card rather than by the card itself — a panel
 		// that went transparent on one layer only would still be filled by the
@@ -283,49 +310,6 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 
 	&--panels-outline .bridge-feature {
 		border: 1px solid $edge;
-	}
-
-	/**
-	 * Except a panel with a photograph in it, which keeps the card's ground.
-	 *
-	 * A picture sitting on nothing is not a design decision, it is a picture
-	 * with a gap under it: the words below it would be printed straight onto
-	 * the band while the image above them still reads as the top of a card, and
-	 * the panel comes apart into two unrelated objects.
-	 *
-	 * So the ground follows the *content* rather than the panel style — an
-	 * image means a card, and a card takes whichever colour the section's skin
-	 * gave it, on Accent, Surface, Inverted or the page itself. Plain and
-	 * Outline still do what they say for the panels they were meant for: the
-	 * ones that are words alone.
-	 *
-	 * The Cover shape is deliberately not here. There the photograph *is* the
-	 * panel, so a ground behind it would never be seen — see `&--cover`, which
-	 * gives up both layers for the same reason these two do.
-	 *
-	 * `card.$ground` rather than the colour: it is the same chain
-	 * `card.surface` resolves, so this restores exactly what the rule above
-	 * took away rather than a second opinion about what a card ground is. Both
-	 * layers, because with the corner cut on it is the surface inside the card
-	 * that paints, and with it off it is the card itself.
-	 */
-	&--panels-plain .bridge-feature--summary,
-	&--panels-outline .bridge-feature--summary {
-		/*
-		 * Both layers, and the second one through `card.ground` rather than as
-		 * a colour.
-		 *
-		 * A flat `background-color` here paints the panel's own box, which is
-		 * the one box the cut does *not* clip — so with the corner switched on
-		 * it filled the chamfer back in and the notch stopped showing the band
-		 * through it. `card.ground` restores the same chain `card.surface`
-		 * writes: transparent while the cut is on, so the clipped `::before`
-		 * below paints the colour and the corner survives; the colour itself
-		 * when the cut is off and there is nothing to clip.
-		 */
-		--bridge-card-layer-bg: #{card.$ground};
-
-		@include card.ground;
 	}
 
 	// The panel keeps its padding when it has a ground to sit on. Without one
@@ -462,6 +446,36 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 		// Fills what the photograph left, so panels in a row are the same
 		// height and the rule below can put their buttons on one line.
 		flex: 1;
+	}
+
+	/**
+	 * The short label over the title — a step number, most often.
+	 *
+	 * Its default colour is not a named one. The band it sits on can be the
+	 * page, a Surface, an Accent or an Inverted one, so the fallback is mixed
+	 * from the band's own foreground like every other piece of furniture in
+	 * this file — and on a cover panel that foreground is already the ink
+	 * chosen against the wash, so the line follows the photograph without a
+	 * rule of its own. A panel that names a palette colour in the sidebar
+	 * overrides it through the property; render.php spends the slug, so a
+	 * rebrand carries the choice with it.
+	 *
+	 * And it is not spaced like a line of the body: `__body` gaps its children
+	 * by XS because they are separate things, while a prefix and the title
+	 * under it are one thing said in two sizes — so most of that gap is taken
+	 * back here rather than the gap being changed for every panel, prefixed or
+	 * not.
+	 */
+	&__prefix {
+		margin: 0 0 calc(var(--bridge-feature-gap) * -0.6);
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 600;
+		line-height: 1.2;
+		letter-spacing: 0.06em;
+		color: var(
+			--bridge-feature-prefix-ink,
+			color-mix(in srgb, currentcolor 70%, transparent)
+		);
 	}
 
 	&__title {

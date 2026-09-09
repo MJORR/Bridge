@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/feature-block",
-	"version": "2.0.0",
+	"version": "2.2.0",
 	"title": "Feature",
 	"category": "design",
 	"icon": "screenoptions",
@@ -11,6 +11,8 @@
 	"parent": ["bridge/feature-blocks"],
 	"supports": { "anchor": false, "html": false, "reusable": false },
 	"attributes": {
+		"prefix": { "type": "string", "default": "" },
+		"prefixColor": { "type": "string", "default": "" },
 		"title": { "type": "string", "default": "" },
 		"text": { "type": "string", "default": "" },
 		"graphicId": { "type": "number" },

@@ -69,6 +69,8 @@ const MediaField = ({ label, help, id, url, onSelect, onClear }) =>
 
 const Edit = ({ attributes, setAttributes }) => {
 	const {
+		prefix,
+		prefixColor,
 		title,
 		text,
 		graphicId,
@@ -94,13 +96,12 @@ const Edit = ({ attributes, setAttributes }) => {
 	const slugToHex = (slug) =>
 		themeColors.find((color) => color.slug === slug)?.color || undefined;
 
-	const onWashChange = (hex) => {
-		const match = themeColors.find((color) => color.color === hex);
-
-		// The slug, never the hex: a stored colour has to follow a rebrand, and
-		// a hex written into a panel would still be the old brand's blue.
-		setAttributes({ overlayColor: match ? match.slug : '' });
-	};
+	// The slug, never the hex: a stored colour has to follow a rebrand, and a
+	// hex written into a panel would still be the old brand's blue. Cleared
+	// back to '' rather than to a colour, which is what lets both of the
+	// controls that use this fall back to their inherited default.
+	const hexToSlug = (hex) =>
+		themeColors.find((color) => color.color === hex)?.slug || '';
 
 	const isCover = !!backgroundUrl;
 
@@ -115,6 +116,30 @@ const Edit = ({ attributes, setAttributes }) => {
 	 */
 	const isSummary = !isCover && !!graphicUrl;
 
+	/*
+	 * The custom properties the panel carries, gathered rather than written in
+	 * one place: the wash belongs to the cover shape and the prefix's colour to
+	 * any shape, so they cannot be one conditional object.
+	 *
+	 * A slug in every case, spent through `var()`. See the note on the wash
+	 * above — a hex written onto a panel would survive a rebrand it should not.
+	 */
+	const style = {};
+
+	if (isCover) {
+		if (overlayColor) {
+			style['--bridge-feature-wash'] =
+				`var(--wp--preset--color--${overlayColor})`;
+		}
+
+		style['--bridge-feature-wash-opacity'] = overlayOpacity / 100;
+	}
+
+	if (prefixColor) {
+		style['--bridge-feature-prefix-ink'] =
+			`var(--wp--preset--color--${prefixColor})`;
+	}
+
 	const blockProps = useBlockProps({
 		className: [
 			'bridge-feature',
@@ -125,14 +150,7 @@ const Edit = ({ attributes, setAttributes }) => {
 		]
 			.filter(Boolean)
 			.join(' '),
-		style: isCover
-			? {
-					'--bridge-feature-wash': overlayColor
-						? `var(--wp--preset--color--${overlayColor})`
-						: undefined,
-					'--bridge-feature-wash-opacity': overlayOpacity / 100,
-				}
-			: undefined,
+		style: Object.keys(style).length ? style : undefined,
 	});
 
 	return el(
@@ -197,6 +215,36 @@ const Edit = ({ attributes, setAttributes }) => {
 					__nextHasNoMarginBottom: true,
 				})
 			),
+			// Only where there is a line to colour. An editor who has not
+			// written one has nothing this control could change, and the same
+			// test the wash controls below are gated on.
+			prefix &&
+				el(
+					PanelBody,
+					{
+						title: __('Above the title', 'bridge'),
+						initialOpen: true,
+					},
+					el(
+						BaseControl,
+						{
+							label: __('Prefix colour', 'bridge'),
+							help: __(
+								'Left empty it is a quieter shade of whatever the band’s own text colour is, which keeps it readable on a light band, a dark one and over a photograph alike.',
+								'bridge'
+							),
+							__nextHasNoMarginBottom: true,
+						},
+						el(ColorPalette, {
+							colors: themeColors,
+							value: slugToHex(prefixColor),
+							onChange: (hex) =>
+								setAttributes({ prefixColor: hexToSlug(hex) }),
+							disableCustomColors: true,
+							clearable: true,
+						})
+					)
+				),
 			// Only where there is a photograph to lay it over. A wash with no
 			// background is two controls that change nothing.
 			isCover &&
@@ -219,7 +267,8 @@ const Edit = ({ attributes, setAttributes }) => {
 						el(ColorPalette, {
 							colors: themeColors,
 							value: slugToHex(overlayColor),
-							onChange: onWashChange,
+							onChange: (hex) =>
+								setAttributes({ overlayColor: hexToSlug(hex) }),
 							disableCustomColors: true,
 							clearable: true,
 						})
@@ -303,6 +352,14 @@ const Edit = ({ attributes, setAttributes }) => {
 			el(
 				'div',
 				{ className: 'bridge-feature__body' },
+				el(RichText, {
+					tagName: 'span',
+					className: 'bridge-feature__prefix',
+					value: prefix,
+					allowedFormats: [],
+					onChange: (value) => setAttributes({ prefix: value }),
+					placeholder: __('01', 'bridge'),
+				}),
 				el(RichText, {
 					tagName: 'h3',
 					className: 'bridge-feature__title',

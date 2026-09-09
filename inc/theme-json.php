@@ -465,6 +465,10 @@ function bridge_compile_theme_json(array $tokens): array
 	// removed a preset after a site had saved it would not — and a missing
 	// shadow should be no shadow rather than a PHP notice.
 	$shadow   = $shadows[$cards['shadow']] ?? array('shadow' => 'none', 'hover' => 'none');
+	// A preset a filter added without one still has to answer the question the
+	// carousel asks, and "no room" is the safe answer: the track keeps the 2px
+	// floor it had before any of this existed.
+	$room     = (array) ($shadow['room'] ?? array('above' => 0, 'below' => 0));
 
 	// One property per ground: `--wp--custom--card--on-primary` and friends.
 	// The card itself never names one of these — it reads `--bridge-card-bg`,
@@ -609,6 +613,22 @@ function bridge_compile_theme_json(array $tokens): array
 		// Nothing, on a cut card. See the note above.
 		'shadow'      => $cut ? 'none' : $shadow['shadow'],
 		'shadowHover' => $cut ? 'none' : $shadow['hover'],
+
+		/*
+		 * How far that shadow reaches, for the one place on the site that
+		 * would otherwise cut it off.
+		 *
+		 * A carousel is a scroll container, and a scroll container clips on
+		 * both axes — asking for `overflow-y: visible` beside `overflow-x:
+		 * auto` gets `auto`, which is the rule rather than a browser quirk. So
+		 * the track pads itself by this much and takes the padding back as a
+		 * negative margin; see `snap-row` in abstracts/_section.scss.
+		 *
+		 * Zero on a cut card for the same reason the shadow itself is: there
+		 * is no shadow to leave room for.
+		 */
+		'shadowRoomAbove' => $cut ? '0px' : (int) ($room['above'] ?? 0) . 'px',
+		'shadowRoomBelow' => $cut ? '0px' : (int) ($room['below'] ?? 0) . 'px',
 	);
 
 	foreach (bridge_card_grounds() as $key => $entry) {

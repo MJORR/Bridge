@@ -66,6 +66,31 @@ $is_preview      = ! empty( $attributes['isPreview'] );
 $overflow        = 'carousel' === ( $attributes['overflowStyle'] ?? 'wrap' ) ? 'carousel' : 'wrap';
 
 /**
+ * Grid or list — which is a different question from what shape a card is.
+ *
+ * The four card styles answer "what does one post look like". This answers
+ * "how are they arranged", and the two are independent enough that folding
+ * list into `cardStyle` would have made Columns a control that silently did
+ * nothing. So it is its own attribute, and the inspector shows one set of
+ * settings or the other rather than both with half of them inert.
+ *
+ * A list is a single column of split rows: the photograph on one side, the
+ * words on the other. It is a Summary card turned sideways, which is why the
+ * row reads the Summary token group rather than adding a fifth entry to
+ * bridge_card_styles() — a site that retunes its Summary cards retunes its
+ * lists with them.
+ *
+ * `listStyle` has one value today and is still an attribute, because the split
+ * row is one arrangement of a list rather than the definition of one. A second
+ * arrangement is then a new value and not a migration.
+ */
+$layout          = 'list' === ( $attributes['layout'] ?? 'grid' ) ? 'list' : 'grid';
+$is_list         = 'list' === $layout;
+$list_style      = 'split';
+$list_media      = sanitize_key( $attributes['listMedia'] ?? 'medium' );
+$list_media      = in_array( $list_media, array( 'small', 'medium', 'large' ), true ) ? $list_media : 'medium';
+
+/**
  * Which of the three card styles the grid draws.
  *
  * A named attribute rather than a `register_block_style()` entry, even though
@@ -106,7 +131,16 @@ $use_main = 'main' === ( $attributes['source'] ?? 'self' ) && ! $is_preview;
 // The editor previews a carousel as rows, so it gets neither the track
 // attributes nor the controls. Neither does an archive: a paginated listing
 // that scrolls sideways hides the posts the pagination is counting.
-$is_carousel     = 'carousel' === $overflow && ! $is_preview && ! $use_main;
+// A list is one column whatever the Columns slider was left at — the control
+// is hidden in list mode, but a band switched over from a grid still carries
+// the number it was set to.
+if ( $is_list ) {
+	$columns = 1;
+}
+
+// And never a carousel: a row that is the full width of the band has nothing
+// to the side of it, so a sideways scroll would be a gesture with one page.
+$is_carousel     = 'carousel' === $overflow && ! $is_preview && ! $use_main && ! $is_list;
 // Empty means "use the theme's wording", which is the only wording that can be
 // translated: a default written into block.json is a literal string that never
 // reaches a .po file, so every site in every language got the English one.
@@ -174,11 +208,47 @@ list( $intro_html, $label_id ) = $is_preview
  */
 list( $mask_class, $mask_style ) = bridge_band_mask( $attributes );
 
+/*
+ * The list's own modifiers, all of them band-level.
+ *
+ * They are classes rather than inline custom properties because every one of
+ * them is a *choice between design decisions* — how wide a thumbnail is, what
+ * a rounded corner is, how much darker a contrast row is — and those values
+ * belong in the stylesheet next to the rules that spend them, not in a style
+ * attribute assembled in PHP. What travels is which choice was made.
+ *
+ * Nothing is emitted in grid mode. A band carrying five classes no rule can
+ * match is five things for the next person to search for.
+ */
+$list_class = '';
+
+if ( $is_list ) {
+	$list_class = ' bridge-cards--list'
+		. ' bridge-cards--list-' . $list_style
+		. ' bridge-cards--media-' . $list_media;
+
+	if ( ! empty( $attributes['listMediaRounded'] ) ) {
+		$list_class .= ' bridge-cards--media-rounded';
+	}
+
+	if ( ! empty( $attributes['listMediaShadow'] ) ) {
+		$list_class .= ' bridge-cards--media-shadow';
+	}
+
+	if ( ! empty( $attributes['listAlternate'] ) ) {
+		$list_class .= ' bridge-cards--list-alternate';
+	}
+
+	if ( ! empty( $attributes['listContrast'] ) ) {
+		$list_class .= ' bridge-cards--list-contrast';
+	}
+}
+
 $section_open = $is_preview
 	? ''
 	: bridge_section_wrapper(
 		$attributes,
-		'bridge-cards bridge-cards--' . $width . ' bridge-cards--' . $overflow . $mask_class,
+		'bridge-cards bridge-cards--' . $width . ' bridge-cards--' . $overflow . $list_class . $mask_class,
 		$mask_style,
 		$label_id
 	);
@@ -289,12 +359,39 @@ if ( 'team' === $card_style && function_exists( 'bridge_card_avatar_sizes' ) ) {
 	$avatar_sizes  = bridge_card_avatar_sizes();
 	$card_width_share = (float) ( $avatar_sizes[ $avatar_slug ]['fraction'] ?? 0.72 );
 }
-$card_image_sizes = sprintf(
-	'(max-width: 480px) %1$dvw, (max-width: 768px) %2$dvw, %3$dvw',
-	max( 1, (int) round( 100 * $card_width_share ) ),
-	max( 1, (int) round( 50 * $card_width_share ) ),
-	max( 1, (int) round( 100 / $columns * $card_width_share ) )
-);
+if ( $is_list ) {
+	/**
+	 * A list row's picture is a column of the row, not a column of the grid.
+	 *
+	 * The arithmetic above cannot say that: it divides the band by `--columns`,
+	 * which a list forces to 1, so it would claim every thumbnail is the full
+	 * width of the window and hand a 128px slot a 1600px file.
+	 *
+	 * The three widths are the three the stylesheet lays out — see
+	 * `--bridge-list-media` in _card-list.scss — and they have to be kept in
+	 * step with it by hand, which is the price of `sizes` being an attribute
+	 * the browser reads before any stylesheet has been parsed. The small one
+	 * is a fixed thumbnail and is stated as one; the other two are shares of
+	 * the window, which is what the band is the full width of.
+	 *
+	 * Below the two-column breakpoint the row stacks and the picture is the
+	 * width of the band, which is the first clause.
+	 */
+	$list_image_widths = array(
+		'small'  => '8rem',
+		'medium' => '30vw',
+		'large'  => '50vw',
+	);
+
+	$card_image_sizes = '(max-width: 768px) 100vw, ' . $list_image_widths[ $list_media ];
+} else {
+	$card_image_sizes = sprintf(
+		'(max-width: 480px) %1$dvw, (max-width: 768px) %2$dvw, %3$dvw',
+		max( 1, (int) round( 100 * $card_width_share ) ),
+		max( 1, (int) round( 50 * $card_width_share ) ),
+		max( 1, (int) round( 100 / $columns * $card_width_share ) )
+	);
+}
 /**
  * How many cards can be on screen before the rest are certainly not.
  *
@@ -317,6 +414,23 @@ $card_image_sizes = sprintf(
  * could have waited, rather than deferring one that is on screen.
  */
 $eager_cards = $columns;
+
+/*
+ * A list is the exception, and `--columns` is the wrong count for it.
+ *
+ * The number above is "how many cards fit across", which in a grid is also how
+ * many are on the first screen. A list forces that to 1 — and a list row is a
+ * fraction of the height of a card, so three or four of them are above the fold
+ * where one card would be. Deferring from the second row down had the reader
+ * watching pictures arrive on rows already in front of them.
+ *
+ * Three rather than a measurement, for the reason the note above gives: this
+ * only has to be wrong in the safe direction. Loading a fourth picture that
+ * could have waited costs a request; deferring one that is on screen is visible.
+ */
+if ( $is_list ) {
+	$eager_cards = 3;
+}
 $card_index  = 0;
 
 // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.

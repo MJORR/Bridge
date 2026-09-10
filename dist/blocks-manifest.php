@@ -204,7 +204,15 @@ return array(
 				'type' => 'number',
 				'default' => 60,
 			),
-			'maskInset' => array(
+			'maskEdge' => array(
+				'type' => 'string',
+				'enum' => array(
+					'left',
+					'right',
+				),
+				'default' => 'right',
+			),
+			'maskBleed' => array(
 				'type' => 'number',
 				'default' => 0,
 			),
@@ -279,6 +287,46 @@ return array(
 				),
 				'default' => 'summary',
 			),
+			'layout' => array(
+				'type' => 'string',
+				'enum' => array(
+					'grid',
+					'list',
+				),
+				'default' => 'grid',
+			),
+			'listStyle' => array(
+				'type' => 'string',
+				'enum' => array(
+					'split',
+				),
+				'default' => 'split',
+			),
+			'listMedia' => array(
+				'type' => 'string',
+				'enum' => array(
+					'small',
+					'medium',
+					'large',
+				),
+				'default' => 'medium',
+			),
+			'listMediaRounded' => array(
+				'type' => 'boolean',
+				'default' => true,
+			),
+			'listMediaShadow' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'listAlternate' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'listContrast' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
 			'isPreview' => array(
 				'type' => 'boolean',
 				'default' => false,
@@ -334,7 +382,15 @@ return array(
 				'type' => 'number',
 				'default' => 60,
 			),
-			'maskInset' => array(
+			'maskEdge' => array(
+				'type' => 'string',
+				'enum' => array(
+					'left',
+					'right',
+				),
+				'default' => 'right',
+			),
+			'maskBleed' => array(
 				'type' => 'number',
 				'default' => 0,
 			),
@@ -521,7 +577,15 @@ return array(
 				'type' => 'number',
 				'default' => 60,
 			),
-			'maskInset' => array(
+			'maskEdge' => array(
+				'type' => 'string',
+				'enum' => array(
+					'left',
+					'right',
+				),
+				'default' => 'right',
+			),
+			'maskBleed' => array(
 				'type' => 'number',
 				'default' => 0,
 			),
@@ -615,7 +679,15 @@ return array(
 				'type' => 'number',
 				'default' => 60,
 			),
-			'maskInset' => array(
+			'maskEdge' => array(
+				'type' => 'string',
+				'enum' => array(
+					'left',
+					'right',
+				),
+				'default' => 'right',
+			),
+			'maskBleed' => array(
 				'type' => 'number',
 				'default' => 0,
 			),
@@ -793,7 +865,15 @@ return array(
 				'type' => 'number',
 				'default' => 60,
 			),
-			'maskInset' => array(
+			'maskEdge' => array(
+				'type' => 'string',
+				'enum' => array(
+					'left',
+					'right',
+				),
+				'default' => 'right',
+			),
+			'maskBleed' => array(
 				'type' => 'number',
 				'default' => 0,
 			),

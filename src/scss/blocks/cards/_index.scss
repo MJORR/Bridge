@@ -22,3 +22,6 @@
 @use "card-tile";
 @use "card-cover";
 @use "card-team";
+// Last, because it is a layout rather than a style: it hands back what the
+// base gave every card and has to be the one that speaks last about it.
+@use "card-list";

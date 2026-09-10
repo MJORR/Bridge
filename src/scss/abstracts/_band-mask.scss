@@ -20,48 +20,100 @@
 		position: absolute;
 
 		/**
-		 * The paint box.
+		 * The paint box is the band, and nothing moves it.
 		 *
-		 * `inset-inline-end` is what the position control moves: it pulls the
-		 * box's own right edge in from the band's, which reads as "hold the
-		 * shape this far off the right". A `mask-position` percentage would
-		 * not — that measures the gap between two sizes, which is nobody's
-		 * idea of a margin.
-		 *
-		 * The box also does the cropping: a mask paints nothing outside the
-		 * element it is on, so a shape larger than the box is cut by it.
+		 * It is also what crops the shape: a mask paints nothing outside the
+		 * element it is on, so a shape larger than the band, or pushed past
+		 * its edge, is cut by it rather than spilling into the page.
 		 */
 		inset: 0;
-		inset-inline-end: var(--bridge-band-mask-inset, 0%);
 
 		background-color: var(--bridge-band-mask-color);
 		mask-image: var(--bridge-band-mask-image);
 		mask-repeat: no-repeat;
 
 		/**
-		 * Centred by default, and anchored by the bands that grow.
+		 * ---- How big the shape is ----------------------------------------
 		 *
+		 * A length, clamped — not a share of the band, which is what made one
+		 * setting mean two different pictures.
+		 *
+		 * The shape is square (963.61 × 963.61), so one number sets both of
+		 * its dimensions. It used to be `<n>% auto`, a share of the band's
+		 * *width* — and a band's width changes by nearly four times between a
+		 * phone and a desktop while its height barely moves at all. On a
+		 * 1440px window the FAQ band measured 1440 × 279 and 60% drew an
+		 * 864px shape of which 32% was visible: the top of something large,
+		 * bleeding off two edges, which reads as texture. The same 60% on a
+		 * 390px window drew a 234px shape on a 252px-tall band — 100% visible,
+		 * the whole figure sitting complete and centred behind the questions,
+		 * which reads as a blob someone left there.
+		 *
+		 * So the size is spent as a length instead. A band is always the full
+		 * width of the window (see bridge_section_open()), so `<n>vw` is the
+		 * same measurement `<n>%` used to be and every band already set up
+		 * keeps its desktop size. What the length buys is the clamp around
+		 * it, which a percentage cannot take.
+		 *
+		 * Both bounds scale with the setting rather than being fixed, or a
+		 * band set to 10 would still get the floor meant for one set to 60.
+		 * The floor is what fixes the phone: it keeps the shape large enough
+		 * to run past the band's edges there, so it stays a crop of something
+		 * big rather than resolving into a complete object. The ceiling holds
+		 * a very wide monitor to the same idea from the other end.
+		 */
+		--bridge-band-mask-span: clamp(
+			calc(var(--bridge-band-mask-size, 60) * 0.5rem),
+			calc(var(--bridge-band-mask-size, 60) * 1vw),
+			calc(var(--bridge-band-mask-size, 60) * 1rem)
+		);
+
+		/*
+		 * How far past the chosen edge the shape is pushed, as a share of its
+		 * own width — so a bleed keeps its proportion as the shape resizes
+		 * rather than becoming the whole of it on a phone.
+		 *
+		 * Signed, and the sign is the direction: positive pushes off the right
+		 * edge, negative off the left. It is not a second setting for an
+		 * editor to get wrong — bridge_band_mask() and the editor both derive
+		 * it from the chosen edge, which is the only thing that decides which
+		 * way "past" is.
+		 */
+		--bridge-band-mask-push: calc(
+			var(--bridge-band-mask-span) * var(--bridge-band-mask-bleed, 0)
+		);
+
+		// The shape's horizontal placing, resolved here so the declaration
+		// below stays a position rather than a sum.
+		--bridge-band-mask-x: calc(
+			var(--bridge-band-mask-edge, 100%) + var(--bridge-band-mask-push)
+		);
+
+		mask-size: var(--bridge-band-mask-span) auto;
+
+		/**
+		 * ---- Where it sits -----------------------------------------------
+		 *
+		 * Horizontally: against one edge of the band, pushed that far past it.
+		 * The edge travels as a value rather than a class, so the five blocks
+		 * that draw a mask need no markup of their own — it is the alignment
+		 * percentage `mask-position` already speaks, `100%` for the right edge
+		 * and `0%` for the left, written by bridge_band_mask() and by the
+		 * editor alongside the signed bleed above.
+		 *
+		 * Vertically: centred by default, and anchored by the bands that grow.
 		 * The box is the band, so a centred shape sits half a band down —
 		 * which moves whenever the band's height changes. On a Cards or
 		 * Downloads band the height is settled by the time anyone looks at it
 		 * and centred is the better placing. An FAQ band is an accordion: it
-		 * grows and shrinks under the reader's own clicks, and a decoration
-		 * that slides up and down the page as they open questions reads as
-		 * the layout coming loose.
-		 *
-		 * Vertical only. The horizontal edge is `right` for every band —
-		 * moving the shape off it is what `--bridge-band-mask-inset` does, on
-		 * the box rather than on the mask, for the reason above.
+		 * grows and shrinks under the reader's own clicks — measured, 279px to
+		 * 354px as its answers open — and a decoration that slides down the
+		 * page as they read reads as the layout coming loose. That is why the
+		 * vertical anchor stays the block's own decision and is not offered as
+		 * a control.
 		 */
-		mask-position: right var(--bridge-band-mask-anchor, center);
-
-		/**
-		 * Sized by width, so the shape keeps its own proportions rather than
-		 * being stretched to the band. At 100% it is as wide as the box it
-		 * sits in — for a shape no wider than it is tall, taller than the band
-		 * as well, which is what makes 100% read as "covers".
-		 */
-		mask-size: var(--bridge-band-mask-size, 60%) auto;
+		mask-position: var(--bridge-band-mask-x)
+			var(--bridge-band-mask-anchor, center);
 
 		// Decoration. It must never take a click meant for the content over
 		// it, and it has nothing to say to a screen reader.

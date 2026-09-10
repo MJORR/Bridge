@@ -32,6 +32,37 @@
 			"enum": ["summary", "tile", "cover", "team"],
 			"default": "summary"
 		},
+		"layout": {
+			"type": "string",
+			"enum": ["grid", "list"],
+			"default": "grid"
+		},
+		"listStyle": {
+			"type": "string",
+			"enum": ["split"],
+			"default": "split"
+		},
+		"listMedia": {
+			"type": "string",
+			"enum": ["small", "medium", "large"],
+			"default": "medium"
+		},
+		"listMediaRounded": {
+			"type": "boolean",
+			"default": true
+		},
+		"listMediaShadow": {
+			"type": "boolean",
+			"default": false
+		},
+		"listAlternate": {
+			"type": "boolean",
+			"default": false
+		},
+		"listContrast": {
+			"type": "boolean",
+			"default": false
+		},
 		"isPreview": {
 			"type": "boolean",
 			"default": false
@@ -85,7 +116,12 @@
 			"type": "number",
 			"default": 60
 		},
-		"maskInset": {
+		"maskEdge": {
+			"type": "string",
+			"enum": ["left", "right"],
+			"default": "right"
+		},
+		"maskBleed": {
 			"type": "number",
 			"default": 0
 		},

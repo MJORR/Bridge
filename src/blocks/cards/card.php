@@ -25,12 +25,35 @@
  *
  * @var array  $card       The card record. See bridge_card_data_defaults().
  * @var string $card_style Style slug from the block's `cardStyle` attribute.
+ * @var bool   $is_list    Whether the band is arranged as a list rather than a
+ *                         grid. A list draws one partial whatever the card
+ *                         style says — see below.
  *
  * @package Bridge
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+/**
+ * A list draws its own row, and the card style does not enter into it.
+ *
+ * Deliberately not four styles crossed with two layouts. That is eight markup
+ * variants to keep in step for the sake of two that make sense: Tile and Cover
+ * are poster shapes built around a photograph filling the card, and neither
+ * survives being a third of a wide row — the badge lands on a thumbnail, the
+ * wash covers text it was never measured against. So the layout wins outright,
+ * and the Card style control is hidden in the inspector while it is set to
+ * list rather than left there to mean nothing.
+ *
+ * The row is a Summary card turned sideways: same record, same fields, same
+ * tokens. See _card-list.scss.
+ */
+if ( ! empty( $is_list ) ) {
+	require __DIR__ . '/partials/card-list.php';
+
+	return;
 }
 
 // The attribute is sanitized in render.php and again in block.json's enum, but

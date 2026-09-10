@@ -1,0 +1,262 @@
+/**
+ * Bridge — the list layout, and the split row it draws.
+ *
+ * The band's other arrangement: one column of full-width rows instead of a
+ * grid of cards, with the photograph on one side of each row and the words on
+ * the other. Everything about *which* posts and *what fields* is unchanged —
+ * the row is a Summary card turned sideways, drawing the same record from the
+ * same query — so what lives here is the arrangement and nothing else.
+ *
+ * Scoped under `.bridge-cards-grid` to match the specificity of the base rules
+ * in _band.scss, and loaded last in _index.scss, so the cascade is decided by
+ * source order rather than by a specificity race between a layout and the card
+ * it is laying out. Same arrangement as the four style files beside it.
+ *
+ * ---- What the row gives up -------------------------------------------------
+ *
+ * A card in a grid is an object: it has a ground, a corner, a shadow and a cap
+ * on how wide it may be. A row in a list is not — it is a line of a list, and
+ * the thing with a shape in it is the picture. So the row hands the card's
+ * surface back and the *image* takes the corner and the shadow, under the two
+ * controls that offer them.
+ *
+ * The one exception is a contrast row, where the tint is the point and a row
+ * with a ground needs padding to keep words off the edge of it.
+ *
+ * ---- No named colours ------------------------------------------------------
+ *
+ * The band can be the page, a Surface band, an Accent one or an Inverted one,
+ * and only `currentcolor` knows which. The contrast tint is mixed from the
+ * band's own foreground, so one declaration darkens a light band and lightens a
+ * dark one — the same rule the feature panels and the carousel controls follow.
+ */
+@use "../../abstracts/card" as card;
+@use "../../abstracts/section" as section;
+
+.bridge-cards-grid {
+	/**
+	 * How wide the picture's column is.
+	 *
+	 * Three named sizes rather than a slider, because the useful answers are
+	 * few and a percentage typed by hand is a layout nobody checked. Small is a
+	 * thumbnail and is a length — it should stay a thumbnail on a wide screen
+	 * rather than growing into a picture — while medium and large are shares of
+	 * the row, so they keep their proportion as the band changes width.
+	 *
+	 * Kept in step by hand with `$list_image_widths` in render.php, which is
+	 * the `sizes` attribute for the same three slots. The browser reads that
+	 * before it has parsed any of this, so there is no way to derive one from
+	 * the other; changing a width here means changing it there.
+	 */
+	--bridge-list-media: 30%;
+
+	// The gap between the picture and the words. The site's own block gap with
+	// a floor under it, for the reason the alternating rows give: a gutter
+	// holding a paragraph off the edge of a photograph needs more than the
+	// space between two stacked blocks.
+	--bridge-list-gap: max(
+		var(--wp--preset--spacing--50),
+		var(--wp--style--block-gap, var(--wp--preset--spacing--30))
+	);
+
+	.post-card--list {
+		// The Summary group's tokens: a list row is that card, laid sideways,
+		// so a site that retunes its Summary cards retunes its lists with them
+		// rather than hunting for a second set of numbers.
+		--post-card-heading: var(
+			--wp--custom--card--summary--heading,
+			var(--wp--preset--font-size--large)
+		);
+		--post-card-ratio: var(--wp--custom--card--summary--ratio, 16 / 9);
+
+		/**
+		 * The card's surface, handed back.
+		 *
+		 * Both layers and the hover shadow, for the reason the plain feature
+		 * panels give: with the cut corner on it is the clipped `::before`
+		 * that paints, with it off it is the card itself, and `card.raise`
+		 * sets its shadow at a specificity no flat declaration here could
+		 * answer — so the switch has to be the property it reads.
+		 */
+		--bridge-card-layer-bg: transparent;
+		--wp--custom--card--shadow-hover: none;
+
+		background-color: transparent;
+		box-shadow: none;
+		border-radius: 0;
+
+		// The grid's cap on a card is what stops a sparse row drawing
+		// billboards. A row *is* the band's width — that is what makes it a
+		// row — so both the cap and the centring that goes with it come off.
+		max-width: none;
+		margin-inline: 0;
+
+		/**
+		 * And the clipping with them.
+		 *
+		 * The base sets `overflow: hidden` so a card crops the photograph that
+		 * runs to its edge. Here the picture is inside the row with a gutter
+		 * beside it, and the one thing that would be clipped is its own
+		 * shadow — the option directly below — cut off square along the row's
+		 * edge.
+		 */
+		overflow: visible;
+
+		// Stacked until there is room for two columns: a 50% picture beside
+		// three words of a headline on a phone is two things too narrow to be
+		// either. Stacked, the row is a Summary card, which is what it is.
+		display: grid;
+		gap: var(--wp--preset--spacing--30);
+
+		@include section.two-column {
+			grid-template-columns: var(--bridge-list-media) minmax(0, 1fr);
+			gap: var(--bridge-list-gap);
+			align-items: center;
+		}
+	}
+
+	// The words fill their side rather than being a flex column of their own,
+	// and they are spaced by the same step the other card bodies use.
+	.post-card--list .post-card__body {
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--20);
+		// The base pads the body away from the card's edges. There are no card
+		// edges here — the contrast rule below is what pads a row that has a
+		// ground to sit on.
+		padding: 0;
+	}
+
+	.post-card--list .post-card__title {
+		font-size: var(--post-card-heading);
+	}
+
+	// The line a project carries its client or its year on. Quieter than the
+	// excerpt and above it, so the heading and the fact under it read as one
+	// unit before the paragraph starts.
+	.post-card--list .post-card__subtitle {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 500;
+		opacity: 0.75;
+		order: -1;
+	}
+
+	// The picture keeps the crop the Summary cards use. `align-self` so a row
+	// whose words are taller does not stretch the photograph past its ratio.
+	.post-card--list .post-card__image {
+		align-self: start;
+		width: 100%;
+	}
+}
+
+/**
+ * ---- The band ---------------------------------------------------------------
+ *
+ * One column, whatever the Columns slider was left at. render.php already
+ * forces `--columns` to 1 for the `sizes` arithmetic; this is the layout half
+ * of the same sentence, and it has to be said here because `auto-grid` writes
+ * an explicit `repeat(auto-fit, …)` that a custom property cannot reach.
+ */
+.bridge-cards--list .bridge-cards-grid {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+// ---- Image size -------------------------------------------------------------
+// Three values for one property, which is the whole of what the control does.
+.bridge-cards--media-small .bridge-cards-grid {
+	// A length rather than a share: a thumbnail that grew with the window
+	// would stop being a thumbnail. Sized against the type scale, so a site
+	// with a larger scale gets a larger one.
+	--bridge-list-media: 8rem;
+}
+
+.bridge-cards--media-medium .bridge-cards-grid {
+	--bridge-list-media: 30%;
+}
+
+.bridge-cards--media-large .bridge-cards-grid {
+	--bridge-list-media: 50%;
+}
+
+// ---- The picture's own shape ------------------------------------------------
+/**
+ * The corner and the shadow, from Theme Options rather than from numbers
+ * chosen here — so a site whose cards are sharp-cornered and flat gets a list
+ * whose pictures are too, and one change moves both.
+ *
+ * On the image and not on the row, which is the difference between a list and a
+ * grid: in a grid the card is the object and the photograph is its top edge; in
+ * a list the row is a line of text and the picture is the only object in it.
+ */
+.bridge-cards--media-rounded .bridge-cards-grid .post-card--list .post-card__image {
+	border-radius: var(--wp--custom--card--radius, 6px);
+	// Back on, and only here: the frame is what crops the photograph to the
+	// corner it has just been given.
+	overflow: hidden;
+}
+
+.bridge-cards--media-shadow .bridge-cards-grid .post-card--list .post-card__image {
+	box-shadow: var(--wp--custom--card--shadow, none);
+}
+
+// ---- Alternating sides ------------------------------------------------------
+/**
+ * Every second row with its picture on the other side.
+ *
+ * `order` and not a reordering of the markup, so the source stays
+ * picture-then-words on every row and only the drawing changes — which is what
+ * keeps a keyboard and a screen reader walking the list in one consistent order
+ * while the page zigzags.
+ *
+ * The tracks have to be swapped along with it, and that is the whole of why
+ * this is two declarations rather than one. `order` moves an item to the *next
+ * cell*; it does not carry the cell's width with it. With the template left as
+ * `media 1fr`, a flipped row put the words in the media track and the picture
+ * in the one sized for words — so on a medium list every second photograph came
+ * out at 1fr, more than twice the width of the ones above and below it, and the
+ * zigzag read as a mistake rather than a rhythm.
+ *
+ * Only in two columns. Stacked there is nothing to alternate: a picture is
+ * above its words on every row, and a row that put them the other way round
+ * would read as a paragraph belonging to the picture above it.
+ */
+@include section.two-column {
+	.bridge-cards--list-alternate
+		.bridge-cards-grid
+		.post-card--list:nth-child(even) {
+		grid-template-columns: minmax(0, 1fr) var(--bridge-list-media);
+
+		.post-card__image {
+			order: 2;
+		}
+	}
+}
+
+// ---- Contrast rows ----------------------------------------------------------
+/**
+ * Every second row a little darker than the band.
+ *
+ * The tint is mixed from the band's own foreground, so one declaration works on
+ * the page, on a Surface band, on Accent and on Inverted — 5% of a dark
+ * foreground darkens a light band, 5% of a light one lifts a dark band.
+ *
+ * The padding goes on *every* row and not only the tinted ones. A ground needs
+ * padding to keep words off its edge, and if only half the rows had it the list
+ * would zigzag horizontally down the page — the one thing striping is supposed
+ * to make easier to read.
+ *
+ * The gap between rows is left alone. Touching stripes are the other reading of
+ * this control and are one declaration away, but closing the gap is a change to
+ * the band's rhythm rather than to its colour, and it is not what the switch
+ * says it does.
+ */
+.bridge-cards--list-contrast .bridge-cards-grid .post-card--list {
+	@include card.padding;
+}
+
+.bridge-cards--list-contrast
+	.bridge-cards-grid
+	.post-card--list:nth-child(even) {
+	background-color: color-mix(in srgb, currentcolor 5%, transparent);
+}

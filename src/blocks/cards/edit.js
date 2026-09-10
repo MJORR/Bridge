@@ -22,6 +22,8 @@ const {
 	PanelBody,
 	SelectControl,
 	RangeControl,
+	__experimentalToggleGroupControl: ToggleGroupControl,
+	__experimentalToggleGroupControlOption: ToggleGroupControlOption,
 	ToggleControl,
 	TextControl,
 	FormTokenField,
@@ -155,6 +157,12 @@ const Edit = ({ attributes, setAttributes }) => {
 		width,
 		overflowStyle,
 		cardStyle,
+		layout,
+		listMedia,
+		listMediaRounded,
+		listMediaShadow,
+		listAlternate,
+		listContrast,
 		postType,
 		numberOfPosts,
 		columns,
@@ -166,6 +174,10 @@ const Edit = ({ attributes, setAttributes }) => {
 		readMoreText,
 		buttonText,
 	} = attributes;
+
+	// Named once. Six places read it — the panel decides what to show, and the
+	// band decides what classes to wear.
+	const isList = layout === 'list';
 
 	const style = CARD_STYLES.find((s) => s.value === cardStyle)
 		? cardStyle
@@ -237,6 +249,16 @@ const Edit = ({ attributes, setAttributes }) => {
 			'bridge-cards',
 			`bridge-cards--${width}`,
 			`bridge-cards--${overflowStyle}`,
+			// The list's modifiers, the same ones render.php writes. They have
+			// to be here as well as there: the editor draws the band itself
+			// and asks <ServerSideRender> for the grid alone, so a class on
+			// the band from PHP never reaches the canvas.
+			isList ? 'bridge-cards--list bridge-cards--list-split' : '',
+			isList ? `bridge-cards--media-${listMedia || 'medium'}` : '',
+			isList && listMediaRounded ? 'bridge-cards--media-rounded' : '',
+			isList && listMediaShadow ? 'bridge-cards--media-shadow' : '',
+			isList && listAlternate ? 'bridge-cards--list-alternate' : '',
+			isList && listContrast ? 'bridge-cards--list-contrast' : '',
 			'bridge-section',
 			'bridge-band',
 			'alignfull',
@@ -337,19 +359,40 @@ const Edit = ({ attributes, setAttributes }) => {
 		el(
 			PanelBody,
 			{ title: __('Layout', 'bridge') },
-			// First in the panel, because it is the setting the others read
-			// differently: how many columns suit a grid depends on whether the
-			// cards are articles or faces.
-			el(SelectControl, {
-				label: __('Card style', 'bridge'),
-				help: CARD_STYLES.find((s) => s.value === style)?.help,
-				value: style,
-				options: CARD_STYLE_CHOICES.map(({ value, label }) => ({
-					value,
-					label,
-				})),
-				onChange: (value) => setAttributes({ cardStyle: value }),
-			}),
+			/*
+			 * First, and it changes what the rest of the panel is.
+			 *
+			 * Grid and list are not two card styles — they are two answers to
+			 * "how are these arranged", which is a different question from
+			 * "what shape is one of them". Keeping them apart is what lets
+			 * each mode show only the settings that do something in it: a list
+			 * has no columns to set and nothing to the side to swipe to, and a
+			 * grid has no picture-beside-words to size. A panel offering
+			 * controls that change nothing is worse than a shorter panel —
+			 * which is the rule the Card content panel below already follows.
+			 */
+			el(
+				ToggleGroupControl,
+				{
+					label: __('Arrangement', 'bridge'),
+					value: isList ? 'list' : 'grid',
+					isBlock: true,
+					onChange: (value) =>
+						setAttributes({ layout: value || 'grid' }),
+					__nextHasNoMarginBottom: true,
+					__next40pxDefaultSize: true,
+				},
+				el(ToggleGroupControlOption, {
+					value: 'grid',
+					label: __('Grid', 'bridge'),
+				}),
+				el(ToggleGroupControlOption, {
+					value: 'list',
+					label: __('List', 'bridge'),
+				})
+			),
+			// Shared by both: the band is always the full width of the window,
+			// and this is how wide the content runs inside it.
 			el(SelectControl, {
 				label: __('Width', 'bridge'),
 				help: __(
@@ -363,26 +406,110 @@ const Edit = ({ attributes, setAttributes }) => {
 				],
 				onChange: (value) => setAttributes({ width: value }),
 			}),
-			el(RangeControl, {
-				label: __('Columns per row', 'bridge'),
-				value: columns,
-				min: 1,
-				max: 6,
-				onChange: (value) => setAttributes({ columns: value }),
-			}),
-			el(SelectControl, {
-				label: __('Overflow style', 'bridge'),
-				help: __(
-					'Rows wrap the cards onto as many lines as they need. Carousel keeps them on one line that swipes, with a chevron at each end and a dot per page. The editor previews both as rows.',
-					'bridge'
-				),
-				value: overflowStyle,
-				options: [
-					{ label: __('Rows', 'bridge'), value: 'wrap' },
-					{ label: __('Carousel', 'bridge'), value: 'carousel' },
-				],
-				onChange: (value) => setAttributes({ overflowStyle: value }),
-			})
+
+			// ---- Grid ----------------------------------------------------
+			!isList &&
+				el(SelectControl, {
+					label: __('Card style', 'bridge'),
+					help: CARD_STYLES.find((s) => s.value === style)?.help,
+					value: style,
+					options: CARD_STYLE_CHOICES.map(({ value, label }) => ({
+						value,
+						label,
+					})),
+					onChange: (value) => setAttributes({ cardStyle: value }),
+				}),
+			!isList &&
+				el(RangeControl, {
+					label: __('Columns per row', 'bridge'),
+					value: columns,
+					min: 1,
+					max: 6,
+					onChange: (value) => setAttributes({ columns: value }),
+				}),
+			!isList &&
+				el(SelectControl, {
+					label: __('Overflow style', 'bridge'),
+					help: __(
+						'Rows wrap the cards onto as many lines as they need. Carousel keeps them on one line that swipes, with a chevron at each end and a dot per page. The editor previews both as rows.',
+						'bridge'
+					),
+					value: overflowStyle,
+					options: [
+						{ label: __('Rows', 'bridge'), value: 'wrap' },
+						{ label: __('Carousel', 'bridge'), value: 'carousel' },
+					],
+					onChange: (value) =>
+						setAttributes({ overflowStyle: value }),
+				}),
+
+			// ---- List ----------------------------------------------------
+			// No picker for the arrangement of the row itself while there is
+			// one of them. The attribute is there so a second is a new value
+			// rather than a migration; the control arrives with it.
+			isList &&
+				el(SelectControl, {
+					label: __('Image size', 'bridge'),
+					help: __(
+						'How much of the row the photograph takes. Small stays a thumbnail at any screen width; medium and large are shares of the row, so they keep their proportion as the band changes width. Below the two-column breakpoint every row stacks and the picture is full width.',
+						'bridge'
+					),
+					value: listMedia,
+					options: [
+						{ label: __('Small', 'bridge'), value: 'small' },
+						{ label: __('Medium', 'bridge'), value: 'medium' },
+						{ label: __('Large (half)', 'bridge'), value: 'large' },
+					],
+					onChange: (value) =>
+						setAttributes({ listMedia: value || 'medium' }),
+				}),
+			isList &&
+				el(ToggleControl, {
+					label: __('Round the image corners', 'bridge'),
+					help: __(
+						'Uses the corner set for cards in Theme Options, so a site with sharp-cornered cards gets sharp-cornered list images too.',
+						'bridge'
+					),
+					checked: !!listMediaRounded,
+					onChange: (value) =>
+						setAttributes({ listMediaRounded: value }),
+					__nextHasNoMarginBottom: true,
+				}),
+			isList &&
+				el(ToggleControl, {
+					label: __('Shadow under the image', 'bridge'),
+					help: __(
+						'The card shadow from Theme Options, on the picture rather than the row. Nothing on a site whose cards are flat.',
+						'bridge'
+					),
+					checked: !!listMediaShadow,
+					onChange: (value) =>
+						setAttributes({ listMediaShadow: value }),
+					__nextHasNoMarginBottom: true,
+				}),
+			isList &&
+				el(ToggleControl, {
+					label: __('Alternate the sides', 'bridge'),
+					help: __(
+						'Every second row draws its picture on the other side. Only where there is room for two columns — stacked, there is nothing to alternate.',
+						'bridge'
+					),
+					checked: !!listAlternate,
+					onChange: (value) =>
+						setAttributes({ listAlternate: value }),
+					__nextHasNoMarginBottom: true,
+				}),
+			isList &&
+				el(ToggleControl, {
+					label: __('Shade every second row', 'bridge'),
+					help: __(
+						'Tints even rows five per cent darker than the band — or lighter, on a dark one. Every row takes the card’s padding so the list keeps one left edge.',
+						'bridge'
+					),
+					checked: !!listContrast,
+					onChange: (value) => setAttributes({ listContrast: value }),
+					__nextHasNoMarginBottom: true,
+				})
 		),
 		// Which controls belong here is the style's decision — see CARD_STYLES.
 		// Portrait draws no excerpt and Tile no read-more, and a panel offering

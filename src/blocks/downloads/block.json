@@ -31,7 +31,12 @@
 			"type": "number",
 			"default": 60
 		},
-		"maskInset": {
+		"maskEdge": {
+			"type": "string",
+			"enum": ["left", "right"],
+			"default": "right"
+		},
+		"maskBleed": {
 			"type": "number",
 			"default": 0
 		},

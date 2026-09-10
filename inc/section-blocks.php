@@ -436,17 +436,44 @@ function bridge_band_mask( array $attributes ): array
 
 	$color = bridge_hex_alpha( $shade < 0 ? '#000000' : '#ffffff', abs( $shade ) / 100 );
 
+	/**
+	 * Which edge the shape is held against, and how far past it it runs.
+	 *
+	 * `edge` is the alignment percentage `mask-position` already speaks, so
+	 * nothing has to translate it: 100% is the right edge, 0% the left.
+	 *
+	 * The bleed is signed, and the sign is not a setting — it is the edge.
+	 * Pushing a shape "past" the right edge means to the right, and past the
+	 * left edge means to the left, so an editor picks a side and a distance
+	 * and the direction follows. It is spent in the stylesheet as a share of
+	 * the shape's own width rather than of the band's, so it keeps its
+	 * proportion as the shape resizes down a phone.
+	 *
+	 * The size goes out unitless. The stylesheet spends it as a length it can
+	 * clamp — `<n>vw`, which on a band that is always the full width of the
+	 * window is the same measurement the old `<n>%` was — and a percentage is
+	 * the one thing that cannot be held to a floor. See the note in
+	 * abstracts/_band-mask.scss.
+	 */
+	$left  = 'left' === (string) ( $attributes['maskEdge'] ?? 'right' );
+	$bleed = max( 0, min( 90, (int) ( $attributes['maskBleed'] ?? 0 ) ) ) / 100;
+
 	return array(
 		' has-mask',
 		sprintf(
 			'--bridge-band-mask-image:url(%s);'
 				. '--bridge-band-mask-color:%s;'
-				. '--bridge-band-mask-size:%d%%;'
-				. '--bridge-band-mask-inset:%d%%;',
+				. '--bridge-band-mask-size:%d;'
+				. '--bridge-band-mask-edge:%d%%;'
+				. '--bridge-band-mask-bleed:%s;',
 			esc_url( $url ),
 			$color,
 			max( 10, min( 200, (int) ( $attributes['maskSize'] ?? 60 ) ) ),
-			max( 0, min( 90, (int) ( $attributes['maskInset'] ?? 0 ) ) )
+			$left ? 0 : 100,
+			// Two decimals, always: a bare `0` and `-0.40` are both valid
+			// numbers to `calc()`, and formatting them the same way keeps the
+			// style attribute readable when someone views source.
+			number_format( $left ? -$bleed : $bleed, 2, '.', '' )
 		),
 	);
 }

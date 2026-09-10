@@ -1,10 +1,9 @@
 # Bridge
 
 **One global design system, set once, applied everywhere.** Brand colours,
-fonts, cards and buttons are set globally using Theme Options.
+fonts, cards and buttons are set globally within theme options.
 
-Requires WordPress 6.6 or later and PHP 8.1 or later. Nothing here needs a
-developer, and nothing needs compiling — the theme runs exactly as it comes.
+Requires WordPress 6.6 or later and PHP 8.1 or later. The site can be installed and run without a developer as the CSS files are pre-compiled within the theme folder.
 
 - [Getting started](#getting-started)
 - [Developer notes](#developer-notes)

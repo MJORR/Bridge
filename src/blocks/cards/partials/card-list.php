@@ -23,6 +23,28 @@
  * "what happens when a post has no featured image". The badge is off for the
  * same reason Summary has it off: the chip belongs to Tile.
  *
+ * ---- What is clickable, and what is not -------------------------------------
+ *
+ * Three targets: the picture, the title and the cue. Not the row.
+ *
+ * A grid card stretches its title's link over the whole card, which is right
+ * for a card — it is a small object a reader is aiming at as one thing. A list
+ * row is not small. It is the full width of the window and as tall as a
+ * photograph, and on a phone that is most of the screen: a reader scrolling
+ * with a thumb resting anywhere on it opens a post they were only passing.
+ * The stretched pseudo-element is switched off for these rows in
+ * _card-list.scss, and the three real targets below are what replaces it.
+ *
+ * Only one of the three is reachable by keyboard, and that is deliberate. The
+ * title is the link — it carries the accessible name, and it is the one a
+ * screen reader announces and a tab stop lands on. The picture and the cue are
+ * the same destination said again for a pointer, so they take
+ * `tabindex="-1"` and `aria-hidden="true"`: pressable, and not a second and
+ * third stop on the way down a list of ten. That is the same reasoning card.php
+ * gives for Tile's badge and Team's button being spans rather than links, from
+ * the other direction — those are cues that must not become targets; these are
+ * targets that must not become names.
+ *
  * @var array  $card           The card record. See bridge_card_data_defaults().
  * @var bool   $show_read_more Whether to draw the read-more cue.
  * @var string $read_more_text Its wording.
@@ -38,32 +60,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 $card_show_badge = false;
 ?>
 <article class="post-card post-card--list">
-	<?php require __DIR__ . '/image.php'; ?>
+	<?php
+	/*
+	 * A pointer target, not a second name for the post. See the note above.
+	 * `aria-hidden` on the anchor takes the whole subtree out of the
+	 * accessibility tree, which is what we want — the image inside it is
+	 * already `alt=""`, so nothing is lost that a reader was being told.
+	 */
+	?>
+	<a class="post-card__media-link" href="<?php echo esc_url( $card['permalink'] ); ?>" tabindex="-1" aria-hidden="true">
+		<?php require __DIR__ . '/image.php'; ?>
+	</a>
 	<div class="post-card__body">
 		<h3 class="post-card__title">
 			<a class="post-card__link" href="<?php echo esc_url( $card['permalink'] ); ?>"><?php echo esc_html( $card['title'] ); ?></a>
 		</h3>
-		<?php
-		/*
-		 * The role line, where the post type has one.
-		 *
-		 * Summary has no room for it and Team makes it the point; a split row
-		 * has a whole column of space beside the picture, which is where a
-		 * project's client or year belongs. Printed only when the field is
-		 * filled — an empty line still spends the body's gap.
-		 */
-		if ( '' !== $card['subtitle'] ) :
-			?>
-			<p class="post-card__subtitle"><?php echo esc_html( $card['subtitle'] ); ?></p>
-		<?php endif; ?>
 		<p class="post-card__excerpt"><?php echo esc_html( $card['excerpt'] ); ?></p>
 		<?php if ( $show_read_more ) : ?>
 			<?php
-			// Decorative. The title above is the link; this is the visual cue
-			// that says so, and a screen reader that read it aloud would be
-			// announcing a phrase with nothing behind it.
+			// An anchor here where the grid styles draw a span: with the row
+			// no longer clickable end to end, the cue has to be a target
+			// rather than a note about one. Hidden from assistive technology
+			// and out of the tab order for the reason above — the title is
+			// the link, and this is that link said again for a thumb.
 			?>
-			<span class="post-card__read-more" aria-hidden="true"><?php echo esc_html( $read_more_text ); ?></span>
+			<a class="post-card__read-more" href="<?php echo esc_url( $card['permalink'] ); ?>" tabindex="-1" aria-hidden="true"><?php echo esc_html( $read_more_text ); ?></a>
 		<?php endif; ?>
 	</div>
 </article>

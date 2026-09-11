@@ -163,6 +163,7 @@ const Edit = ({ attributes, setAttributes }) => {
 		listMediaShadow,
 		listAlternate,
 		listContrast,
+		listContrastStrength,
 		postType,
 		numberOfPosts,
 		columns,
@@ -248,17 +249,24 @@ const Edit = ({ attributes, setAttributes }) => {
 		className: [
 			'bridge-cards',
 			`bridge-cards--${width}`,
-			`bridge-cards--${overflowStyle}`,
-			// The list's modifiers, the same ones render.php writes. They have
-			// to be here as well as there: the editor draws the band itself
-			// and asks <ServerSideRender> for the grid alone, so a class on
-			// the band from PHP never reaches the canvas.
-			isList ? 'bridge-cards--list bridge-cards--list-split' : '',
-			isList ? `bridge-cards--media-${listMedia || 'medium'}` : '',
-			isList && listMediaRounded ? 'bridge-cards--media-rounded' : '',
-			isList && listMediaShadow ? 'bridge-cards--media-shadow' : '',
-			isList && listAlternate ? 'bridge-cards--list-alternate' : '',
-			isList && listContrast ? 'bridge-cards--list-contrast' : '',
+			// `wrap`, whatever the Overflow control was left at, for the reason
+			// render.php gives: a list band routinely still carries a grid's
+			// overflow style, and the carousel class lays its rows out
+			// sideways. The editor happened to be spared that — the carousel
+			// rule excludes `.is-editor-preview` — which is exactly why the
+			// fault was invisible here and plain on the front end.
+			`bridge-cards--${isList ? 'wrap' : overflowStyle}`,
+			/*
+			 * The list's own settings are deliberately not here.
+			 *
+			 * They ride on the grid, which render.php serves to the canvas
+			 * through <ServerSideRender> — so the preview draws them from the
+			 * same lines the front end does and there is nothing to keep in
+			 * step. Copying them onto the band, which is what this block used
+			 * to do, meant two lists of classes that had to stay identical by
+			 * hand; the overflow class below is the one that did not, and a
+			 * list rendered sideways on the page while looking right here.
+			 */
 			'bridge-section',
 			'bridge-band',
 			'alignfull',
@@ -501,13 +509,29 @@ const Edit = ({ attributes, setAttributes }) => {
 				}),
 			isList &&
 				el(ToggleControl, {
-					label: __('Shade every second row', 'bridge'),
+					label: __('Shade alternate rows', 'bridge'),
 					help: __(
-						'Tints even rows five per cent darker than the band — or lighter, on a dark one. Every row takes the card’s padding so the list keeps one left edge.',
+						'Washes every other row in the band’s own foreground, starting with the first — so it darkens a light band and lightens a dark one. The shading runs to both edges of the window; the words stay on the content column, and every row is spaced the same whether it is shaded or not.',
 						'bridge'
 					),
 					checked: !!listContrast,
 					onChange: (value) => setAttributes({ listContrast: value }),
+					__nextHasNoMarginBottom: true,
+				}),
+			isList &&
+				!!listContrast &&
+				el(RangeControl, {
+					label: __('Shading strength (percent)', 'bridge'),
+					help: __(
+						'How much of the band’s own foreground the wash carries. It is a wash rather than a flat colour, so the band shows through it — including its gradient, if it has one.',
+						'bridge'
+					),
+					value: listContrastStrength,
+					min: 0,
+					max: 50,
+					step: 1,
+					onChange: (value) =>
+						setAttributes({ listContrastStrength: value ?? 12 }),
 					__nextHasNoMarginBottom: true,
 				})
 		),

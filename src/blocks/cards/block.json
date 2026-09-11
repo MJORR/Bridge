@@ -63,6 +63,10 @@
 			"type": "boolean",
 			"default": false
 		},
+		"listContrastStrength": {
+			"type": "number",
+			"default": 12
+		},
 		"isPreview": {
 			"type": "boolean",
 			"default": false

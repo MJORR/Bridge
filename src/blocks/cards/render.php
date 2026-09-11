@@ -131,16 +131,36 @@ $use_main = 'main' === ( $attributes['source'] ?? 'self' ) && ! $is_preview;
 // The editor previews a carousel as rows, so it gets neither the track
 // attributes nor the controls. Neither does an archive: a paginated listing
 // that scrolls sideways hides the posts the pagination is counting.
-// A list is one column whatever the Columns slider was left at — the control
-// is hidden in list mode, but a band switched over from a grid still carries
-// the number it was set to.
+/**
+ * What a list overrules, and why both of these have to be settled here.
+ *
+ * Switching a band from grid to list does not clear the settings it had as a
+ * grid — the controls are hidden, not reset, so that switching back gives an
+ * editor their layout rather than a default. Which means a list band is
+ * routinely carrying a column count and an overflow style chosen for a grid,
+ * and every line below that reads either of them has to be reading the list's
+ * answer instead.
+ *
+ * `wrap` rather than leaving `carousel` standing and testing for it further
+ * down. That was the first version and it was wrong in a way worth recording:
+ * `$is_carousel` was false, so nothing shipped the runtime, the track
+ * attributes or the controls — but the band still wore `bridge-cards--carousel`
+ * because that class is written from `$overflow`, not from `$is_carousel`. The
+ * stylesheet's carousel rule carries three classes to the list rule's two, so
+ * it won outright and laid the rows out with `grid-auto-flow: column`. A list
+ * came out as a sideways row on the front end and — because that rule excludes
+ * `.is-editor-preview` — looked perfectly correct in the editor.
+ *
+ * So the value changes rather than the places that read it. One assignment,
+ * and the class, the `$is_carousel` test and anything added later all follow
+ * from it.
+ */
 if ( $is_list ) {
-	$columns = 1;
+	$columns  = 1;
+	$overflow = 'wrap';
 }
 
-// And never a carousel: a row that is the full width of the band has nothing
-// to the side of it, so a sideways scroll would be a gesture with one page.
-$is_carousel     = 'carousel' === $overflow && ! $is_preview && ! $use_main && ! $is_list;
+$is_carousel     = 'carousel' === $overflow && ! $is_preview && ! $use_main;
 // Empty means "use the theme's wording", which is the only wording that can be
 // translated: a default written into block.json is a literal string that never
 // reaches a .po file, so every site in every language got the English one.
@@ -184,6 +204,22 @@ $order       = in_array( $order, array( 'ASC', 'DESC' ), true ) ? $order : 'DESC
 // into Elements — which read as four ways to overrule the design system.
 $grid_style = sprintf( '--columns:%d;', $columns );
 
+/*
+ * How strong the shaded rows are, as a value rather than a class.
+ *
+ * The other list settings are choices between design decisions and travel as
+ * classes, so the numbers behind them stay in the stylesheet. This is the
+ * opposite: it is a number an operator dials, with no design decision attached
+ * to any particular one of them, so it travels as the number. `--columns`
+ * beside it is there for the same reason.
+ */
+if ( $is_list ) {
+	$grid_style .= sprintf(
+		'--bridge-list-shade:%d%%;',
+		max( 0, min( 50, (int) ( $attributes['listContrastStrength'] ?? 12 ) ) )
+	);
+}
+
 list( $intro_html, $label_id ) = $is_preview
 	? array( '', '' )
 	: bridge_section_intro( $content, 'bridge-cards__intro' );
@@ -208,39 +244,54 @@ list( $intro_html, $label_id ) = $is_preview
  */
 list( $mask_class, $mask_style ) = bridge_band_mask( $attributes );
 
-/*
- * The list's own modifiers, all of them band-level.
+/**
+ * The list's own modifiers — on the grid, and deliberately not on the band.
  *
  * They are classes rather than inline custom properties because every one of
- * them is a *choice between design decisions* — how wide a thumbnail is, what
- * a rounded corner is, how much darker a contrast row is — and those values
+ * them is a *choice between design decisions* — how wide a thumbnail is, what a
+ * rounded corner is, how much darker a contrast row is — and those values
  * belong in the stylesheet next to the rules that spend them, not in a style
  * attribute assembled in PHP. What travels is which choice was made.
  *
- * Nothing is emitted in grid mode. A band carrying five classes no rule can
- * match is five things for the next person to search for.
+ * Which element they go on is the more interesting decision, and it is the
+ * editor that settles it. The band in the editor is drawn by the block's own
+ * JavaScript; only the grid comes back from this file through
+ * <ServerSideRender>. So a modifier written onto the band has to be written
+ * twice — once here and once in edit.js — and the two copies are then a pair of
+ * lists that must be kept identical by hand. They were not: the overflow class
+ * drifted first, and a list came out as a sideways row on the front end while
+ * the editor looked correct.
+ *
+ * On the grid there is one copy. The preview is served the same classes the
+ * page is, from the same lines, so the canvas cannot disagree with the front
+ * end about how a list is drawn — and edit.js has nothing to duplicate.
+ *
+ * `is-*` rather than a BEM modifier: these are states of the grid rather than
+ * variants of a block, which is the distinction `is-linked`, `is-highlighted`
+ * and `is-editor-preview` already draw elsewhere in the theme.
+ *
+ * Nothing is emitted in grid mode. An element carrying six classes no rule can
+ * match is six things for the next person to search for.
  */
-$list_class = '';
+$grid_class = 'bridge-cards-grid';
 
 if ( $is_list ) {
-	$list_class = ' bridge-cards--list'
-		. ' bridge-cards--list-' . $list_style
-		. ' bridge-cards--media-' . $list_media;
+	$grid_class .= ' is-list is-list-' . $list_style . ' is-media-' . $list_media;
 
 	if ( ! empty( $attributes['listMediaRounded'] ) ) {
-		$list_class .= ' bridge-cards--media-rounded';
+		$grid_class .= ' is-media-rounded';
 	}
 
 	if ( ! empty( $attributes['listMediaShadow'] ) ) {
-		$list_class .= ' bridge-cards--media-shadow';
+		$grid_class .= ' is-media-shadow';
 	}
 
 	if ( ! empty( $attributes['listAlternate'] ) ) {
-		$list_class .= ' bridge-cards--list-alternate';
+		$grid_class .= ' is-alternate';
 	}
 
 	if ( ! empty( $attributes['listContrast'] ) ) {
-		$list_class .= ' bridge-cards--list-contrast';
+		$grid_class .= ' is-contrast';
 	}
 }
 
@@ -248,7 +299,7 @@ $section_open = $is_preview
 	? ''
 	: bridge_section_wrapper(
 		$attributes,
-		'bridge-cards bridge-cards--' . $width . ' bridge-cards--' . $overflow . $list_class . $mask_class,
+		'bridge-cards bridge-cards--' . $width . ' bridge-cards--' . $overflow . $mask_class,
 		$mask_style,
 		$label_id
 	);
@@ -295,7 +346,7 @@ if ( ! $query->have_posts() ) {
 	// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 	echo $section_open, $inner_open, $intro_html;
 	?>
-	<div class="bridge-cards-grid" style="<?php echo esc_attr( $grid_style ); ?>">
+	<div class="<?php echo esc_attr( $grid_class ); ?>" style="<?php echo esc_attr( $grid_style ); ?>">
 		<p class="bridge-cards__empty">
 			<?php
 			// A search that found nothing is a different sentence from a band
@@ -436,7 +487,7 @@ $card_index  = 0;
 // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 echo $section_open, $inner_open, $intro_html;
 ?>
-<div class="bridge-cards-grid" style="<?php echo esc_attr( $grid_style ); ?>"
+<div class="<?php echo esc_attr( $grid_class ); ?>" style="<?php echo esc_attr( $grid_style ); ?>"
 	<?php
 	if ( $is_carousel ) {
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped inside.

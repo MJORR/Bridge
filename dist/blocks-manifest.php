@@ -327,6 +327,10 @@ return array(
 				'type' => 'boolean',
 				'default' => false,
 			),
+			'listContrastStrength' => array(
+				'type' => 'number',
+				'default' => 12,
+			),
 			'isPreview' => array(
 				'type' => 'boolean',
 				'default' => false,

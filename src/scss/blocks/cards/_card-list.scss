@@ -50,14 +50,24 @@
 	 */
 	--bridge-list-media: 30%;
 
-	// The gap between the picture and the words. The site's own block gap with
-	// a floor under it, for the reason the alternating rows give: a gutter
-	// holding a paragraph off the edge of a photograph needs more than the
-	// space between two stacked blocks.
-	--bridge-list-gap: max(
-		var(--wp--preset--spacing--50),
-		var(--wp--style--block-gap, var(--wp--preset--spacing--30))
-	);
+	/**
+	 * The gap between the picture and the words: the site's own, exactly.
+	 *
+	 * `section.$grid-gap` — the same value that separates one card from the
+	 * next in a grid, one panel from the next in a feature band and one row of
+	 * this list from the row below it. A list is a grid of one column, so the
+	 * space inside a row and the space between rows are the same measurement,
+	 * and a site that opens its rhythm up opens both.
+	 *
+	 * It used to carry a floor of L under it, on the argument that a gutter
+	 * beside a photograph wants more than the space between two stacked
+	 * blocks. That is true of the alternating rows, where the picture is half
+	 * the window; it is not true here, and the floor was quietly making the
+	 * gap 24px where the site says 16 — which is what put the two halves of a
+	 * large row out of step. The words get their air from the padding below
+	 * instead, which is the thing that actually needs it.
+	 */
+	--bridge-list-gap: #{section.$grid-gap};
 
 	.post-card--list {
 		// The Summary group's tokens: a list row is that card, laid sideways,
@@ -111,72 +121,311 @@
 		@include section.two-column {
 			grid-template-columns: var(--bridge-list-media) minmax(0, 1fr);
 			gap: var(--bridge-list-gap);
-			align-items: center;
+
+			/**
+			 * The words start where the picture starts.
+			 *
+			 * `center` was the wrong axis to think about. A row is a headline
+			 * beside a photograph, and a reader coming down the list reads the
+			 * top of each one — so the two tops are the line that matters, and
+			 * centring the words against a picture that may be half again as
+			 * tall floats them away from it. The taller of the two sets the
+			 * row's height either way; this decides which end the difference
+			 * is spent at, and it belongs at the bottom where nothing is
+			 * looking.
+			 */
+			align-items: start;
 		}
 	}
 
-	// The words fill their side rather than being a flex column of their own,
-	// and they are spaced by the same step the other card bodies use.
+	/**
+	 * The words fill their side, spaced by the same step the other card bodies
+	 * use — and held off the picture by a padding of their own.
+	 *
+	 * The gap above is the site's, and it is the right distance between two
+	 * *boxes*: the picture's edge is a hard edge and can sit straight on it.
+	 * A paragraph cannot. Type needs more room beside a photograph than a
+	 * rectangle does, and the honest way to say so is a padding on the words
+	 * rather than a wider gap — a wider gap would push the picture's edge out
+	 * too, and the picture was already where it should be.
+	 *
+	 * So the picture touches the gap and the words touch the gap and then
+	 * begin a padding later. Only on the side facing the picture: the outer
+	 * side is the container's edge, which the row's own padding already holds.
+	 *
+	 * `padding-inline-start`, flipped for the rows that alternate — see the
+	 * rule that reverses their tracks. Stacked, there is no side facing
+	 * anything and the media query below never applies.
+	 */
 	.post-card--list .post-card__body {
 		display: flex;
 		flex-direction: column;
-		gap: var(--wp--preset--spacing--20);
+		// A step up from the grid card's XS. A card's body is a column a few
+		// hundred pixels wide where XS is enough to separate three short
+		// lines; a row's is half the band, and at that measure the same gap
+		// reads as a paragraph that has run together. S is the site's next
+		// step, so this stays on the scale rather than inventing a number.
+		gap: var(--wp--preset--spacing--30);
 		// The base pads the body away from the card's edges. There are no card
-		// edges here — the contrast rule below is what pads a row that has a
-		// ground to sit on.
+		// edges here — the row's own padding is what holds the words off the
+		// container, and the shading rules at the end of this file are what
+		// pad a row that has a ground to sit on.
 		padding: 0;
+
+		@include section.two-column {
+			padding-inline-start: var(--wp--custom--card--padding, 1.5rem);
+		}
 	}
 
 	.post-card--list .post-card__title {
 		font-size: var(--post-card-heading);
 	}
 
-	// The line a project carries its client or its year on. Quieter than the
-	// excerpt and above it, so the heading and the fact under it read as one
-	// unit before the paragraph starts.
-	.post-card--list .post-card__subtitle {
-		margin: 0;
-		font-size: var(--wp--preset--font-size--small);
-		font-weight: 500;
-		opacity: 0.75;
-		order: -1;
+	/**
+	 * ---- Nothing here is clickable except the three things that are ---------
+	 *
+	 * The base stretches the title's link over the whole card with a
+	 * `::after` pinned to `inset: 0`. That is right for a card — a small
+	 * object a reader aims at as one thing — and wrong for a row, which is the
+	 * width of the window and the height of a photograph. On a phone that is
+	 * most of the screen, and a thumb resting anywhere on it while scrolling
+	 * opens a post nobody chose.
+	 *
+	 * `content: none` rather than `display: none`: the pseudo-element is never
+	 * generated at all, so there is no box to be positioned, no stacking
+	 * context to reason about and nothing for a later rule to switch back on
+	 * by accident.
+	 *
+	 * The picture and the cue become real anchors instead — see card-list.php,
+	 * which also explains why only the title is reachable by keyboard.
+	 */
+	.post-card--list .post-card__link::after {
+		content: none;
 	}
 
-	// The picture keeps the crop the Summary cards use. `align-self` so a row
-	// whose words are taller does not stretch the photograph past its ratio.
+	// The picture's own target, filling the frame it wraps. `display: block`
+	// because an inline anchor around a figure would leave a line-height's
+	// worth of space under the photograph.
+	.post-card--list .post-card__media-link {
+		display: block;
+	}
+
+	/**
+	 * And the cue is a link now, so it needs the reset the base gives the
+	 * title's link — the colour is the accent set below, and the underline
+	 * arrives on hover rather than sitting under it at rest.
+	 */
+	.post-card--list a.post-card__read-more {
+		text-decoration: none;
+
+		&:hover,
+		&:focus-visible {
+			text-decoration: underline;
+			text-underline-offset: 0.15em;
+		}
+	}
+
+	/**
+	 * ---- The hover cues follow the targets ---------------------------------
+	 *
+	 * Both of the base's cues fire on `.post-card:hover` — the photograph
+	 * zooms 4% and the title underlines — which was exactly right while the
+	 * whole card was the link. Now that it is not, a row that reacts to the
+	 * pointer anywhere along its width is telling a reader something untrue,
+	 * and the one thing worse than a target you cannot find is a target that
+	 * is not there.
+	 *
+	 * So each cue moves onto the thing it belongs to: the zoom to the
+	 * picture's own anchor, the underline to the title. `:focus-within` on the
+	 * row is deliberately left alone — focus can only land on the title, so
+	 * the row lighting up for a keyboard is the row saying where focus is,
+	 * which is true.
+	 *
+	 * Both selectors carry the base's weight exactly — `--list` in place of
+	 * the `:not(--team)` it uses — so this file being last is what settles
+	 * them, which is the arrangement _index.scss sets up.
+	 */
+	.post-card--list:not(.post-card--team):hover .post-card__image > img {
+		transform: none;
+	}
+
+	.post-card--list .post-card__media-link:hover .post-card__image > img {
+		transform: scale(1.04);
+	}
+
+	.post-card--list:hover .post-card__link {
+		text-decoration: none;
+	}
+
+	.post-card--list .post-card__link:hover {
+		text-decoration: underline;
+		text-underline-offset: 0.15em;
+	}
+
+	// The picture keeps the crop the Summary cards use, and fills its column.
+	// It no longer says where it sits: `align-items: start` on the row above
+	// is now the one place that decides, for the photograph and the words
+	// together, and a second answer here could only disagree with it.
 	.post-card--list .post-card__image {
-		align-self: start;
 		width: 100%;
+	}
+
+	/**
+	 * The read-more cue, which a list row was drawing unstyled.
+	 *
+	 * The rule that shapes it is `.post-card--summary .post-card__read-more` in
+	 * _card-summary.scss — scoped to that style, because it was the only one
+	 * that drew the cue. A list row draws it too and matched none of that
+	 * selector, so it came out as body text with no size, no colour and no
+	 * arrow, which is the one thing on the row that tells a reader it is
+	 * clickable.
+	 *
+	 * The same four declarations rather than a shared placeholder: two styles
+	 * is not yet a pattern, and the day a third wants it is the day to lift it
+	 * into one. What is not the same is the space above it — a row's body is
+	 * half the band wide, and the cue wants the step the rest of this column is
+	 * spaced by rather than the tighter one a card uses.
+	 */
+	.post-card--list .post-card__read-more {
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 500;
+		// Skin-aware, like the summary card's: the link colour on a light band
+		// and the band's own foreground on an Inverted one, so it is never a
+		// dark blue on a dark blue.
+		color: var(--post-card-accent);
+		margin-block-start: var(--wp--preset--spacing--20);
+		align-self: flex-start;
+
+		&::after {
+			content: " \2192";
+		}
 	}
 }
 
 /**
- * ---- The band ---------------------------------------------------------------
+ * ---- Edge to edge, with the words where they were ---------------------------
+ *
+ * A list row runs the full width of the window; its content stays on the wide
+ * container, lined up with the heading above it and with every other block on
+ * the page. That is what makes a shaded row read as a band of the page rather
+ * than as a wide card — the tint reaches the glass, the words do not.
+ *
+ * The container therefore moves off `__inner` and onto the things inside it:
+ * `__inner` goes full width, and the intro and the rows each take the inset
+ * back as padding. Both are children of a full-width box, so both resolve the
+ * same measurement and stay on one vertical.
+ *
+ * ---- Why `:has()` and not a class on the band -------------------------------
+ *
+ * `__inner` is drawn by edit.js in the editor and by render.php on the front
+ * end, and only the grid comes from the server in both. Keying off the grid's
+ * own state class is what keeps that single source of truth: no second list of
+ * classes for the editor to hold identical, which is the drift that put a list
+ * sideways on the front end while the canvas looked correct.
+ *
+ * ---- Why no `vw` ------------------------------------------------------------
+ *
+ * The obvious way to write this is `calc(50% - 50vw)`, and it is wrong on any
+ * desktop with a visible scrollbar: `100vw` counts the scrollbar and the client
+ * area does not, so the row overflows by half a scrollbar at each end and the
+ * page grows a horizontal one of its own. Every percentage below resolves
+ * against `__inner` instead, which *is* the window's client width — the band is
+ * always full width — so the arithmetic is exact and there is no gutter to
+ * guess at.
+ */
+.bridge-cards__inner:has(.bridge-cards-grid.is-list) {
+	// The gutter the band itself spends on every skinned, full-width section.
+	// The intro sits inside it, as it always has; a row gives it back. Named
+	// because two rules below have to agree about it.
+	--bridge-list-gutter: var(--wp--preset--spacing--40);
+
+	/**
+	 * How far the container's content edge is from this box's own edge:
+	 * whatever `container(wide)` was centring, plus the gutter it spends
+	 * inside `wideSize`. `max(0px, …)` is the narrow case — below `wideSize`
+	 * there is nothing to centre and the inset is the gutter alone.
+	 */
+	// stylelint-disable scss/operator-no-newline-after -- prettier wraps this
+	// calc and leaves the operator at the end of the line; prettier is what
+	// runs on save, so it wins. Same exemption as `container(narrow)`.
+	--bridge-list-inset: calc(
+		max(0px, (100% - var(--wp--style--global--wide-size)) / 2) +
+			var(--bridge-list-gutter)
+	);
+	// stylelint-enable scss/operator-no-newline-after
+
+	max-width: none;
+	padding-inline: 0;
+
+	> .bridge-cards__intro {
+		padding-inline: var(--bridge-list-inset);
+	}
+}
+
+/**
+ * Every row's content sits on the container — the same vertical as the heading
+ * above it and as every other block on the page.
+ *
+ * Only that. Nothing here runs wider than the container, because nothing here
+ * is painted: a plain row is transparent, so a box reaching the glass would be
+ * an invisible one. The two rules that *do* paint — the shading, contained or
+ * full — widen themselves at the end of this file, each by pushing its own
+ * edges out and taking the same distance back as padding, so the words never
+ * move whichever width the ground behind them is.
+ *
+ * The empty-state line is included on purpose: a list with no posts yet still
+ * has a sentence, and it belongs on the container like everything else.
+ */
+.bridge-cards-grid.is-list > * {
+	padding-inline: var(--bridge-list-inset);
+}
+
+/**
+ * ---- The grid ---------------------------------------------------------------
  *
  * One column, whatever the Columns slider was left at. render.php already
  * forces `--columns` to 1 for the `sizes` arithmetic; this is the layout half
  * of the same sentence, and it has to be said here because `auto-grid` writes
  * an explicit `repeat(auto-fit, …)` that a custom property cannot reach.
+ *
+ * Every state below is on the grid rather than on the band, and that is what
+ * makes the editor's preview correct: the band there is drawn by edit.js and
+ * only the grid is served by render.php, so a class on the band would have to
+ * be written twice and kept identical by hand. See the note in render.php.
  */
-.bridge-cards--list .bridge-cards-grid {
+.bridge-cards-grid.is-list {
 	grid-template-columns: minmax(0, 1fr);
 }
 
 // ---- Image size -------------------------------------------------------------
 // Three values for one property, which is the whole of what the control does.
-.bridge-cards--media-small .bridge-cards-grid {
+.bridge-cards-grid.is-media-small {
 	// A length rather than a share: a thumbnail that grew with the window
 	// would stop being a thumbnail. Sized against the type scale, so a site
 	// with a larger scale gets a larger one.
 	--bridge-list-media: 8rem;
 }
 
-.bridge-cards--media-medium .bridge-cards-grid {
-	--bridge-list-media: 30%;
+/**
+ * Medium and large are shares of the row *after* the gap has been taken out,
+ * which is what makes "large" mean half.
+ *
+ * A bare `50%` is half of the whole row, so the picture took half and the words
+ * were left with half minus the gap — measured, 524px against 500px on a 1048px
+ * row, which is a 24px limp in a layout whose whole promise is two even halves.
+ * Subtracting the gap first splits what there actually is to split: the two
+ * tracks come out equal and the gap sits between them.
+ *
+ * Small stays a length, for the reason given above — a thumbnail that grew with
+ * the window would stop being a thumbnail — so there is nothing to take a share
+ * of and nothing to subtract.
+ */
+.bridge-cards-grid.is-media-medium {
+	--bridge-list-media: calc((100% - var(--bridge-list-gap)) * 0.3);
 }
 
-.bridge-cards--media-large .bridge-cards-grid {
-	--bridge-list-media: 50%;
+.bridge-cards-grid.is-media-large {
+	--bridge-list-media: calc((100% - var(--bridge-list-gap)) * 0.5);
 }
 
 // ---- The picture's own shape ------------------------------------------------
@@ -189,14 +438,14 @@
  * grid: in a grid the card is the object and the photograph is its top edge; in
  * a list the row is a line of text and the picture is the only object in it.
  */
-.bridge-cards--media-rounded .bridge-cards-grid .post-card--list .post-card__image {
+.bridge-cards-grid.is-media-rounded .post-card--list .post-card__image {
 	border-radius: var(--wp--custom--card--radius, 6px);
 	// Back on, and only here: the frame is what crops the photograph to the
 	// corner it has just been given.
 	overflow: hidden;
 }
 
-.bridge-cards--media-shadow .bridge-cards-grid .post-card--list .post-card__image {
+.bridge-cards-grid.is-media-shadow .post-card--list .post-card__image {
 	box-shadow: var(--wp--custom--card--shadow, none);
 }
 
@@ -222,41 +471,175 @@
  * would read as a paragraph belonging to the picture above it.
  */
 @include section.two-column {
-	.bridge-cards--list-alternate
-		.bridge-cards-grid
-		.post-card--list:nth-child(even) {
+	.bridge-cards-grid.is-alternate .post-card--list:nth-child(even) {
 		grid-template-columns: minmax(0, 1fr) var(--bridge-list-media);
 
-		.post-card__image {
+		/*
+		 * The media *link*, not the figure inside it.
+		 *
+		 * `order` only moves a grid item, and since the picture was wrapped in
+		 * an anchor to make it a click target the item is that anchor — so the
+		 * rule went on an element the grid was no longer placing and every row
+		 * kept its picture on the left while the tracks swapped underneath it.
+		 */
+		.post-card__media-link {
 			order: 2;
+		}
+
+		// The words' own padding follows the picture across. On these rows the
+		// side facing it is the end, and the start is the container's edge.
+		.post-card__body {
+			padding-inline: 0 var(--wp--custom--card--padding, 1.5rem);
 		}
 	}
 }
 
-// ---- Contrast rows ----------------------------------------------------------
+// ---- Hover -------------------------------------------------------------------
 /**
- * Every second row a little darker than the band.
+ * The row does not move.
  *
- * The tint is mixed from the band's own foreground, so one declaration works on
- * the page, on a Surface band, on Accent and on Inverted — 5% of a dark
- * foreground darkens a light band, 5% of a light one lifts a dark band.
+ * The base gives every card `card.raise($translate: true)`: a shadow and a 2px
+ * rise together, which is one gesture — the card lifts off the page, and the
+ * shadow is what says so. A list row has handed its surface back, so the shadow
+ * half was already switched off through
+ * `--wp--custom--card--shadow-hover`, and what was left was the rise on its own:
+ * a row nudging 2px up the page with nothing to explain it. Measured, not
+ * guessed — `transform: matrix(1,0,0,1,0,-2)` against `box-shadow: none`.
  *
- * The padding goes on *every* row and not only the tinted ones. A ground needs
- * padding to keep words off its edge, and if only half the rows had it the list
- * would zigzag horizontally down the page — the one thing striping is supposed
- * to make easier to read.
+ * It reads worse now than it did as a card, because the row runs to both edges
+ * of the window: two pixels of movement across a card is a hint, and the same
+ * two pixels across the whole window is a flinch.
  *
- * The gap between rows is left alone. Touching stripes are the other reading of
- * this control and are one declaration away, but closing the gap is a change to
- * the band's rhythm rather than to its colour, and it is not what the switch
- * says it does.
+ * The photograph's own 4% zoom is left alone. It is contained, it is on the one
+ * part of the row that is an object rather than a line of text, and it is the
+ * cue the grid cards already use — so a page carrying both reads as one hand.
  */
-.bridge-cards--list-contrast .bridge-cards-grid .post-card--list {
-	@include card.padding;
+.bridge-cards-grid.is-list .post-card--list {
+	&:hover,
+	&:focus-within {
+		transform: none;
+	}
 }
 
-.bridge-cards--list-contrast
-	.bridge-cards-grid
-	.post-card--list:nth-child(even) {
-	background-color: color-mix(in srgb, currentcolor 5%, transparent);
+// ---- Shaded rows -------------------------------------------------------------
+/**
+ * Every row is the same box; every other one is painted.
+ *
+ * This is one rule and one exception on purpose. Once a list is shaded, what
+ * distinguishes a shaded row from a plain one has to be *the colour and nothing
+ * else* — same width, same padding, same height for the same content. The first
+ * version gave the padding only to the rows that were tinted, and the list came
+ * apart: a shaded row stood a card-padding taller than the plain one under it,
+ * so the rhythm limped and the stripes read as different-sized objects rather
+ * than as one list with alternate rows picked out.
+ *
+ * So the geometry is set here for all of them and only `background-color` is
+ * conditional.
+ *
+ * ---- The box: the window, with the words on the container --------------------
+ *
+ * Two declarations that cancel. The negative margin gives back the gutter every
+ * skinned full-width band spends, which lands the row's edges on the window;
+ * the padding is the container inset measured from there, so the words sit on
+ * the content column — the same vertical as the heading above them and as every
+ * other block on the page. Only the ground runs wider.
+ *
+ * Nothing overflows: the margin lands the row's border box exactly on the
+ * band's, which is already the window's width. That is also why every
+ * measurement is a percentage of the band rather than a `vw` — `vw` counts a
+ * scrollbar the client area does not have, so the row would hang half of one
+ * past each edge and grow the page a horizontal scrollbar of its own.
+ *
+ * Taking the band's gutter off instead would be shorter and is a specificity
+ * fight this file loses: that gutter is set in components/_sections.scss by a
+ * rule carrying three classes, in a file printed *after* this one in main.scss,
+ * and that file records that the next escalation would tie again the moment
+ * either side gained a class. Working with the gutter asks nothing of it.
+ *
+ * ---- No corner ---------------------------------------------------------------
+ *
+ * A corner radius is a corner, and a shape touching both edges of the window
+ * has none — a rounded end on a band that meets the glass reads as a rendering
+ * fault. The base rule at the top of this file already sets `border-radius: 0`
+ * on every list row, so there is nothing to say here; the doubled radius that
+ * used to live at the end of this file went with the contained width it was
+ * drawn for.
+ */
+/**
+ * Shaded rows tile: no gap between them.
+ *
+ * The gap and the padding are two answers to the same question, and only one of
+ * them can be right at a time. Unshaded, the rows have no edges of their own and
+ * the grid's gap is what separates them. Shaded, each row *is* a band with a
+ * visible edge and its own padding inside it — and the gap then lands between
+ * those bands, where it adds to the padding of whichever row has no tint to
+ * show for it.
+ *
+ * That is what made the plain rows look loosely set. Measured: a shaded row's
+ * content sat 24px below its tint's top edge, while the plain row under it sat
+ * 40px below the edge above — its own 24 plus the 16 of gap — so the same
+ * padding read as half again as much on every second row. Identical boxes, and
+ * still a limp, because what a reader measures from is the last edge they can
+ * see and not the one the box model drew.
+ *
+ * With the gap closed the bands meet, every row's content is exactly its own
+ * padding inside its own band, and the alternation is the only thing left that
+ * changes down the list.
+ *
+ * `row-gap` alone: the column gap between the picture and the words is a
+ * different measurement entirely and is set on the row itself.
+ */
+.bridge-cards-grid.is-contrast {
+	row-gap: 0;
+}
+
+.bridge-cards-grid.is-contrast .post-card--list {
+	margin-inline: calc(-1 * var(--bridge-list-gutter));
+	padding-inline: calc(
+		var(--bridge-list-inset) + var(--bridge-list-gutter)
+	);
+	padding-block: var(--wp--custom--card--padding, 1.5rem);
+}
+
+/**
+ * The one thing that differs: the colour, on every other row starting with the
+ * first.
+ *
+ * `odd`, not `even`: the list is striped from the top rather than carrying an
+ * accent that happens to land on row two, and a three-row list reads
+ * shaded-plain-shaded rather than the other way about. With **Alternate the
+ * sides** on as well the two fall into step — the shaded rows all take the
+ * picture on one side and the plain rows on the other — which is a rhythm
+ * rather than a coincidence, and worth knowing before both switches go on.
+ *
+ * ---- A wash, not a colour ----------------------------------------------------
+ *
+ * `color-mix()` into `transparent`, so the row is a translucent overlay laid on
+ * the band rather than an opaque colour painted next to it. Mixing into the
+ * band's ground instead gives a flat slab that happens to sit near the band's
+ * colour, and on a band wearing `has-band-gradient` — which is swept an eighth
+ * either way — that slab reads as pasted on, because it is the only thing on
+ * the page not carrying the sweep.
+ *
+ * The trade is the one that comes with any wash: whatever the band does behind
+ * it shows through, gradient included. That is the point of a wash. A list that
+ * needs its shading dead flat wants the band's gradient off, not the wash made
+ * opaque.
+ *
+ * How much of it is `--bridge-list-shade`, written on the grid by render.php
+ * from the Shading strength control — a number an operator dials rather than a
+ * design decision this file should be holding. The fallback matches the
+ * attribute's default so a block saved before the control existed looks the
+ * same as one saved after it.
+ *
+ * Not a named colour, at any strength. `currentcolor` is the band's own
+ * foreground, so this is the right dark on a light band and the right light on
+ * a dark one, from one declaration.
+ */
+.bridge-cards-grid.is-contrast .post-card--list:nth-child(odd) {
+	background-color: color-mix(
+		in srgb,
+		currentcolor var(--bridge-list-shade, 12%),
+		transparent
+	);
 }

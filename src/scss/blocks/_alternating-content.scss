@@ -329,6 +329,35 @@ $mask-shift: calc(
 	&--full &__inner {
 		max-width: none;
 		padding-inline: 0;
+
+		/**
+		 * ---- The ends of a stacked band ----------------------------------
+		 *
+		 * Flush costs nothing while the rows are a checkerboard: a picture
+		 * running into the band above it is the shape this layout is for, and
+		 * the copy buys its own air back through the `padding-block` further
+		 * down this file. Stacked, neither is true. There are no halves to
+		 * cross, that padding is inline only, and the band still carries
+		 * `bridge-band--flush` — so the first row's picture sat on whatever
+		 * preceded the section and the last row's last line on whatever
+		 * followed it, with nothing in between.
+		 *
+		 * The section's own padding, so the ends of this band land exactly
+		 * where the ends of every other band on the page do.
+		 *
+		 * On this wrapper rather than on the first and last rows: one
+		 * declaration, and it holds whichever children the band turns out to
+		 * begin and end with. Given up the moment there are two columns,
+		 * which is where the flush edge starts being the point.
+		 */
+		padding-block: var(
+			--wp--custom--section-padding,
+			var(--wp--preset--spacing--70)
+		);
+
+		@include section.two-column {
+			padding-block: 0;
+		}
 	}
 
 	&--full &__row {

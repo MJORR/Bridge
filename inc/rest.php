@@ -204,6 +204,11 @@ function bridge_rest_tokens_payload(): array
 		// The site's menus, so the header can be pointed at one by name rather
 		// than by an id the operator would have to go and look up.
 		'menus'          => bridge_navigation_menus(),
+		// The phone number from Site Options, which is a different screen. The
+		// header can offer to show it in the top bar, and a switch for a number
+		// that does not exist is a switch that does nothing — so the control is
+		// drawn only when this is non-empty, and shows the number it means.
+		'sitePhone'      => bridge_header_phone(),
 		// Every insertable block, grouped as the inserter groups them, with
 		// what the theme ships on by default so the screen can say what a
 		// switch is changing rather than only what it is set to.

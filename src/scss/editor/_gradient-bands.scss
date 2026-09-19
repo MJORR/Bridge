@@ -1,0 +1,101 @@
+/**
+ * Bridge — the Hero Banner's gradient bands, in the Inspector.
+ *
+ * Editor-only, and structural rather than decorative: with three bands open the
+ * Gradient panel is eighteen controls in a column, and nothing but the grouping
+ * tells an operator which Start point belongs to which End opacity. So each
+ * band is a real `<fieldset>` with a real `<legend>` — which is also what gets
+ * the grouping read out rather than only drawn — and this gives that fieldset
+ * the border WordPress's own reset takes off it.
+ *
+ * Ships in inspector.css, an ordinary admin stylesheet enqueued on
+ * `enqueue_block_editor_assets`. See inspector.scss, which explains why the
+ * sidebar cannot be reached by add_editor_style().
+ */
+.bridge-hero-gradient-band {
+	margin-block-end: 16px;
+	padding: 12px;
+	border: 1px solid #e0e0e0;
+	border-radius: 2px;
+
+	// The last control in the card is Remove band, a link button with no
+	// margin of its own; without this it sits hard on the card's bottom edge.
+	> :last-child {
+		margin-block-end: 0;
+	}
+
+	> legend {
+		padding-inline: 4px;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+	}
+}
+
+/**
+ * The panel with every band removed.
+ *
+ * A state worth a sentence rather than an empty panel: the banner is still
+ * drawing — it falls back to its plain colour — so an operator looking at a
+ * sidebar with nothing in it and a canvas that has not gone blank needs telling
+ * which of the two they are seeing.
+ */
+.bridge-hero-gradient-empty {
+	margin-block: 0 16px;
+	font-size: 12px;
+	font-style: italic;
+	opacity: 0.75;
+}
+
+/**
+ * The bands, as the browser will actually paint them.
+ *
+ * The panel is six controls a band and, without this, none of them shows a
+ * result — so a colour set on an end that is at zero opacity looks exactly like
+ * a colour set on one that is not, and the only evidence either way is a banner
+ * behind the sidebar with a photograph in the middle of it.
+ *
+ * The chequerboard is the point of the outer element: transparent has to read as
+ * transparent rather than as whatever the sidebar's background happens to be,
+ * which is the one thing a strip of colour on a white panel cannot say for
+ * itself. Two 45° gradients offset by half a tile, which is the usual way to
+ * draw one without an image.
+ */
+.bridge-hero-gradient-preview {
+	margin-block-end: 16px;
+	height: 40px;
+	border: 1px solid #e0e0e0;
+	border-radius: 2px;
+	background-color: #fff;
+	background-image:
+		linear-gradient(45deg, #dcdcde 25%, transparent 25% 75%, #dcdcde 75%),
+		linear-gradient(45deg, #dcdcde 25%, transparent 25% 75%, #dcdcde 75%);
+	background-position:
+		0 0,
+		6px 6px;
+	background-size: 12px 12px;
+	overflow: hidden;
+}
+
+// The gradient itself, over the chequerboard. Laid out left to right whatever
+// the banner's angle is: what this is here to show is where each band starts
+// and where the clear air between them is, and the angle is the one thing
+// already plain on the banner.
+.bridge-hero-gradient-preview__bands {
+	width: 100%;
+	height: 100%;
+}
+
+/**
+ * Reset, on a row of its own under Add band.
+ *
+ * Both are buttons in a narrow panel, and side by side they read as a pair of
+ * equal choices — one of which throws away every band above it. The wrapper is
+ * a block, so the link starts a new line whatever the panel's width happens to
+ * be, and the top margin keeps it off the button rather than under it.
+ */
+.bridge-hero-gradient-reset {
+	display: block;
+	margin-block-start: 8px;
+}

@@ -667,4 +667,58 @@ final class CompileThemeJsonTest extends BridgeTestCase
 			$card['cover']['ink']
 		);
 	}
+
+	/**
+	 * The strapline face is a preset of its own, on every site.
+	 *
+	 * Not conditional on the Google toggle and not conditional on the family
+	 * being installed. A preset slug is a public name — the footer's stylesheet
+	 * asks for `--wp--preset--font-family--script` by it — and one that comes
+	 * and goes is one the stylesheet cannot rely on.
+	 */
+	public function test_the_script_family_is_always_registered(): void
+	{
+		$families = $this->compile()['settings']['typography']['fontFamilies'];
+		$slugs    = array_column($families, 'slug');
+
+		$this->assertContains('script', $slugs);
+	}
+
+	/**
+	 * And it names a generic fallback, so an uninstalled face still draws in
+	 * *a* hand rather than in the body font.
+	 */
+	public function test_the_script_family_falls_back_to_cursive(): void
+	{
+		$families = $this->compile()['settings']['typography']['fontFamilies'];
+		$script   = null;
+
+		foreach ($families as $family) {
+			if ('script' === $family['slug']) {
+				$script = $family;
+			}
+		}
+
+		$this->assertNotNull($script);
+		$this->assertStringContainsString(BRIDGE_SCRIPT_FAMILY, $script['fontFamily']);
+		$this->assertStringEndsWith('cursive', $script['fontFamily']);
+
+		// Nothing is installed under the test uploads path, so the compiler
+		// should not be claiming any files exist for it.
+		$this->assertArrayNotHasKey('fontFace', $script);
+	}
+
+	/**
+	 * A Google selection still replaces a role's stack rather than adding a
+	 * slug, which the script family must not have changed.
+	 */
+	public function test_the_script_family_does_not_displace_the_named_roles(): void
+	{
+		$families = $this->compile()['settings']['typography']['fontFamilies'];
+		$slugs    = array_column($families, 'slug');
+
+		foreach (array('sans', 'serif', 'mono', 'heading') as $slug) {
+			$this->assertContains($slug, $slugs);
+		}
+	}
 }

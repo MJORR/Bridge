@@ -128,6 +128,28 @@ if (! function_exists('sanitize_key')) {
 	}
 }
 
+if (! function_exists('wp_allowed_protocols')) {
+	/**
+	 * Core's default list, frozen.
+	 *
+	 * Only here so wp-includes/kses.php can be loaded on its own — see
+	 * HeroGradientTest, which runs the real `safecss_filter_attr()` because the
+	 * bug it pins is that function's behaviour and a double would prove nothing.
+	 */
+	function wp_allowed_protocols(): array
+	{
+		return array('http', 'https', 'mailto', 'tel');
+	}
+}
+
+if (! function_exists('sanitize_html_class')) {
+	/** Core's implementation, less the filter it runs the result through. */
+	function sanitize_html_class(string $class): string
+	{
+		return preg_replace('/[^A-Za-z0-9_-]/', '', preg_replace('/%[a-fA-F0-9][a-fA-F0-9]/', '', $class));
+	}
+}
+
 if (! function_exists('sanitize_text_field')) {
 	/** A simplification. No test depends on the difference — see the top. */
 	function sanitize_text_field(string $str): string
@@ -226,6 +248,105 @@ if (! function_exists('get_theme_file_path')) {
 	function get_theme_file_path(string $file = ''): string
 	{
 		return dirname(__DIR__) . ('' !== $file ? '/' . ltrim($file, '/') : '');
+	}
+}
+
+/*
+ * WordPress's own constants.
+ *
+ * Only the ones theme files read at load time, which is why they are defined
+ * here rather than stubbed as functions: inc/svg.php computes an upload
+ * ceiling and a cache lifetime while it is being included, so the constants
+ * have to exist before the require, not before the first call.
+ */
+if (! defined('MINUTE_IN_SECONDS')) {
+	define('MINUTE_IN_SECONDS', 60);
+}
+
+if (! defined('HOUR_IN_SECONDS')) {
+	define('HOUR_IN_SECONDS', 60 * MINUTE_IN_SECONDS);
+}
+
+if (! defined('DAY_IN_SECONDS')) {
+	define('DAY_IN_SECONDS', 24 * HOUR_IN_SECONDS);
+}
+
+if (! defined('WEEK_IN_SECONDS')) {
+	define('WEEK_IN_SECONDS', 7 * DAY_IN_SECONDS);
+}
+
+if (! defined('MB_IN_BYTES')) {
+	define('MB_IN_BYTES', 1024 * 1024);
+}
+
+/**
+ * The uploads directory.
+ *
+ * Reached through bridge_fonts_dir(), which the theme.json compiler asks for
+ * on every build now that the strapline's script face is a registered preset —
+ * the compiler has to know whether that family's files are on disk before it
+ * can decide whether to emit `fontFace` for it.
+ *
+ * A path under the system temp directory rather than a real one: nothing in
+ * the suite writes a font, and every caller only ever tests whether files are
+ * present, which under this path they never are. That is the case worth
+ * modelling anyway — a site whose fonts have not been installed yet.
+ */
+if (! function_exists('wp_get_upload_dir')) {
+	function wp_get_upload_dir(): array
+	{
+		return array(
+			'basedir' => sys_get_temp_dir() . '/bridge-test-uploads',
+			'baseurl' => 'https://example.test/wp-content/uploads',
+			'error'   => false,
+		);
+	}
+}
+
+/*
+ * The attachment doubles the SVG inliner needs.
+ *
+ * Both answer from $GLOBALS['bridge_test_svg'], which a test sets to a file it
+ * has written. With nothing set they report "not an SVG" and "no file", which
+ * is the shape every other test in the suite wants — theme.json is compiled in
+ * dozens of them and asks about the strapline face each time.
+ */
+if (! function_exists('get_post_mime_type')) {
+	function get_post_mime_type($post = null)
+	{
+		return isset($GLOBALS['bridge_test_svg']) && is_string($GLOBALS['bridge_test_svg'])
+			? 'image/svg+xml'
+			: false;
+	}
+}
+
+if (! function_exists('get_attached_file')) {
+	function get_attached_file($attachment_id, $unfiltered = false)
+	{
+		return $GLOBALS['bridge_test_svg'] ?? false;
+	}
+}
+
+/*
+ * Transients, as a per-request array.
+ *
+ * Not a no-op returning false: the inliner caches the sanitised markup under a
+ * key carrying the file's mtime, and a `get` that always missed would leave
+ * that path — the one every real page load takes — untested.
+ */
+if (! function_exists('get_transient')) {
+	function get_transient(string $transient)
+	{
+		return $GLOBALS['bridge_test_transients'][$transient] ?? false;
+	}
+}
+
+if (! function_exists('set_transient')) {
+	function set_transient(string $transient, $value, int $expiration = 0): bool
+	{
+		$GLOBALS['bridge_test_transients'][$transient] = $value;
+
+		return true;
 	}
 }
 

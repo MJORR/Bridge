@@ -75,6 +75,42 @@
 }
 
 /**
+ * The same, for a button an editor has painted a palette colour.
+ *
+ * `ground()` above answers "what does a button look like on this band" and is
+ * emitted on the band. This answers "make that button green" and is emitted on
+ * the button itself — the only difference, because custom properties inherit
+ * either way and the button reads the same nine names whichever of the two set
+ * them.
+ *
+ * The values come from bridge_button_palette_schemes(), which sends every
+ * palette colour through the same arithmetic the four grounds go through: a
+ * label picked for legibility on the fill, a hover shade, a border only where
+ * the fill is too close to the page to have an edge of its own, and a ring.
+ *
+ * @param $slug A palette slug from bridge_palette_slugs().
+ */
+@mixin painted($slug) {
+	--bridge-button-bg: var(--wp--custom--button--fill-#{$slug}--bg);
+	--bridge-button-fg: var(--wp--custom--button--fill-#{$slug}--fg);
+	--bridge-button-hover-bg: var(
+		--wp--custom--button--fill-#{$slug}--hover-bg
+	);
+	--bridge-button-hover-fg: var(
+		--wp--custom--button--fill-#{$slug}--hover-fg
+	);
+	--bridge-button-border: var(--wp--custom--button--fill-#{$slug}--border);
+	--bridge-button-hover-border: var(
+		--wp--custom--button--fill-#{$slug}--hover-border
+	);
+	--bridge-button-ghost: var(--wp--custom--button--fill-#{$slug}--ghost);
+	--bridge-button-ghost-hover: var(
+		--wp--custom--button--fill-#{$slug}--ghost-hover
+	);
+	--bridge-button-ring: var(--wp--custom--button--fill-#{$slug}--ring);
+}
+
+/**
  * The shape of a button: everything that is not its colour.
  *
  * Applied to every button whatever it is painted, including one an editor has
@@ -119,7 +155,9 @@
 	border-width: var(--wp--custom--button--border-width, 2px);
 	border-style: solid;
 	border-radius: var(--wp--custom--button--radius, 6px);
+
 	box-shadow: var(--wp--custom--button--shadow, none);
+
 	font-weight: var(--wp--custom--button--weight, 600);
 	letter-spacing: var(--wp--custom--button--letter-spacing, 0);
 	line-height: 1.2;

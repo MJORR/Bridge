@@ -64,6 +64,50 @@ function bridge_palette_slugs(): array
 }
 
 /**
+ * The palette slug that contrasts with a given one.
+ *
+ * Which is a question about meaning, not about luminance. `bridge_is_light_color()`
+ * can say whether two colours are far apart on one axis, and a site whose
+ * Primary and Secondary are two shades of the same navy would fail that test
+ * while still being the pair the brand was drawn with. So this is a stated map
+ * rather than a measurement: the answer to "what is the other one" is a
+ * decision the palette already encodes.
+ *
+ * The three pairs:
+ *
+ *   primary ↔ secondary   The brand's two voices. Whichever is the ground, the
+ *                         other is the mark on it.
+ *   background ↔ surface   The page and its near neighbour. A deliberately
+ *                         quiet pair: a strip painted the page's own colour
+ *                         should not light up in a brand colour under the
+ *                         pointer — the top bar is the quietest thing in the
+ *                         header and a rollover is not the place to stop being
+ *                         quiet.
+ *   accent → primary      Accent is a mark rather than a ground, so it has no
+ *                         opposite number in the palette; it borrows the
+ *                         brand's first colour.
+ *   text → background     The strongest flip there is, and the only sensible
+ *                         one: nothing contrasts with a near-black ground
+ *                         except the page.
+ *
+ * @param string $slug A palette slug.
+ * @return string Another palette slug, always one this palette has.
+ */
+function bridge_palette_contrast_slug(string $slug): string
+{
+	$pairs = array(
+		'primary'    => 'secondary',
+		'secondary'  => 'primary',
+		'accent'     => 'primary',
+		'background' => 'surface',
+		'surface'    => 'background',
+		'text'       => 'background',
+	);
+
+	return $pairs[$slug] ?? 'surface';
+}
+
+/**
  * A palette slug from untrusted input, or the fallback.
  *
  * The check is `is_string()` before the comparison rather than a cast after
@@ -1083,6 +1127,58 @@ function bridge_button_schemes(array $tokens): array
 }
 
 /**
+ * The same arithmetic, once for every colour in the palette.
+ *
+ * The four grounds answer "what does a button look like on this band". This
+ * answers the other question an editor asks: "make that button green". A
+ * painted button is still a button — it needs a label that can be read on its
+ * fill, a hover shade, a border when its colour is too close to the page to
+ * have an edge of its own, and a focus ring — and none of that is something an
+ * editor should have to pick, or could pick reliably. So the palette goes
+ * through bridge_button_scheme() exactly as the grounds do and comes back as
+ * complete a button.
+ *
+ * The Default ground is what each one is measured against, because that is
+ * where a painted button almost always is: the page's own background. A
+ * Primary button dropped on an Inverted band will have been given its border
+ * against the wrong backdrop — the cost of letting a colour be chosen without
+ * also asking what it is standing on, and cheap next to a control that asked
+ * both questions.
+ *
+ * @param array<string, mixed> $tokens A sanitised token set.
+ * @return array<string, array<string, mixed>> Palette slug => colours + audit.
+ */
+function bridge_button_palette_schemes(array $tokens): array
+{
+	$palette = $tokens['brand']['palette'];
+	$skins   = bridge_button_skins();
+	$skin    = $skins[$tokens['buttons']['skin']] ?? reset($skins);
+	$shade   = (float) ($skin['fill'] ?? 0.12);
+
+	$hex = static function (string $slug) use ($palette): string {
+		return (string) ($palette[$slug]['color'] ?? '#000000');
+	};
+
+	$labels  = array($hex('background'), $hex('text'));
+	$grounds = bridge_button_grounds();
+	$on      = $grounds['default'];
+
+	$schemes = array();
+
+	foreach (array_keys(bridge_palette_slugs()) as $slug) {
+		$schemes[$slug] = bridge_button_scheme(
+			$hex($slug),
+			$hex($on['ground']),
+			$hex($on['text']),
+			$shade,
+			$labels
+		);
+	}
+
+	return $schemes;
+}
+
+/**
  * The contrast at which a fill stops being its own edge.
  *
  * Not 3:1. See the border rule in bridge_button_scheme(): a filled button is
@@ -1406,6 +1502,12 @@ function bridge_token_defaults(): array
 			// region, which is why it sits beside the palette rather than
 			// under `header` with the logos.
 			'maskShapeId' => 0,
+			// The second brand image: the drawn stroke under the footer's
+			// strapline. Only the stroke — the words themselves are typed into
+			// Site Options and set in the script face, because they are
+			// wording an operator should be able to change without opening
+			// Illustrator. 0 for none, and the strapline is drawn without it.
+			'swooshId'    => 0,
 		),
 		'typography' => array(
 			'fontSet'           => 'system',
@@ -1494,6 +1596,11 @@ function bridge_token_defaults(): array
 		'header'     => array(
 			'layout'          => 'left',
 			'topBar'          => false,
+			// The site's phone number as the last item of the top bar, and the
+			// last row of the mobile panel. Off by default, and offered only
+			// when Site Options actually holds a number — a switch that adds
+			// nothing is not a setting.
+			'topBarPhone'     => false,
 			// A search icon at the end of the menu, opening a field in the
 			// header itself rather than sending a visitor to an empty results
 			// page. Off by default: a brochure site with nine pages has
@@ -1506,9 +1613,20 @@ function bridge_token_defaults(): array
 			'menus'           => array('primary' => 0, 'utility' => 0),
 			'background'      => 'solid',
 			'backgroundColor' => 'background',
+			// The top bar's own ground. Listed here so the seed carries the
+			// key, but the sanitiser does not fall back to this value — it
+			// falls back to whatever the header's background resolved to, so a
+			// site upgrading into this setting keeps the strip it had, which
+			// was the header's ground and nothing else. See the note there.
+			'topBarColor'     => 'background',
 			'contrast'        => 'auto',
 			'sticky'          => false,
 			'border'          => false,
+			// The other way a header can say where it ends: a drop shadow
+			// under the bar instead of, or as well as, the hairline above.
+			// Off by default, so a site that never opens the control keeps the
+			// flat header it had.
+			'shadow'          => false,
 			// The air above and below the logo at full width, in pixels. Near
 			// the 0.67rem the header used before this was a setting, so a site
 			// that never opens the control keeps the height it had.
@@ -1528,9 +1646,17 @@ function bridge_token_defaults(): array
 			// what the stylesheet hard-coded before they were settings, so a site
 			// that never opens the controls keeps the menu it had.
 			'nav'             => array(
-				'rollover' => 'surface',
-				'child'    => 'surface',
-				'accent'   => 'accent',
+				'rollover'      => 'surface',
+				'child'         => 'surface',
+				'accent'        => 'accent',
+				// Whether the accent is drawn at all. On by default, because
+				// the mark is what the stylesheet drew before any of this was
+				// a setting — a site that never opens the control keeps the
+				// menu it had. Off takes away the bar and leaves the current
+				// page's label in the dropdown its own colour; the slug above
+				// stays stored either way, so turning it back on restores the
+				// colour that was chosen rather than the default.
+				'accentEnabled' => true,
 			),
 		),
 		'footer'     => array(
@@ -1551,7 +1677,13 @@ function bridge_token_defaults(): array
 			// is no "let core pick" fallback here: a footer column with a menu
 			// nobody selected is a list of links nobody intended, and the
 			// column simply does not render.
-			'menus'           => array('quick' => 0, 'legal' => 0),
+			// Three slots, two of which are columns. `explore` was called
+			// `quick` while the footer had two menu columns instead of three;
+			// the sanitiser reads the old key when the new one is empty, so a
+			// site saved before the rename keeps the menu it chose. `legal` is
+			// no longer a column at all — it runs along the bottom row beside
+			// the copyright, which is where a privacy link belongs.
+			'menus'           => array('explore' => 0, 'services' => 0, 'legal' => 0),
 		),
 		// Deviations from the theme's curated block set, not the set itself.
 		// Storing the whole list would freeze it: a block added by a later
@@ -2062,6 +2194,17 @@ function bridge_sanitize_tokens(array $raw): array
 	// Negatives and non-numbers become 0, which is how "none" is spelled.
 	$mask_shape_id = max(0, (int) ($raw['brand']['maskShapeId'] ?? 0));
 
+	// The strapline's swoosh, read exactly as the shape above and for the same
+	// reasons. `taglineId` was its name while the whole strapline — words and
+	// stroke together — was one uploaded image; the key is read when the new
+	// one is empty so a site that chose an image under the old arrangement
+	// keeps it rather than being handed a blank picker.
+	$swoosh_id = max(0, (int) ($raw['brand']['swooshId'] ?? 0));
+
+	if ($swoosh_id <= 0) {
+		$swoosh_id = max(0, (int) ($raw['brand']['taglineId'] ?? 0));
+	}
+
 	// ---- Typography -------------------------------------------------------
 	$raw_type = isset($raw['typography']) && is_array($raw['typography']) ? $raw['typography'] : array();
 	$dt       = $defaults['typography'];
@@ -2340,9 +2483,46 @@ function bridge_sanitize_tokens(array $raw): array
 		);
 	}
 
+	// Whether that third colour is spent. Not `! empty()` like the header's
+	// other switches: those default to off, so a missing key and a stored
+	// `false` mean the same thing and either reading is correct. This one
+	// defaults to *on*, and a site upgrading into the setting has no key at
+	// all — read the same way it would arrive switched off, and every menu on
+	// every such site would silently lose its marker. So the absence of the
+	// key is the default and only a value actually stored can turn it off.
+	$nav['accentEnabled'] = isset($raw_nav['accentEnabled'])
+		? (bool) $raw_nav['accentEnabled']
+		: (bool) $defaults['header']['nav']['accentEnabled'];
+
+	$header_bg = bridge_pick_palette_slug(
+		$raw_header['backgroundColor'] ?? null,
+		$defaults['header']['backgroundColor']
+	);
+
+	/**
+	 * The top bar's ground, defaulting to the header's own.
+	 *
+	 * The fallback is `$header_bg` and not `$defaults['header']['topBarColor']`,
+	 * which is the one interesting thing about this line. Until this setting
+	 * existed the strip had no colour of its own at all — it inherited the
+	 * header's, whatever that was — so a site whose header is Primary has a
+	 * Primary top bar today. Falling back to the *default* slug would repaint
+	 * that strip Background on upgrade: a visible change to a site nobody
+	 * touched, caused by adding a control.
+	 *
+	 * It only matters once. The options page submits a complete draft, so the
+	 * first save writes an explicit value and the key is never absent again.
+	 */
+	$top_bar_color = bridge_pick_palette_slug($raw_header['topBarColor'] ?? null, $header_bg);
+
 	$header = array(
 		'layout'          => bridge_pick_token('header', 'layout', $raw_header['layout'] ?? '', $defaults['header']['layout']),
 		'topBar'          => ! empty($top_bar),
+		// Stored on its own rather than inferred from the number existing: an
+		// operator who fills in a phone number for the footer has not thereby
+		// asked for it in the header. Whether it renders is a second question,
+		// asked at render time — see the block.
+		'topBarPhone'     => ! empty($raw_header['topBarPhone']),
 		'search'          => ! empty($raw_header['search']),
 		// Structural validation only. Whether the id still points at a live
 		// menu is a question for render time — a menu deleted after it was
@@ -2368,13 +2548,12 @@ function bridge_sanitize_tokens(array $raw): array
 		// three-way resolution in the header block is unchanged — a block
 		// attribute and the template both still outrank this.
 		'background'      => 'solid',
-		'backgroundColor' => bridge_pick_palette_slug(
-			$raw_header['backgroundColor'] ?? null,
-			$defaults['header']['backgroundColor']
-		),
+		'backgroundColor' => $header_bg,
+		'topBarColor'     => $top_bar_color,
 		'contrast'        => bridge_pick_token('header', 'contrast', $raw_header['contrast'] ?? '', $defaults['header']['contrast']),
 		'sticky'          => ! empty($raw_header['sticky']),
 		'border'          => ! empty($raw_header['border']),
+		'shadow'          => ! empty($raw_header['shadow']),
 		'paddingBlock'    => (int) round(bridge_clamp_token('header', 'paddingBlock', $raw_header['paddingBlock'] ?? null, (float) $defaults['header']['paddingBlock'])),
 		'logo'            => array(
 			'id'      => max(0, (int) ($raw_logo['id'] ?? 0)),
@@ -2391,6 +2570,19 @@ function bridge_sanitize_tokens(array $raw): array
 	);
 
 	$raw_footer_menus = isset($raw_footer['menus']) && is_array($raw_footer['menus']) ? $raw_footer['menus'] : array();
+
+	// `quick` was this slot's name while the footer's first menu column was
+	// headed "Quick Links". Read when the new key is absent *or* zero, for the
+	// reason the header's `inverseId` is: the defaults are merged in before
+	// this runs, so `explore` is always present and a plain `??` would never
+	// reach the old key. Zero means "no menu chosen", which is exactly when
+	// the previous name is worth consulting — and a site that has since chosen
+	// an Explore menu is unaffected, because its new key is not zero.
+	$explore_menu = max(0, (int) ($raw_footer_menus['explore'] ?? 0));
+
+	if ($explore_menu <= 0) {
+		$explore_menu = max(0, (int) ($raw_footer_menus['quick'] ?? 0));
+	}
 
 	$footer = array(
 		'style'           => bridge_pick_token('footer', 'style', $raw_footer['style'] ?? '', $defaults['footer']['style']),
@@ -2413,8 +2605,9 @@ function bridge_sanitize_tokens(array $raw): array
 		// than rewrite the stored setting, which is what bridge_footer_menu_id()
 		// is for. The same reasoning as the header's slots.
 		'menus'           => array(
-			'quick' => max(0, (int) ($raw_footer_menus['quick'] ?? 0)),
-			'legal' => max(0, (int) ($raw_footer_menus['legal'] ?? 0)),
+			'explore'  => $explore_menu,
+			'services' => max(0, (int) ($raw_footer_menus['services'] ?? 0)),
+			'legal'    => max(0, (int) ($raw_footer_menus['legal'] ?? 0)),
 		),
 	);
 
@@ -2589,7 +2782,7 @@ function bridge_sanitize_tokens(array $raw): array
 	$enabled = array_values(array_diff($enabled, $disabled));
 
 	return array(
-		'brand'      => array('palette' => $palette, 'maskShapeId' => $mask_shape_id),
+		'brand'      => array('palette' => $palette, 'maskShapeId' => $mask_shape_id, 'swooshId' => $swoosh_id),
 		'typography' => $typography,
 		'icons'      => $icons,
 		'buttons'    => $buttons,

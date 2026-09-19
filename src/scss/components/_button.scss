@@ -130,6 +130,26 @@
 }
 
 /**
+ * And one class per palette colour, for a button an editor has painted.
+ *
+ * The slugs are listed rather than read, because they are fixed by the theme:
+ * bridge_palette_slugs() says so and says why — a slug is written into post
+ * content as a class name, so only the hex and the display name are the
+ * client's to change. The two lists have to agree; there is no way for a
+ * stylesheet to ask.
+ *
+ * Six rules of nine custom properties, which cost nothing on a page that uses
+ * none of them: they set variables and paint on their own account not at all.
+ */
+@each $slug
+	in ("primary", "secondary", "accent", "background", "surface", "text")
+{
+	.bridge-button--fill-#{$slug} {
+		@include button.painted($slug);
+	}
+}
+
+/**
  * Mobile.
  *
  * A button is already at least 44px tall and wraps its own label, so what is

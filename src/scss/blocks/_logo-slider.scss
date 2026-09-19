@@ -120,7 +120,7 @@
 		// move nothing.
 		--bridge-logo-gap: var(
 			--bridge-logo-space,
-			var(--wp--preset--spacing--50)
+			var(--wp--preset--spacing--60)
 		);
 
 		overflow: hidden;
@@ -149,13 +149,25 @@
 		// row is the case where they may not, because the mask on its parent
 		// puts the animation inside a masked subtree.
 		will-change: transform;
-		// Duration scales with how many logos there are, so adding one makes
-		// the row longer rather than faster — and then divides by the speed
-		// the block asked for, which is why that is a multiplier and not a
-		// number of seconds: it means the same thing to a row of four logos
-		// and a row of forty.
+
+		/*
+		 * Duration scales with how many logos there are, so adding one makes
+		 * the row longer rather than faster — and then divides by the speed the
+		 * block asked for, which is why that is a multiplier and not a number
+		 * of seconds: it means the same thing to a row of four logos and a row
+		 * of forty.
+		 *
+		 * The count is a proxy for the track's width and not the width itself,
+		 * which is the one place this breaks down: widening the gap makes the
+		 * track longer without changing the count, so the same duration covers
+		 * more ground and the row speeds up. That is why six rather than the
+		 * four and a half a fifty-per-cent-slower row would suggest — the
+		 * wider gap set above spends part of it. The honest version would take
+		 * the duration from the measured width, and CSS cannot turn a length
+		 * into a time.
+		 */
 		animation: bridge-logos-scroll
-			calc(var(--bridge-logo-count, 6) * 3s / var(--bridge-logo-speed))
+			calc(var(--bridge-logo-count, 6) * 6s / var(--bridge-logo-speed))
 			linear infinite;
 	}
 
@@ -169,7 +181,7 @@
 	&__row.is-contain {
 		--bridge-logo-gap: var(
 			--bridge-logo-space,
-			var(--wp--preset--spacing--60)
+			var(--wp--preset--spacing--70)
 		);
 	}
 

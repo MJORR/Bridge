@@ -216,6 +216,12 @@ function bridge_compile_font_sizes(array $typography): array
 		// before init, and translating here would trigger just-in-time
 		// textdomain loading. WordPress translates the static theme.json's
 		// own strings through the resolver instead.
+		// Nothing in the theme's own stylesheets sets this any more — the
+		// footer's column labels, which it was added for, sit at `small`
+		// alongside the links they name. It stays because a preset is a
+		// public name: it is offered in the editor's size control and written
+		// into post content as `has-x-small-font-size`, so removing it would
+		// silently resize text on any site that has used it.
 		array('slug' => 'x-small', 'name' => 'Extra Small', 'size' => $base * 0.75, 'taper' => 0.05),
 		array('slug' => 'small', 'name' => 'Small', 'size' => $base * 0.875, 'taper' => 0.1),
 		array('slug' => 'medium', 'name' => 'Medium', 'size' => $base, 'taper' => 0.3),
@@ -339,6 +345,37 @@ function bridge_compile_font_families(array $typography): array
 		)
 	);
 
+	/*
+	 * The strapline face.
+	 *
+	 * A slug of its own rather than a replacement for one of the three above,
+	 * which is the opposite of what the Google pickers do — and for the
+	 * opposite reason. Those *replace* a role's stack so that content already
+	 * carrying `has-sans-font-family` follows the site's new typeface. This
+	 * face is not a voice the site speaks in; it draws one string in one place,
+	 * and putting it behind an existing slug would set every paragraph that
+	 * names that slug in a handwriting font.
+	 *
+	 * Always registered, installed or not. The `fontFace` block only appears
+	 * once the files are on disk, so before then the stack falls through to the
+	 * generic `cursive` the browser already has — which is a strapline in the
+	 * wrong hand rather than a strapline in Helvetica, and it means the preset
+	 * never disappears from under content that references it.
+	 */
+	$script = array(
+		'slug'       => 'script',
+		'name'       => 'Script',
+		'fontFamily' => sprintf('"%s", cursive', BRIDGE_SCRIPT_FAMILY),
+	);
+
+	$script_faces = bridge_google_font_faces(BRIDGE_SCRIPT_FAMILY);
+
+	if ($script_faces) {
+		$script['fontFace'] = $script_faces;
+	}
+
+	$families[] = $script;
+
 	return $families;
 }
 
@@ -422,6 +459,16 @@ function bridge_compile_button_custom(array $tokens): array
 		unset($scheme['audit']);
 
 		$button['on' . ucfirst($key)] = $scheme;
+	}
+
+	// And one per palette colour, for a button an editor has painted rather
+	// than one taking its colour from the band: `primary` => `fillPrimary` =>
+	// `--wp--custom--button--fill-primary--bg`. See
+	// bridge_button_palette_schemes().
+	foreach (bridge_button_palette_schemes($tokens) as $slug => $scheme) {
+		unset($scheme['audit']);
+
+		$button['fill' . ucfirst($slug)] = $scheme;
 	}
 
 	return $button;

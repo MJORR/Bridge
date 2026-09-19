@@ -32,12 +32,31 @@ define('BRIDGE_FONTS_OPTION', 'bridge_google_fonts');
 /**
  * Weights fetched for each family.
  *
- * 400 and 700 cover body copy and bold; 500 and 600 cover the intermediate
- * heading weights the typography panel offers. Families that lack a weight
- * simply return fewer faces — the progressive fallback in
- * bridge_fetch_google_css() handles static families with narrow ranges.
+ * Every weight the typography panel can ask for, which is the only number this
+ * list has any business being. It used to be `400;500;600;700` — body copy,
+ * bold, and the two steps between them — while the heading-weight control in
+ * inc/tokens.php offered 300 through 900. Three of its seven options therefore
+ * had no face behind them: CSS font matching walks to the nearest weight it
+ * actually has, so 800 and 900 both came out as 700 and 300 came out as 400.
+ * Three settings, one appearance, and nothing anywhere saying why.
+ *
+ * The two lists have to agree, and they agree by being checked against each
+ * other rather than by being one list: the panel's options are strings in a
+ * constraints array and this is a Google API query parameter, and forcing them
+ * through one definition would couple the options screen to the font
+ * downloader for no gain. If a weight is added there, add it here.
+ *
+ * Seven weights rather than four costs disk and install time, not page weight.
+ * Each `@font-face` is a declaration, and a browser fetches the file behind one
+ * only when something on the page matches it — so a site set to 600 headings
+ * downloads the same two faces it always did, and the other five sit unused in
+ * uploads until somebody changes the setting.
+ *
+ * Families that lack a weight simply return fewer faces — the progressive
+ * fallback in bridge_fetch_google_css() handles static families with narrow
+ * ranges.
  */
-define('BRIDGE_FONT_WEIGHTS', '400;500;600;700');
+define('BRIDGE_FONT_WEIGHTS', '300;400;500;600;700;800;900');
 
 /**
  * Unicode subsets kept from Google's response.
@@ -47,6 +66,23 @@ define('BRIDGE_FONT_WEIGHTS', '400;500;600;700');
  * weight, with no visible difference for the languages these builds target.
  */
 define('BRIDGE_FONT_SUBSETS', 'latin,latin-ext');
+
+/**
+ * The face the footer's strapline is set in.
+ *
+ * Fixed rather than picked, and the only family in the theme that is. The two
+ * pickers choose what the site *sounds* like — a heading voice and a reading
+ * voice — and a strapline written in a hand is neither: it is a signature, and
+ * the whole reason it is set in a script is that it should not look like the
+ * rest of the page. Offering a third picker would invite a site to set its
+ * strapline in the same grotesque as its body copy, which is a strapline that
+ * may as well be a paragraph.
+ *
+ * Installed only when a strapline is actually written — see
+ * bridge_sync_google_fonts() — so a site that never fills the field never
+ * downloads it.
+ */
+define('BRIDGE_SCRIPT_FAMILY', 'Caveat');
 
 /**
  * The roles a Google family can be chosen for.
@@ -124,7 +160,12 @@ function bridge_google_families_for(string $role): array
  */
 function bridge_google_families(): array
 {
-	$families = array();
+	// The strapline face is in the list although it is in no role and no
+	// picker. This function is the install allowlist as well as the catalogue
+	// — bridge_is_known_google_family() is what stands between a family name
+	// and an outbound URL built from it — so a face the theme installs has to
+	// be named here whether or not anybody can choose it.
+	$families = array(BRIDGE_SCRIPT_FAMILY);
 
 	foreach (bridge_google_catalogue() as $entries) {
 		foreach ($entries as $entry) {
@@ -195,6 +236,22 @@ function bridge_installed_fonts(): array
  * data that would drift as Google updates the library, try progressively
  * simpler requests and take the first that answers.
  *
+ * ---- Why there are four rungs and not three -------------------------------
+ *
+ * The middle one is the reason. When the full list was `400;500;600;700` the
+ * next step down was `400;700`, and the drop cost a static family two weights
+ * it may well have published. Widening the top of the list to seven made that
+ * drop much worse: a family with no 800 would have gone from asking for seven
+ * weights to asking for two in a single step, losing 500 and 600 — which it
+ * almost certainly has — because of a weight at the other end of the range it
+ * does not. Every such family in the catalogue would have come out of this
+ * change with *fewer* faces than before it.
+ *
+ * So the four weights this list used to be are now a rung of their own. A
+ * variable family answers the first request and never reaches it; a static
+ * family with a normal range answers here and is no worse off than it was; and
+ * `400;700` stays as the floor for the genuinely narrow ones.
+ *
  * @param string $family Family name.
  * @return string CSS, or an empty string on failure.
  */
@@ -202,6 +259,7 @@ function bridge_fetch_google_css(string $family): string
 {
 	$attempts = array(
 		':wght@' . BRIDGE_FONT_WEIGHTS,
+		':wght@400;500;600;700',
 		':wght@400;700',
 		'',
 	);
@@ -365,18 +423,30 @@ function bridge_install_google_font(string $family)
 	}
 
 	return array(
-		'family' => $family,
-		'faces'  => $installed,
+		'family'  => $family,
+		'faces'   => $installed,
+		// What was asked for when these files were fetched — not what came
+		// back, which is whichever rung of bridge_fetch_google_css() answered
+		// and is a property of the family rather than of this theme's
+		// intentions. Stored so the sync can tell a family installed under an
+		// older weight list from one that is actually up to date. See the
+		// staleness check there.
+		'weights' => BRIDGE_FONT_WEIGHTS,
 	);
 }
 
 /**
  * Ensure exactly the referenced families are installed, and no others.
  *
- * Runs on every token change. Families that are still selected are left
+ * Runs on every token change. Families that are still selected and were
+ * installed under the weight list this theme currently asks for are left
  * alone; families that are no longer referenced have their files deleted, so
  * a site that has been through several brand explorations does not
  * accumulate megabytes of abandoned typefaces.
+ *
+ * A family installed under an older weight list is re-fetched rather than
+ * skipped — see the check in the loop, which explains why "is it installed"
+ * was the wrong question.
  *
  * @param array<string, mixed> $tokens Resolved tokens.
  */
@@ -393,11 +463,50 @@ function bridge_sync_google_fonts(array $tokens): void
 		}
 	}
 
+	// The strapline face, wanted whenever there is a strapline to set in it —
+	// and independently of the Google toggle, which is a choice about the
+	// site's *typography*. The strapline is a piece of brand artwork that
+	// happens to be made of letters; a site that has written one has asked for
+	// this face by writing it, and switching the toggle off should not silently
+	// redraw it in the body font.
+	//
+	// The field lives in Site Options rather than in the token record, so this
+	// runs on that screen's save as well — see the hook at the foot of the
+	// function.
+	if ('' !== bridge_site_option('tagline')) {
+		$wanted[bridge_font_slug(BRIDGE_SCRIPT_FAMILY)] = BRIDGE_SCRIPT_FAMILY;
+	}
+
 	$manifest = bridge_installed_fonts();
 	$errors   = array();
 
 	foreach ($wanted as $slug => $family) {
-		if (isset($manifest[$slug]['faces']) && $manifest[$slug]['faces']) {
+		/*
+		 * Installed, and installed under the weight list this theme currently
+		 * asks for.
+		 *
+		 * The second half is the whole point. Without it "installed" meant
+		 * nothing more than "there is a directory", so widening
+		 * BRIDGE_FONT_WEIGHTS changed what every new install fetched and left
+		 * every existing site on the faces it already had — silently, because a
+		 * missing weight is not an error anywhere: CSS falls back to the
+		 * nearest face it has and the type simply comes out at a weight nobody
+		 * chose. The only way to pick it up was to know to empty the option by
+		 * hand, which is not a thing a theme should require of anyone.
+		 *
+		 * An entry with no `weights` key predates this check, which means it
+		 * predates the widened list, so its absence reads as stale rather than
+		 * as unknown.
+		 *
+		 * Re-installing is cheap and safe: bridge_install_google_font() skips
+		 * any file already on disk, so a family that gains three weights
+		 * downloads three files and rewrites its manifest entry rather than
+		 * fetching the whole family again.
+		 */
+		$installed_faces = $manifest[$slug]['faces'] ?? array();
+		$installed_at    = $manifest[$slug]['weights'] ?? '';
+
+		if ($installed_faces && BRIDGE_FONT_WEIGHTS === $installed_at) {
 			continue;
 		}
 
@@ -422,6 +531,41 @@ function bridge_sync_google_fonts(array $tokens): void
 	set_transient('bridge_font_errors', $errors, HOUR_IN_SECONDS);
 }
 add_action('bridge_tokens_changed', 'bridge_sync_google_fonts');
+
+/**
+ * Re-sync when Site Options is saved.
+ *
+ * The strapline is the one thing outside the token record that decides which
+ * fonts the site needs, so its screen has to trigger the same sweep the token
+ * record does. Without this, writing a strapline would leave the face
+ * uninstalled until the next unrelated save in Theme Options, and clearing one
+ * would leave the files behind for good.
+ *
+ * `update_option_*` fires only when the value actually changed, so a save that
+ * touched a phone number does not re-run the check for nothing — and even when
+ * it does, the sweep is a pair of array comparisons unless something is
+ * genuinely missing.
+ */
+function bridge_sync_fonts_for_site_options(): void
+{
+	bridge_sync_google_fonts(bridge_get_tokens());
+}
+
+/**
+ * Hook the above, once the constant naming the option exists.
+ *
+ * Registered on `init` rather than at this file's top level, which is where it
+ * belongs and where it does not work: functions.php loads inc/fonts.php before
+ * inc/site-options.php, so BRIDGE_SITE_OPTIONS_KEY is undefined while this
+ * file is being read and the hook would be attached to `update_option_` — a
+ * name nothing ever fires. `init` is comfortably before the `admin_init` that
+ * processes an options.php submission.
+ */
+function bridge_register_font_sync_hooks(): void
+{
+	add_action('update_option_' . BRIDGE_SITE_OPTIONS_KEY, 'bridge_sync_fonts_for_site_options');
+}
+add_action('init', 'bridge_register_font_sync_hooks');
 
 /**
  * Delete an installed family's files.

@@ -28,8 +28,28 @@
 // holds anywhere the header is rendered without a document around it.
 const HEADER = '.bridge-header--sticky';
 const SCROLLED = 'is-scrolled';
+
+/**
+ * How far the page moves before the header changes state.
+ *
+ * One distance, and everything the header does on the way out of the hero
+ * happens at it: the bar goes solid, the logo swaps to the pair that reads on
+ * it, and an overlaying header closes its top strip. They are one gesture, so
+ * they share one threshold — two numbers would be two moments a few frames
+ * apart, which reads as the header changing its mind rather than changing
+ * state.
+ *
+ * It used to be a single pixel, which is the same as no threshold at all: the
+ * header flipped on the first frame of a flick, before the page had visibly
+ * moved. 160px is about two of the strip's own heights — far enough to read as
+ * a response to scrolling down the page, and short enough that it has all
+ * happened by the time anybody is reading.
+ */
+const SCROLL_TRAVEL = 160;
 const ANY_HEADER = '.bridge-header';
 const HEIGHT = '--bridge-header-height';
+const TOP_BAR = '.bridge-header__top';
+const TOP_HEIGHT = '--bridge-header-top-height';
 const NAV = '.bridge-nav--primary';
 const PRIMARY_NAV = `${ANY_HEADER} ${NAV}`;
 const HAS_CHILD = '.wp-block-navigation-item.has-child';
@@ -70,12 +90,17 @@ function initStickyHeader() {
 		return;
 	}
 
-	// The sentinel sits where the top of the page is. Once it scrolls out of
-	// view the header is no longer over the hero.
+	/**
+	 * A box at the top of the document, as tall as the distance being waited
+	 * for. Once it has left the window the page has scrolled that far.
+	 *
+	 * A sentinel rather than a scroll listener: the browser reports this once,
+	 * when it changes, instead of on every frame of every wheel — and the answer
+	 * it gives is the one the compositor already has.
+	 */
 	const sentinel = document.createElement('div');
 	sentinel.setAttribute('aria-hidden', 'true');
-	sentinel.style.cssText =
-		'position:absolute;top:0;left:0;width:1px;height:1px;pointer-events:none;';
+	sentinel.style.cssText = `position:absolute;top:0;left:0;width:1px;height:${SCROLL_TRAVEL}px;pointer-events:none;`;
 	document.body.prepend(sentinel);
 
 	const observer = new IntersectionObserver(
@@ -108,25 +133,54 @@ function publishHeaderHeight() {
 		return;
 	}
 
-	const observer = new ResizeObserver(([entry]) => {
-		// The border box, not the content box: the header's padding is part of
-		// how tall it is, and a border on a bordered header is too.
-		const height =
-			entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+	const topBar = header.querySelector(TOP_BAR);
 
-		header.style.setProperty(HEIGHT, `${Math.round(height)}px`);
-		// A second copy on the root, for the one consumer that is not inside
-		// the header: `scroll-padding-top` is a property of the scroll
-		// container, and the scroll container is the page. A sticky header
-		// otherwise parks focused content underneath itself as a visitor tabs
-		// down the page, which is WCAG 2.2 SC 2.4.11.
-		document.documentElement.style.setProperty(
-			HEIGHT,
-			`${Math.round(height)}px`
+	// The border box, not the content box: the header's padding is part of how
+	// tall it is, and a border on a bordered header is too.
+	const measure = (entry) =>
+		Math.round(
+			entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height
 		);
+
+	const observer = new ResizeObserver((entries) => {
+		entries.forEach((entry) => {
+			const value = `${measure(entry)}px`;
+
+			/*
+			 * The strip's own height, which is how far a sticky header is
+			 * allowed to sit above the window before it pins — see the
+			 * `top` on the sticky wrapper in blocks/_header.scss. Published
+			 * on the root and not on the header, because the element that
+			 * reads it is the template-part wrapper *around* the header:
+			 * a custom property set on the header is invisible to its own
+			 * ancestor.
+			 *
+			 * Measured rather than calculated. The strip is a row of small
+			 * type, and how tall that row is depends on the font that ends
+			 * up loading and on whether the menu has wrapped onto a second
+			 * line — neither of which is knowable from the stylesheet.
+			 */
+			if (entry.target !== header) {
+				document.documentElement.style.setProperty(TOP_HEIGHT, value);
+
+				return;
+			}
+
+			header.style.setProperty(HEIGHT, value);
+			// A second copy on the root, for the one consumer that is not
+			// inside the header: `scroll-padding-top` is a property of the
+			// scroll container, and the scroll container is the page. A sticky
+			// header otherwise parks focused content underneath itself as a
+			// visitor tabs down the page, which is WCAG 2.2 SC 2.4.11.
+			document.documentElement.style.setProperty(HEIGHT, value);
+		});
 	});
 
 	observer.observe(header);
+
+	if (topBar) {
+		observer.observe(topBar);
+	}
 }
 
 /**
@@ -303,10 +357,69 @@ function initNavCollapse() {
 		container.classList.toggle(NAV_HIDDEN_BY_DEFAULT, collapsed);
 	};
 
-	// One pixel of tolerance. Sub-pixel layout rounds a row that fits exactly
-	// into one that overflows by a fraction, and a menu that collapses on the
-	// width it fits at is the original bug with a smaller number.
-	const overflows = () => row.scrollWidth > row.clientWidth + 1;
+	/**
+	 * Does the bar still fit?
+	 *
+	 * Asked of the row's own children rather than of `row.scrollWidth`, which
+	 * is what this used to read and which answers a different question.
+	 *
+	 * `scrollWidth` is the width of everything the row could scroll to, and
+	 * that includes things which are not the menu asking for room: a closed
+	 * dropdown panel, which this theme keeps at its real size and hides with a
+	 * clip (see the Dropdowns section in blocks/_header.scss), and any element
+	 * deliberately outdented past the row's content edge. Neither is a bar
+	 * running out of space, and nothing downstream could tell them apart — so a
+	 * purely cosmetic rule anywhere inside the header could make the menu
+	 * collapse on a 1600px screen and stay collapsed, because `required` is
+	 * then a width the row can never reach. That has now happened three times
+	 * in this file's history, twice from a negative margin and once from rows
+	 * that were being drawn when they should have been hidden.
+	 *
+	 * The in-flow children are the honest measure. `.bridge-header__end` is
+	 * `flex-wrap: nowrap` in this state and its items are floored at their
+	 * min-content width, so it reports what the menu actually needs even when
+	 * that is more than the row can give — which is the whole reason the
+	 * stylesheet forces nowrap. Absolutely positioned descendants have no size
+	 * of their own here and hidden ones contribute nothing, so both drop out by
+	 * construction rather than by being listed.
+	 *
+	 * One pixel of tolerance, as before. Sub-pixel layout rounds a row that
+	 * fits exactly into one that overflows by a fraction, and a menu that
+	 * collapses on the width it fits at is the original bug with a smaller
+	 * number.
+	 */
+	const overflows = () => {
+		const style = getComputedStyle(row);
+		const gap = parseFloat(style.columnGap) || 0;
+
+		let needed = 0;
+		let counted = 0;
+
+		for (const child of row.children) {
+			const box = getComputedStyle(child);
+
+			if (
+				box.display === 'none' ||
+				box.position === 'absolute' ||
+				box.position === 'fixed'
+			) {
+				continue;
+			}
+
+			// Margins included, and signed: an element outdented by a negative
+			// margin is asking for *less* of the row, which is exactly what it
+			// is doing and what `scrollWidth` read as the opposite.
+			needed +=
+				child.getBoundingClientRect().width +
+				(parseFloat(box.marginInlineStart) || 0) +
+				(parseFloat(box.marginInlineEnd) || 0);
+			counted += 1;
+		}
+
+		needed += gap * Math.max(0, counted - 1);
+
+		return needed > row.clientWidth + 1;
+	};
 
 	const sync = () => {
 		scheduled = false;

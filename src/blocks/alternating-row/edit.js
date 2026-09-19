@@ -136,6 +136,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		mask,
 		maskSize,
 		cropCorner,
+		parallax,
 	} = attributes;
 
 	// The band this row sits in decides whether a cut corner means anything:
@@ -164,6 +165,15 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				'--bridge-mask-scale': (maskSize || 100) / 100,
 			}
 		: undefined;
+
+	// Images only, and only once there is one: a moving frame around nothing
+	// is an empty box that slides. Matches the guard in render.php.
+	const moving = !!parallax && mediaType === 'image' && !!imageUrl;
+
+	const withFrame = (image) =>
+		moving
+			? el('span', { className: 'bridge-alternating__frame' }, image)
+			: image;
 
 	const blockProps = useBlockProps({ className: 'bridge-alternating__row' });
 
@@ -358,6 +368,22 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						__nextHasNoMarginBottom: true,
 					}),
 				mediaType === 'image' &&
+					el(ToggleControl, {
+						label: __('Move the picture as it scrolls', 'bridge'),
+						help: masked
+							? __(
+									'The shape stays put and the picture drifts behind it, so what the cut-out is showing changes as the row goes by.',
+									'bridge'
+								)
+							: __(
+									'The picture drifts inside its frame as the row crosses the screen. Most noticeable with the mask shape switched on, where the shape becomes a window onto it.',
+									'bridge'
+								),
+						checked: !!parallax,
+						onChange: (value) => setAttributes({ parallax: value }),
+						__nextHasNoMarginBottom: true,
+					}),
+				mediaType === 'image' &&
 					masked &&
 					el(RangeControl, {
 						label: __('Mask size (percent)', 'bridge'),
@@ -385,17 +411,23 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						'bridge-alternating__media',
 						masked ? 'has-mask' : '',
 						cropCorner && !bandIsFull ? 'has-crop' : '',
+						moving ? 'has-parallax' : '',
 					]
 						.filter(Boolean)
 						.join(' '),
 					style: maskStyle,
 				},
 				imageUrl
-					? el('img', {
-							className: 'bridge-alternating__image',
-							src: imageUrl,
-							alt: alt || '',
-						})
+					? // The frame is the extra element a moving picture needs —
+						// it holds the shape still while the image slides. Only
+						// the rows that move render it, exactly as in render.php.
+						withFrame(
+							el('img', {
+								className: 'bridge-alternating__image',
+								src: imageUrl,
+								alt: alt || '',
+							})
+						)
 					: el(
 							'span',
 							{ className: 'bridge-alternating__placeholder' },

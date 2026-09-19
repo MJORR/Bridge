@@ -13,6 +13,74 @@ $mask-shift: calc(
 	var(--bridge-alternating-edge) / 2 - var(--bridge-alternating-row-gap) / 4
 );
 
+/**
+ * The mask, as whichever element is wearing it.
+ *
+ * Two elements can be: the image itself, which is the ordinary case, and the
+ * frame a parallax row puts around it — there the picture slides and the shape
+ * must not, so the shape moves up one level onto the thing that stays still.
+ * Written once here rather than twice, because "which element" is the only
+ * difference between the two and a copied rule is a rule that drifts.
+ *
+ * `--bridge-mask-image` and `--bridge-mask-scale` are written onto the media
+ * wrapper by render.php and by the editor, so both draw the same shape from the
+ * same two values, and both elements below inherit them from there.
+ *
+ * ---- What the size control means -----------------------------------------
+ *
+ * `mask-size: auto <n>` — the height is given, the width follows the shape's
+ * own proportions, so the shape is never stretched to the box. At 100% the
+ * shape is exactly as tall as the image area and centred in it, which is the
+ * size a shape should be drawn for. Above that it grows past the area and the
+ * box crops it, top and bottom first because that is the dimension being set.
+ *
+ * A shape wider than the image area is cropped at the sides even at 100%. That
+ * is the trade for never distorting it: the two cannot both be true for an
+ * arbitrary shape in an arbitrary box.
+ *
+ * The radius goes: a rounded rectangle clipping a shape that no longer has
+ * corners takes bites out of it at four points and reads as a rendering fault.
+ *
+ * Centred in the media's box, unless the row has said otherwise. A contained
+ * row never does: the picture is a rectangle inside the page's column with air
+ * on both sides of it, so a shape centred in that rectangle is centred in
+ * everything a reader can see. The full-window layout is the case where
+ * centring stops being neutral — see `--bridge-alternating-mask-x` below.
+ */
+@mixin mask-shape {
+	mask-image: var(--bridge-mask-image);
+	mask-repeat: no-repeat;
+	mask-position: var(--bridge-alternating-mask-x, center) center;
+	mask-size: auto calc(var(--bridge-mask-scale, 1) * 100%);
+	border-radius: 0;
+}
+
+/**
+ * The travel, as a share of the picture's own height.
+ *
+ * Paired with `--bridge-alternating-parallax-overflow` and not independent of
+ * it: the picture reaches `s` past the frame at top and bottom, so it is
+ * `1 + 2s` tall, and a `translateY` percentage resolves against the element's
+ * own height rather than the frame's. Travelling exactly `s` of the *frame* is
+ * therefore `s / (1 + 2s)` of the picture — 12.5% and 10% are that pair, and
+ * the arithmetic is why the two numbers are not the same number.
+ *
+ * Getting it wrong does not look like a smaller effect. It looks like a hairline
+ * of background at the top of the frame at one end of the scroll, because the
+ * picture ran out of overlap exactly when it was furthest from home.
+ */
+@keyframes bridge-alternating-parallax {
+	from {
+		transform: translateY(
+			calc(-1 * var(--bridge-alternating-parallax-travel))
+		);
+	}
+
+	to {
+		transform: translateY(var(--bridge-alternating-parallax-travel));
+	}
+}
+
 .bridge-alternating {
 	// One shape for every row's media. An image cropped to 4/3 beside a 16/9
 	// video made a section that mixed the two come out ragged, and two of the
@@ -21,6 +89,20 @@ $mask-shift: calc(
 
 	// Row to row.
 	--bridge-alternating-gap: var(--wp--preset--spacing--70);
+
+	/**
+	 * How far a parallax picture reaches past its frame, top and bottom, as a
+	 * share of the frame's height.
+	 *
+	 * This is the whole budget for the effect: the picture can travel exactly
+	 * this far before the frame runs out of picture to show. Small on purpose —
+	 * the point is that the shape reveals a slightly different part of the
+	 * photograph as the row goes by, not that the photograph visibly slides.
+	 *
+	 * See the keyframes above for why its partner is a different number.
+	 */
+	--bridge-alternating-parallax-overflow: 12.5%;
+	--bridge-alternating-parallax-travel: 10%;
 
 	/**
 	 * Media to words, inside a row.
@@ -131,32 +213,108 @@ $mask-shift: calc(
 	}
 
 	/**
+	 * ---- A picture that moves behind its own shape -----------------------
+	 *
+	 * The mask cut a still photograph. Switched on, this makes the shape a
+	 * window: the picture drifts behind it as the row crosses the screen, so
+	 * what the shape is showing changes while the shape itself stays put.
+	 *
+	 * ---- Why there is a frame --------------------------------------------
+	 *
+	 * Because the two have to come apart. Everywhere else on this block the
+	 * image *is* the shape — the mask and the chamfer are clipped onto the
+	 * `<img>` itself — and that is exactly what cannot be true here: whatever
+	 * carries the shape must not move, and the picture must. So a parallax row
+	 * renders one extra element, and it changes hands: the frame takes the
+	 * aspect ratio, the radius, the mask and the cut, and the image inside it
+	 * becomes a plain rectangle that slides.
+	 *
+	 * Only a parallax row renders it. Making every row carry a frame would be
+	 * the tidier structure and a much larger change — every rule in this file
+	 * that names `__image` would have to be re-aimed, including the full-window
+	 * ones — for no gain on the rows that do not move.
+	 *
+	 * ---- Why not `background-attachment: fixed` --------------------------
+	 *
+	 * It is the one-line version of this and it costs too much: the background
+	 * would size against the viewport rather than the element, so the crop
+	 * changes; iOS ignores it outright; `srcset` and `alt` both go, because a
+	 * background is not an image as far as the browser or a screen reader is
+	 * concerned; and `container-type` on `.has-crop` makes the media a
+	 * containing block, which kills it on any row with a cut corner. A
+	 * scroll-driven animation keeps the `<img>`, and everything the `<img>`
+	 * brings with it.
+	 *
+	 * ---- Why the animation is gated --------------------------------------
+	 *
+	 * `animation-timeline: view()` is what ties the keyframes to the row's
+	 * progress across the screen rather than to a clock. Where it is not
+	 * supported the declaration is simply dropped — and a `both`-filled
+	 * animation with no duration would then snap to its end state and hold
+	 * there, which is a picture silently sitting at one extreme of its travel.
+	 * `@supports` is what stops that: no timeline, no animation, and the frame
+	 * shows the picture centred exactly as a still row does.
+	 *
+	 * Motion is the point of this, so `prefers-reduced-motion` turns it off
+	 * rather than shortening it, and lands on the same still picture.
+	 */
+	&__media.has-parallax &__frame {
+		display: block;
+		position: relative;
+		overflow: hidden;
+		aspect-ratio: var(--bridge-alternating-ratio);
+		border-radius: var(--wp--custom--radius--medium);
+
+		/**
+		 * And the timeline the picture inside it runs on.
+		 *
+		 * It has to be named here, and this is the whole reason the first
+		 * attempt did nothing. `overflow: hidden` makes a box a scroll
+		 * container — clipping and scrolling are the same mechanism in CSS,
+		 * one with the scrollbars turned off — and an anonymous `view()`
+		 * timeline resolves against the subject's *nearest ancestor* scroll
+		 * container. For a picture inside this frame that is the frame, a box
+		 * which never scrolls, so the timeline sat at zero for the life of the
+		 * page and the picture held one end of its travel and stayed there.
+		 *
+		 * Named on the frame, it is the frame's own progress across the
+		 * nearest scroller above *it* — the page — which is the measurement
+		 * the effect is about. The picture then asks for that timeline by name
+		 * instead of guessing at one from where it happens to sit.
+		 */
+		view-timeline-name: --bridge-alternating-row;
+	}
+
+	/*
+	 * Taller than the frame and pinned to fill it, so there is something to
+	 * move into view at both ends of the travel. `aspect-ratio: auto` because
+	 * the frame owns the shape now — media-fill's ratio, left on, would fight
+	 * the height being set here.
+	 */
+	&__media.has-parallax &__image {
+		position: absolute;
+		inset-inline: 0;
+		inset-block-start: calc(
+			-1 * var(--bridge-alternating-parallax-overflow)
+		);
+		inline-size: 100%;
+		block-size: calc(
+			100% + 2 * var(--bridge-alternating-parallax-overflow)
+		);
+		aspect-ratio: auto;
+		object-fit: cover;
+		border-radius: 0;
+	}
+
+	/**
 	 * ---- The mask --------------------------------------------------------
 	 *
 	 * A cut-out of the picture in the shape of the site's mask, set once in
 	 * Theme Options. The image still fills its box and is still cropped by
-	 * `object-fit: cover`; the mask decides which of it survives.
-	 *
-	 * `--bridge-mask-image` and `--bridge-mask-scale` are written onto the
-	 * media wrapper by render.php and by the editor, so both draw the same
-	 * shape from the same two values.
-	 *
-	 * ---- What the size control means -------------------------------------
-	 *
-	 * `mask-size: auto <n>` — the height is given, the width follows the
-	 * shape's own proportions, so the shape is never stretched to the box. At
-	 * 100% the shape is exactly as tall as the image area and centred in it,
-	 * which is the size a shape should be drawn for. Above that it grows past
-	 * the area and the box crops it, top and bottom first because that is the
-	 * dimension being set.
-	 *
-	 * A shape wider than the image area is cropped at the sides even at 100%.
-	 * That is the trade for never distorting it: the two cannot both be true
-	 * for an arbitrary shape in an arbitrary box.
-	 *
-	 * The radius goes: a rounded rectangle clipping a shape that no longer has
-	 * corners takes bites out of it at four points and reads as a rendering
-	 * fault.
+	 * `object-fit: cover`; the mask decides which of it survives. The shape
+	 * itself, and the note on what its size control means, are on the
+	 * `mask-shape` mixin at the top of this file — it is worn by the image
+	 * here and by the frame in a parallax row, and there is one copy of it.
 	 */
 	/**
 	 * ---- The cut corner --------------------------------------------------
@@ -203,10 +361,17 @@ $mask-shift: calc(
 		container-type: inline-size;
 	}
 
-	&:not(&--full) &__media.has-crop &__image,
+	/*
+	 * The frame takes the cut on a parallax row, for the same reason it takes
+	 * the mask: a chamfer clipped onto a picture that slides is a chamfer that
+	 * slides. The `cqw` still resolves — the container is the media wrapper,
+	 * and the frame is its child, exactly as the image is on every other row.
+	 */
+	&:not(&--full) &__media.has-crop:not(.has-parallax) &__image,
 	&:not(&--full) &__media.has-crop &__video,
 	&:not(&--full) &__media.has-crop &__video-file,
-	&:not(&--full) &__media.has-crop &__placeholder {
+	&:not(&--full) &__media.has-crop &__placeholder,
+	&:not(&--full) &__media.has-crop.has-parallax &__frame {
 		border-radius: 0;
 		clip-path: polygon(
 			0 var(--bridge-alternating-cut),
@@ -217,22 +382,36 @@ $mask-shift: calc(
 		);
 	}
 
-	&__media.has-mask &__image {
-		mask-image: var(--bridge-mask-image);
-		mask-repeat: no-repeat;
+	&__media.has-mask:not(.has-parallax) &__image {
+		@include mask-shape;
+	}
 
-		/*
-		 * Centred in the media's box, unless the row has said otherwise.
-		 *
-		 * A contained row never does: the picture is a rectangle inside the
-		 * page's column with air on both sides of it, so a shape centred in
-		 * that rectangle is centred in everything a reader can see. The
-		 * full-window layout is the case where centring stops being neutral —
-		 * see `--bridge-alternating-mask-x` below.
-		 */
-		mask-position: var(--bridge-alternating-mask-x, center) center;
-		mask-size: auto calc(var(--bridge-mask-scale, 1) * 100%);
-		border-radius: 0;
+	&__media.has-mask.has-parallax &__frame {
+		@include mask-shape;
+	}
+
+	@supports (animation-timeline: view()) {
+		@media (prefers-reduced-motion: no-preference) {
+			&__media.has-parallax &__image {
+				/*
+				 * Longhands, not the shorthand. `animation: … ` resets every
+				 * property it does not mention, `animation-timeline` included,
+				 * so the shorthand and the timeline have to be written in an
+				 * order that survives — and `animation-duration` has to say
+				 * `auto` out loud, which is what hands a progress-based
+				 * timeline its whole range rather than a length of time.
+				 *
+				 * The range is the default: the row's entire passage across
+				 * the viewport, first pixel entering to last pixel gone, which
+				 * is the passage the travel is for.
+				 */
+				animation-name: bridge-alternating-parallax;
+				animation-timeline: --bridge-alternating-row;
+				animation-duration: auto;
+				animation-timing-function: linear;
+				animation-fill-mode: both;
+			}
+		}
 	}
 
 	&__video {
@@ -468,6 +647,30 @@ $mask-shift: calc(
 	// as a mistake rather than as a detail.
 	&--full :is(&__image, &__video, &__video-file, &__placeholder) {
 		border-radius: 0;
+	}
+
+	/**
+	 * The frame, on a full-window band.
+	 *
+	 * Both of the rules above exist for it too, and neither could reach it:
+	 * they are aimed at the media's children in general, two classes' worth,
+	 * and the frame is only ever styled through `.has-parallax`, which is
+	 * three. Specificity, not source order, so putting them later would not
+	 * have helped — a full-window parallax row kept its rounded corners
+	 * against the glass and its 16/9 ratio against a row that had already been
+	 * given a height.
+	 *
+	 * So it is written once, here, at a weight that wins: the frame gives up
+	 * its ratio to the height the row hands it, and gives up its radius to the
+	 * window it now reaches.
+	 */
+	&--full &__media.has-parallax &__frame {
+		border-radius: 0;
+
+		@include section.two-column {
+			block-size: 100%;
+			aspect-ratio: auto;
+		}
 	}
 
 	// Stacked, the copy takes the ordinary page gutter. The two rules below

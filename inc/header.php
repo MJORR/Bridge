@@ -139,7 +139,11 @@ function bridge_header_height_estimate(): string
 	// The strip renders only when it has a menu to put in it, so the estimate
 	// asks the same question the block does rather than trusting the toggle.
 	if (! empty($header['topBar']) && bridge_header_menu_id('utility') > 0) {
-		$parts[] = '2 * var(--wp--preset--spacing--20) + var(--wp--preset--font-size--small, 0.875rem) * 1.6 + 1px';
+		// The same sum the strip is actually built from: its items carry
+		// `--bridge-header-top-pad` above and below a line of small type. A
+		// fixed number rather than a spacing preset since the strip stopped
+		// tapering with the viewport — see blocks/_header.scss.
+		$parts[] = '2 * 0.75rem + var(--wp--preset--font-size--small, 0.875rem) * 1.6';
 	}
 
 	return 'calc(' . implode(' + ', $parts) . ')';
@@ -539,7 +543,14 @@ function bridge_header_logo(array $header, string $background): string
 		'loading' => 'eager',
 	);
 
-	$image = wp_get_attachment_image($id, 'full', false, $bridge_logo_attr);
+	// An SVG is written into the page rather than linked, so the mark can take
+	// its colour from the header it sits in — see bridge_inline_svg(). Anything
+	// else stays an <img>, and so does an SVG the sanitiser will not pass.
+	$image = bridge_inline_svg($id, array('class' => 'bridge-header__logo-img'));
+
+	if ('' === $image) {
+		$image = wp_get_attachment_image($id, 'full', false, $bridge_logo_attr);
+	}
 
 	if ('' === $image) {
 		return $fallback;
@@ -547,9 +558,15 @@ function bridge_header_logo(array $header, string $background): string
 
 	// The sticky header carries both images in the markup and swaps them in
 	// CSS, so the light one is above the fold on exactly the same terms.
-	$light = $light_id > 0
-		? wp_get_attachment_image($light_id, 'full', false, array('class' => 'bridge-header__logo-light', 'alt' => '', 'loading' => 'eager'))
-		: '';
+	$light = '';
+
+	if ($light_id > 0) {
+		$light = bridge_inline_svg($light_id, array('class' => 'bridge-header__logo-light'));
+
+		if ('' === $light) {
+			$light = wp_get_attachment_image($light_id, 'full', false, array('class' => 'bridge-header__logo-light', 'alt' => '', 'loading' => 'eager'));
+		}
+	}
 
 	// An attachment deleted since it was chosen leaves one image and no swap.
 	if ('' === $light) {
@@ -656,6 +673,172 @@ function bridge_header_nav_cta(string $nav, string $label, string $url): string
 	);
 
 	return substr_replace($nav, $item, $close, 0);
+}
+
+/**
+ * The site's phone number, written the way it should be read, or an empty
+ * string.
+ *
+ * One accessor so nothing else has to know that the number lives on the Site
+ * Options screen rather than in the theme's own record, and so "is there a
+ * number" is one question with one answer — the header asks it twice, once to
+ * decide whether to offer the setting at all and once to decide whether to
+ * render it.
+ */
+function bridge_header_phone(): string
+{
+	return trim(bridge_site_option('phone'));
+}
+
+/**
+ * The phone number as a menu row: an icon, the number, and a link that dials.
+ *
+ * Built as a navigation item rather than as a control beside the menu, because
+ * both places it has to appear are lists core owns — the last tab of the top
+ * bar, and the last row of the mobile panel — and neither can be reached from
+ * outside. See bridge_header_nav_cta(), which is here for the same reason.
+ *
+ * The dialling link is derived from the number rather than asked for
+ * separately, which is what the Site Options field promises: a number is
+ * written to be read — "01234 567 890", "+44 (0)20 7946 0000" — and `tel:`
+ * takes digits and a leading plus. Typing it twice would be two chances to
+ * mistype the one that matters. Same derivation as the footer's.
+ *
+ * The icon carries no label. It sits immediately before the number it stands
+ * for, and a screen reader that announced "phone" and then read the digits
+ * would be saying the same thing twice.
+ *
+ * @param string $extra Extra classes for the <li>.
+ * @return string Empty when the site has no number.
+ */
+function bridge_header_phone_item(string $extra = ''): string
+{
+	$phone = bridge_header_phone();
+
+	if ('' === $phone) {
+		return '';
+	}
+
+	$dial  = preg_replace('/[^0-9+]/', '', $phone);
+	$label = sprintf(
+		'%s<span class="wp-block-navigation-item__label">%s</span>',
+		bridge_render_icon('phone', array('size' => 'small')),
+		esc_html($phone)
+	);
+
+	$classes = trim('wp-block-navigation-item bridge-nav__phone ' . $extra);
+
+	// A "number" with no digits in it is not one to dial, but it may still be
+	// something an operator meant to say — so it is shown, without a link.
+	$content = '' !== $dial
+		? sprintf(
+			'<a class="wp-block-navigation-item__content" href="%s">%s</a>',
+			esc_url('tel:' . $dial),
+			$label // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — assembled from escaped parts above.
+		)
+		: sprintf(
+			'<span class="wp-block-navigation-item__content">%s</span>',
+			$label // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — assembled from escaped parts above.
+		);
+
+	return sprintf(
+		'<li class="%s">%s</li>',
+		esc_attr($classes),
+		$content // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — assembled from escaped parts above.
+	);
+}
+
+/**
+ * Append list items to a rendered navigation, as its last rows.
+ *
+ * The insertion bridge_header_nav_cta() does, with the item handed in rather
+ * than built: the mobile panel takes three different kinds of extra row now —
+ * the call to action, the top bar's own items, and the phone — and they have to
+ * arrive in that order, which one function inserting at one point gets right by
+ * being called three times.
+ *
+ * Before the last `</ul>`, which is the top-level container's: submenus are
+ * nested inside it and close first, so the last close tag in the markup is
+ * always the outer list's, whatever depth the menu happens to have — and
+ * whatever has already been appended by an earlier call.
+ *
+ * @param string $nav   Navigation markup, as returned by bridge_header_nav().
+ * @param string $items One or more <li> elements.
+ */
+function bridge_header_nav_append(string $nav, string $items): string
+{
+	$close = strrpos($nav, '</ul>');
+
+	if (false === $close || '' === $items) {
+		return $nav;
+	}
+
+	return substr_replace($nav, $items, $close, 0);
+}
+
+/**
+ * The rows of one rendered navigation, lifted out of the list that holds them.
+ *
+ * What the top bar's menu looks like with core's <nav>, its responsive
+ * wrappers and its <ul> taken off — so the same menu can be appended to the
+ * mobile panel's list as ordinary rows. Rendering the block twice and moving
+ * the markup is deliberate: the strip's own <nav> is a bar on the desktop and
+ * the panel is a dialog, and a single element cannot be in both places.
+ *
+ * The container is the first <ul> in the document and the last `</ul>` closes
+ * it, for the same reason the append above is safe: submenus are nested inside
+ * it and close first.
+ *
+ * @param string $nav Navigation markup, as returned by bridge_header_nav().
+ * @return string Empty when the markup holds no list.
+ */
+function bridge_header_nav_items(string $nav): string
+{
+	$open  = strpos($nav, '<ul');
+	$close = strrpos($nav, '</ul>');
+
+	if (false === $open || false === $close) {
+		return '';
+	}
+
+	$start = strpos($nav, '>', $open);
+
+	if (false === $start || $start >= $close) {
+		return '';
+	}
+
+	return trim(substr($nav, $start + 1, $close - $start - 1));
+}
+
+/**
+ * Mark every row of a chunk of menu markup as belonging to the panel alone.
+ *
+ * The rows the panel borrows — the top bar's — are real items in the bar's own
+ * list at every width the bar is drawn at, so the copies put into the main
+ * menu's list have to be told apart from the menu's own items and hidden above
+ * the breakpoint. Exactly the job `.bridge-nav__cta` does for the call to
+ * action, with the class added here rather than written into the markup,
+ * because core wrote this markup.
+ *
+ * Every <li> takes the class, not only the top-level ones. A row inside a
+ * submenu is already hidden by its parent at every width, so depth-tracking
+ * here would buy nothing; what it would buy is a second HTML parser.
+ *
+ * @param string $items One or more <li> elements.
+ */
+function bridge_header_nav_extras(string $items): string
+{
+	if ('' === $items) {
+		return '';
+	}
+
+	$tags = new WP_HTML_Tag_Processor($items);
+
+	while ($tags->next_tag('li')) {
+		$tags->add_class('bridge-nav__extra');
+	}
+
+	return $tags->get_updated_html();
 }
 
 /**

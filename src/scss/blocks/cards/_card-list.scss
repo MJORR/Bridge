@@ -69,6 +69,24 @@
 	 */
 	--bridge-list-gap: #{section.$grid-gap};
 
+	/**
+	 * How much air a row keeps above and below its content.
+	 *
+	 * Twice the card's padding. A row is a Summary card laid sideways, so the
+	 * card's own padding is the measurement it should be spending — and one of
+	 * it is not enough here for the reason the gap note above gives about the
+	 * gutter: a card's padding is set against a column a few hundred pixels
+	 * wide, and a row is the whole band. The same distance that reads as a
+	 * margin on a card reads as a hairline across a row.
+	 *
+	 * Doubled rather than named as a spacing preset, so it stays tied to the
+	 * card: a site that opens its cards up opens its rows with them, and there
+	 * is still only one number in Theme Options deciding both.
+	 */
+	--bridge-list-row-padding: calc(
+		2 * var(--wp--custom--card--padding, 1.5rem)
+	);
+
 	.post-card--list {
 		// The Summary group's tokens: a list row is that card, laid sideways,
 		// so a site that retunes its Summary cards retunes its lists with them
@@ -111,6 +129,22 @@
 		 * edge.
 		 */
 		overflow: visible;
+
+		/**
+		 * The row's own air, above and below.
+		 *
+		 * On every row and not only the shaded ones. The tint used to be the
+		 * only thing that brought padding with it — a plain row had none and
+		 * took all of its separation from the grid's gap — which made the two
+		 * arrangements of the same list two different densities, and made the
+		 * shading control quietly a spacing control as well.
+		 *
+		 * Inline padding is still left alone: the row is the band's width, and
+		 * what holds its content off the container is the container's own
+		 * inset. The shading rules at the end of this file are what add an
+		 * inline padding to a row that has a ground to sit on.
+		 */
+		padding-block: var(--bridge-list-row-padding);
 
 		// Stacked until there is room for two columns: a 50% picture beside
 		// three words of a headline on a phone is two things too narrow to be
@@ -595,10 +629,14 @@
 
 .bridge-cards-grid.is-contrast .post-card--list {
 	margin-inline: calc(-1 * var(--bridge-list-gutter));
-	padding-inline: calc(
-		var(--bridge-list-inset) + var(--bridge-list-gutter)
-	);
-	padding-block: var(--wp--custom--card--padding, 1.5rem);
+	padding-inline: calc(var(--bridge-list-inset) + var(--bridge-list-gutter));
+
+	/*
+	 * No `padding-block` here any more: every row carries it now, from
+	 * `--bridge-list-row-padding` at the top of this file. Restating it here
+	 * would be the same value written twice, and the pair would drift the
+	 * first time one of them was tuned.
+	 */
 }
 
 /**

@@ -71,6 +71,35 @@ if ( ! empty( $bridge_header['border'] ) ) {
 	$bridge_classes[] = 'bridge-header--border';
 }
 
+// The border's companion, and independent of it: a bar may be drawn with an
+// edge, with a lift, with both, or with neither. The stylesheet decides what
+// the shadow is and when it is suppressed — see the Shadow section in
+// blocks/_header.scss, which withholds it from a header standing on a hero.
+if ( ! empty( $bridge_header['shadow'] ) ) {
+	$bridge_classes[] = 'bridge-header--shadow';
+}
+
+/**
+ * The accent, switched off.
+ *
+ * A class rather than a value, because the two things that have to change are
+ * both declared on `.wp-block-navigation` — the marker's colour and its 5px
+ * height — and that element is inside this one. A custom property published
+ * here under either name is shadowed by the stylesheet's own declaration
+ * before anything reads it, which is the same trap the nav colours above go
+ * round by being read *by* those declarations rather than replacing them. A
+ * height has no such indirection to borrow, so the answer is a class and one
+ * rule that outranks the block it is overriding. See the Nav accent section in
+ * components/_primary-nav.scss.
+ *
+ * Named for what it takes away rather than for the setting, so the default —
+ * the accent drawn, which is every site that has never opened the control —
+ * is the header wearing no class at all.
+ */
+if ( empty( $bridge_header['nav']['accentEnabled'] ) ) {
+	$bridge_classes[] = 'bridge-header--no-nav-accent';
+}
+
 // Published on the element rather than :root so the values travel with the
 // markup — the editor canvas renders this block without ever running the
 // theme's front-end enqueue hooks.
@@ -145,6 +174,58 @@ list( $bridge_rollover_bg, $bridge_rollover_fg ) = $bridge_nav_ground( (string) 
 list( $bridge_child_bg, $bridge_child_fg )       = $bridge_nav_ground( (string) $bridge_nav_colors['child'] );
 
 /**
+ * The top bar's ground, and the labels it can carry.
+ *
+ * Through the same helper as the menu colours, for the same reason: the strip
+ * is now a named palette colour rather than a tint of whatever was behind it,
+ * and a named colour does not follow the header's contrast on its own. The
+ * foreground is asked for rather than assumed — a Primary strip under a header
+ * whose text is dark would otherwise be dark labels on a dark band.
+ *
+ * Over a hero, neither half is the setting's. A transparent header is borrowing
+ * a photograph, and a palette colour painted across the top of one is the
+ * overlay broken in exactly the place it is most visible — so the strip's own
+ * colour does nothing on the Landing Page template, which is what its help text
+ * says.
+ *
+ * What it takes instead is a wash of black — see `.bridge-header--transparent`
+ * in blocks/_header.scss, which paints it. That lives in the stylesheet and not
+ * here on purpose: it is the one ground in this header that is not a colour
+ * from the palette, because the thing underneath is not either, so there is no
+ * value for an operator to set and nothing for this file to work out. A rule
+ * keyed on the class the header is already wearing says it in one line and
+ * cannot be lost on the way through a custom property.
+ *
+ * So this clears the strip's own colour, which is all it was ever doing here,
+ * and leaves the labels on `inherit` — the header's own contrast, light on a
+ * transparent header unless an operator has deliberately said otherwise, and
+ * light is what the wash is built to carry.
+ */
+list( $bridge_top_bg, $bridge_top_fg ) = $bridge_nav_ground( (string) $bridge_header['topBarColor'] );
+
+if ( 'transparent' === $bridge_background ) {
+	$bridge_top_bg = 'transparent';
+	$bridge_top_fg = 'inherit';
+}
+
+/**
+ * What the strip lights up in, and what its dropdown is painted: nothing, here.
+ *
+ * The strip used to work out a pair of its own — the slug that contrasts with
+ * whatever the band was painted, on the grounds that a bar with its own ground
+ * deserves its own rollover. Which is true of the ground and false of the menu.
+ * It left the site with two sets of menu colours stacked one above the other,
+ * and an operator who changed the Nav settings watched the row below the strip
+ * change while the strip stayed as it was.
+ *
+ * The strip's menu is a menu, so it lights up in the Nav rollover colour and
+ * its panels are painted the Nav child colour, both already published on the
+ * header for the bar below. The stylesheet stopped shadowing those names on
+ * `.bridge-header__top`, so they reach the strip by cascade and the two menus
+ * cannot drift apart. See `.bridge-header__top` in blocks/_header.scss.
+ */
+
+/**
  * A row inside the dropdown, under the pointer.
  *
  * A step off the panel's own colour rather than a tint of `currentcolor` over
@@ -168,6 +249,23 @@ $bridge_nav_marker = sprintf(
 	'var(--wp--preset--color--%s)',
 	sanitize_key( (string) $bridge_nav_colors['accent'] )
 );
+
+/**
+ * The phone item's ground, and the label it can carry.
+ *
+ * The one item in the strip that is an action rather than a link, and the brief
+ * for it is a ground that contrasts with the strip. It takes the same accent
+ * the tab marker does — the brand's mark in this header, and already an
+ * operator's choice — through the same helper every other named ground here
+ * goes through, so the number comes out dark on a pale accent and light on a
+ * deep one without the strip's own colour being consulted.
+ *
+ * It stays the accent whatever the strip is painted, including the case where
+ * the strip is painted the accent too: two settings agreeing is a decision
+ * somebody made, and the alternative — quietly substituting a third colour when
+ * they match — is a header that changes colour when you change something else.
+ */
+list( $bridge_phone_bg, $bridge_phone_fg ) = $bridge_nav_ground( (string) $bridge_nav_colors['accent'] );
 
 /**
  * The call to action in the mobile panel, which is a different button.
@@ -199,10 +297,12 @@ $bridge_panel_cta = bridge_button_scheme(
 );
 
 $bridge_style = sprintf(
-	'--bridge-header-logo-height:%dpx;--bridge-header-padding:%s;--bridge-header-bg:%s;--bridge-header-menu-bg:%s;--bridge-nav-panel-bg:%s;--bridge-nav-panel-fg:%s;--bridge-nav-cta-bg:%s;--bridge-nav-cta-fg:%s;--bridge-nav-rollover-bg:%s;--bridge-nav-rollover-fg:%s;--bridge-nav-drop-bg:%s;--bridge-nav-drop-fg:%s;--bridge-nav-drop-hover-bg:%s;--bridge-nav-accent:%s;',
+	'--bridge-header-logo-height:%dpx;--bridge-header-padding:%s;--bridge-header-bg:%s;--bridge-header-top-bg:%s;--bridge-header-top-fg:%s;--bridge-header-menu-bg:%s;--bridge-nav-panel-bg:%s;--bridge-nav-panel-fg:%s;--bridge-nav-cta-bg:%s;--bridge-nav-cta-fg:%s;--bridge-nav-rollover-bg:%s;--bridge-nav-rollover-fg:%s;--bridge-nav-drop-bg:%s;--bridge-nav-drop-fg:%s;--bridge-nav-drop-hover-bg:%s;--bridge-nav-accent:%s;--bridge-nav-phone-bg:%s;--bridge-nav-phone-fg:%s;',
 	(int) $bridge_header['logo']['height'],
 	bridge_header_padding_block( (int) $bridge_header['paddingBlock'] ),
 	'transparent' === $bridge_background ? 'transparent' : $bridge_solid,
+	$bridge_top_bg,
+	$bridge_top_fg,
 	$bridge_menu_bg,
 	'var(--wp--preset--color--primary)',
 	sprintf( 'var(--wp--preset--color--%s)', $bridge_panel_fg ),
@@ -213,7 +313,9 @@ $bridge_style = sprintf(
 	$bridge_child_bg,
 	$bridge_child_fg,
 	$bridge_child_hover,
-	$bridge_nav_marker
+	$bridge_nav_marker,
+	$bridge_phone_bg,
+	$bridge_phone_fg
 );
 
 /**
@@ -293,6 +395,44 @@ if ( ! empty( $bridge_header['topBar'] ) ) {
 	$bridge_top = bridge_header_menu_id( 'utility' );
 }
 
+/**
+ * The phone number, as the last item of the strip.
+ *
+ * Three things have to be true, and they are three different questions: the
+ * operator asked for it (Theme Options), the site has a number to show (Site
+ * Options, a different screen), and there is a strip to put it in. The last is
+ * why this is not simply the setting — the bar renders only with a menu, and a
+ * number alone is not a menu.
+ */
+$bridge_phone = ! empty( $bridge_header['topBarPhone'] )
+	&& $bridge_top > 0
+	&& '' !== bridge_header_phone();
+
+/**
+ * The strip, rendered here rather than in the markup below.
+ *
+ * It is needed twice — as itself, and as rows borrowed by the mobile panel —
+ * and the phone has to be appended before either, so that both copies end on
+ * the same item.
+ */
+$bridge_top_nav = '';
+
+if ( $bridge_top > 0 ) {
+	$bridge_top_nav = bridge_header_nav(
+		$bridge_top,
+		'left',
+		array(
+			'className'   => 'bridge-nav bridge-nav--utility',
+			'overlayMenu' => 'never',
+			'fontSize'    => 'small',
+		)
+	);
+
+	if ( $bridge_phone ) {
+		$bridge_top_nav = bridge_header_nav_append( $bridge_top_nav, bridge_header_phone_item() );
+	}
+}
+
 // The search field belongs to this instance of the header — the editor can
 // render the block twice on one screen — so the button and the panel it
 // controls are tied together by an id nothing else can collide with.
@@ -334,6 +474,28 @@ if ( $bridge_button ) {
 	$bridge_nav = bridge_header_nav_cta( $bridge_nav, $bridge_label, $bridge_url );
 }
 
+/**
+ * The strip's rows, and the phone, as the bottom of the mobile panel.
+ *
+ * The panel is the only menu a phone has, and the strip is not in it: it is
+ * drawn above the header, outside the dialog core opens, so on a phone its
+ * links are on screen but the panel covering them is what the visitor is
+ * reading. Copied in below the call to action — the order is the order of
+ * importance, the site's own action first — and marked so the stylesheet can
+ * hide the copies in the menu bar, where the strip itself is already showing.
+ *
+ * The phone is appended after them rather than taken along with them, so it is
+ * the last row of the panel whatever the strip's menu holds. It is the same
+ * item as the strip's, rendered a second time: exactly one of the two is ever
+ * displayed, so nothing is announced twice.
+ */
+if ( '' !== $bridge_top_nav ) {
+	$bridge_nav = bridge_header_nav_append(
+		$bridge_nav,
+		bridge_header_nav_extras( bridge_header_nav_items( $bridge_top_nav ) )
+	);
+}
+
 // The same class header.js toggles, written into the markup instead. The
 // stylesheet has one rule for an open panel and does not care which of the two
 // put the class there.
@@ -354,20 +516,10 @@ $bridge_body_class = 'left' === $bridge_layout ? 'bridge-header__row' : 'bridge-
 
 ?>
 <div <?php echo $bridge_wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built by core. ?>>
-	<?php if ( $bridge_top > 0 ) : ?>
-		<div class="bridge-header__top bridge-header__inner">
-			<div class="bridge-header__top-inner">
-				<?php
-				echo bridge_header_nav( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — rendered by core.
-					$bridge_top,
-					'left',
-					array(
-						'className'   => 'bridge-nav bridge-nav--utility',
-						'overlayMenu' => 'never',
-						'fontSize'    => 'small',
-					)
-				);
-				?>
+	<?php if ( '' !== $bridge_top_nav ) : ?>
+		<div class="bridge-header__top">
+			<div class="bridge-header__inner bridge-header__top-inner">
+				<?php echo $bridge_top_nav; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — rendered by core, with the phone item escaped where it is built. ?>
 			</div>
 		</div>
 	<?php endif; ?>

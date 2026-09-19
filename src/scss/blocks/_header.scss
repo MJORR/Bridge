@@ -21,6 +21,24 @@
 	background-color: var(--bridge-header-bg, transparent);
 
 	/**
+	 * The header's own drop shadow, as a token spent once.
+	 *
+	 * `none` here, and every rule that has an opinion about the shadow sets
+	 * this name rather than writing `box-shadow` of its own. There are two
+	 * such rules and they overlap — an operator who asked for a shadow in
+	 * Theme Options, and a sticky bar that has scrolled off a hero and gone
+	 * solid — so written as two `box-shadow` declarations the answer would be
+	 * whichever selector happened to win, and the header would drop a shadow
+	 * it was never given or lose the one it was.
+	 *
+	 * One property, set from either place, is also what keeps the transition
+	 * below honest: a token swapped between two real shadows animates, and a
+	 * `box-shadow` replaced by a different rule does too, but only the first
+	 * is guaranteed to be the same property.
+	 */
+	box-shadow: var(--bridge-header-shadow, none);
+
+	/**
 	 * How tall this header is, for the things that have to be placed against
 	 * its bottom edge — the mobile panel and the close button sitting on top
 	 * of the toggle.
@@ -35,6 +53,45 @@
 	 */
 	// stylelint-disable-next-line length-zero-no-unit -- read inside a calc().
 	--bridge-header-pad: var(--bridge-header-padding, 0px);
+
+	/**
+	 * The header's own bottom edge, as a length.
+	 *
+	 * Zero unless the border modifier is on — see the Border section, which
+	 * both sets this to the hairline's width and draws the hairline with it,
+	 * so the two can never disagree. It exists because the dropdown panels
+	 * are placed against the row's padding box and the border is drawn
+	 * *outside* that box: without this in the sum, a bordered header hands
+	 * the panel a top edge one pixel above its own bottom edge, and the panel
+	 * paints over the hairline it is supposed to hang from.
+	 */
+	// stylelint-disable-next-line length-zero-no-unit -- read inside a calc().
+	--bridge-header-edge: 0px;
+
+	/**
+	 * What a menu bar in this header publishes about its own box.
+	 *
+	 * There are two bars — the main row and the strip above it — and the rules
+	 * that paint a rollover and hang a dropdown are the same rules for both.
+	 * They are written against these two names rather than against either
+	 * bar's own padding, so neither rule has to know which bar it is inside:
+	 *
+	 *   `--bridge-bar-pad`   the bar's own vertical padding. A full-height
+	 *                        hover surface is drawn on an item that only
+	 *                        reaches the content box, so this is how far past
+	 *                        itself the surface has to reach.
+	 *   `--bridge-bar-drop`  the distance from that content box down to the
+	 *                        bar's outer edge — the padding plus anything
+	 *                        drawn outside it — which is where a panel hung
+	 *                        off the item's bottom has to land.
+	 *
+	 * Declared here for the main row, and redeclared on `.bridge-header__top`,
+	 * which has a padding of its own and no border under it.
+	 */
+	--bridge-bar-pad: var(--bridge-header-pad);
+	--bridge-bar-drop: calc(
+		var(--bridge-header-pad, 0px) + var(--bridge-header-edge, 0px)
+	);
 	--bridge-header-icon: max(
 		var(--bridge-header-logo-height, 2.5rem),
 		2.75rem
@@ -55,6 +112,23 @@
 	 * `--bridge-nav-inset` in components/_primary-nav.scss, which is this.
 	 */
 	--bridge-header-rhythm: 1.125rem;
+
+	/**
+	 * How a menu item is set — in either bar.
+	 *
+	 * Declared here, on the element both navigations are inside, because there
+	 * are two of them and they have to agree. The main menu carried these two
+	 * values directly and the top bar carried nothing at all, so the strip
+	 * inherited the body's 400 while the bar immediately below it sat at 500:
+	 * two rows of links, one above the other, set differently for no reason
+	 * anybody chose. Nothing in the theme targeted `.bridge-nav--utility`.
+	 *
+	 * The size still differs, and should — render.php asks for `small` on the
+	 * top bar, which is what makes it the quieter of the two. Weight is not how
+	 * that distinction was being drawn, it was just missing.
+	 */
+	--bridge-nav-weight: 500;
+	--bridge-nav-tracking: 0.01em;
 
 	/**
 	 * How the header's own disclosures move.
@@ -133,27 +207,253 @@
 
 // ---- Top bar ---------------------------------------------------------------
 
-// A modifier, not a layout: it styles itself the same way above any of the
-// three arrangements.
+/**
+ * A modifier, not a layout: it styles itself the same way above any of the
+ * three arrangements.
+ *
+ * ---- A band, with the container inside it ---------------------------------
+ *
+ * This element used to be the container — it carried `bridge-header__inner`
+ * alongside its own class, so its box stopped at `wideSize` — which was fine
+ * while the only thing it drew was a hairline under the row. It is a colour
+ * now, and a colour that stops at the container is a floating slab rather than
+ * a strip across the top of the site.
+ *
+ * So the two jobs come apart: this is the band, and the container moved inside
+ * it (see render.php). Pulled out by the site's root padding and given the same
+ * back as its own, so the ground reaches the window while the menu stays on the
+ * grid the logo below it is on. The same idiom, for the same reason, as the
+ * search band further down this file.
+ *
+ * ---- No rule under it -----------------------------------------------------
+ *
+ * The hairline is gone. It was there to separate two things sharing one
+ * ground; with a ground of its own the strip is already told apart from the
+ * row below it, and a border on top of that is the same statement made twice —
+ * and visible as a seam whenever the two colours match.
+ */
 .bridge-header__top {
-	padding-block: var(--wp--preset--spacing--20);
-	border-bottom: 1px solid color-mix(in srgb, currentcolor 12%, transparent);
+	margin-inline: calc(var(--wp--style--root--padding-left, 1.5rem) * -1)
+		calc(var(--wp--style--root--padding-right, 1.5rem) * -1);
+	padding-inline: var(--wp--style--root--padding-left, 1.5rem)
+		var(--wp--style--root--padding-right, 1.5rem);
+
+	/**
+	 * The strip's vertical rhythm — spent by the items, not by the band.
+	 *
+	 * A fixed length, and that is the point of it. It was `--wp--preset--spacing--20`,
+	 * which is a fluid clamp like every other spacing preset: the strip was
+	 * about 7px of padding on a desktop and less on a phone, while the items
+	 * inside it were pills carrying 8px of their own at the narrow end and
+	 * nothing at the wide one. Two treatments, each with its own idea of the
+	 * number, adding up to a strip that was *shorter* on the screen with more
+	 * room. The band is not a spacing decision that should taper with the
+	 * viewport — it is the height of a row of small type, and that is the same
+	 * height everywhere.
+	 *
+	 * On the items rather than on this element, because the ground under a
+	 * hovered link has to fill the band: padding here is the band's, outside
+	 * every item, and no surface drawn on an item can reach into it without
+	 * a negative inset that then has to be kept in step with it. Given to the
+	 * items, the item *is* the band's height, the rollover fills it by
+	 * construction, and a strip whose links wrap onto a second line is two rows
+	 * of the same height rather than two rows overlapping each other.
+	 */
+	--bridge-header-top-pad: 0.75rem;
+
+	// Which leaves the band with no padding of its own to reach past, and a
+	// dropdown hanging from an item's bottom edge already on the strip's.
+	// stylelint-disable-next-line length-zero-no-unit -- read inside a calc().
+	--bridge-bar-pad: 0px;
+	// stylelint-disable-next-line length-zero-no-unit -- read inside a calc().
+	--bridge-bar-drop: 0px;
+
+	// The inset the strip's labels sit at, stated here rather than left to the
+	// menu bar's own declaration: that one lives inside the bar's media query,
+	// so below it the strip's items would quietly narrow to the shared default
+	// while their height stayed put.
+	--bridge-nav-inset: var(--bridge-header-rhythm, 1.125rem);
+
+	/**
+	 * The strip's rollover, and the dropdown that hangs off it.
+	 *
+	 * Nothing declared here, and that is the decision. These used to be four
+	 * names redeclared on this element — `--bridge-nav-rollover-*` and
+	 * `--bridge-nav-drop-*`, shadowed between the header and the strip's menu
+	 * so they reached the strip's rules and nothing else — carrying a colour
+	 * worked out server-side from whatever the band itself was painted.
+	 *
+	 * That gave the site two sets of menu colours. A visitor sees one header:
+	 * a tab in the strip lit up in one colour opening a panel in another,
+	 * directly above a menu bar whose tabs and panels are the pair chosen in
+	 * Theme Options, reads as two components that were styled by different
+	 * people. The Nav rollover and Nav child settings are the site's answer for
+	 * "what a menu lights up in" and "what a menu's panel is painted", and a
+	 * menu is a menu wherever in the header it sits.
+	 *
+	 * So the strip takes the header's own values by saying nothing and letting
+	 * them cascade, which is also the only way the two stay in step when an
+	 * operator changes one.
+	 */
+
+	background-color: var(--bridge-header-top-bg, transparent);
+	// `inherit` and not a colour: an unset strip, and one over a transparent
+	// header, both take the header's own contrast — which is already correct
+	// for the ground they are standing on.
+	color: var(--bridge-header-top-fg, inherit);
 	font-size: var(--wp--preset--font-size--small);
 }
 
 .bridge-header__top-inner {
 	display: flex;
-	align-items: center;
-	justify-content: space-between;
+	// Right, not `space-between`. The bar holds one thing — a menu — and
+	// `space-between` on a single child is `flex-start`, so the strip read as
+	// left-aligned while every other row in the header ends on the right. It
+	// is the container's right edge, not the window's, because the container
+	// is this element now.
+	justify-content: flex-end;
+	// Stretch, not centre: the menu's items are tabs with a surface that runs
+	// the full height of the band, and a percentage height resolves to `auto`
+	// the moment one ancestor in the run stops handing it down. Centring a
+	// single child was only ever a no-op anyway — the row is as tall as the
+	// menu inside it.
+	align-items: stretch;
 	flex-wrap: wrap;
 	gap: var(--wp--preset--spacing--20);
+}
+
+/**
+ * The band's height, carried by its items.
+ *
+ * Two rules because the strip's links are two shapes: a full-height tab where
+ * the menu bar treatment applies, and a block on the anchor below it — see
+ * section 2 of components/_primary-nav.scss, where every nav that is not the
+ * main menu is drawn. Both spend the same number, so the strip is the same
+ * height at every width, which is the whole point of the token.
+ *
+ * The lower one also squares the pill off and gives it the tab's inset, so what
+ * changes across the breakpoint is which element paints the ground, not what
+ * the visitor sees.
+ */
+@media (min-width: nav.$bar) {
+	.bridge-header__top-inner
+		.bridge-nav--utility
+		.wp-block-navigation__container
+		> .wp-block-navigation-item {
+		padding-block: var(--bridge-header-top-pad);
+	}
+}
+
+@media (max-width: nav.$panel) {
+	// Four classes: section 2's pill sets a padding and a radius on this same
+	// element at three, and a tie would be settled by which file @use put last.
+	.bridge-header
+		.bridge-header__top-inner
+		.bridge-nav--utility
+		.wp-block-navigation-item__content {
+		padding: var(--bridge-header-top-pad) var(--bridge-nav-inset);
+		border-radius: 0;
+	}
+
+	/**
+	 * The label, on a ground that is no longer the strip's.
+	 *
+	 * Section 2's pill changes the colour under the text and nothing about the
+	 * text, which was right while the ground was a tenth of the text's own
+	 * colour and is wrong now that it is a palette colour chosen to contrast
+	 * with the strip. The bar treatment above the breakpoint says the same
+	 * thing at its own depth.
+	 *
+	 * Every item but the phone, which is not lit by the rollover at all: it
+	 * carries a ground of its own at every width, and a foreground measured
+	 * against that one. Excluded here rather than answered again in its own
+	 * rule, because both would land at the same weight and the winner would be
+	 * whichever file @use put last.
+	 */
+	.bridge-header
+		.bridge-header__top-inner
+		.bridge-nav--utility
+		.wp-block-navigation-item:not(.bridge-nav__phone)
+		> .wp-block-navigation-item__content {
+		&:hover,
+		&:focus-visible {
+			color: var(
+				--bridge-nav-rollover-fg,
+				var(--wp--preset--color--text)
+			);
+		}
+	}
+}
+
+/**
+ * The strip's dropdown, at the widths the shared rules do not reach.
+ *
+ * Everything about a panel — its surface, its rows, the clip it opens from —
+ * lives in the Dropdowns section, inside the media query that says a menu bar
+ * is being drawn. That guard is the main menu's: below it the main menu is a
+ * modal with its submenus flattened into it, and a panel there would be nonsense.
+ * The strip has no such width. It is a bar at every size, so a submenu in it is
+ * a panel at every size, and without this it would be a bar painted in the
+ * theme's colours opening a panel painted in core's white.
+ *
+ * The surface only. The opening — the clip, the travel, the hover bridge across
+ * the gap — stays above the breakpoint, because below it there is no gap to
+ * bridge and core's own show and hide is already correct; what is wrong down
+ * there is the colour, and this is the colour.
+ *
+ * Five classes, because core paints an unstyled submenu white at three, and six
+ * for the rows, because it pads them at five.
+ */
+.bridge-header
+	.bridge-nav--utility.wp-block-navigation
+	.wp-block-navigation__container
+	.wp-block-navigation__submenu-container {
+	border: 0;
+	border-radius: 0;
+	background: var(--bridge-nav-drop-bg, var(--wp--preset--color--surface));
+	color: var(--bridge-nav-drop-fg, var(--wp--preset--color--text));
+	min-width: 15rem;
+	box-shadow: inset 0 calc(-1 * var(--bridge-nav-marker-size)) 0 0
+		var(--bridge-nav-marker);
+
+	.wp-block-navigation-item .wp-block-navigation-item__content {
+		padding-block: 0.875rem;
+		padding-inline: var(--bridge-nav-inset);
+	}
+}
+
+/**
+ * The hover colour itself, declared on the navigation and not on the strip.
+ *
+ * `--bridge-nav-tint` is what every hoverable surface in a nav is painted, and
+ * the shared block at the top of components/_primary-nav.scss declares it on
+ * `.wp-block-navigation` — which is *inside* this strip. A value published on
+ * the strip is therefore shadowed before the pill below the breakpoint can read
+ * it, and the rollover would come out as the shared translucent tint on a phone
+ * and as the chosen colour on a desktop. Two classes, on the element that holds
+ * the declaration being replaced.
+ *
+ * Above the breakpoint the menu bar treatment sets the same value from the same
+ * token, so the two agree by reading one number rather than by both naming it.
+ */
+.bridge-header .bridge-nav--utility {
+	--bridge-nav-tint: var(
+		--bridge-nav-rollover-bg,
+		var(--wp--preset--color--surface)
+	);
 }
 
 // ---- Logo ------------------------------------------------------------------
 
 // Sized by height so a wordmark and a monogram of different aspect ratios both
 // sit correctly without per-asset fiddling.
-.bridge-header__logo img {
+// `img` and `svg` alike: an SVG logo is written into the page rather than
+// linked, so it can take the header's colour — see bridge_inline_svg(). The
+// declarations below are the same for both, and `display: block` matters more
+// for the inline one, which is inline-level by default and would otherwise
+// carry a baseline gap inside the anchor.
+.bridge-header__logo img,
+.bridge-header__logo svg {
 	height: var(--bridge-header-logo-height, 40px);
 	width: auto;
 	max-width: none;
@@ -201,7 +501,17 @@
 	display: inline-grid;
 	align-items: center;
 
-	> img {
+	// `img` *and* `svg`: an SVG logo is written into the page rather than
+	// linked — see bridge_inline_svg() — so either element can be one of the
+	// pair, and a site with SVG logos has two <svg> children here and no <img>
+	// at all. Scoped to `img` alone, neither one landed in the shared grid
+	// cell: they stacked as two rows and the header drew the wordmark twice,
+	// one above the other.
+	//
+	// `:where()` so the selector's weight is unchanged from the bare `> img`
+	// it replaces, and the opacity rules below still beat it on their own
+	// terms rather than by accident.
+	> :where(img, svg) {
 		grid-area: 1 / 1;
 
 		@media (prefers-reduced-motion: no-preference) {
@@ -210,7 +520,10 @@
 	}
 }
 
-.bridge-header__logo img.bridge-header__logo-light {
+// The resting state of the pair: the dark mark shows, the light one waits at
+// zero. Element-agnostic for the reason above — as an `img`-qualified selector
+// this did not match an inlined logo, so both marks were drawn at full opacity.
+.bridge-header__logo .bridge-header__logo-light {
 	opacity: 0;
 }
 
@@ -250,24 +563,38 @@
 // ---- Dropdowns -------------------------------------------------------------
 
 /**
- * The primary nav's dropdown panels hang from the bottom edge of the header.
+ * A dropdown panel hangs from the bottom edge of the bar it belongs to.
  *
  * Core positions a submenu against its own <li>, so the panel starts wherever
- * that item happens to end — mid-header, and at a different height every time
- * the logo grows or the padding changes. What a dropdown should hang from is
- * the header.
+ * that item happens to end — mid-bar, and at a different height every time the
+ * logo grows or the padding changes. What a dropdown should hang from is the
+ * bar.
  *
  * The panel is not repositioned against a different ancestor to achieve that.
  * Absolute positioning is one decision for both axes, so moving the anchor up
- * to the header would also drag the panel sideways, away from the item it
- * belongs to. Instead the item is stretched to the full height of the header
- * row: `top: 100%` then lands on the bottom of the row's content box, and one
- * padding's worth of margin carries it the rest of the way. Horizontal
- * alignment stays exactly where core put it.
+ * to the bar would also drag the panel sideways, away from the item it belongs
+ * to. Instead the item is stretched to the full height of the bar's content
+ * box: `top: 100%` then lands on the bottom of that box, and `--bridge-bar-drop`
+ * carries it the rest of the way. Horizontal alignment stays exactly where core
+ * put it.
  *
- * Scoped to the width the theme draws a menu bar at — `abstracts/_nav.scss` —
- * and to a header header.js has not collapsed. Below either there are no panels
- * to place: the submenu is flattened into the modal.
+ * ---- Both bars, one set of rules ------------------------------------------
+ *
+ * Every rule below is written twice, once per bar, because the two are not in
+ * the same place in the tree and the main menu's clause carries a guard the
+ * strip must not have: `is-nav-collapsed` is header.js saying the main menu has
+ * run out of room and become a panel. The top bar is a bar at every width a bar
+ * is drawn at.
+ *
+ * The two clauses weigh the same — three classes each, `.wp-block-navigation`
+ * compounded onto the utility's class on purpose, to stand in for the `:not()`
+ * on the other side. Several of these selectors exist to outrank a core rule by
+ * exactly one class, so a pair that did not match would have one bar styled and
+ * the other quietly losing.
+ *
+ * Scoped to the width the theme draws a menu bar at — `abstracts/_nav.scss`.
+ * Below it the main menu is a modal with its submenus flattened into it, and
+ * the strip is a row of pills, where a full-height anything is nonsense.
  */
 @media (min-width: nav.$bar) {
 	// The height has to be handed down every wrapper core renders between the
@@ -296,6 +623,48 @@
 		.wp-block-navigation__responsive-dialog,
 		.wp-block-navigation__responsive-container-content {
 			height: 100%;
+		}
+	}
+
+	/**
+	 * The same run again for the top bar, written separately rather than folded
+	 * into the lists above.
+	 *
+	 * Its wrappers are not the row's: the strip holds one menu and it hangs off
+	 * `__top-inner`, not off `__end`. And the collapse guard the main menu's
+	 * rules carry is wrong here — `is-nav-collapsed` says the main menu has run
+	 * out of room and become a panel, which says nothing at all about the strip
+	 * above it. The top bar never collapses: render.php gives it
+	 * `overlayMenu: never`.
+	 */
+	.bridge-header__top-inner > .bridge-nav--utility,
+	.bridge-header__top-inner
+		.bridge-nav--utility
+		.wp-block-navigation__responsive-container,
+	.bridge-header__top-inner
+		.bridge-nav--utility
+		.wp-block-navigation__container,
+	.bridge-header__top-inner .bridge-nav--utility .wp-block-navigation-item {
+		align-self: stretch;
+	}
+
+	.bridge-header .bridge-nav--utility {
+		.wp-block-navigation__responsive-close,
+		.wp-block-navigation__responsive-dialog,
+		.wp-block-navigation__responsive-container-content {
+			height: 100%;
+		}
+
+		// A strip that wrapped would be two lines tall while every item in it
+		// stretched to the height of both, and the surfaces would overlap. At
+		// this width a handful of small labels has the room; below it these
+		// rules do not apply and the items are pills again.
+		.wp-block-navigation__container {
+			flex-wrap: nowrap;
+		}
+
+		.wp-block-navigation-item__content {
+			white-space: nowrap;
 		}
 	}
 
@@ -344,6 +713,11 @@
 		.bridge-nav--primary
 		.wp-block-navigation__container
 		> .wp-block-navigation-item.has-child
+		> .wp-block-navigation__submenu-container,
+	.bridge-header
+		.bridge-nav--utility.wp-block-navigation
+		.wp-block-navigation__container
+		> .wp-block-navigation-item.has-child
 		> .wp-block-navigation__submenu-container {
 		left: 0;
 		right: auto;
@@ -360,6 +734,12 @@
 	 */
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
+		.wp-block-navigation__container
+		.wp-block-navigation__submenu-container
+		.wp-block-navigation-item
+		.wp-block-navigation-item__content,
+	.bridge-header
+		.bridge-nav--utility.wp-block-navigation
 		.wp-block-navigation__container
 		.wp-block-navigation__submenu-container
 		.wp-block-navigation-item
@@ -401,6 +781,10 @@
 	 */
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
+		.wp-block-navigation__container
+		.wp-block-navigation__submenu-container,
+	.bridge-header
+		.bridge-nav--utility.wp-block-navigation
 		.wp-block-navigation__container
 		.wp-block-navigation__submenu-container {
 		/**
@@ -462,38 +846,183 @@
 		 */
 		box-shadow: inset 0 calc(-1 * var(--bridge-nav-marker-size)) 0 0
 			var(--bridge-nav-marker);
-		// Closed, the panel is clipped to nothing, so this is only ever seen
-		// on the way in: the panel drops the last few pixels into place rather
-		// than appearing whole.
-		transform: translateY(-6px);
+
+		/**
+		 * ---- Closed, and why it is not closed the way core closes it ------
+		 *
+		 * Core shuts a submenu by collapsing its box: `width: 0; height: 0;
+		 * overflow: hidden`. That is airtight and it cannot be animated —
+		 * there is no interpolation from a zero box to `auto`, so the panel
+		 * arrives at full size on the first frame and only the opacity had
+		 * anything to fade. What used to be here was a 6px nudge on top of
+		 * that, which reads as a panel appearing and settling rather than as
+		 * one opening.
+		 *
+		 * So the box stays. The panel keeps its real dimensions in both states
+		 * and is hidden by a clip instead — `inset(… 100% …)` takes the whole
+		 * height off the bottom, and animating that one number back to 0
+		 * uncovers the panel from its top edge downward, which is the movement
+		 * being asked for. Nothing reflows, because the panel is absolutely
+		 * positioned and never occupied space in the first place.
+		 *
+		 * Three things have to come back with the box, because core's zero-size
+		 * closed state was doing all three jobs at once:
+		 *
+		 *   `visibility: hidden`   keeps the links out of the tab order and out
+		 *                          of the accessibility tree. A clip hides
+		 *                          pixels and nothing else — a clipped panel is
+		 *                          still focusable, so Tab would walk into a
+		 *                          menu nobody can see.
+		 *   `pointer-events: none` is what stops the invisible hover bridge
+		 *                          below from opening the panel it belongs to.
+		 *                          That used to come free: a 0×0 overflow-hidden
+		 *                          panel has nothing to hit.
+		 *   `overflow: hidden`     is core's, and is left alone.
+		 *
+		 * ---- Why the clip is inset on three sides and not four ------------
+		 *
+		 * `inset()` takes negative values, which extend the region past the
+		 * border box, and both of the negatives here are load-bearing:
+		 *
+		 * The top reaches up by the header's padding, which is exactly the gap
+		 * the hover bridge spans — clipped to the border box, the bridge would
+		 * be outside the visible region and therefore un-hittable, and the
+		 * pointer would lose the panel crossing the gap to it.
+		 *
+		 * The sides reach out past the window, because a clip applies to
+		 * descendants too and a third-level panel opens *sideways* out of this
+		 * one. Clipped to this panel's width, a nested menu would be cut off at
+		 * its parent's edge.
+		 */
+		--bridge-nav-drop-clip-top: calc(-1 * var(--bridge-bar-drop, 0px));
+
+		// The two core zeroes, given back. Core shuts the panel at three
+		// classes (`.wp-block-navigation .has-child
+		// .wp-block-navigation__submenu-container`); this selector is six, so
+		// it simply outranks them.
+		width: auto;
+		height: auto;
+
+		visibility: hidden;
+		pointer-events: none;
+		clip-path: inset(var(--bridge-nav-drop-clip-top) -100vw 100% -100vw);
+
+		// A short travel *with* the clip, so the panel moves as it is
+		// uncovered rather than being wiped in place.
+		transform: translateY(-0.5rem);
 	}
 
-	// Open. Core un-clips the panel and fades it in, and names three ways that
-	// can happen — pointer on the item, focus inside it, and the caret button
-	// on a menu that opens by click. All three land here, so the drop plays
-	// whichever way the panel was asked for.
+	/*
+	 * Open. Core un-clips the panel and fades it in, and names three ways that
+	 * can happen — pointer on the item, focus inside it, and the caret button
+	 * on a menu that opens by click. All three land here, so the drop plays
+	 * whichever way the panel was asked for.
+	 *
+	 * `:not(.open-on-click)` on the first two is core's own guard, copied
+	 * because these rules now decide more than they used to. A menu set to open
+	 * on click is opened by the caret and by nothing else — core leaves it at
+	 * `opacity: 0` on hover deliberately — and a rule here that handed it
+	 * `visibility: visible` and `pointer-events: auto` without the opacity to
+	 * match would make a hovered panel invisible, clickable and in the tab
+	 * order at once. The old rule set only a transform and could not do that.
+	 */
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
-		.wp-block-navigation-item.has-child:hover
+		.wp-block-navigation-item.has-child:not(.open-on-click):hover
+		> .wp-block-navigation__submenu-container,
+	.bridge-header
+		.bridge-nav--utility.wp-block-navigation
+		.wp-block-navigation-item.has-child:not(.open-on-click):hover
 		> .wp-block-navigation__submenu-container,
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
-		.wp-block-navigation-item.has-child:focus-within
+		.wp-block-navigation-item.has-child:not(.open-on-click):focus-within
+		> .wp-block-navigation__submenu-container,
+	.bridge-header
+		.bridge-nav--utility.wp-block-navigation
+		.wp-block-navigation-item.has-child:not(.open-on-click):focus-within
 		> .wp-block-navigation__submenu-container,
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.wp-block-navigation-submenu__toggle[aria-expanded="true"]
+		~ .wp-block-navigation__submenu-container,
+	.bridge-header
+		.bridge-nav--utility.wp-block-navigation
+		.wp-block-navigation-submenu__toggle[aria-expanded="true"]
 		~ .wp-block-navigation__submenu-container {
+		visibility: visible;
+		pointer-events: auto;
+		clip-path: inset(var(--bridge-nav-drop-clip-top) -100vw 0 -100vw);
 		transform: translateY(0);
 	}
 
+	/**
+	 * How long the drop takes — and the one place that decides it.
+	 *
+	 * `--bridge-nav-drop-speed` is on the root rather than on the nav, because
+	 * the page-darkening scrim at the end of this file has to run for exactly
+	 * as long and is not inside the header. Two elements in two different
+	 * subtrees reading one token is what makes them the same duration; two
+	 * rules each saying `0.3s` is two numbers that agree until somebody tunes
+	 * one of them.
+	 *
+	 * Every property on one curve, for the same reason. The opacity used to
+	 * finish at 160ms while the movement ran to 220ms, so the panel was fully
+	 * opaque for the last third of its travel and appeared to arrive twice.
+	 *
+	 * `visibility` is the odd one out and has to be: it is a discrete property,
+	 * so it cannot be eased — it is switched at one end of the transition or
+	 * the other. Delayed by the full duration on the way out, so the panel
+	 * stays visible for as long as it is fading; immediate on the way in, which
+	 * is the second declaration below.
+	 */
 	@media (prefers-reduced-motion: no-preference) {
 		.bridge-header
 			.bridge-nav--primary
+			.wp-block-navigation__submenu-container,
+		.bridge-header
+			.bridge-nav--utility.wp-block-navigation
 			.wp-block-navigation__submenu-container {
 			transition:
-				opacity 160ms ease,
-				transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+				opacity var(--bridge-nav-drop-speed) ease,
+				transform var(--bridge-nav-drop-speed)
+					cubic-bezier(0.4, 0, 0.2, 1),
+				clip-path var(--bridge-nav-drop-speed)
+					cubic-bezier(0.4, 0, 0.2, 1),
+				visibility 0s linear var(--bridge-nav-drop-speed);
+		}
+
+		.bridge-header
+			.bridge-nav--primary
+			.wp-block-navigation-item.has-child:not(.open-on-click):hover
+			> .wp-block-navigation__submenu-container,
+		.bridge-header
+			.bridge-nav--utility.wp-block-navigation
+			.wp-block-navigation-item.has-child:not(.open-on-click):hover
+			> .wp-block-navigation__submenu-container,
+		.bridge-header
+			.bridge-nav--primary
+			.wp-block-navigation-item.has-child:not(.open-on-click):focus-within
+			> .wp-block-navigation__submenu-container,
+		.bridge-header
+			.bridge-nav--utility.wp-block-navigation
+			.wp-block-navigation-item.has-child:not(.open-on-click):focus-within
+			> .wp-block-navigation__submenu-container,
+		.bridge-header
+			.bridge-nav--primary
+			.wp-block-navigation-submenu__toggle[aria-expanded="true"]
+			~ .wp-block-navigation__submenu-container,
+		.bridge-header
+			.bridge-nav--utility.wp-block-navigation
+			.wp-block-navigation-submenu__toggle[aria-expanded="true"]
+			~ .wp-block-navigation__submenu-container {
+			transition:
+				opacity var(--bridge-nav-drop-speed) ease,
+				transform var(--bridge-nav-drop-speed)
+					cubic-bezier(0.4, 0, 0.2, 1),
+				clip-path var(--bridge-nav-drop-speed)
+					cubic-bezier(0.4, 0, 0.2, 1),
+				visibility 0s;
 		}
 	}
 
@@ -503,22 +1032,37 @@
 		.bridge-nav--primary
 		.wp-block-navigation__container
 		> .wp-block-navigation-item
+		> .wp-block-navigation__submenu-container,
+	.bridge-header
+		.bridge-nav--utility.wp-block-navigation
+		.wp-block-navigation__container
+		> .wp-block-navigation-item
 		> .wp-block-navigation__submenu-container {
-		margin-top: var(--bridge-header-padding, 0);
+		// The gap from the item's bottom — the bar's content box — down to the
+		// bar's outer edge: its padding, plus anything drawn outside that. The
+		// second term is why a bordered header no longer opens its panels a
+		// pixel high, with the panel's own ground covering the hairline it
+		// hangs from. Each bar publishes the sum: see `--bridge-bar-drop`.
+		margin-top: var(--bridge-bar-drop, 0);
 
 		/**
 		 * The gap the margin opens is dead ground: leave the item and the
 		 * pointer is over neither the item nor the panel, `:hover` drops, and
-		 * the panel closes on the way to it. This bridges it — invisible, part
-		 * of the panel, and clipped out of existence while the panel is closed
-		 * because a closed panel is `width: 0; height: 0; overflow: hidden`.
+		 * the panel closes on the way to it. This bridges it — invisible, and
+		 * part of the panel rather than a box of its own.
+		 *
+		 * It is inert while the panel is shut because the panel is
+		 * `pointer-events: none` there. That used to be structural — a closed
+		 * panel was 0×0 with `overflow: hidden`, so the bridge had nothing to
+		 * be hit in — and stopped being so when the panel kept its box in order
+		 * to have something to animate. See the closed state above.
 		 */
 		&::before {
 			content: "";
 			position: absolute;
 			inset-inline: 0;
 			bottom: 100%;
-			height: var(--bridge-header-padding, 0);
+			height: var(--bridge-bar-drop, 0);
 		}
 	}
 }
@@ -571,16 +1115,135 @@
 	z-index: 100;
 }
 
+/**
+ * A sticky header pins its menu row, not its top strip.
+ *
+ * The strip is the quietest thing in the header — a second menu, set small —
+ * and the least worth spending permanent window height on. So it scrolls away
+ * with the page and the row below it stays: the header is allowed to sit above
+ * the top of the window by exactly the strip's height, which is the height that
+ * ends up off screen once the page moves.
+ *
+ * One declaration, no script deciding anything and no class toggling: a
+ * negative `top` on a sticky element is simply where it pins, so the strip
+ * leaves at the speed of the scroll rather than collapsing at a threshold. The
+ * height itself is measured — header.js publishes `--bridge-header-top-height`
+ * on the root, since this element is the header's ancestor and cannot read
+ * anything the header declares — and the fallback is 0, which is the header
+ * pinning flush the way it always did.
+ */
 :where(.wp-block-template-part):has(> .bridge-header--sticky) {
 	position: sticky;
-	top: 0;
+	top: calc(-1 * var(--bridge-header-top-height, 0px));
 	z-index: 100;
 }
 
+/**
+ * Except when it is fixed, where there is no scroll to carry the strip away.
+ *
+ * A sticky transparent header is `position: fixed` — it floats over a hero
+ * rather than following the page at all — so the negative `top` above would
+ * not hide the strip on scroll, it would clip it permanently. The strip is
+ * taken out on the same signal everything else about this header changes on
+ * instead: `is-scrolled`, set by header.js once the page has left the top.
+ */
 :where(.wp-block-template-part):has(
 	> .bridge-header--sticky.bridge-header--transparent
 ) {
 	position: fixed;
+	top: 0;
+}
+
+/**
+ * The strip over a hero: a wash of black at three tenths.
+ *
+ * A transparent header is borrowing a photograph, so the strip has no colour of
+ * its own there — render.php clears the palette setting, because a named colour
+ * painted across the top of a hero is the overlay broken in exactly the place it
+ * is most visible. What it gets instead is this: not a strip so much as the
+ * picture turned down behind the smallest type in the header. The photograph
+ * still reads through and the overlay is still an overlay; what changes is that
+ * the top bar's links have something to sit on rather than whatever part of the
+ * hero happens to be behind them.
+ *
+ * Here and not in the style attribute, which is where it was first written and
+ * where it did not survive: everything else that paints this header travels as
+ * a custom property because an operator chose it, and this is the one ground
+ * nobody chooses. A rule on the class the header is already wearing needs no
+ * plumbing to arrive.
+ *
+ * Three classes, which is two more than the rule it is overriding — the strip's
+ * own `background-color` at one — so there is nothing to argue about and no
+ * `!important` to regret.
+ */
+.bridge-header.bridge-header--transparent .bridge-header__top {
+	background-color: rgb(0 0 0 / 30%);
+}
+
+/**
+ * And takes it away again once the page has actually moved.
+ *
+ * A fixed header does not travel with the page, so the strip cannot scroll off
+ * the top the way it does on an ordinary sticky header — it has to be removed.
+ * On `is-scrolled`, which is the same moment the bar goes solid and the logo
+ * swaps: one gesture, one threshold. That class used to fire at the first pixel
+ * and now waits for real travel — SCROLL_TRAVEL in header.js, which explains
+ * why everything the header does on its way out of a hero happens together.
+ *
+ * It closes rather than disappearing. `max-block-size` is the one length that
+ * can be animated to nothing from a height nobody has measured: the ceiling is
+ * generous enough to never clip the strip and near enough its real height that
+ * the easing does not visibly stall. `display: none` is not a thing that can be
+ * eased, and a row of links blinking out mid-scroll reads as a fault rather
+ * than as a header tidying itself away.
+ */
+.bridge-header--sticky.bridge-header--transparent .bridge-header__top {
+	overflow: hidden;
+	max-block-size: 6rem;
+
+	@media (prefers-reduced-motion: no-preference) {
+		transition:
+			max-block-size var(--bridge-header-motion-out)
+				var(--bridge-header-ease),
+			opacity var(--bridge-header-motion-out) var(--bridge-header-ease);
+	}
+}
+
+.bridge-header--sticky.bridge-header--transparent.is-scrolled
+	.bridge-header__top {
+	max-block-size: 0;
+	opacity: 0;
+}
+
+/**
+ * Except while one of the strip's own menus is open, which the clip was
+ * swallowing.
+ *
+ * The `overflow: hidden` above is what makes the close work — `max-block-size:
+ * 0` hides nothing on its own, the content simply spills — and it is also a
+ * box that every dropdown in the strip hangs out of. So on the one template
+ * that has it, a submenu in the top bar was cut off at the strip's bottom edge
+ * and never reached the header below: the panel opened, and all that was
+ * visible of it was the sliver inside a 6rem band.
+ *
+ * Lifted exactly while a panel is open, rather than traded away. The clip is
+ * only needed for the closing gesture and the closing gesture only happens on
+ * `is-scrolled`, so at rest there is nothing for it to do — and `:not(
+ * .is-scrolled)` keeps it that way, so a strip that starts collapsing under an
+ * open menu still collapses over it rather than leaving a panel hanging off a
+ * band that is no longer there.
+ *
+ * Three ways a panel is open, the same three the main menu's dropdowns match
+ * on: pointer on the item, focus inside it, and the caret pressed on a menu
+ * set to open on click.
+ */
+.bridge-header--sticky.bridge-header--transparent:not(.is-scrolled)
+	.bridge-header__top:has(
+		.wp-block-navigation-item.has-child:hover,
+		.wp-block-navigation-item.has-child:focus-within,
+		.wp-block-navigation-submenu__toggle[aria-expanded="true"]
+	) {
+	overflow: visible;
 }
 
 /**
@@ -668,7 +1331,12 @@ html:has(.bridge-header--sticky) {
 .bridge-header--sticky.is-scrolled {
 	background-color: var(--wp--preset--color--background);
 	color: var(--wp--preset--color--text);
-	box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+	// The token, not a `box-shadow` of its own — see the declaration at the top
+	// of this file. A bar that has left the hero is standing on the page and
+	// has an edge to cast from, whether or not an operator asked for one; if
+	// they did, the Shadow section below outranks this and theirs is the one
+	// that lands.
+	--bridge-header-shadow: 0 1px 3px rgb(0 0 0 / 8%);
 	// Repointed with the header, not left behind on the ground it had at the
 	// top of the page — an open dropdown keeps matching as the bar goes solid.
 	--bridge-header-menu-bg: var(--wp--preset--color--background);
@@ -789,6 +1457,78 @@ html:has(.bridge-header--sticky) {
 	// bridge_button_wipe_extent() exists for.
 	// stylelint-disable-next-line length-zero-no-unit
 	--bridge-admin-bar: 0px;
+
+	/**
+	 * How long a dropdown takes to open, and the page behind it to darken.
+	 *
+	 * On the root because two elements in two different subtrees spend it — the
+	 * submenu panel, deep inside the header, and the scrim, which is a
+	 * pseudo-element of <body> and can see nothing the header declares. One
+	 * token is what makes "the same duration" a fact rather than two numbers
+	 * that happen to match today.
+	 *
+	 * Not `--bridge-nav-speed`, which is 200ms and belongs to the small
+	 * movements — a tint arriving under a link, a caret turning over. A panel
+	 * crossing the page and a whole screen changing brightness are a longer
+	 * gesture, and tying them to the same token would mean tuning one of the
+	 * two by breaking the other.
+	 */
+	--bridge-nav-drop-speed: 0.3s;
+
+	// How dark the page goes behind an open dropdown.
+	--bridge-nav-scrim: rgb(0 0 0 / 30%);
+
+	// How much of the header's measured height is above the window rather than
+	// in it. Zero for every header but a pinned sticky one, which parks its top
+	// strip out of view — see the rule that redeclares this.
+	// stylelint-disable-next-line length-zero-no-unit -- read inside a calc().
+	--bridge-nav-scrim-lift: 0px;
+
+}
+
+/**
+ * Where the scrim starts — see the scrim at the end of this file, which is
+ * where the reasoning for this sum is written down.
+ *
+ * On <body> and not on :root with the rest of the tokens, which is where it
+ * used to be and where it was quietly wrong for every logged-in visitor.
+ *
+ * A custom property whose value contains a `var()` is resolved on the element
+ * that declares it, and what it resolves to travels down as a finished value —
+ * a descendant redeclaring the property it read cannot reach back into a sum
+ * that has already been worked out. `--bridge-admin-bar` is 0px on :root and
+ * becomes 32px on `.admin-bar`, which WordPress puts on <body>: one element
+ * below the sum that was reading it. So the scrim was told the header ended a
+ * toolbar's height higher than it does, and darkened the bottom 32px of the
+ * bar it is supposed to leave lit.
+ *
+ * Declared here instead, the sum is worked out on the element the toolbar's
+ * height is actually known on, and `body::after` inherits an answer that
+ * already counts it. Everything else reading `--bridge-admin-bar` — the heroes
+ * subtracting it from a windowful — spends it directly in its own `calc()`
+ * from somewhere inside <body>, which is why those were right all along.
+ */
+body {
+	--bridge-nav-scrim-top: calc(
+		var(--bridge-header-height, 5rem) + var(--bridge-admin-bar)
+	);
+}
+
+/**
+ * Once a sticky header has pinned, its bottom edge is a strip higher than its
+ * height says — the strip is above the window, not on screen. The scrim reads
+ * that height to know where the page starts, so without this it would begin a
+ * strip's worth too low and leave an undarkened band directly under the bar.
+ *
+ * On `is-scrolled`, which is the state the negative `top` above is describing:
+ * before the page moves the whole header is visible and the plain sum is right.
+ * The fixed variant is excluded because it does not scroll away at all — it
+ * hides its strip outright, and `--bridge-header-top-height` keeps reporting
+ * the height of an element that is no longer displayed.
+ */
+body:has(.bridge-header--sticky.is-scrolled:not(.bridge-header--transparent)) {
+	// stylelint-disable-next-line length-zero-no-unit -- read inside a calc().
+	--bridge-nav-scrim-lift: var(--bridge-header-top-height, 0px);
 }
 
 .admin-bar {
@@ -803,9 +1543,91 @@ html:has(.bridge-header--sticky) {
 
 // ---- Border ----------------------------------------------------------------
 
-.bridge-header--border {
-	border-bottom: 1px solid color-mix(in srgb, currentcolor 15%, transparent);
+// Two classes, not one: this rule redeclares `--bridge-header-edge` from the
+// header's own block above, and at equal specificity the winner would be
+// stylesheet order — true here today, and true only until somebody moves a
+// section. The border's width is stated once, as the token, and spent below
+// as well as here.
+.bridge-header.bridge-header--border {
+	--bridge-header-edge: 1px;
+
+	border-bottom: var(--bridge-header-edge) solid
+		color-mix(in srgb, currentcolor 15%, transparent);
 }
+
+// ---- Shadow ----------------------------------------------------------------
+
+/**
+ * The other way a header can say where it ends.
+ *
+ * A border draws the edge; a shadow lifts the whole bar off the page and lets
+ * the edge be implied. They are two answers to one question and an operator
+ * may have both, neither, or one — which is why this is its own toggle beside
+ * the border rather than a third value of it.
+ *
+ * `soft` from bridge_card_shadows(), the lightest of the four presets the
+ * cards offer, named here in full rather than read from the card token: this
+ * is not a card, and a header that changed depth because somebody restyled
+ * the post grid would be a setting reaching somewhere it was not pointed.
+ * The figures are the same on purpose — one site, one idea of how far things
+ * lift — but they are the same by agreement rather than by plumbing.
+ *
+ * Two classes, matching the border rule one section up and for the same
+ * reason: this sets `--bridge-header-shadow`, which the sticky bar's scrolled
+ * state also sets, and at equal specificity the winner would be stylesheet
+ * order — true today and true only until somebody moves a section.
+ */
+.bridge-header.bridge-header--shadow {
+	--bridge-header-shadow: 0 1px 3px rgb(0 0 0 / 8%),
+		0 4px 12px rgb(0 0 0 / 6%);
+}
+
+/**
+ * Deeper over a hero, because the thing underneath is fighting it.
+ *
+ * The figures above are the cards' `soft`, and they are tuned for what a card
+ * stands on: a flat, pale, even ground where six per cent of black is a
+ * legible amount of shade. A photograph is none of those. It already has
+ * shadows in it, its own contrast is higher than anything the shade adds, and
+ * the top of a hero is as likely to be dark as light — so the same shadow that
+ * lifts a card off a page is invisible over an image, which is what an
+ * operator who turned this on for a landing page saw.
+ *
+ * Roughly tripled and carried further, which is the cards' `strong` preset
+ * rather than a fourth set of numbers invented here: past a certain distance
+ * the shade stops reading as an edge and starts reading as a gradient over the
+ * picture, and `strong` is the deepest the site's own scale goes.
+ *
+ * Only while the header is actually over the hero. `is-scrolled` is a sticky
+ * bar that has left it and gone solid, which is a flat pale ground again and
+ * wants the ordinary shadow — so the guard drops out there and the rule above
+ * takes over, one shadow arriving as the other goes, on the `box-shadow`
+ * transition the sticky header already declares.
+ */
+.bridge-header.bridge-header--shadow.bridge-header--transparent:not(
+		.is-scrolled
+	) {
+	--bridge-header-shadow: 0 4px 10px rgb(0 0 0 / 12%),
+		0 14px 32px rgb(0 0 0 / 12%);
+}
+
+/*
+ * Over a hero too, which took a rule to undo.
+ *
+ * This used to be withheld from a transparent header on the reasoning that a
+ * bar with no ground has no edge to cast from, so the shade would read as a
+ * smear across the photograph rather than as the header lifting off it. That
+ * is a fair description of what can go wrong and it was the wrong call to make
+ * here: the setting is one an operator turns on while looking at the page, and
+ * a switch that silently does nothing on the one template where they are most
+ * likely to be looking is worse than a shadow they can see and turn off. A
+ * landing page's header also has something to separate itself from more often
+ * than not — a bright hero, a busy photograph — which is the case the shade
+ * was built for.
+ *
+ * So there is no exception left, and that is the whole rule: shadow on, shadow
+ * drawn, on every template and at every scroll position.
+ */
 
 // ---- Search ----------------------------------------------------------------
 
@@ -1187,6 +2009,50 @@ html:has(.bridge-header--sticky) {
 		padding-inline: var(--bridge-header-rhythm);
 	}
 
+	/**
+	 * The icon lines up with the page.
+	 *
+	 * The padding above is what holds the row apart, and on the last control
+	 * half of it is spent on the outside: the magnifier ends a rhythm's width
+	 * short of the content edge the logo is measured from, and the header reads
+	 * as drifting left even though nothing is.
+	 *
+	 * ---- Why this is not the negative margin the menu uses -------------------
+	 *
+	 * It was, for one release, and it collapsed the menu bar at every width.
+	 *
+	 * header.js decides whether the bar still fits by asking the row whether it
+	 * overflows — `row.scrollWidth > row.clientWidth` in `initNavCollapse()` —
+	 * and an element pulled past its parent's content edge *is* overflow, as
+	 * far as `scrollWidth` is concerned. It cannot tell a control that has been
+	 * deliberately outdented from a menu that has run out of room, so the test
+	 * came back true on the first frame, on every screen, and every visitor got
+	 * a hamburger.
+	 *
+	 * So the space is given up rather than reached past. The end padding goes,
+	 * the start padding stays — that is the gap between the menu and the icon,
+	 * and it is the half worth keeping — and nothing leaves the row.
+	 *
+	 * `justify-content` is what makes that land. The 44px floor above is wider
+	 * than what is left (a rhythm plus a 20px icon is 38), so the box is
+	 * stretched back to 44 and a centred icon would sit 3px off the edge —
+	 * which is most of the misalignment this rule exists to remove. Ranged to
+	 * the end, the icon is flush and the six pixels the floor added are spent
+	 * on the side where they read as part of the gap.
+	 *
+	 * Only when the search is the last thing in the row and the bar is a bar:
+	 * with a call to action beside it the button owns the edge, and collapsed
+	 * this button is `order: -1` — still the last child in the markup, but the
+	 * first thing on the row, with the menu toggle at the edge instead.
+	 */
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-header__row
+		.bridge-header__end
+		> .bridge-header__search-toggle:last-child {
+		padding-inline-end: 0;
+		justify-content: flex-end;
+	}
+
 	// The button's own edge is the visible one, so the inset is a margin on
 	// the wrapper rather than padding that would only make the fill wider.
 	.bridge-header__cta {
@@ -1247,4 +2113,103 @@ html:has(.bridge-header--sticky) {
 // included twice rather than kept in step by hand.
 .bridge-header.is-nav-collapsed {
 	@include bridge-header-overlay-row;
+}
+
+/**
+ * ---- The page behind an open dropdown --------------------------------------
+ *
+ * A scrim over everything below the header, so an open menu reads as the thing
+ * in front and the page reads as parked. It fades in over the same
+ * `--bridge-nav-drop-speed` the panel drops in — see the token on the root.
+ *
+ * ---- Why it is a pseudo-element of <body> ---------------------------------
+ *
+ * Because the thing it has to cover is everything the header is not, and the
+ * header is the only element on the page that contains the trigger. Hung inside
+ * the header it would either be trapped in the header's stacking context or
+ * have to be lifted out of it, and either way the one element it must never
+ * cover is its own ancestor. On <body> it is a sibling of the whole document in
+ * paint order and a matter of one z-index.
+ *
+ * `:has()` is what lets a hover deep inside the header reach it. No JavaScript:
+ * the state is already expressed in the DOM by `:hover`, and a class toggled by
+ * a script would be a second source of truth that can disagree with the CSS
+ * that opens the panel — which is exactly the bug the Escape-dismiss rule in
+ * components/_primary-nav.scss exists to work around.
+ *
+ * All three of the ways a panel opens are matched, so the scrim and the panel
+ * are never in disagreement: pointer on the item, focus inside it, and the
+ * caret on a menu set to open on click.
+ *
+ * `.is-hover-dismissed` is excluded for the same reason the panel excludes it.
+ * Escape shuts a hovered dropdown, and a scrim left behind over a page with no
+ * menu on it is a screen that has simply gone dark.
+ *
+ * ---- Where it starts ------------------------------------------------------
+ *
+ * At the bottom of the header, not the top of the window: the brief is that the
+ * bar stays lit. `--bridge-header-height` is header.js's measurement, published
+ * on the root for exactly this kind of question, and `--bridge-admin-bar` is
+ * the toolbar above it — which is the same sum for a sticky header at any
+ * scroll position and for a static one at the top of the page, because a static
+ * header sits directly below the toolbar too.
+ *
+ * The one case it does not describe is a *static* header on a page scrolled
+ * down: the header's bottom edge is then higher than this, and a strip of page
+ * the height of the scroll stays undarkened. It needs the header's live
+ * position rather than its height, which is a scroll listener, and it is a
+ * hover on a header that is halfway off the screen — visible only while it is
+ * being scrolled away from.
+ *
+ * ---- Why `z-index: 15` ----------------------------------------------------
+ *
+ * Between the page and the header. `.bridge-header` is 20 and its wrapper is
+ * 100 when the header is sticky or transparent, so the bar and its open panel
+ * are above this from all three; ordinary page content sets no z-index at all
+ * and is below it.
+ */
+body::after {
+	content: "";
+	position: fixed;
+	inset: calc(var(--bridge-nav-scrim-top) - var(--bridge-nav-scrim-lift)) 0 0
+		0;
+	z-index: 15;
+	background-color: var(--bridge-nav-scrim);
+	opacity: 0;
+	visibility: hidden;
+	// Never a hit target. The scrim is a statement about the page, not a
+	// dismiss layer — the menu is dismissed by moving off it, which means the
+	// pointer has to be able to reach what is underneath.
+	pointer-events: none;
+
+	@media (prefers-reduced-motion: no-preference) {
+		transition:
+			opacity var(--bridge-nav-drop-speed) ease,
+			visibility 0s linear var(--bridge-nav-drop-speed);
+	}
+}
+
+body:has(
+		.bridge-header:not(.is-nav-collapsed)
+			.bridge-nav--primary:not(.is-hover-dismissed)
+			.wp-block-navigation-item.has-child:not(.open-on-click):hover
+	)::after,
+body:has(
+		.bridge-header:not(.is-nav-collapsed)
+			.bridge-nav--primary:not(.is-hover-dismissed)
+			.wp-block-navigation-item.has-child:not(.open-on-click):focus-within
+	)::after,
+body:has(
+		.bridge-header:not(.is-nav-collapsed)
+			.bridge-nav--primary
+			.wp-block-navigation-submenu__toggle[aria-expanded="true"]
+	)::after {
+	opacity: 1;
+	visibility: visible;
+
+	@media (prefers-reduced-motion: no-preference) {
+		transition:
+			opacity var(--bridge-nav-drop-speed) ease,
+			visibility 0s;
+	}
 }

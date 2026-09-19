@@ -6,19 +6,127 @@
 	"title": "Hero Banner",
 	"category": "media",
 	"icon": "cover-image",
-	"description": "A single full-height hero. One Cover block, laid out in columns — the static counterpart to the Hero Slider.",
+	"description": "A single full-height hero: a headline over a photograph, a colour, a gradient, a drawn curve, or a run of colour bands at an angle with a picture behind it.",
 	"textdomain": "bridge",
-	"keywords": ["hero", "banner", "cover", "columns", "split"],
+	"keywords": ["hero", "banner", "cover", "curve", "gradient"],
 	"supports": {
-		"align": ["full"],
 		"anchor": true,
 		"html": false,
 		"layout": false
 	},
 	"attributes": {
-		"align": {
+		"background": {
 			"type": "string",
-			"default": "full"
+			"default": "image"
+		},
+		"titleLeft": {
+			"type": "boolean",
+			"default": false
+		},
+		"color": {
+			"type": "string",
+			"default": "primary"
+		},
+		"imageId": {
+			"type": "number",
+			"default": 0
+		},
+		"imageUrl": {
+			"type": "string",
+			"default": ""
+		},
+		"imageAlt": {
+			"type": "string",
+			"default": ""
+		},
+		"focalPoint": {
+			"type": "object",
+			"default": { "x": 0.5, "y": 0.5 }
+		},
+		"overlay": {
+			"type": "number",
+			"default": 50
+		},
+		"fixed": {
+			"type": "boolean",
+			"default": false
+		},
+		"gradientAngle": {
+			"type": "number",
+			"default": 90
+		},
+		"gradientStops": {
+			"type": "array",
+			"default": [
+				{
+					"start": 30,
+					"end": 60,
+					"from": "primary",
+					"fromAlpha": 100,
+					"to": "primary",
+					"toAlpha": 0
+				}
+			]
+		},
+		"curveAlign": {
+			"type": "number",
+			"default": 44
+		},
+		"curveRadius": {
+			"type": "number",
+			"default": 29
+		},
+		"curveGap": {
+			"type": "number",
+			"default": 9
+		},
+		"curveOpacity": {
+			"type": "number",
+			"default": 35
+		},
+		"curvePadding": {
+			"type": "number",
+			"default": 4
+		},
+		"curveVertical": {
+			"type": "number",
+			"default": 0
+		},
+		"curveBreakpoint": {
+			"type": "number",
+			"default": 1024
+		},
+		"curveRadiusMobile": {
+			"type": "number",
+			"default": 8
+		},
+		"curveGapMobile": {
+			"type": "number",
+			"default": 3
+		},
+		"curveOpacityMobile": {
+			"type": "number",
+			"default": 60
+		},
+		"curveStackMobile": {
+			"type": "number",
+			"default": 62
+		},
+		"curveAngleMobile": {
+			"type": "number",
+			"default": 0
+		},
+		"curveOffsetMobile": {
+			"type": "number",
+			"default": 0
+		},
+		"curvePaddingMobile": {
+			"type": "number",
+			"default": 4
+		},
+		"curvePaddingBlockMobile": {
+			"type": "number",
+			"default": 16
 		},
 		"heightPreset": {
 			"type": "string",
@@ -35,9 +143,19 @@
 	},
 	"example": {
 		"attributes": {
-			"align": "full",
+			"background": "solid",
+			"color": "primary",
 			"heightPreset": "medium"
-		}
+		},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": {
+					"level": 1,
+					"content": "A headline worth the whole window"
+				}
+			}
+		]
 	},
 	"editorScript": "bridge-hero-banner-editor",
 	"style": "bridge-hero-banner-style",

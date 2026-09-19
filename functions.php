@@ -783,36 +783,6 @@ function bridge_banner_body_class(array $classes): array
 }
 add_filter('body_class', 'bridge_banner_body_class');
 
-/**
- * Decide whether a hex colour is "light" for contrast purposes.
- *
- * Used by the Page Title banner to pick a readable title colour (dark text
- * on light banners, light text on dark banners). Uses the perceived
- * luminance (ITU-R BT.601 weighting); threshold 0.6 of 255.
- *
- * @param string $hex Colour as #rgb or #rrggbb.
- * @return bool True when the colour is light.
- */
-function bridge_is_light_color(string $hex): bool
-{
-	$hex = ltrim(trim($hex), '#');
-
-	if (3 === strlen($hex)) {
-		$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-	}
-
-	if (6 !== strlen($hex) || ! ctype_xdigit($hex)) {
-		return false;
-	}
-
-	$r = hexdec(substr($hex, 0, 2));
-	$g = hexdec(substr($hex, 2, 2));
-	$b = hexdec(substr($hex, 4, 2));
-
-	$luminance = (0.299 * $r) + (0.587 * $g) + (0.114 * $b);
-
-	return $luminance > (0.6 * 255);
-}
 
 /**
  * Inline the hero-slider CSS when the current request renders the block.

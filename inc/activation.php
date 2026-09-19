@@ -107,7 +107,8 @@ function bridge_seeded_menus(): array
 {
 	return array(
 		__('Primary Nav', 'bridge'),
-		__('Footer Quick Links', 'bridge'),
+		__('Footer Explore', 'bridge'),
+		__('Footer Services', 'bridge'),
 		__('Footer Legal', 'bridge'),
 	);
 }
@@ -291,7 +292,7 @@ function bridge_seed_navigation_menus(): void
  * Only slots that are empty. A site whose operator already chose a menu for one
  * of these keeps it — re-activating a theme is not a request to redecorate.
  *
- * The footer's two columns matter more than the header's slot here: the header
+ * The footer's menu columns matter more than the header's slot here: the header
  * falls back to whichever menu core would pick, so an unset slot still renders
  * something. A footer column with no menu does not render at all, so without
  * this the seeded menus would exist and the footer would show one column.
@@ -309,11 +310,26 @@ function bridge_seed_menu_slots(): void
 		}
 	}
 
-	if (bridge_footer_menu_id('quick') <= 0) {
-		$id = bridge_navigation_menu_by_title(__('Footer Quick Links', 'bridge'));
+	if (bridge_footer_menu_id('explore') <= 0) {
+		// Either title: a site seeded before the column was renamed has the
+		// old menu and nothing has moved it, so the new name is looked for
+		// first and the old one still answers.
+		$id = bridge_navigation_menu_by_title(__('Footer Explore', 'bridge'));
+
+		if ($id <= 0) {
+			$id = bridge_navigation_menu_by_title(__('Footer Quick Links', 'bridge'));
+		}
 
 		if ($id > 0) {
-			$footer['quick'] = $id;
+			$footer['explore'] = $id;
+		}
+	}
+
+	if (bridge_footer_menu_id('services') <= 0) {
+		$id = bridge_navigation_menu_by_title(__('Footer Services', 'bridge'));
+
+		if ($id > 0) {
+			$footer['services'] = $id;
 		}
 	}
 

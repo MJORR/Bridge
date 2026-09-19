@@ -85,6 +85,24 @@ if ( ! empty( $attributes['cropCorner'] ) ) {
 	$media_class .= ' has-crop';
 }
 
+/*
+ * The picture behind the shape, moving.
+ *
+ * Switched on, the image drifts inside its frame as the row crosses the screen
+ * — a scroll-driven animation, so it tracks the scroll position rather than a
+ * clock and needs no script. The stylesheet owns all of it; this only says
+ * which rows asked.
+ *
+ * Images only. A YouTube facade is an iframe and a video file is a player with
+ * controls on it, and sliding either behind a window would move the thing a
+ * visitor is trying to press.
+ */
+$parallax = ! empty( $attributes['parallax'] ) && 'image' === $media_type && $image_id > 0;
+
+if ( $parallax ) {
+	$media_class .= ' has-parallax';
+}
+
 if ( '' !== $mask_url ) {
 	$mask_size = (int) ( $attributes['maskSize'] ?? 100 );
 	$mask_size = max( 50, min( 300, $mask_size ) );
@@ -181,7 +199,16 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'bridge-alternating__
 			 * every row's image out of that, including the row that is
 			 * sometimes the largest thing above the fold.
 			 */
-			echo wp_get_attachment_image(
+			/*
+			 * The frame a parallax picture moves inside.
+			 *
+			 * One extra element, and only on the rows that need it: it is what
+			 * holds the mask, the radius and the cut still while the image
+			 * behind it slides. Every other row clips those onto the image
+			 * itself, which is the simpler thing to do right up until the
+			 * image starts moving. See blocks/_alternating-content.scss.
+			 */
+			$image_html = wp_get_attachment_image(
 				$image_id,
 				'large',
 				false,
@@ -190,6 +217,10 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'bridge-alternating__
 					'alt'   => $alt,
 				)
 			);
+
+			echo $parallax // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core-escaped markup.
+				? '<span class="bridge-alternating__frame">' . $image_html . '</span>'
+				: $image_html;
 			?>
 		<?php endif; ?>
 	</div>

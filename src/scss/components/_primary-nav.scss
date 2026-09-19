@@ -13,12 +13,14 @@
  * Three treatments, one per context, because a menu bar and a menu sheet are
  * not the same object with different numbers:
  *
- *   1. The menu bar — the primary nav in the header, at full width. Items tile
- *      edge to edge and each hover surface runs the full height of the
- *      header, so the bar reads as a row of tabs rather than a line of
- *      floating pills.
- *   2. Any other nav — the utility bar, a nav dropped in a footer. A compact
- *      pill, which is the right answer when the nav does not own its row.
+ *   1. The menu bars — the main menu and the top strip, at full width. Items
+ *      tile edge to edge and each hover surface runs the full height of the
+ *      bar it is in, so both read as rows of tabs rather than lines of
+ *      floating pills. Only the main menu carries the marker along the top of
+ *      a tab; on the strip that mark would land mid-header.
+ *   2. Any other nav — the top strip below the bar's width, a nav dropped in a
+ *      footer. A compact pill, which is the right answer when the nav does not
+ *      own its row.
  *   3. The mobile panel — a full-width sheet that slides in from the right
  *      and stops at the bottom of the header, so the logo and the toggle stay
  *      where they are and the site stays on screen behind it.
@@ -129,19 +131,67 @@
 }
 
 // ---------------------------------------------------------------------------
-// 1. The menu bar — primary nav in the header, desktop
+// Nav accent, switched off
+// ---------------------------------------------------------------------------
+
+/**
+ * What the header looks like when an operator has turned the accent off.
+ *
+ * Two tokens, redeclared one level closer to the things that read them. Both
+ * are declared on `.wp-block-navigation` above, which is why this cannot be a
+ * pair of values published from the header's style attribute: a custom
+ * property set on an ancestor is shadowed by a declaration on the element
+ * itself, so the setting would reach nothing. The header wears a class
+ * instead and this rule outranks the block it is overriding — see the class in
+ * the header block's render file.
+ *
+ * The size does the work. The mark is drawn three ways — a bar across the top
+ * of a hovered tab, and the same bar closing the bottom of each dropdown panel
+ * in both menus — and all three are sized from this one number, so zero takes
+ * away every one of them without a rule per drawing. A `display: none` on the
+ * pseudo-element would have handled the first and left the other two painted.
+ *
+ * The colour is the fourth use, and the only one that is not a bar: the
+ * current page's label inside a dropdown. `currentcolor` is the row's own
+ * colour, so that label stops being marked rather than being marked in
+ * something else — which is what "no accent" has to mean, and is not what a
+ * transparent value would have given (an invisible label).
+ *
+ * The stored slug is untouched. Switching back on restores the colour the
+ * operator chose rather than the default.
+ */
+.bridge-header--no-nav-accent .wp-block-navigation {
+	--bridge-nav-marker: currentcolor;
+	// stylelint-disable-next-line length-zero-no-unit -- read inside a calc().
+	--bridge-nav-marker-size: 0px;
+}
+
+// ---------------------------------------------------------------------------
+// 1. The menu bars — the header's main menu and its top strip, desktop
 // ---------------------------------------------------------------------------
 // Scoped to the width the theme draws a menu bar at — `abstracts/_nav.scss`,
-// which explains the number — and further to a header header.js has not
-// collapsed. Both halves matter: below the first there is no bar to style, and
-// past the second the same items are rows in a panel, where a tab's full-height
-// hover surface and its top marker would be nonsense.
+// which explains the number. Below it there is no bar to style: the main menu
+// is a modal panel and the strip is a row of pills, and in a panel a tab's
+// full-height hover surface is nonsense.
+//
+// Two clauses, because the header has two bars and they are the same object.
+// The main menu's carries `:not(.is-nav-collapsed)` — header.js saying it has
+// run out of room and become a panel — and the strip's must not: it is a bar at
+// every width, `overlayMenu: never` in render.php, and the main menu running
+// out of room says nothing about it. The clauses weigh the same, three classes
+// each, with `.wp-block-navigation` compounded onto the utility's class to
+// stand in for the `:not()` on the other side; these rules have to outrank the
+// pill treatment in section 2, which catches every nav that is not the primary.
+//
+// One thing is not shared — the marker across the top of a tab. See the rule
+// after this one.
 //
 // The height these rules build on is set up in _header.scss, which stretches
 // every wrapper core renders between the <nav> and the <li> to the full height
-// of the header row.
+// of the bar it is in.
 @media (min-width: nav.$bar) {
-	.bridge-header:not(.is-nav-collapsed) .bridge-nav--primary {
+	.bridge-header:not(.is-nav-collapsed) .bridge-nav--primary,
+	.bridge-header .bridge-nav--utility.wp-block-navigation {
 		// Roomier than the pill: the inset is what separates one label from
 		// the next now that the gap is gone, and it is also what sets the
 		// width of each hover column.
@@ -178,17 +228,23 @@
 			var(--wp--preset--color--surface)
 		);
 
-		// The header's own vertical padding, restated under a short name: the
-		// surface and the marker are both placed relative to it, and both of
-		// those are already long enough lines.
+		// The vertical padding of whichever bar this menu is in, restated under
+		// a short name: the surface and the marker are both placed relative to
+		// it, and both of those are already long enough lines. The main row and
+		// the top strip each publish their own — see `--bridge-bar-pad` in
+		// blocks/_header.scss — so this reads one name and gets the right
+		// number in both.
 		// The unit on the fallback is load-bearing, not a slip: this value is
 		// only ever read inside a calc(), and a bare 0 there makes the whole
 		// expression invalid the moment a header sets no padding.
 		// stylelint-disable-next-line length-zero-no-unit
-		--bridge-nav-pad: var(--bridge-header-padding, 0px);
+		--bridge-nav-pad: var(--bridge-bar-pad, 0px);
 
-		font-weight: 500;
-		letter-spacing: 0.01em;
+		// Both from the header — see the token there. The fallbacks are the
+		// literals this rule used to carry, so a nav rendered outside a Bridge
+		// header is set exactly as it was.
+		font-weight: var(--bridge-nav-weight, 500);
+		letter-spacing: var(--bridge-nav-tracking, 0.01em);
 
 		// Items tile edge to edge. A gap here would cut a stripe of bare
 		// header between two hover surfaces, which is the one thing a row of
@@ -201,10 +257,22 @@
 		// caret as a *sibling* of the anchor, so an anchor-painted hover stops
 		// short and leaves the caret sitting outside its own item.
 		//
-		// Every item except the call to action, which is not a row of this bar
-		// at all: render.php puts it in core's list so the mobile panel can
-		// hold it — see bridge_header_nav_cta() — and the rule further down
-		// hides it up here, where the header's own button is already showing.
+		// Every item except the two that are not rows of this bar at all: the
+		// call to action, which render.php puts in core's list so the mobile
+		// panel can hold it — see bridge_header_nav_cta() — and the top strip's
+		// rows, copied in for the same reason by bridge_header_nav_extras().
+		// Both are hidden up here by rules further down, where the header's own
+		// button and the strip itself are already showing.
+		//
+		// Excluded here rather than left to those rules to outrank this one,
+		// which is what the `.bridge-nav__extra` half of this is fixing: this
+		// selector is six classes and the rule that hides the strip's rows is
+		// three, so `display: flex` was quietly winning and the top bar's links
+		// — and the phone number — were being drawn into the menu bar as well.
+		// The row then overflowed on any ordinary menu, and header.js did
+		// exactly what it is meant to do about a bar that does not fit: it
+		// collapsed the header. A hamburger on a 1600px screen was the symptom;
+		// three extra links nobody could see were the cause.
 		// That rule is four classes and this one was five, so this `display:
 		// flex` was winning it, and the site's one call to action was drawn
 		// twice in the bar: a plain menu link and, beside it, the button.
@@ -212,7 +280,9 @@
 		// belongs to the rule that lists the bar's rows, not to the rule that
 		// hides this one.
 		.wp-block-navigation__container
-			> .wp-block-navigation-item:not(.bridge-nav__cta) {
+			> .wp-block-navigation-item:not(.bridge-nav__cta):not(
+				.bridge-nav__extra
+			) {
 			position: relative;
 			display: flex;
 			align-items: center;
@@ -240,29 +310,6 @@
 				inset-block: calc(-1 * var(--bridge-nav-pad));
 				background-color: transparent;
 				transition: background-color var(--bridge-nav-speed) ease;
-			}
-
-			// The marker sits on the header's top edge, flush against it —
-			// the same line the hover surface starts at, so the two read as
-			// one object rather than as a stripe floating inside the item.
-			// It runs the item's full width rather than being held in by the
-			// inset: at this depth the mark is the top edge of a tab, and a
-			// tab edge that stops short of its own sides looks unfinished.
-			&::after {
-				content: "";
-				position: absolute;
-				inset-inline: 0;
-				top: calc(-1 * var(--bridge-nav-pad));
-				height: var(--bridge-nav-marker-size);
-				background-color: var(--bridge-nav-marker);
-				transform: scaleX(0);
-
-				// No transition in the resting state, so the mark only
-				// animates on the way in. Coming out it is gone on the frame
-				// the pointer leaves: a marker that retracts is still
-				// claiming the item after the pointer has moved on, and
-				// across a row of tabs that reads as the bar lagging behind
-				// the cursor. The timing lives on the hover rule instead.
 			}
 
 			// Three ways in, the same three core opens a panel by: pointer on the
@@ -300,22 +347,6 @@
 					--bridge-nav-rollover-fg,
 					var(--wp--preset--color--text)
 				);
-			}
-
-			// The current page keeps the marker without keeping a surface: the
-			// page you are on is worth a mark, but not one that looks like the
-			// pointer is resting on it. Matched three ways because core labels
-			// it three ways — a class on the item, a class on its ancestor,
-			// and `aria-current` on the anchor — and with no weight change,
-			// which would reflow the bar as a visitor moves around the site.
-			&:hover::after,
-			&:focus-within::after,
-			&.current-menu-item::after,
-			&.current-menu-ancestor::after,
-			&:has(> [aria-current="page"])::after {
-				transform: scaleX(1);
-				transition: transform var(--bridge-nav-speed)
-					var(--bridge-nav-ease);
 			}
 
 			// The anchor keeps the full height of the item as its hit area and
@@ -412,22 +443,136 @@
 	}
 
 	/**
-	 * The menu's text lines up with the page; its hover surfaces don't have to.
+	 * The marker across the top of a tab — the main menu's only.
+	 *
+	 * The one part of the bar treatment the top strip does not take. The mark
+	 * is the lit top edge of a tab, and it only reads as an edge where there is
+	 * one: on the main row it sits on the header's own top edge, or directly
+	 * under the strip, where the two together bracket the row. Drawn along the
+	 * top of a strip item it lands in the middle of the header instead — a
+	 * second accent bar a few pixels above the first, on a page where only one
+	 * of them is saying "this is the page you are on".
+	 *
+	 * The surface above stops at the same line either way, so the tab still
+	 * meets its dropdown with no seam. What changes is only whether the join is
+	 * painted.
+	 *
+	 * Same six classes the shared rule reaches this element with, so the
+	 * pseudo-element is created against the same box.
+	 */
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-nav--primary
+		.wp-block-navigation__container
+		> .wp-block-navigation-item:not(.bridge-nav__cta):not(
+			.bridge-nav__extra
+		) {
+		// The marker sits on the header's top edge, flush against it — the
+		// same line the hover surface starts at, so the two read as one object
+		// rather than as a stripe floating inside the item. It runs the item's
+		// full width rather than being held in by the inset: at this depth the
+		// mark is the top edge of a tab, and a tab edge that stops short of its
+		// own sides looks unfinished.
+		&::after {
+			content: "";
+			position: absolute;
+			inset-inline: 0;
+			top: calc(-1 * var(--bridge-nav-pad));
+			height: var(--bridge-nav-marker-size);
+			background-color: var(--bridge-nav-marker);
+			transform: scaleX(0);
+
+			// No transition in the resting state, so the mark only animates on
+			// the way in. Coming out it is gone on the frame the pointer
+			// leaves: a marker that retracts is still claiming the item after
+			// the pointer has moved on, and across a row of tabs that reads as
+			// the bar lagging behind the cursor. The timing lives on the hover
+			// rule instead.
+		}
+
+		// The current page keeps the marker without keeping a surface: the page
+		// you are on is worth a mark, but not one that looks like the pointer
+		// is resting on it. Matched three ways because core labels it three
+		// ways — a class on the item, a class on its ancestor, and
+		// `aria-current` on the anchor — and with no weight change, which would
+		// reflow the bar as a visitor moves around the site.
+		&:hover::after,
+		&:focus-within::after,
+		&.current-menu-item::after,
+		&.current-menu-ancestor::after,
+		&:has(> [aria-current="page"])::after {
+			transform: scaleX(1);
+			transition: transform var(--bridge-nav-speed) var(--bridge-nav-ease);
+		}
+	}
+
+	/**
+	 * The menu's text lines up with the page.
 	 *
 	 * The last item's inset would otherwise hold the final label a padding's
-	 * width short of the content edge the logo is measured from — the menu
-	 * reads as misaligned even though nothing is. Pulling the container out by
-	 * one inset puts the text back on the grid and lets the hover column run
+	 * width short of the content edge the logo is measured from, and the menu
+	 * reads as misaligned even though nothing is.
+	 *
+	 * ---- Why the main menu gives the space up rather than reaching past it --
+	 *
+	 * This was one rule with the strip below, and both pulled their whole nav
+	 * out by an inset: the text landed on the grid and the hover column ran on
 	 * into the gutter, which is where a full-bleed surface should end anyway.
 	 *
-	 * Only when the nav is the last thing in the row: with a CTA beside it,
-	 * the button owns the edge and the nav is an interior element.
+	 * In the menu bar that is unaffordable, and the reason is thirty lines up
+	 * this file: a bar that has run out of room is *made* to overflow so that
+	 * header.js can measure it, and the script reads `row.scrollWidth >
+	 * row.clientWidth` to decide whether the menu still fits. An element pulled
+	 * past its parent's content edge is overflow by exactly that measure, and
+	 * nothing can tell it apart from a menu that has run out of room — so the
+	 * outdent read as "does not fit" on the first frame at every width, and the
+	 * header collapsed to a hamburger on a 1600px screen. The same symptom the
+	 * exclusion note further up this file describes, arriving by a second
+	 * route, and it only appeared once an operator turned the search icon off:
+	 * with a search or a call to action in the row the nav is not
+	 * `:last-child`, and this never fired.
+	 *
+	 * So the trailing inset is removed instead of being compensated for.
+	 * Nothing leaves the row, the measurement is left alone, and the last
+	 * label sits on the page's own right edge with nothing after it. The cost
+	 * is that one hover surface ends at its label rather than a padding past
+	 * it, which is a difference worth having and not one worth a hamburger.
+	 *
+	 * ---- Which item is the last one ------------------------------------------
+	 *
+	 * Not `:last-child` on its own. The list holds rows that are not rows of
+	 * this bar — the call to action and the strip's copies, both put in core's
+	 * list for the mobile panel and both `display: none` up here — and they
+	 * come after the real items, so the DOM's last child is usually one of
+	 * them. The last *visible* item is the last one that is neither, which is
+	 * either genuinely last or the one immediately before the first of them.
+	 *
+	 * ---- The strip keeps the outdent -----------------------------------------
+	 *
+	 * Nothing measures the top bar. `initNavCollapse()` reads the row that
+	 * holds `.bridge-header__end`, and the strip is a different row in a
+	 * different element — so there it is still the better answer, and its
+	 * hover surfaces still run into the gutter.
 	 */
+	.bridge-header .bridge-header__top-inner > .bridge-nav--utility:last-child {
+		margin-inline-end: calc(-1 * var(--bridge-nav-inset));
+	}
+
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-header__row
 		.bridge-header__end
-		> .bridge-nav--primary:last-child {
-		margin-inline-end: calc(-1 * var(--bridge-nav-inset));
+		> .bridge-nav--primary:last-child
+		.wp-block-navigation__container
+		> .wp-block-navigation-item:not(.bridge-nav__cta, .bridge-nav__extra):last-child,
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-header__row
+		.bridge-header__end
+		> .bridge-nav--primary:last-child
+		.wp-block-navigation__container
+		> .wp-block-navigation-item:not(.bridge-nav__cta, .bridge-nav__extra):has(
+			+ .bridge-nav__cta,
+			+ .bridge-nav__extra
+		) {
+		padding-inline-end: 0;
 	}
 
 	/**
@@ -459,6 +604,16 @@
 // ---------------------------------------------------------------------------
 // 2. Every other nav — utility bar, footer menus
 // ---------------------------------------------------------------------------
+
+// The top bar is a menu bar too, and is set like one. Scoped to the header
+// rather than added to the rule below, because that rule also catches the
+// footer's menus — and a footer menu is running text in a column, not a row of
+// tabs, so it keeps the body's weight.
+.bridge-header .bridge-nav--utility {
+	font-weight: var(--bridge-nav-weight, 500);
+	letter-spacing: var(--bridge-nav-tracking, 0.01em);
+}
+
 // A nav that shares its row with something else gets a pill: it has no height
 // of its own to fill, so a full-bleed surface would paint over its neighbours.
 .wp-block-navigation:not(.bridge-nav--primary) {
@@ -477,6 +632,145 @@
 			outline: 2px solid currentcolor;
 			outline-offset: 2px;
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// 3. The phone, and the rows the panel borrows
+// ---------------------------------------------------------------------------
+
+/**
+ * The number, wherever it is drawn: an icon, a gap, and the number itself.
+ *
+ * The icon is not decoration for the label — it is what makes a row of digits
+ * read as something to press before anybody has read it. `flex: none` because
+ * an svg in a flex row with a long label is a stretched svg.
+ *
+ * One rule for all three places the item appears — the strip as a tab, the
+ * strip as a pill below the breakpoint, and the last row of the mobile panel —
+ * because this part of it is the same in all three. What differs is the ground,
+ * and that is decided per place below.
+ */
+.bridge-header .bridge-nav__phone .wp-block-navigation-item__content {
+	display: flex;
+	align-items: center;
+	gap: 0.4375rem;
+
+	.bridge-icon {
+		flex: none;
+	}
+}
+
+/**
+ * In the strip, as a tab: the accent, full height, at the end of the bar.
+ *
+ * The ground is painted on the surface the bar treatment already draws — the
+ * item's `::before`, inset by the strip's padding so it runs the band's full
+ * height — rather than on the anchor, which hugs the text and would leave the
+ * colour as a tight box around the digits.
+ *
+ * Eight classes, one more than the rule it is overriding, because the shared
+ * treatment paints this same pseudo-element and hands the label the rollover's
+ * foreground on hover. A tie here would be settled by stylesheet order, which
+ * is not a thing to rely on for the one item in the header that is a colour.
+ *
+ * Hovered it keeps its own ground and takes the wash the site's buttons use —
+ * `currentcolor` is the label the ground was measured against, so the press
+ * reads on a pale accent and a deep one alike. Swapping to the bar's rollover
+ * colour instead would make the one item that is not a link look like the one
+ * item that is being pointed at.
+ */
+@media (min-width: nav.$bar) {
+	.bridge-header
+		.bridge-nav--utility.wp-block-navigation
+		.wp-block-navigation__container
+		> .wp-block-navigation-item.bridge-nav__phone:not(.bridge-nav__cta) {
+		&::before {
+			background-color: var(
+				--bridge-nav-phone-bg,
+				var(--wp--preset--color--accent)
+			);
+		}
+
+		&:hover::before,
+		&:focus-within::before {
+			background-color: var(
+				--bridge-nav-phone-bg,
+				var(--wp--preset--color--accent)
+			);
+			background-image: linear-gradient(
+				color-mix(in srgb, currentcolor 12%, transparent),
+				color-mix(in srgb, currentcolor 12%, transparent)
+			);
+		}
+
+		> .wp-block-navigation-item__content,
+		&:hover > .wp-block-navigation-item__content,
+		&:focus-within > .wp-block-navigation-item__content {
+			color: var(
+				--bridge-nav-phone-fg,
+				var(--wp--preset--color--background)
+			);
+		}
+	}
+}
+
+// Below the bar's width the strip is a row of pills — section 2 — so the ground
+// goes on the pill. Scoped by width rather than left to specificity: the two
+// treatments are two shapes, and which one an item is wearing is decided by
+// which side of the breakpoint the window is on, not by which rule is longer.
+//
+// To the strip's own copy only. The panel's copy is inside the main menu and is
+// left as an ordinary row — see the note below about why it does not take this
+// ground — and at these widths it is the copy that is on screen.
+@media (max-width: nav.$panel) {
+	.bridge-header
+		.bridge-nav--utility
+		.bridge-nav__phone
+		.wp-block-navigation-item__content {
+		background-color: var(
+			--bridge-nav-phone-bg,
+			var(--wp--preset--color--accent)
+		);
+		color: var(--bridge-nav-phone-fg, var(--wp--preset--color--background));
+
+		&:hover,
+		&:active {
+			background-color: var(
+				--bridge-nav-phone-bg,
+				var(--wp--preset--color--accent)
+			);
+			background-image: linear-gradient(
+				color-mix(in srgb, currentcolor 12%, transparent),
+				color-mix(in srgb, currentcolor 12%, transparent)
+			);
+		}
+	}
+}
+
+/**
+ * The strip's rows, borrowed by the mobile panel.
+ *
+ * render.php copies them into core's list below the call to action, because the
+ * strip is drawn above the header and the panel is a dialog covering it — on a
+ * phone its links are on screen and unreachable behind the sheet. See
+ * bridge_header_nav_extras(), which marks the copies.
+ *
+ * That leaves one set of rows serving two widths, so this is where the two are
+ * separated: hidden in the menu bar, where the strip itself is already showing,
+ * and left to the panel's own row rules everywhere else. Exactly what the call
+ * to action does one section up, and hidden by the same test — a header
+ * header.js has not collapsed, at a width wide enough to draw a bar.
+ *
+ * The phone is the last of them and keeps its icon, but not its ground: the
+ * panel already ends on the call to action in the accent, and a second band in
+ * the same colour directly under it is two actions shouting rather than one.
+ */
+@media (min-width: nav.$bar) {
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-nav--primary
+		.bridge-nav__extra {
+		display: none;
 	}
 }
 

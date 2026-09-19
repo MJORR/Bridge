@@ -52,6 +52,10 @@ require_once $bridge_theme_dir . '/inc/theme-json.php';
 // The band mask turns a signed percentage into a colour, which is arithmetic
 // worth pinning the same way the button schemes are.
 require_once $bridge_theme_dir . '/inc/section-blocks.php';
+// The hero's own arithmetic — the curve's geometry and the focal point's
+// travel — all of which is pure and testable without a block ever being
+// registered.
+require_once $bridge_theme_dir . '/inc/hero-blocks.php';
 // The activation seeds. Loaded for bridge_seed_post_types(), which is pure
 // token arithmetic — the menu seeding beside it talks to the database and is
 // not called from a test.
@@ -68,6 +72,11 @@ require_once $bridge_theme_dir . '/inc/enquiries.php';
 // doubled: the schema layer's whole job is to publish what an operator typed
 // into that screen, so a test that faked the reading half would be asserting
 // against its own fixture rather than against the fields the site has.
+// The SVG sanitiser, and the inliner built on it. Loaded rather than doubled
+// for the reason Site Options is: what it lets through is the whole point of
+// it, and a fixture would be asserting against itself.
+require_once $bridge_theme_dir . '/inc/svg.php';
+
 require_once $bridge_theme_dir . '/inc/site-options.php';
 require_once $bridge_theme_dir . '/inc/schema.php';
 

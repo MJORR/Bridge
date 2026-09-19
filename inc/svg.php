@@ -757,3 +757,316 @@ function bridge_svg_admin_styles(): void
 	</style>' . "\n";
 }
 add_action('admin_head', 'bridge_svg_admin_styles');
+
+/* ---------------------------------------------------------------------------
+ * Inlining
+ *
+ * An <img src="logo.svg"> is a picture: the browser renders the file in its own
+ * isolated context, and nothing outside it can reach in. That is the right
+ * default for an illustration and the wrong one for a mark the page needs to
+ * restyle — a logo that should take the footer's ink on a dark ground, or a
+ * drawn stroke that should be the brand's accent colour rather than whatever
+ * hex was in the artboard. `currentColor` inside an <img> resolves against the
+ * SVG document, not the page.
+ *
+ * So the three brand marks — the header logo, the footer logo and the
+ * strapline's swoosh — are written into the page instead. Their shapes become
+ * ordinary elements, `fill="currentColor"` follows the text colour around them,
+ * and a stylesheet can address them like anything else.
+ *
+ * What it costs, and why it is worth it here but not everywhere:
+ *
+ *   - The bytes are in the HTML rather than in a cacheable file, so they are
+ *     re-sent on every page. Fine for a wordmark; not fine for a gallery.
+ *   - The file is read from disk and parsed at render time. Cached, below.
+ *   - Two copies of one file collide on any `id` inside it, which is what
+ *     bridge_inline_svg() rewrites per instance.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * How long a sanitised file stays cached.
+ *
+ * The cache key carries the file's modification time, so this is not how long
+ * a stale logo can be served — replacing the file changes the key and the old
+ * entry is simply never read again. It is only how long an unused entry
+ * lingers.
+ */
+define('BRIDGE_INLINE_SVG_TTL', WEEK_IN_SECONDS);
+
+/**
+ * An attachment's SVG markup, sanitised and ready to write into the page.
+ *
+ * Sanitised again here rather than trusted because it was sanitised on the way
+ * in. Upload is not the only way a file reaches uploads/ — a migration, a
+ * restore, an FTP client or a plugin with its own media handling all put files
+ * on disk without passing through bridge_sanitize_svg_upload(), and a file
+ * placed before this theme was installed never saw it at all. Since the markup
+ * is about to be written into the document unescaped, the check belongs at the
+ * point of output.
+ *
+ * @param int $attachment_id Attachment post id.
+ * @return string Clean `<svg>…</svg>`, or an empty string.
+ */
+function bridge_svg_markup(int $attachment_id): string
+{
+	if ($attachment_id <= 0 || 'image/svg+xml' !== get_post_mime_type($attachment_id)) {
+		return '';
+	}
+
+	$path = get_attached_file($attachment_id);
+
+	if (! is_string($path) || '' === $path || ! is_readable($path)) {
+		return '';
+	}
+
+	/*
+	 * The key identifies the *file*, not the attachment.
+	 *
+	 * Path, modification time and size together, hashed to keep the key inside
+	 * the 172 characters an option name allows. The attachment id alone would
+	 * be wrong twice over: a logo replaced in place keeps its id, and an id
+	 * plus an mtime still collides when the replacement lands in the same
+	 * second the original did — which a scripted deploy or a media-replace
+	 * plugin manages easily. Size is what separates those, and reading all
+	 * three is three stat calls against a file that has just been opened
+	 * anyway.
+	 */
+	$key = 'bridge_svg_' . md5($path . '|' . filemtime($path) . '|' . filesize($path));
+
+	$cached = get_transient($key);
+
+	// `false` is "no entry"; an empty string is a real answer — a file that has
+	// already been read and found unusable — and is honoured rather than
+	// re-parsed on every request.
+	if (is_string($cached)) {
+		return $cached;
+	}
+
+	$markup = bridge_sanitize_svg(
+		(string) file_get_contents($path) // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local attachment file.
+	);
+
+	$markup = is_string($markup) ? $markup : '';
+
+	set_transient($key, $markup, BRIDGE_INLINE_SVG_TTL);
+
+	return $markup;
+}
+
+/**
+ * Write an SVG attachment into the page as markup.
+ *
+ * Returns an empty string for anything that is not a usable SVG — a raster
+ * attachment, a deleted one, a file that will not parse. Every caller treats
+ * that as "fall back to an <img>", so a PNG logo keeps working and nothing has
+ * to ask what kind of file it was given first.
+ *
+ * ---- What is changed on the way out ---------------------------------------
+ *
+ * `width` and `height` are removed when the file has a `viewBox`, so the
+ * element takes its size from CSS instead of from whatever the artboard was.
+ * Without a viewBox they are kept and one is synthesised from them — an SVG
+ * with neither cannot be scaled at all, and stripping its only dimensions
+ * would render it at the browser's 300×150 default.
+ *
+ * Every `id` is rewritten with a per-instance prefix, and so is every
+ * reference to one: `url(#id)` in an attribute, `href="#id"`, and any mention
+ * inside a `<style>` block. This is not tidiness. The header and the footer
+ * routinely draw the *same* logo, and two elements with one id is invalid
+ * HTML where every `url(#gradient)` in the document resolves to the first —
+ * so the second copy loses its gradient, its clip path or its mask, and looks
+ * broken in a way that inspecting the CSS never explains.
+ *
+ * ---- What is not changed --------------------------------------------------
+ *
+ * Class names inside a `<style>` block are left alone. Illustrator's default
+ * export names them `.st0`, `.st1`, … per file, so two *different* inlined
+ * files can each define `.st0` and the second wins for both. Rewriting them
+ * means parsing arbitrary CSS, which is a different job with worse failure
+ * modes than the one it fixes. Exporting with "Style Elements: Presentation
+ * Attributes" avoids it entirely and is what these marks should use anyway,
+ * because presentation attributes are what a page can restyle.
+ *
+ * @param int   $attachment_id Attachment post id.
+ * @param array $args          class: string of classes for the root element.
+ *                             label: accessible name; omit or leave empty for
+ *                             a decorative mark, which is hidden from
+ *                             assistive technology.
+ * @return string Inline SVG markup, or an empty string.
+ */
+function bridge_inline_svg(int $attachment_id, array $args = array()): string
+{
+	$markup = bridge_svg_markup($attachment_id);
+
+	if ('' === $markup) {
+		return '';
+	}
+
+	$dom      = new DOMDocument();
+	$previous = libxml_use_internal_errors(true);
+	$loaded   = $dom->loadXML($markup, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+
+	libxml_clear_errors();
+	libxml_use_internal_errors($previous);
+
+	if (! $loaded || ! $dom->documentElement instanceof DOMElement) {
+		return '';
+	}
+
+	$root = $dom->documentElement;
+
+	// One counter per request, so the prefix is short, readable in a DOM
+	// inspector, and the same on every render of a given page — which a
+	// uniqid() or a random token would not be, and a cached page would then
+	// differ from itself for no reason.
+	static $instance = 0;
+
+	++$instance;
+
+	bridge_svg_namespace_ids($dom, $root, 'bsvg' . $instance);
+
+	// The `xmlns` declaration stays. It is redundant once the markup is part of
+	// an HTML document — the parser already knows that anything inside <svg>
+	// is SVG — but it is also inert there, and it is not an attribute libxml
+	// will part with: a namespace declaration is not in the attribute list, so
+	// removeAttribute() reports success and changes nothing. Not worth
+	// serialising the document by hand to save thirty bytes.
+	if ($root->hasAttribute('viewBox')) {
+		$root->removeAttribute('width');
+		$root->removeAttribute('height');
+	} elseif ($root->hasAttribute('width') && $root->hasAttribute('height')) {
+		// Only the numbers, because a viewBox has no units: "120px" is a width
+		// and a syntax error in the same string.
+		$width  = (float) $root->getAttribute('width');
+		$height = (float) $root->getAttribute('height');
+
+		if ($width > 0 && $height > 0) {
+			$root->setAttribute('viewBox', sprintf('0 0 %s %s', $width, $height));
+			$root->removeAttribute('width');
+			$root->removeAttribute('height');
+		}
+	}
+
+	$class = isset($args['class']) ? trim((string) $args['class']) : '';
+
+	if ('' !== $class) {
+		// Appended rather than assigned: a class on the root element in the
+		// file may be what its own <style> block is selecting on, and throwing
+		// it away would unpaint the artwork.
+		$existing = trim($root->getAttribute('class'));
+
+		$root->setAttribute('class', '' !== $existing ? $existing . ' ' . $class : $class);
+	}
+
+	$label = isset($args['label']) ? trim((string) $args['label']) : '';
+
+	if ('' !== $label) {
+		$root->setAttribute('role', 'img');
+		$root->setAttribute('aria-label', $label);
+	} else {
+		// Decorative. `focusable="false"` as well as `aria-hidden`, because
+		// without it an inline <svg> is a tab stop in some browsers — and a
+		// hidden tab stop is a focus that lands on nothing.
+		$root->setAttribute('aria-hidden', 'true');
+		$root->setAttribute('focusable', 'false');
+	}
+
+	$out = $dom->saveXML($root);
+
+	return is_string($out) ? $out : '';
+}
+
+/**
+ * Prefix every id in one document, and every reference to one.
+ *
+ * Attribute values are rewritten in three shapes, which is all the sanitiser
+ * lets through: a bare `#id` in `href`/`xlink:href`, a `url(#id)` anywhere,
+ * and the id attribute itself. `<style>` text is rewritten for `#id` selectors
+ * as well.
+ *
+ * Renaming is done from a map built in a first pass rather than as each id is
+ * met, because a reference can appear before the element it points at — a
+ * `fill="url(#a)"` above the `<defs>` that defines `a` is ordinary output.
+ *
+ * @param DOMDocument $dom    The document.
+ * @param DOMElement  $root   Its root element.
+ * @param string      $prefix Instance prefix, already safe for an id.
+ */
+function bridge_svg_namespace_ids(DOMDocument $dom, DOMElement $root, string $prefix): void
+{
+	$xpath = new DOMXPath($dom);
+	$map   = array();
+
+	foreach ($xpath->query('//*[@id]', $root) ?: array() as $node) {
+		if (! $node instanceof DOMElement) {
+			continue;
+		}
+
+		$id = $node->getAttribute('id');
+
+		if ('' !== $id) {
+			$map[$id] = $prefix . '-' . $id;
+		}
+	}
+
+	if (! $map) {
+		return;
+	}
+
+	foreach ($xpath->query('//*[@id]', $root) ?: array() as $node) {
+		if ($node instanceof DOMElement) {
+			$node->setAttribute('id', $map[$node->getAttribute('id')] ?? $node->getAttribute('id'));
+		}
+	}
+
+	/*
+	 * One pass over every `#…` in the string, rather than one pass per id.
+	 *
+	 * A plain str_replace of `#a` is wrong in a way that only shows up on real
+	 * artwork: it also rewrites `#abc`, because `#a` is a prefix of it. A file
+	 * with ids `a` and `abc` — which is exactly what a short export produces —
+	 * would come out with `#prefix-abc` pointing at nothing.
+	 *
+	 * So the reference is matched whole, up to the first character that cannot
+	 * be part of an id, and looked up. Anything not in the map is left exactly
+	 * as it was, which is what keeps a CSS colour like `#fff` from being
+	 * treated as a reference to an element nobody named `fff`.
+	 */
+	$rewrite = static function (string $value) use ($map): string {
+		return (string) preg_replace_callback(
+			'/#([A-Za-z_][\w.:-]*)/',
+			static fn(array $m): string => isset($map[$m[1]]) ? '#' . $map[$m[1]] : $m[0],
+			$value
+		);
+	};
+
+	foreach ($xpath->query('//@*', $root) ?: array() as $attribute) {
+		if (! $attribute instanceof DOMAttr || 'id' === $attribute->name) {
+			continue;
+		}
+
+		if (! str_contains($attribute->value, '#')) {
+			continue;
+		}
+
+		$owner = $attribute->ownerElement;
+
+		if (! $owner instanceof DOMElement) {
+			continue;
+		}
+
+		// Through setAttribute() rather than by assigning to `$attribute->value`.
+		// The property setter does not escape what it is given — an `&` in the
+		// value produces malformed XML and a warning — where setAttribute()
+		// escapes properly. `nodeValue` on the attribute has the same problem.
+		$owner->setAttribute($attribute->name, $rewrite($attribute->value));
+	}
+
+	foreach ($xpath->query('//*[local-name()="style"]', $root) ?: array() as $style) {
+		if (! str_contains($style->textContent, '#')) {
+			continue;
+		}
+
+		$style->textContent = $rewrite($style->textContent);
+	}
+}

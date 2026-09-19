@@ -884,8 +884,9 @@ final class SanitizeTokensTest extends BridgeTestCase
 			array('footer' => array('menus' => $given))
 		)['footer']['menus'];
 
-		$this->assertSame(array('quick', 'legal'), array_keys($menus));
-		$this->assertIsInt($menus['quick']);
+		$this->assertSame(array('explore', 'services', 'legal'), array_keys($menus));
+		$this->assertIsInt($menus['explore']);
+		$this->assertIsInt($menus['services']);
 		$this->assertIsInt($menus['legal']);
 	}
 
@@ -898,8 +899,9 @@ final class SanitizeTokensTest extends BridgeTestCase
 			'missing'         => array(null),
 			'a string'        => array('primary'),
 			'a list'          => array(array(3, 4)),
-			'half a map'      => array(array('quick' => 7)),
-			'strings for ids' => array(array('quick' => '7', 'legal' => 'x')),
+			'half a map'      => array(array('explore' => 7)),
+			'strings for ids' => array(array('explore' => '7', 'legal' => 'x')),
+			'the old key'     => array(array('quick' => '7')),
 		);
 	}
 
@@ -913,11 +915,43 @@ final class SanitizeTokensTest extends BridgeTestCase
 	public function test_a_negative_menu_id_becomes_none(): void
 	{
 		$menus = bridge_sanitize_tokens(
-			array('footer' => array('menus' => array('quick' => -12, 'legal' => 3)))
+			array('footer' => array('menus' => array('explore' => -12, 'legal' => 3)))
 		)['footer']['menus'];
 
-		$this->assertSame(0, $menus['quick']);
+		$this->assertSame(0, $menus['explore']);
 		$this->assertSame(3, $menus['legal']);
+	}
+
+	/**
+	 * A site that chose a Quick Links menu keeps it as its Explore menu.
+	 *
+	 * The slot was renamed when the footer grew a second menu column; the
+	 * stored id did not move with it, so the sanitiser reads the old key when
+	 * the new one is empty. Without this every site that had configured the
+	 * column would have silently lost it on the first save after the upgrade —
+	 * the column simply stops rendering, which is a footer that looks broken
+	 * rather than one that reports an error.
+	 */
+	public function test_the_old_quick_links_slot_becomes_explore(): void
+	{
+		$menus = bridge_sanitize_tokens(
+			array('footer' => array('menus' => array('quick' => 9)))
+		)['footer']['menus'];
+
+		$this->assertSame(9, $menus['explore']);
+	}
+
+	/**
+	 * And a site that has chosen an Explore menu is not overruled by whatever
+	 * the old key still holds.
+	 */
+	public function test_a_chosen_explore_menu_wins_over_the_old_key(): void
+	{
+		$menus = bridge_sanitize_tokens(
+			array('footer' => array('menus' => array('explore' => 4, 'quick' => 9)))
+		)['footer']['menus'];
+
+		$this->assertSame(4, $menus['explore']);
 	}
 
 	/**

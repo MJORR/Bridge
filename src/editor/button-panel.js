@@ -3,27 +3,28 @@
  *
  * Two settings, both of which name something the design system has already
  * drawn rather than inventing anything of their own: which of the two button
- * designs this is, and which of the four grounds it is standing on.
+ * designs this is, and what colour it is.
  *
- * A button's colours are not its own. abstracts/_button.scss paints every
- * button from nine `--bridge-button-*` variables, and `button.ground($name)`
- * points those variables at one of the four compiled schemes the token
- * compiler publishes — on-Default, on-Surface, on-Accent, on-Inverted. The
- * bands already do this for the buttons inside them: a Surface band emits the
- * Surface ground, the Accent band the Accent one, anything drawn on dark the
- * Inverted one. Custom properties inherit, so a button that lands in one of
- * those needs to know nothing about where it is.
+ * A button's colours are not loose. abstracts/_button.scss paints every button
+ * from nine `--bridge-button-*` variables, and the bands set those for the
+ * buttons inside them — a Surface band emits the Surface ground, the Accent
+ * band the Accent one, anything drawn on dark the Inverted one. Custom
+ * properties inherit, so a button that lands in one of those needs to know
+ * nothing about where it is, and Background left on "From the band" is that.
  *
- * What it cannot know is where it is *standing*, as opposed to what block it
- * is nested in — a button over a photograph, in a hero, or in a plain band
- * that happens to sit on a dark image. That is the one case the cascade cannot
- * answer, and this is the control for it.
+ * Choosing a colour points the same nine variables at a palette scheme
+ * instead. That is still not a paint box: the editor picks one palette colour
+ * and PHP settles everything that follows from it — the label that can be read
+ * on it, the hover shade, the border it needs only if its fill is too close to
+ * the page to have an edge of its own, the focus ring. See
+ * bridge_button_palette_schemes(), which is the four grounds' own arithmetic
+ * pointed at the palette, and button-lock.js for why core's paint box is off.
  *
- * Neither control chooses a colour and neither can: the four grounds are drawn
- * against the palette in PHP, contrast-checked there, and change with the
- * tokens. These say which of the finished answers applies, and nothing else —
- * which is what keeps them settings rather than another paint box on a block
- * the theme deliberately took the paint box off (see button-lock.js).
+ * There used to be a third answer here — which of the four grounds the button
+ * was *standing* on, for a button over a photograph that the cascade could not
+ * work out. One colour question per control is enough, so it is not offered
+ * any more; components/_button.scss still paints those four classes, so a page
+ * carrying one keeps the button it had until somebody changes it.
  *
  * ---- Solid and Outline -----------------------------------------------------
  *
@@ -40,10 +41,10 @@
  * Because core/buttons copies it. Adding a button to a row does not insert a
  * blank one: `DEFAULT_BLOCK.attributesToCopy` in the buttons block carries
  * `className` over from the button before it, so a second button beside an
- * Outline one on the Inverted ground arrives as the same thing rather than as
- * a default that has to be set again.
+ * Outline one in Accent arrives as the same thing rather than as a default
+ * that has to be set again.
  *
- * The ground was an attribute of its own to begin with, and that list is the
+ * The colour was an attribute of its own to begin with, and that list is the
  * reason it is not: `className` was copied and `bridgeGround` was not, so of
  * the two settings in this one panel the first carried to the next button and
  * the second silently did not. Two controls that look alike and behave
@@ -67,6 +68,7 @@
 	const { createElement: el, Fragment } = wp.element;
 	const { InspectorControls } = wp.blockEditor;
 	const { PanelBody, SelectControl } = wp.components;
+	const { useSelect } = wp.data;
 	const { createHigherOrderComponent } = wp.compose;
 	const { __ } = wp.i18n;
 
@@ -87,29 +89,30 @@
 
 	/*
 	 * The empty value first, and it is what a button has until somebody says
-	 * otherwise: the ground comes from the band it is in. Choosing one of the
-	 * four is an override, so nothing about the site changes on its own.
+	 * otherwise: the colour comes from the band the button is in. Choosing one
+	 * is an override, so nothing about the site changes on its own.
 	 *
-	 * The four labels are bridge_button_grounds()' own, in the order that
-	 * function lists them.
+	 * What follows it is the palette, read from the editor's own settings
+	 * rather than listed here — the slugs are fixed by the theme but the names
+	 * and the colours are the client's, and theme.json is where both of those
+	 * arrive. See bridge_palette_slugs() and bridge_button_palette_schemes().
 	 */
-	const GROUNDS = [
-		{ label: __('From the band', 'bridge'), value: '' },
-		{ label: __('Default', 'bridge'), value: 'default' },
-		{ label: __('Surface', 'bridge'), value: 'surface' },
-		{ label: __('Accent', 'bridge'), value: 'accent' },
-		{ label: __('Inverted', 'bridge'), value: 'inverted' },
-	];
+	const FROM_THE_BAND = { label: __('From the band', 'bridge'), value: '' };
 
-	const groundClass = (ground) => `bridge-button--on-${ground}`;
+	const fillClass = (slug) => `bridge-button--fill-${slug}`;
 
-	// The four the Ground control chooses between. Its own list rather than
-	// "everything this panel owns", because the two controls have to be able
-	// to read past each other: an Outline button on the Inverted ground
-	// carries both classes, and a search that stopped at the first one it
-	// recognised reported that button as having no ground at all.
-	const GROUND_CLASSES = GROUNDS.filter((entry) => entry.value).map((entry) =>
-		groundClass(entry.value)
+	/*
+	 * The classes the Background control chooses between, plus the four a
+	 * button could once be told it was standing on.
+	 *
+	 * The old ones are still swept up when the control is changed, so a button
+	 * that carries one is not left wearing two answers at once. They are not
+	 * offered any more — one colour question is enough for one control — but
+	 * the stylesheet still paints them, so a page built before this keeps the
+	 * button it had until somebody touches it.
+	 */
+	const LEGACY_GROUNDS = ['default', 'surface', 'accent', 'inverted'].map(
+		(ground) => `bridge-button--on-${ground}`
 	);
 
 	const classList = (className) =>
@@ -143,12 +146,12 @@
 	const variantOf = (className) =>
 		classList(className).includes(OUTLINE) ? 'outline' : 'solid';
 
-	const groundOf = (className) => {
+	const fillOf = (className) => {
 		const found = classList(className).find((name) =>
-			GROUND_CLASSES.includes(name)
+			name.startsWith('bridge-button--fill-')
 		);
 
-		return found ? found.replace('bridge-button--on-', '') : '';
+		return found ? found.replace('bridge-button--fill-', '') : '';
 	};
 
 	/**
@@ -162,6 +165,30 @@
 
 			const { className } = props.attributes;
 			const set = (value) => props.setAttributes({ className: value });
+
+			// The palette as the editor has it, which is theme.json's, which is
+			// the client's tokens compiled. Names travel with it, so a renamed
+			// Accent reads as its new name here without this file knowing.
+			const palette = useSelect(
+				(select) =>
+					select('core/block-editor').getSettings().colors || [],
+				[]
+			);
+
+			const backgrounds = [
+				FROM_THE_BAND,
+				...palette.map((colour) => ({
+					label: colour.name || colour.slug,
+					value: colour.slug,
+				})),
+			];
+
+			// Everything this control owns: the fill classes it writes, and the
+			// four ground classes it used to, so changing it clears either.
+			const family = [
+				...palette.map((colour) => fillClass(colour.slug)),
+				...LEGACY_GROUNDS,
+			];
 
 			return el(
 				Fragment,
@@ -193,19 +220,15 @@
 						}),
 						el(SelectControl, {
 							__nextHasNoMarginBottom: true,
-							label: __('Ground', 'bridge'),
-							help: __(
-								'Which background this button is standing on. Leave it on “From the band” unless the button sits on an image or a colour the band does not know about.',
-								'bridge'
-							),
-							value: groundOf(className),
-							options: GROUNDS,
+							label: __('Background', 'bridge'),
+							value: fillOf(className),
+							options: backgrounds,
 							onChange: (value) =>
 								set(
 									rewrite(
 										className,
-										GROUND_CLASSES,
-										value ? groundClass(value) : ''
+										family,
+										value ? fillClass(value) : ''
 									)
 								),
 						})

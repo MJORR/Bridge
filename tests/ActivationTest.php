@@ -328,12 +328,12 @@ final class ActivationTest extends BridgeTestCase
 		);
 	}
 
-	/** Three menus, each named once. */
+	/** Four menus, each named once. */
 	public function test_the_seeded_menu_names_are_distinct(): void
 	{
 		$menus = bridge_seeded_menus();
 
-		$this->assertCount(3, $menus);
+		$this->assertCount(4, $menus);
 		$this->assertSame($menus, array_values(array_unique($menus)));
 
 		foreach ($menus as $name) {

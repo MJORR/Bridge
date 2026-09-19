@@ -11,10 +11,10 @@ import { TemplateList } from '../preview';
 
 const { RangeControl, SelectControl, TextControl, ToggleControl } =
 	wp.components;
-const { __ } = wp.i18n;
+const { __, sprintf } = wp.i18n;
 
 export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
-	const { constraints, paletteSlugs, templates, menus } = payload;
+	const { constraints, paletteSlugs, templates, menus, sitePhone } = payload;
 
 	const header = draft.header;
 
@@ -111,6 +111,27 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						)}
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize
+					/>
+				)}
+
+				{/* Only with a number to show. A switch that adds nothing is
+				    not a setting, so rather than offering it and explaining
+				    that it does nothing, the control appears once Site Options
+				    holds a phone number — and says which one it means. */}
+				{header.topBar && Boolean(sitePhone) && (
+					<ToggleControl
+						label={__('Phone in the top bar', 'bridge')}
+						checked={Boolean(header.topBarPhone)}
+						onChange={(on) => setHeader('topBarPhone', on)}
+						help={sprintf(
+							/* translators: %s: the site's phone number. */
+							__(
+								'%s, as the last item of the top bar and the last row of the menu on a phone. The number itself is set in Site Options.',
+								'bridge'
+							),
+							sitePhone
+						)}
+						__nextHasNoMarginBottom
 					/>
 				)}
 
@@ -251,6 +272,24 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					__next40pxDefaultSize
 				/>
 
+				{header.topBar && (
+					<SelectControl
+						label={__('Top bar background', 'bridge')}
+						value={header.topBarColor}
+						options={Object.entries(paletteSlugs).map(([slug]) => ({
+							label: draft.brand.palette[slug].name,
+							value: slug,
+						}))}
+						onChange={(value) => setHeader('topBarColor', value)}
+						help={__(
+							'The ground under the slim strip above the header. Its label colour follows automatically. Like the header\u2019s own ground it has no effect on the Landing Page template, where the strip sits over the hero and takes a light black wash instead so its links stay readable.',
+							'bridge'
+						)}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+				)}
+
 				<SelectControl
 					label={__('Nav rollover background colour', 'bridge')}
 					value={header.nav.rollover}
@@ -283,21 +322,34 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					__next40pxDefaultSize
 				/>
 
-				<SelectControl
-					label={__('Nav accent colour', 'bridge')}
-					value={header.nav.accent}
-					options={Object.entries(paletteSlugs).map(([slug]) => ({
-						label: draft.brand.palette[slug].name,
-						value: slug,
-					}))}
-					onChange={(value) => setHeader('nav.accent', value)}
+				<ToggleControl
+					label={__('Nav accent', 'bridge')}
+					checked={Boolean(header.nav.accentEnabled)}
+					onChange={(on) => setHeader('nav.accentEnabled', on)}
 					help={__(
-						'The bar that lights a hovered item and marks the page you are on, and the colour of the current page\u2019s label inside a dropdown.',
+						'Off leaves the menu with its rollover and its dropdowns and nothing else \u2014 no bar over the item you are on, and the current page\u2019s label in a dropdown set like every other row. The colour below is remembered either way.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
-					__next40pxDefaultSize
 				/>
+
+				{header.nav.accentEnabled && (
+					<SelectControl
+						label={__('Nav accent colour', 'bridge')}
+						value={header.nav.accent}
+						options={Object.entries(paletteSlugs).map(([slug]) => ({
+							label: draft.brand.palette[slug].name,
+							value: slug,
+						}))}
+						onChange={(value) => setHeader('nav.accent', value)}
+						help={__(
+							'The bar that lights a hovered item and marks the page you are on, and the colour of the current page\u2019s label inside a dropdown.',
+							'bridge'
+						)}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+				)}
 
 				<SelectControl
 					label={__('Landing page header text', 'bridge')}
@@ -356,6 +408,17 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 				/>
 
 				<ToggleControl
+					label={__('Bottom shadow', 'bridge')}
+					checked={Boolean(header.shadow)}
+					onChange={(on) => setHeader('shadow', on)}
+					help={__(
+						'A soft drop shadow under the bar, lifting it off the page rather than drawing a line across it. Independent of the border \u2014 a header may have either, both or neither. On every template, including the Landing Page, where it separates the menu from the hero behind it.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+				/>
+
+				<ToggleControl
 					label={__('Stick to the top on scroll', 'bridge')}
 					checked={Boolean(header.sticky)}
 					onChange={(on) => setHeader('sticky', on)}
@@ -387,7 +450,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						{
 							value: 'columns',
 							label: __('Columns', 'bridge'),
-							hint: __('Logo, social and two menus', 'bridge'),
+							hint: __('Logo, menus and contact', 'bridge'),
 						},
 					]}
 				/>
@@ -441,34 +504,58 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 				{draft.footer.style === 'columns' && (
 					<>
 						<SelectControl
-							label={__('Legal menu', 'bridge')}
-							value={String(draft.footer.menus.legal)}
+							label={__('Explore menu', 'bridge')}
+							value={String(draft.footer.menus.explore)}
 							options={menuOptions(
 								__('None — hide the column', 'bridge')
 							)}
 							onChange={(value) =>
-								setFooterMenu('legal', Number(value))
+								setFooterMenu('explore', Number(value))
 							}
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
 						/>
 
 						<SelectControl
-							label={__('Quick Links menu', 'bridge')}
-							value={String(draft.footer.menus.quick)}
+							label={__('Services menu', 'bridge')}
+							value={String(draft.footer.menus.services)}
 							options={menuOptions(
 								__('None — hide the column', 'bridge')
 							)}
 							onChange={(value) =>
-								setFooterMenu('quick', Number(value))
+								setFooterMenu('services', Number(value))
 							}
 							help={__(
-								'A column with no menu is not drawn: a heading with nothing under it is worse than two columns. Menus themselves are still built in the Site Editor.',
+								'The two menu columns. A column with no menu is not drawn: a heading with nothing under it is worse than three columns. Menus themselves are still built in the Site Editor.',
 								'bridge'
 							)}
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
 						/>
+
+						<SelectControl
+							label={__('Legal menu', 'bridge')}
+							value={String(draft.footer.menus.legal)}
+							options={menuOptions(
+								__('None — hide the links', 'bridge')
+							)}
+							onChange={(value) =>
+								setFooterMenu('legal', Number(value))
+							}
+							help={__(
+								'Not a column: these run along the bottom row beside the copyright, which is where small print belongs.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<p className="bridge-options__hint">
+							{__(
+								'The last column — the address, the phone number and the social accounts — comes from Site Options, along with the short description and the strapline under the logo.',
+								'bridge'
+							)}
+						</p>
 					</>
 				)}
 			</Section>
@@ -496,6 +583,16 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 				 * identity and four bands draw it. It stood in the Header
 				 * section only because that is where it was added.
 				 */}
+
+				<LogoPicker
+					label={__('Strapline swoosh', 'bridge')}
+					value={draft.brand.swooshId}
+					onChange={(id) => setGroup('brand', 'swooshId', id)}
+					help={__(
+						'The drawn stroke under the footer’s strapline. Just the stroke — the words are written in Site Options and set in a handwriting face. Leave it empty and the strapline is drawn without it.',
+						'bridge'
+					)}
+				/>
 
 				<LogoPicker
 					label={__('Mask shape', 'bridge')}

@@ -66,6 +66,7 @@ function bridge_social_networks(): array
 		'bridge_social_networks',
 		array(
 			'linkedin'  => __('LinkedIn', 'bridge'),
+			'github'    => __('GitHub', 'bridge'),
 			'facebook'  => __('Facebook', 'bridge'),
 			'youtube'   => __('YouTube', 'bridge'),
 			'instagram' => __('Instagram', 'bridge'),
@@ -113,11 +114,45 @@ function bridge_site_options_schema(): array
 			'label'   => __('Company name', 'bridge'),
 			'help'    => __('The trading name, as it should read in the footer and anywhere else the company is named.', 'bridge'),
 		),
+		'tagline'      => array(
+			'section' => 'business',
+			// A textarea for a line of a few words, because where it breaks is
+			// part of it. "Better websites. / Real results." is two lines in
+			// the artwork and reads as a pair; run together it is a sentence.
+			// A single-line input cannot express that at all, and nothing can
+			// infer it — breaking after every full stop would be right here
+			// and wrong for "J. Smith & Co.", and wrong again for a strapline
+			// with no full stop in it.
+			//
+			// One field rather than two. Two would put the break in the schema
+			// and fix the strapline at exactly two lines, so a one-line or
+			// three-line one becomes impossible — and an operator who leaves
+			// the second box empty gets a stray blank line rather than a short
+			// strapline.
+			'type'    => 'textarea',
+			'label'   => __('Strapline', 'bridge'),
+			'help'    => __('The short line the footer signs off with. Press return where it should break — "Better websites." on one line, "Real results." on the next. It is set in a handwriting face, so keep it to a few words; the swoosh underneath it is an image, chosen in Theme Options → Templates.', 'bridge'),
+		),
+		'description'  => array(
+			'section' => 'business',
+			'type'    => 'textarea',
+			'label'   => __('Short description', 'bridge'),
+			'help'    => __('A sentence or two saying what the business does, for the footer and anywhere else the site introduces itself in a line. Not the tagline — this is the plain-English version.', 'bridge'),
+		),
+		'footer_image' => array(
+			'section' => 'business',
+			// An attachment id, not a URL: the media library is where an
+			// operator's images live, and a pasted URL is a link that breaks
+			// the first time the site moves domain.
+			'type'    => 'image',
+			'label'   => __('Footer background', 'bridge'),
+			'help'    => __('An image along the bottom of the footer — a skyline, a landscape, something wide and dark. It fades in over the lower half so the text above it stays readable. Leave it empty and the footer keeps its flat colour.', 'bridge'),
+		),
 		'address'      => array(
 			'section' => 'business',
 			'type'    => 'textarea',
 			'label'   => __('Address', 'bridge'),
-			'help'    => __('One line per line, as it would be written on an envelope.', 'bridge'),
+			'help'    => __('One line per line, as it would be written on an envelope. A single line is a perfectly good answer — the footer prints what is typed.', 'bridge'),
 		),
 		'phone'        => array(
 			'section' => 'business',
@@ -264,6 +299,22 @@ function bridge_sanitize_site_options($input): array
 	foreach ($schema as $key => $field) {
 		$value = isset($input[$key]) ? (string) $input[$key] : '';
 
+		// An image is an attachment id and is stored as one — as a string,
+		// because every other value on this screen is a string and a single
+		// mixed-type field would make `bridge_site_option()` return two kinds
+		// of thing. `absint` so a negative or a word becomes 0, which is how
+		// "none" is spelled here as everywhere else in the theme.
+		//
+		// Not checked against the media library: the same reasoning as the
+		// token record's image ids. An id that is real on staging and missing
+		// on production would be silently dropped by the first save at the far
+		// end, where the theme instead draws nothing and leaves the setting
+		// alone — a failure that can be seen and fixed.
+		if ('image' === $field['type']) {
+			$clean[$key] = (string) absint($value);
+			continue;
+		}
+
 		$clean[$key] = 'textarea' === $field['type']
 			? sanitize_textarea_field($value)
 			: sanitize_text_field($value);
@@ -382,6 +433,55 @@ function bridge_register_site_options_page(): void
 add_action('admin_menu', 'bridge_register_site_options_page');
 
 /**
+ * The media picker's script and the few rules that lay it out.
+ *
+ * Only on this screen, and only when there is something on it that opens the
+ * media modal — `wp_enqueue_media()` prints a good deal of markup and several
+ * scripts, and a settings page with nothing but text fields should not pay for
+ * them.
+ *
+ * @param string $hook_suffix Current admin screen.
+ */
+function bridge_enqueue_site_options(string $hook_suffix): void
+{
+	if (($GLOBALS['bridge_site_options_hook'] ?? null) !== $hook_suffix) {
+		return;
+	}
+
+	$has_image = false;
+
+	foreach (bridge_site_options_schema() as $field) {
+		if ('image' === $field['type']) {
+			$has_image = true;
+			break;
+		}
+	}
+
+	if (! $has_image) {
+		return;
+	}
+
+	if (bridge_register_script('bridge-site-options', 'site-options.js', array('wp-i18n'), true)) {
+		wp_enqueue_script('bridge-site-options');
+		wp_set_script_translations('bridge-site-options', 'bridge');
+	}
+
+	wp_enqueue_media();
+
+	// Small enough to print rather than ship a stylesheet for: four rules that
+	// exist only on this screen and are meaningless anywhere else.
+	wp_add_inline_style(
+		'common',
+		'.bridge-media__preview{display:flex;align-items:center;justify-content:center;'
+			. 'inline-size:min(22rem,100%);min-block-size:6rem;margin-block-end:.5rem;padding:.5rem;'
+			. 'border:1px solid #dcdcde;border-radius:4px;background:#f6f7f7}'
+			. '.bridge-media__preview img{max-inline-size:100%;block-size:auto;display:block}'
+			. '.bridge-media__actions{display:flex;gap:.5rem;align-items:center;margin:0}'
+	);
+}
+add_action('admin_enqueue_scripts', 'bridge_enqueue_site_options');
+
+/**
  * One field's control.
  *
  * @param string               $key   Field key.
@@ -399,7 +499,67 @@ function bridge_site_options_field(string $key, array $field, array $value): voi
 			<label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($field['label']); ?></label>
 		</th>
 		<td>
-			<?php if ('textarea' === $field['type']) : ?>
+			<?php if ('image' === $field['type']) : ?>
+				<?php
+				/*
+				 * A media picker, drawn as plain markup with a hidden input
+				 * behind it.
+				 *
+				 * The id is what the form submits, so it is an <input> like
+				 * every other field on the screen and the settings API needs
+				 * no special case — but a hidden one, because an attachment id
+				 * is a number nobody should have to read. The preview and the
+				 * two buttons are the operator's half of it, driven by
+				 * src/admin/site-options.js.
+				 *
+				 * Which does mean the field is inert with JavaScript
+				 * unavailable: the buttons do nothing and there is no longer a
+				 * box to type an id into. An acceptable trade on a screen whose
+				 * only other job is text fields, and worth remembering if this
+				 * control is ever reused somewhere it matters more.
+				 */
+				$preview = $current > '' ? wp_get_attachment_image((int) $current, 'medium', false, array('alt' => '')) : '';
+				?>
+				<div class="bridge-media" data-bridge-media>
+					<div class="bridge-media__preview" data-bridge-media-preview>
+						<?php
+						echo $preview // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core markup.
+							?: '<em>' . esc_html__('No image chosen', 'bridge') . '</em>';
+						?>
+					</div>
+
+					<p class="bridge-media__actions">
+						<?php
+						// The button carries the field's id, so the <label> in
+						// the row heading — written by the shared markup above,
+						// which does not know what kind of field this is —
+						// still points at a real control. A <button> is a
+						// labelable element, so this is what it looks like when
+						// the control an operator actually uses is not the one
+						// holding the value.
+						?>
+						<button type="button" class="button" id="<?php echo esc_attr($id); ?>" data-bridge-media-choose aria-describedby="<?php echo esc_attr($id . '-help'); ?>">
+							<?php echo esc_html($current > '' ? __('Replace image', 'bridge') : __('Choose image', 'bridge')); ?>
+						</button>
+						<button type="button" class="button-link-delete button-link" data-bridge-media-clear <?php disabled('' === $current || '0' === $current); ?>>
+							<?php esc_html_e('Remove', 'bridge'); ?>
+						</button>
+					</p>
+
+					<?php
+					// Hidden, because an attachment id is not something anyone
+					// should have to read or type — the preview above says
+					// which image is chosen far better than a number does. It
+					// is still a real input, so the form submits it and the
+					// settings API needs no special case.
+					?>
+					<input
+						type="hidden"
+						name="<?php echo esc_attr($name); ?>"
+						value="<?php echo esc_attr($current); ?>"
+						data-bridge-media-input>
+				</div>
+			<?php elseif ('textarea' === $field['type']) : ?>
 				<textarea
 					id="<?php echo esc_attr($id); ?>"
 					name="<?php echo esc_attr($name); ?>"

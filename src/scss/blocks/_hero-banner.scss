@@ -1,59 +1,79 @@
 /**
  * Bridge — Hero Banner component.
  *
- * The static counterpart to the Hero Slider: one core/cover, sized to the
- * window, laid out in columns. Deliberately its own stylesheet rather than a
- * layer shared with the slider — the two take the same measure now, a floor
- * either side, but they arrive at it differently: the slider has a track, a
- * stack and a transition to keep in step with it, and none of that belongs in
- * a file this block loads on every page it appears on.
+ * A band sized to the window, carrying a background and one column of content.
+ * Five backgrounds, resolved server-side into three custom properties — a
+ * ground, a legible foreground and an overlay — so this file paints rather than
+ * decides. See bridge_hero_banner_ground() in inc/hero-blocks.php.
  *
- * Cover owns its own layout — background image, overlay, content positioning
- * — so this file handles sizing and the header allowance only. No flex
- * overrides that would fight Cover's own CSS.
+ * Deliberately its own stylesheet rather than a layer shared with the slider:
+ * the two take the same measure, a floor either side, but they arrive at it
+ * differently — the slider has a track, a stack and a transition to keep in
+ * step with it, and none of that belongs in a file this block loads on every
+ * page it appears on.
  *
  * Compiles to dist/hero-banner.css, declared as the block's `style` (not
- * `viewStyle`), so the editor and the front end are painted by one file.
+ * `viewStyle`), so the editor and the front end are painted by one file. The
+ * two render the same tree, so every rule below is written once.
  */
 
-.bridge-hero-banner {
-	// An outline button on a hero has no colour of its own to fall back on:
-	// unset, the ghost mixin lands on the on-Default pair, a near-black edge
-	// and a near-black label over a photograph. The same mapping the slider
-	// makes, for the same reason — see blocks/_hero-slider.scss.
-	--bridge-button-ghost: var(--wp--custom--button--on-inverted--ghost);
-	--bridge-button-ghost-hover: var(
-		--wp--custom--button--on-inverted--ghost-hover
-	);
+@use "../abstracts/nav";
 
+.bridge-hero-banner {
 	position: relative;
-	// One in-flow child, the Cover, stretched to the floor below.
-	//
-	// A grid rather than a plain block, because `min-height` on a block
-	// container gives its child nothing: a percentage height resolves against a
-	// parent that has a *height*, and this parent has a floor and some content
-	// instead, so `min-height: 100%` on the Cover computed to `auto` and the
-	// Cover stayed as tall as its own text. The banner was the height it was
-	// asked to be and the Cover — with the background image in it — ended
-	// partway down, the rest of the box empty. Stretching to a grid row asks no
-	// percentage to resolve and needs nobody up the chain to be a fixed size.
+	color: var(--bridge-hero-banner-fg, inherit);
+
+	/**
+	 * A grid, and everything in it occupies the same cell.
+	 *
+	 * Which is what lets the content set the band's height while the media
+	 * fills whatever height that turns out to be. The alternative — an
+	 * absolutely positioned background — takes the picture out of the flow, and
+	 * then nothing in the box has a height for it to resolve `100%` against.
+	 */
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
+	isolation: isolate;
+	background-color: var(--bridge-hero-banner-ground, transparent);
+
+	/**
+	 * Where the page's content column starts, measured from the band's edge.
+	 *
+	 * The banner is full-bleed — it breaks out to the window — but the words in
+	 * it are not a separate composition from the rest of the site: a headline
+	 * that starts a few pixels off the line the logo above it starts on reads
+	 * as a mistake, because it is one. This is the same sum
+	 * `.bridge-header__inner` arrives at: the column is capped at `wideSize` and
+	 * centred, so its edge is half the leftover, and on a window too narrow for
+	 * that it is the page's own side padding instead. `max()` picks whichever
+	 * applies without a breakpoint to keep in step.
+	 *
+	 * The percentage is of the banner, which is the window — so `50% - half the
+	 * wide size` is exactly the gutter the header, the footer and every
+	 * contained section are already using.
+	 */
+	--bridge-hero-banner-gutter: max(
+		var(--wp--style--root--padding-left, 1.5rem),
+		calc(50% - var(--wp--style--global--wide-size, 1200px) / 2)
+	);
+
+	> * {
+		grid-area: 1 / 1;
+	}
 
 	// A floor, not a fixed height: content that outgrows the window makes the
-	// banner taller instead of being clipped by it. That is what keeps a
-	// two-column banner honest on a phone, where core stacks the columns and
-	// the content roughly doubles in height — the same arrangement in a fixed
-	// box would simply lose its lower half, with no scrollbar to admit it.
-
+	// banner taller instead of being clipped by it — which is what keeps a
+	// split honest on a phone, where the panel and the picture stack and the
+	// content roughly doubles in height.
+	//
 	// Less whatever the header is already spending of the window: render.php
-	// decides what that is worth — it is the only place that knows whether
-	// the height was asked for in viewport units, and whether the header on
-	// this page occupies its own band or floats over this one — and publishes
-	// the answer as a length. Zero in every case where neither applies, so
-	// this stays one expression rather than a set of variants. The optional
-	// top bar needs no term of its own: both of the measures render.php
-	// chooses between already count it.
+	// decides what that is worth — it is the only place that knows whether the
+	// height was asked for in viewport units, and whether the header on this
+	// page occupies its own band or floats over this one — and publishes the
+	// answer as a length. Zero in every case where neither applies, so this
+	// stays one expression rather than a set of variants. The optional top bar
+	// needs no term of its own: both of the measures render.php chooses between
+	// already count it.
 	// stylelint-disable scss/operator-no-newline-after -- prettier wraps this
 	// calc and puts the operator at the end of the line; prettier is what runs
 	// on save, so it wins.
@@ -73,75 +93,430 @@
 			) - var(--bridge-admin-bar, 0px)
 	);
 	// stylelint-enable scss/operator-no-newline-after
+}
 
-	// The Cover follows the wrapper rather than setting its own floor, so the
-	// height control in the sidebar is the only thing deciding this: core's
-	// 430px default and any minHeight the block was saved with are dropped, and
-	// the height comes from stretching to the row. `!important` because that
-	// saved figure arrives as an inline style, which no selector outranks.
-	//
-	// Zero rather than a length, because it must not become a ceiling: content
-	// taller than the floor stays as tall as it is and takes the banner with
-	// it, which is the whole point of measuring in floors.
-	> .wp-block-cover {
-		min-height: 0 !important;
-		margin: 0;
-	}
+/**
+ * The gradient: the chosen colour graded across, an eighth darker at one edge
+ * and an eighth lighter at the other.
+ *
+ * The same arithmetic, in the same direction, as the gradient a skinned section
+ * wears — see `.has-band-gradient` in components/_sections.scss. Written out
+ * here rather than shared, because that rule grades `--bridge-band-ground`,
+ * which is a skin's colour, and this grades the banner's own; one selector
+ * carrying both would be a rule that has to know about two systems.
+ */
+.bridge-hero-banner.is-bg-gradient {
+	background-image: linear-gradient(
+		to right,
+		color-mix(in srgb, #000 12.5%, var(--bridge-hero-banner-ground)),
+		color-mix(in srgb, #fff 12.5%, var(--bridge-hero-banner-ground))
+	);
+}
 
-	// Cover's flex centering only centers the inner-container *as a box* —
-	// the box itself is content-sized, so visually the content still hugs the
-	// top. Make the inner container fill the cover, then center its own
-	// children vertically inside it.
-	> .wp-block-cover > .wp-block-cover__inner-container {
-		// Fill the Cover, for the same reason and by the same means as the
-		// wrapper fills itself: `min-height: 100%` here was resolving against a
-		// Cover with no height of its own and computing to nothing, which left
-		// the content sitting at the top of the banner however tall the banner
-		// was — and left `padding-block-start` below with no box to lead the
-		// content down inside.
-		align-self: stretch;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-
-		// The scale, not a bespoke clamp: these presets are fluid, and a
-		// hand-rolled one here would taper on its own schedule.
-		padding-inline: var(--wp--preset--spacing--80);
-
-		// A transparent header covers the top of this box without shortening
-		// it, so centring here would centre against a strip the visitor
-		// cannot see into. Padding the covered part out of the box moves the
-		// middle down to where it looks like the middle. Zero whenever the
-		// header sits above the banner instead, where the floor already
-		// accounts for it.
-		padding-block-start: var(--bridge-hero-banner-lead, 0);
-
-		// Cover's inner container carries core's constrained layout, which
-		// centres each child with `margin-inline: auto` — declared
-		// `!important`, so it is not ours to remove. Auto cross-axis margins
-		// on a flex item outrank `align-items` and shrink the item to its own
-		// content, which turns every child into a text-width box sitting in
-		// the middle of the banner. A columns block would collapse to the
-		// width of its longest line, and a heading set to "left" would look
-		// centred: the class is on it and the rule applies, but the box is
-		// exactly as wide as the words, so there is nothing for the alignment
-		// to move it within.
-
-		// A definite width sends the free space back to the auto margins as
-		// margin instead of taking it out of the box: the child is the
-		// content column again, centred as core intends, and alignment inside
-		// it means what it says. Widths core sets on wide and full children
-		// still win — this is 100% of whatever their own max-width allows,
-		// which is how the template's `alignwide` columns reach wideSize.
-		> * {
-			width: 100%;
-		}
-	}
+/**
+ * An outline button on a dark ground has no colour of its own to fall back on:
+ * unset, the ghost mixin lands on the on-Default pair, a near-black edge and a
+ * near-black label. The same mapping the slider makes, for the same reason —
+ * see blocks/_hero-slider.scss.
+ *
+ * On the inverted class rather than on every banner, because this band is no
+ * longer always dark: a Background or Surface ground carries dark type, and a
+ * ghost button there needs the ordinary pair. render.php decides which, since
+ * CSS cannot ask whether a colour is light.
+ */
+.bridge-hero-banner.is-inverted {
+	--bridge-button-ghost: var(--wp--custom--button--on-inverted--ghost);
+	--bridge-button-ghost-hover: var(
+		--wp--custom--button--on-inverted--ghost-hover
+	);
 }
 
 // ---------------------------------------------------------------------------
-// Width
+// The picture
 // ---------------------------------------------------------------------------
+
+/**
+ * Positioned against the band, not placed in its grid — the same fix, and the
+ * same reason, as the curve above it.
+ *
+ * As a grid item the picture was one of the things deciding how tall the banner
+ * is, and it had no business being: the image inside it is `height: 100%`, and
+ * a percentage height resolves against a grid row that this grid never gives a
+ * definite size — the banner carries a `min-height` and lets its content settle
+ * the rest. Where that percentage fell back to `auto` the `<img>` drew at its
+ * intrinsic height, the row grew to fit it, and the banner came out as tall as
+ * whatever file had been uploaded. The height control still worked; it was just
+ * a floor that a 1600px photograph was always going to clear.
+ *
+ * Out of flow, `inset: 0` makes the box the band exactly however the band was
+ * sized, and the image's `height: 100%` has a definite box to resolve against
+ * at last. Which is also the right answer in principle: the height a hero is
+ * meant to be is a setting and the content inside it, never the decoration.
+ */
+.bridge-hero-banner__media {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	// Behind the words, which are the only thing in this band that should be
+	// able to take a click.
+	z-index: 0;
+}
+
+.bridge-hero-banner__image {
+	display: block;
+	width: 100%;
+	height: 100%;
+	// The banner's height is decided by its content and its floor, so the
+	// picture is cropped to whatever that turns out to be rather than setting
+	// it.
+	object-fit: cover;
+	// Centred in that crop, and then moved.
+	//
+	// `object-position` used to be the focal point on its own and could not be:
+	// it does not move a picture, it chooses which part of one survives a crop,
+	// so it runs out the moment there is no crop left to choose from. A
+	// photograph the same shape as the band has no slack either way and the
+	// control did nothing at all. Fixed at centre here, and the setting spent
+	// on a transform instead.
+	object-position: center;
+
+	/**
+	 * Which does move it, by exactly what the picker says — and grows it first
+	 * by exactly as much as that move would otherwise have uncovered.
+	 *
+	 * Read right to left, which is the order a transform list applies: the
+	 * picture is scaled about its own centre, so at `z` it reaches half a band
+	 * times `z` either way, and then translated by up to half a band. The scale
+	 * is `1 + 2|t|`, which is the smallest one whose near edge is still on the
+	 * band's edge after the move — so there is never ground showing behind the
+	 * photograph at any setting, and at centre it is `scale(1)` and costs
+	 * nothing. bridge_hero_focal_zoom() does the arithmetic and explains it.
+	 *
+	 * The wrapper is `overflow: hidden` and a transform is paint rather than
+	 * layout, so neither half of this can change the size of the banner. See
+	 * bridge_hero_focal_shift().
+	 */
+	transform: translate(var(--bridge-hero-banner-shift, 0, 0))
+		scale(var(--bridge-hero-banner-zoom, 1));
+}
+
+/**
+ * Held still while the page moves.
+ *
+ * `background-attachment: fixed` is a property of a background image, so
+ * render.php paints the picture rather than printing an `<img>` when this is
+ * on — and the picture gives up its `srcset` and its LCP hint to do it. The
+ * same trade core/cover makes for parallax.
+ *
+ * iOS Safari has never supported it: the background simply scrolls, which is
+ * the ordinary banner and is why the toggle's help text says so rather than
+ * this being worked around.
+ */
+.bridge-hero-banner.has-fixed-media .bridge-hero-banner__media {
+	// The same focal point, through the property a painted background takes.
+	background-position: var(--bridge-hero-banner-focal, center);
+	background-size: cover;
+	background-attachment: fixed;
+}
+
+/*
+ * A pinned background is a movement nobody asked for, and the first thing to
+ * drop for a visitor who has asked for less of it.
+ */
+@media (prefers-reduced-motion: reduce) {
+	.bridge-hero-banner.has-fixed-media .bridge-hero-banner__media {
+		background-attachment: scroll;
+	}
+}
+
+/**
+ * The scrim over a photograph.
+ *
+ * Black at the chosen share rather than a mix of the palette: the job is to
+ * take light out of an unknown picture so white type reads on it, and every
+ * colour that is not black takes a hue with it — a navy scrim over a green
+ * field is a colour cast, not a dimmer.
+ *
+ * Only over a full-bleed photograph. A split's picture is beside the words
+ * rather than under them, so there is nothing on it to keep readable and
+ * darkening it would only make the banner duller.
+ */
+.bridge-hero-banner.is-bg-image .bridge-hero-banner__media::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-color: rgb(
+		0 0 0 / calc(var(--bridge-hero-banner-overlay, 0.5) * 100%)
+	);
+}
+
+// ---------------------------------------------------------------------------
+// The content
+// ---------------------------------------------------------------------------
+
+.bridge-hero-banner__content {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+
+	// The page's grid, not a spacing step: see the gutter on the band. A step
+	// would be a number that happens to look close at one window width and
+	// visibly misses the logo at the next.
+	padding-inline: var(--bridge-hero-banner-gutter);
+
+	// A transparent header covers the top of this box without shortening it, so
+	// centring here would centre against a strip the visitor cannot see into.
+	// Padding the covered part out of the box moves the middle down to where it
+	// looks like the middle. Zero whenever the header sits above the banner
+	// instead, where the floor already accounts for it.
+	padding-block-start: var(--bridge-hero-banner-lead, 0);
+
+	/**
+	 * One column, and it is the wide one.
+	 *
+	 * `wideSize`, not `contentSize`: a hero is a band, and its words belong on
+	 * the same measure as the header above it and every full-width section
+	 * below — which is the column the logo, the menu and the footer are all set
+	 * against. Held at the content size instead, the headline wrapped a third
+	 * of the way across a banner that was plainly wider than that, and read as
+	 * a paragraph that had been squeezed rather than a title that had been set.
+	 *
+	 * The gutter above already puts the box on that column, so this is the
+	 * ceiling rather than the measurement — what stops a child growing past the
+	 * grid if something inside it asks to.
+	 *
+	 * The children take the width rather than being centred by auto margins, so
+	 * a heading set to "left" means it: an auto-margined box shrinks to its own
+	 * text, and alignment inside a box exactly as wide as its words moves
+	 * nothing.
+	 */
+	> * {
+		width: 100%;
+		max-width: var(--wp--style--global--wide-size, 1200px);
+	}
+}
+
+/**
+ * A banner with nothing in it but a colour.
+ *
+ * ---- Why it needs padding the others do not --------------------------------
+ *
+ * Because there is nothing else in the frame. Every other kind of hero gives
+ * the words an edge to sit against — a photograph behind them, a curve beside
+ * them, a gradient falling across them — and the page gutter is enough, since
+ * the type is one element in a composition rather than the whole of it. On a
+ * flat colour the type *is* the composition, and a headline set to the same
+ * margin as the logo reads as a line that ran out of room rather than one that
+ * was placed. Fifteen per cent either side is the difference between a band
+ * with words in it and a band the words are centred on.
+ *
+ * `max()` and not a flat 15%, because the gutter is the floor: the page's own
+ * grid is the narrowest the type may ever be set, and a percentage of a small
+ * window is smaller than that. Desktop only for the same reason — on a phone
+ * fifteen per cent a side is a third of the screen gone and the headline
+ * wraps every other word, so below the bar the gutter stands on its own.
+ */
+.bridge-hero-banner.is-bg-solid .bridge-hero-banner__content {
+	@media (min-width: nav.$bar) {
+		padding-inline: max(15%, var(--bridge-hero-banner-gutter));
+	}
+}
+
+/**
+ * And the one child the centring above cannot reach.
+ *
+ * The content is `text-align: center` and its children are `width: 100%`, which
+ * centres a heading or a paragraph and does nothing at all to a Buttons block:
+ * that is a flex row of its own, and a full-width flex row ignores the
+ * `text-align` above it and leaves its button on the left of a banner where
+ * everything else is centred.
+ *
+ * ---- Why every part of the selector is inside `:where()` -------------------
+ *
+ * So that the editor can always win, which is why this rule is written flat
+ * rather than nested inside the block above.
+ *
+ * Justification is a layout attribute on `core/buttons`, and core spends it as
+ * a generated `.wp-container-core-buttons-is-layout-*` rule — one class,
+ * specificity 0,1,0. Any selector of ours that says *where* the buttons are is
+ * worth more than that, so a default written the ordinary way is not a default
+ * at all: it beats the choice it is supposed to yield to, and picking an
+ * alignment on the block does nothing at all.
+ *
+ * `:where()` weighs nothing, but only for what is inside it — nesting this
+ * under the block would have left three classes outside the brackets and the
+ * rule still winning at 0,3,0. Flat and wholly wrapped, it lands at 0,0,0 and
+ * every core rule outranks it, including the one core only emits once somebody
+ * has actually chosen an alignment. Centred until asked otherwise, which is
+ * what a default means.
+ *
+ * The `:not()` is for old content, where the same choice was a class rather
+ * than a layout attribute. It costs nothing inside `:where()` and still says
+ * the right thing about a page written before WordPress moved it.
+ */
+:where(
+	.bridge-hero-banner.is-bg-solid
+		.bridge-hero-banner__content
+		.wp-block-buttons:not([class*="is-content-justification"])
+) {
+	justify-content: center;
+}
+
+// ---------------------------------------------------------------------------
+// Custom curve — a drawn edge with the picture behind it
+// ---------------------------------------------------------------------------
+
+/**
+ * The shape is an SVG the renderer generates, not a rule in this file.
+ *
+ * One parabola down the right-hand side of the banner, the colour filled to
+ * the left of it, and a second copy of the same curve laid over the picture. A
+ * border radius says none of it — it can only ever be a quarter ellipse
+ * anchored to a corner. So the paths are built in PHP (and again in the editor
+ * bundle, which cannot import it) and this file only places the drawing. See
+ * bridge_hero_curve_path().
+ *
+ * It is painted *over* the picture rather than cutting it out. The panel path
+ * is filled in the band's own colour, so the left of the photograph is covered
+ * by a shape that is seamless with the ground behind it — and the picture stays
+ * an ordinary full-bleed `<img>` with a `srcset`, rather than something clipped
+ * to a shape that has to be kept in step with it.
+ */
+
+/**
+ * Positioned against the band, not placed in its grid — and that is the whole
+ * of what makes the drawing the right size.
+ *
+ * As a grid item it was neither. A percentage height resolves against the grid
+ * area, and this grid's row has no definite height to give: the banner carries
+ * a `min-height` and lets its content decide the rest, so `height: 100%` on the
+ * item computed to `auto`, and the drawing hung past the bottom of the band
+ * with its bulge somewhere below the fold.
+ *
+ * Absolute with `inset: 0` sidesteps the question: the containing block is the
+ * banner, which is `position: relative` and has a height by the time anything
+ * is painted, so this box is the band exactly however the band was sized. Out
+ * of flow is also correct in itself — this is decoration, and a drawing should
+ * never be one of the things deciding how tall a hero is.
+ *
+ * `overflow: hidden` stays because the path overdraws well past the viewBox on
+ * purpose — see bridge_hero_curve_path() — and because the picture behind it
+ * can be pushed off the edge by its focal point. Nothing either of them does
+ * changes the size of the banner.
+ */
+.bridge-hero-banner__curve {
+	position: absolute;
+	inset: 0;
+	// Over the picture, under the words: the media before it and this are both
+	// stacking contexts at the same level, so the later one paints on top, and
+	// the content sits above both at 1.
+	z-index: 0;
+	display: block;
+	overflow: hidden;
+	// Decoration covering the whole band. Nothing in it is a target, and a
+	// full-width sheet that swallowed a click would be a link in the picture
+	// that cannot be pressed.
+	pointer-events: none;
+}
+
+/**
+ * The drawing itself, stretched over the band.
+ *
+ * `preserveAspectRatio="none"` maps the 100 × 100 viewBox onto this box however
+ * it turns out, which is what makes every number in the path a percentage of
+ * the banner — and a percentage of the banner is exactly what the curve's
+ * settings are. Its two ends are pinned to the banner's own right-hand edge and
+ * its bottom edge, so the drawing has to live in the banner's coordinates or
+ * the settings would not mean what they say.
+ *
+ * The cost is that the curve follows the banner's proportions: a much taller
+ * banner gets a longer, lazier sweep of the same shape rather than the same
+ * sweep with more of it cropped away. That is the right trade for a shape whose
+ * whole purpose is to land on particular corners.
+ */
+.bridge-hero-banner__curve-box {
+	position: absolute;
+	inset: 0;
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.bridge-hero-banner__curve-panel {
+	fill: var(--bridge-hero-banner-ground, transparent);
+}
+
+// Both arrangements are in the markup and a width picks one: the curve across a
+// wide band, or the same curve turned on its side with the picture above the
+// words. See the note in render.php for why they are two paths rather than one
+// path and a rotation.
+//
+// Only the resting answer is here. Which width does the picking is a per-block
+// setting now, so the query that swaps them is written per banner into a
+// `<style>` beside it — a media query cannot read a custom property, so the
+// number has to be in the query text and there is no one query to write. See
+// bridge_hero_curve_css() in inc/hero-blocks.php, which also explains why every
+// selector in it carries more classes than the rules here do.
+.bridge-hero-banner__curve .is-stacked {
+	display: none;
+}
+
+/**
+ * The second edge: the same curve a gap to the right, painted before the panel
+ * covers all but the band between them.
+ *
+ * The band's own colour, not a tint of the foreground — so the second curve is
+ * the panel continuing over the picture at reduced strength rather than a third
+ * colour arriving between them. One ground, twice: opaque on the left of the
+ * first curve, and as much of it as the opacity says between the two. An
+ * operator setting that number is setting how far the panel reaches into the
+ * photograph, which is a thing they can see rather than a value they have to
+ * imagine.
+ */
+.bridge-hero-banner__curve-veil {
+	fill: var(--bridge-hero-banner-ground, transparent);
+	fill-opacity: var(--bridge-hero-banner-curve-opacity, 0.6);
+}
+
+/**
+ * The words, ranged left of the curve.
+ *
+ * Every other banner centres its content; this one cannot, because the right of
+ * the band belongs to the photograph and type centred in the whole width would
+ * run under the shape. So the column is the left of the band and the type is
+ * set against the page's own gutter, in line with the logo above it.
+ *
+ * Where it stops is the one thing this file cannot work out. The curve's
+ * deepest reach is three settings' worth of arithmetic and render.php publishes
+ * it as `--bridge-hero-banner-curve-inset`, with the clear air the words keep
+ * off it as `--bridge-hero-banner-curve-pad`. See bridge_hero_curve_inset().
+ *
+ * The `min()` is the floor under all of that: a curve wound far enough left
+ * would otherwise take the whole measure and leave the headline a column one
+ * word wide. Four rem past the far gutter is the narrowest the type may be set,
+ * whatever the shape is doing.
+ */
+.bridge-hero-banner.is-bg-curve .bridge-hero-banner__content {
+	align-items: flex-start;
+	text-align: start;
+
+	// The page's own gutter, and nothing added to it: the headline starts on
+	// the line the logo starts on, which is not a thing worth being able to
+	// nudge out of true.
+	padding-inline-start: var(--bridge-hero-banner-gutter);
+
+	// stylelint-disable scss/operator-no-newline-after -- prettier wraps
+	padding-inline-end: min(
+		var(--bridge-hero-banner-curve-inset, 58%) +
+			var(--bridge-hero-banner-curve-pad, 4%),
+		100% - var(--bridge-hero-banner-gutter) - 4rem
+	);
+	// stylelint-enable scss/operator-no-newline-after
+}
 
 /**
  * Force viewport-edge alignment. WP's `.has-global-padding > .alignfull`
@@ -204,5 +579,382 @@
 	--bridge-hero-banner-lead: 0px;
 	// stylelint-enable length-zero-no-unit
 
-	min-height: min(var(--bridge-hero-banner-height, 100dvh), 100%);
+	/**
+	 * Capped at the canvas, and `100dvh` is how that is asked for.
+	 *
+	 * `min(…, 100%)` was the obvious way to say it and is the one thing here
+	 * that can silently collapse the banner. A percentage `min-height` resolves
+	 * against the containing block's height, and the editor's block wrappers
+	 * are all `height: auto` — indefinite, so the percentage resolves to zero,
+	 * so `min()` returns zero and the banner shrinks to whatever its content
+	 * happens to be. Full screen looked broken in the preview and correct on
+	 * the front end, which is exactly the shape of that bug.
+	 *
+	 * Inside the iframed canvas `100dvh` *is* the canvas, which is what the cap
+	 * meant in the first place, and it is a length rather than a percentage so
+	 * there is nothing for it to fail to resolve against. Where the canvas is
+	 * not iframed it is the window instead — a looser cap than intended, which
+	 * costs a preview that runs a little tall rather than one that vanishes.
+	 */
+	min-height: min(var(--bridge-hero-banner-height, 100dvh), 100dvh);
 }
+
+// ---------------------------------------------------------------------------
+// The title block in the left-hand half
+// ---------------------------------------------------------------------------
+
+/**
+ * The band read as two columns and a gutter, with the words in the first one.
+ *
+ * ---- Why it is padding and not a grid -------------------------------------
+ *
+ * Because the second column is not a box: nothing goes in it. What the toggle
+ * asks for is a measure — the headline set on half the band instead of all of
+ * it — and a measure is what padding states. A real two-column grid here would
+ * add a cell that only ever holds the background showing through, and every
+ * rule above that puts something in the band's single cell (`> * { grid-area:
+ * 1 / 1 }`) would have to learn about a second one.
+ *
+ * ---- Where the number comes from ------------------------------------------
+ *
+ * The page's own grid, so the right-hand edge of the type lands on the column
+ * line the rest of the site is set against rather than near it. The band is
+ * `100%` wide with `--bridge-hero-banner-gutter` either side, which leaves
+ * `100% - 2g` of content; two equal columns with one gap between them make
+ * each column `(100% - 2g - gap) / 2`, so the type has to stop
+ * `100% - g - column` from the left — which reduces to `50% + gap / 2`, with
+ * the gutter cancelling out. One expression, and it stays correct at every
+ * window width without a breakpoint to keep in step.
+ *
+ * The gap is the theme's own block gap, which is the gap between two Columns
+ * blocks on the same page — see `$grid-gap` in abstracts/_section.scss, which
+ * takes the same pair.
+ *
+ * ---- Desktop only ---------------------------------------------------------
+ *
+ * Half a phone is not a column. Below the bar the words take the full measure
+ * and keep whatever alignment the background gave them, which is the
+ * arrangement every banner already has there — so this is written inside the
+ * query rather than undone outside it.
+ */
+.bridge-hero-banner.is-title-left .bridge-hero-banner__content {
+	@media (min-width: nav.$bar) {
+		align-items: flex-start;
+		text-align: start;
+
+		// The page's own gutter, and nothing added to it: the headline starts
+		// on the line the logo starts on. The same sentence the curve makes.
+		padding-inline-start: var(--bridge-hero-banner-gutter);
+
+		// stylelint-disable scss/operator-no-newline-after -- prettier wraps
+		// this calc and puts the operator at the end of the line; prettier is
+		// what runs on save, so it wins.
+		padding-inline-end: calc(
+			50% + var(--wp--style--block-gap, var(--wp--preset--spacing--40)) /
+				2
+		);
+		// stylelint-enable scss/operator-no-newline-after
+	}
+}
+
+/**
+ * And the one child that alignment cannot reach.
+ *
+ * A Buttons block is a flex row of its own and ignores the `text-align` above
+ * it — the same problem the solid background has, and the same fix. `:where()`
+ * for the same reason too: justification is a choice on `core/buttons` worth
+ * one class, so a default of ours has to weigh nothing or it beats the choice
+ * it is meant to yield to. See the solid banner's copy of this rule, which
+ * explains all of it.
+ *
+ * After that rule in the file, so a banner that is both solid and left-ranged
+ * gets this answer rather than the centred one. Two rules at 0,0,0 are decided
+ * by order, which is the whole reason this one is last.
+ */
+:where(
+	.bridge-hero-banner.is-title-left
+		.bridge-hero-banner__content
+		.wp-block-buttons:not([class*="is-content-justification"])
+) {
+	@media (min-width: nav.$bar) {
+		justify-content: flex-start;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Custom gradient — a run of colour bands at an angle, over the picture
+// ---------------------------------------------------------------------------
+
+/**
+ * The gradient, painted once.
+ *
+ * Everything that decides what it looks like — the angle, the bands, where each
+ * one starts and stops and what colour it is at either end — is already one
+ * `linear-gradient()` by the time it reaches here, built by
+ * bridge_hero_gradient_css() and published on the wrapper. That is the whole
+ * division of labour: the number of stops is a setting, and CSS can hold a
+ * value it does not understand but cannot loop to build one.
+ *
+ * Its own element rather than a second background on the wrapper, because the
+ * picture is an `<img>` in the band rather than a background of it — a gradient
+ * with transparent stops has to be over that element, not behind it. As a grid
+ * item it takes the same cell as everything else and `z-index` places it: above
+ * the media, below the words.
+ *
+ * No fallback in the `var()`. A banner with no bands prints no element at all,
+ * so there is nothing here to paint a default into.
+ */
+.bridge-hero-banner__gradient {
+	position: absolute;
+	inset: 0;
+	// Over the picture, under the words — the same level the curve takes, and
+	// for the same reason: both are stacking contexts alongside the media, so
+	// the one render.php prints later paints on top and the content sits above
+	// them both at 1.
+	z-index: 0;
+	background-image: var(--bridge-hero-banner-gradient);
+	// Decoration covering the whole band. A full-width sheet that swallowed a
+	// click would be a button in the banner that cannot be pressed.
+	pointer-events: none;
+}
+
+// ---------------------------------------------------------------------------
+// Reframing the picture, by dragging it in the editor
+// ---------------------------------------------------------------------------
+
+/**
+ * A surface over the whole banner, and only while Reframe is on.
+ *
+ * The thing being set is which part of a photograph the banner keeps, and that
+ * is a question about the photograph — so the answer is given on the picture
+ * rather than by two numbers in a sidebar with the picture six inches away. The
+ * sidebar keeps its picker for the case where an exact value is wanted; this is
+ * for the case where the answer is "a bit left".
+ *
+ * ---- Why a mode and not just a drag ---------------------------------------
+ *
+ * Because there is nowhere else to put it. The content is a grid item the size
+ * of the band and sits above the media, so a drag surface under the words would
+ * never see a pointer, and one above them would swallow every click meant for a
+ * heading. The banner is a block an editor spends most of its time typing into,
+ * so the picture cannot be draggable at the same time. A toolbar toggle makes
+ * the choice explicit and reversible, and costs one press.
+ *
+ * Over everything, including the gradient tool: while the mode is on, the only
+ * thing the banner does is reframe.
+ */
+.bridge-hero-banner__reframe {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	cursor: grab;
+	touch-action: none;
+	// The one overlay in this block that does take pointers everywhere. That is
+	// what it is for, and what the toggle above it is for.
+	pointer-events: auto;
+}
+
+.bridge-hero-banner__reframe.is-dragging {
+	cursor: grabbing;
+}
+
+/**
+ * What the mode looks like, so it is obvious it is on.
+ *
+ * A thin inset frame rather than a tint: the whole point of the mode is judging
+ * a photograph against the edges of the band, and a wash over the picture is a
+ * wash over the thing being judged. Drawn with an inset shadow so it takes no
+ * layout and cannot move anything underneath it.
+ */
+.bridge-hero-banner__reframe::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	box-shadow:
+		inset 0 0 0 1px rgb(0 0 0 / 45%),
+		inset 0 0 0 2px rgb(255 255 255 / 70%);
+	pointer-events: none;
+}
+
+/**
+ * The hint, until the first drag.
+ *
+ * Bottom-centred, out of the way of a headline, and gone the moment the picture
+ * is moved — at which point it has been read and the thing it describes is
+ * happening.
+ */
+.bridge-hero-banner__reframe-hint {
+	position: absolute;
+	inset: auto 0 16px;
+	margin: 0 auto;
+	width: fit-content;
+	max-width: calc(100% - 32px);
+	padding: 4px 10px;
+	border-radius: 3px;
+	background: rgb(0 0 0 / 75%);
+	color: #fff;
+	font-size: 12px;
+	line-height: 1.4;
+	text-align: center;
+	pointer-events: none;
+}
+
+// ---------------------------------------------------------------------------
+// The gradient tool, drawn over the preview in the editor
+// ---------------------------------------------------------------------------
+
+/**
+ * Why the handles are on the banner rather than in the sidebar.
+ *
+ * Because what is being set is where a colour stops, and where it stops is a
+ * place on the picture. A number in the Inspector makes that a guess-and-check
+ * loop — nudge, look up, nudge again — and the thing being looked at is six
+ * inches away from the thing being moved. The sidebar keeps the numbers, for
+ * the settings that are genuinely numbers and for anyone who wants to type an
+ * exact one; the rail puts the same values where the answer is.
+ *
+ * Only in the editor, and only while the block itself is selected: edit.js
+ * renders nothing otherwise, so an overlay that swallows pointer events is
+ * never between an operator and the words they are trying to type.
+ *
+ * The wrapper takes no pointer — the handles inside it take their own — so the
+ * banner underneath can still be clicked anywhere the rail is not.
+ */
+.bridge-hero-banner__gradient-tool {
+	position: absolute;
+	inset: 0;
+	// Above the words, unlike everything else painted into this band: a handle
+	// under a headline is a handle that cannot be grabbed, and the headline is
+	// centred over exactly the part of the rail an operator most wants to move.
+	z-index: 2;
+	// The wrapper is a frame to measure against, not a surface. Its handles take
+	// their own pointers; everywhere else the banner underneath is still live,
+	// so the words can be clicked and edited through it.
+	pointer-events: none;
+}
+
+/**
+ * The rail: the gradient's own line, drawn where it actually runs.
+ *
+ * A gradient line is not the width of the box. It runs through the centre at
+ * the angle, and it is long enough that its two ends are the corners' own
+ * projections onto it — `|W·sin a| + |H·cos a|`, which is why a 45° gradient on
+ * a wide banner is longer than the banner is wide. The tool measures the band
+ * and draws the real line, so 50% on the rail is the same 50% the browser
+ * paints; a rail drawn corner to corner, or straight across, would put every
+ * handle in the wrong place at every angle but one.
+ *
+ * An SVG sized to the band rather than a rotated div, because the same overlay
+ * carries the ticks and the line has to be crisp at any angle.
+ */
+.bridge-hero-banner__gradient-rail {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+/**
+ * Drawn twice: a wide dark stroke with a narrow white one on top of it, which
+ * is a white line with a dark outline and reads against a white sky and a dark
+ * suit alike.
+ *
+ * `mix-blend-mode: difference` would be the tidier way to say it and does not
+ * work here: the banner sets `isolation: isolate` and the tool is a stacking
+ * context of its own, so a blended stroke has only the tool's own (empty)
+ * backdrop to blend against and comes out plain white. The outline needs
+ * nothing from outside its own element.
+ */
+.bridge-hero-banner__gradient-rail line {
+	stroke: #fff;
+	stroke-width: 1;
+}
+
+.bridge-hero-banner__gradient-rail line.is-shadow {
+	stroke: #000;
+	stroke-width: 3;
+	stroke-opacity: 0.45;
+}
+
+/**
+ * A handle: one end of one band.
+ *
+ * A button rather than a div, so it is in the tab order and can be moved with
+ * the arrow keys — a percentage is exactly the kind of value a pointer is bad
+ * at landing exactly and a keyboard is good at. Centred on its own point by
+ * translating half its own size, so the number it reports is the middle of the
+ * circle rather than its top-left corner.
+ */
+.bridge-hero-banner__gradient-handle {
+	position: absolute;
+	width: 18px;
+	height: 18px;
+	margin: -9px 0 0 -9px;
+	padding: 0;
+	border: 2px solid #fff;
+	border-radius: 50%;
+	background: rgb(0 0 0 / 35%);
+	box-shadow: 0 0 0 1px rgb(0 0 0 / 45%);
+	cursor: grab;
+	pointer-events: auto;
+	touch-action: none;
+	appearance: none;
+}
+
+.bridge-hero-banner__gradient-handle:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 3px;
+}
+
+.bridge-hero-banner__gradient-handle.is-dragging {
+	cursor: grabbing;
+}
+
+/**
+ * The angle handle sits past the far end of the rail, which is the one place on
+ * the line that is not a band position — so there is nothing for it to be
+ * confused with, and dragging it sweeps the whole rail round under the pointer.
+ * A square rather than a circle for the same reason: it is not a stop.
+ */
+.bridge-hero-banner__gradient-handle.is-angle {
+	border-radius: 3px;
+	background: #fff;
+}
+
+/**
+ * The readout, while a handle is being dragged.
+ *
+ * Above the handle and out of the pointer's way, and gone the moment the drag
+ * ends: it is feedback on a gesture rather than a label on the banner.
+ */
+.bridge-hero-banner__gradient-readout {
+	position: absolute;
+	transform: translate(-50%, -175%);
+	padding: 2px 6px;
+	border-radius: 3px;
+	background: rgb(0 0 0 / 75%);
+	color: #fff;
+	font-size: 11px;
+	font-family: monospace;
+	line-height: 1.4;
+	white-space: nowrap;
+	pointer-events: none;
+}
+
+/*
+ * The words are not touched from here.
+ *
+ * The gradient is painted where the settings put it and the content keeps
+ * whatever arrangement the rest of this file gives it: centred by default, and
+ * ranged into the left-hand column when the title toggle is on. The two are
+ * meant to be used together — the composition this background was drawn for is
+ * a brand colour fading out across the left-hand half with the words inside it
+ * — so a rule here would only be a third opinion about where the words go, and
+ * one that outranks the toggle by coming later in the file.
+ *
+ * The band's own gutter, which `__content` already sets, is the right measure.
+ * The fifteen per cent a side that a flat colour takes is not: that exists
+ * because on a flat colour the type is the whole composition, and here it has a
+ * gradient to sit against and, usually, a picture beside it.
+ */

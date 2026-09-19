@@ -1,16 +1,21 @@
 /**
  * Bridge — the site footer.
  *
- * Three columns and a line under them. Grid rather than flex, because the
- * columns are not equal: the identity column carries a logo and a row of icons
- * and wants more room than a list of five links does.
+ * Four columns and a line under them. Grid rather than flex, because the
+ * columns are not equal: the identity column carries a logo, a paragraph and a
+ * piece of lettering and wants more room than a list of five links does, and
+ * the contact column sits between the two — wider than a menu, narrower than
+ * the identity.
  *
- * Nothing here names a colour. The ground arrives as `--bridge-footer-bg` on
- * the element — render.php publishes it there so the editor canvas, which runs
- * none of the theme's enqueue hooks, resolves it too — and everything else is
- * derived from `currentcolor`, which is what lets one stylesheet paint a footer
- * on any of the six palette slugs. The one exception is the pair of column
- * labels, which render.php names outright as `--bridge-footer-label`.
+ * Nothing here names a colour but one. The ground arrives as
+ * `--bridge-footer-bg` on the element — render.php publishes it there so the
+ * editor canvas, which runs none of the theme's enqueue hooks, resolves it too
+ * — and everything else is derived from `currentcolor`, which is what lets one
+ * stylesheet paint a footer on any of the six palette slugs. The exceptions are
+ * the column labels, which render.php names outright as
+ * `--bridge-footer-label`, and the accent: the rule under each heading and the
+ * icons in the contact column are the brand's own colour, which is the one
+ * thing in the footer that should not follow the ground it sits on.
  *
  * The colour is on the outer element and the padding is not: the band reaches
  * the window, the words inside it stop at the site's wide container. See the
@@ -23,6 +28,108 @@
 		--bridge-footer-bg,
 		var(--wp--preset--color--surface)
 	);
+}
+
+/**
+ * The image along the bottom.
+ *
+ * Only on a footer that has one: render.php adds this class and publishes
+ * `--bridge-footer-image` together, so nothing here is drawn over a flat band
+ * with nothing behind it.
+ *
+ * ---- Why a pseudo-element rather than a second background layer -----------
+ *
+ * The obvious build is two layers on the footer itself — a scrim over a
+ * photograph — and it is wrong for one reason: `.has-band-gradient` already
+ * claims `background-image` on this same element, at a higher specificity than
+ * a single class. A footer with both the gradient and an image would have
+ * drawn the gradient and silently ignored the picture, which is the worst kind
+ * of conflict because the setting is saved, the markup is correct, and nothing
+ * anywhere says why.
+ *
+ * So the photograph goes on its own layer underneath, and the element's
+ * `background-image` is left to whoever wants it. The two compose: the wash
+ * paints over the image exactly as it paints over the flat colour.
+ *
+ * ---- The fade -------------------------------------------------------------
+ *
+ * Built as a mask on the image rather than as a scrim painted over it. The two
+ * are the same fade seen from opposite sides, and the mask is the one that
+ * composes: a scrim has to be painted in *some* colour, and over the band
+ * gradient there is no single colour to paint.
+ *
+ * `--bridge-footer-image-scrim` is nevertheless written the way the fade is
+ * described — how much cover is left over the image — and the mask is derived
+ * from it. A number that has to be mentally inverted every time it is set is a
+ * number that will eventually be set wrongly.
+ *
+ *   0%    fully covered — the top of the band is the flat colour it was
+ *   40%   fully covered — the columns are read against colour, not a picture
+ *   100%  uncovered — the image is at full strength where the columns end
+ *
+ * The columns sit in the upper half, and the one thing a background behind
+ * text must not do is compete with it.
+ */
+.bridge-footer--has-image {
+	//   hold   How far down the footer the image stays completely hidden.
+	//   scrim  How much cover is left at the very bottom — 0% for the image at
+	//          full strength, 100% to keep it hidden the whole way down. It is
+	//          the overlay's own opacity, which is how the fade is described
+	//          and therefore how it is written; the mask below subtracts it.
+	//   angle  How far the fade is turned off vertical. Negative is
+	//          anticlockwise, the same sense as the strapline's tilt, and it
+	//          lifts the fade on the right — so a horizon that rises to one
+	//          side comes through before the flat end of it does. A gradient
+	//          that is exactly level with a landscape that is not reads as a
+	//          mistake; a few degrees out reads as weather.
+	--bridge-footer-image-hold: 40%;
+	--bridge-footer-image-angle: -5deg;
+	--bridge-footer-image-scrim: 0%;
+
+	// The image runs the whole band, copyright row included — it is the ground
+	// the footer sits on rather than a picture behind one of its rows, so it
+	// ends where the footer ends. `hold` and the fade are therefore measured
+	// against the full height.
+	//
+	// The stacking context is what keeps the pseudo-element's negative z-index
+	// inside this element; without it the layer escapes to whatever ancestor
+	// happens to be positioned, which in a page of arbitrary content is not a
+	// question worth leaving open.
+	position: relative;
+	isolation: isolate;
+
+	&::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background-image: var(--bridge-footer-image);
+		// Anchored to the foot of the band. `cover` so a wide horizon fills
+		// the width; it is the bottom of the image that matters, and
+		// `bottom center` is what keeps the skyline in view when the footer is
+		// shorter than the picture's proportions.
+		background-position: bottom center;
+		background-size: cover;
+		background-repeat: no-repeat;
+		// Prefixed as well as standard: Safari carried `mask-image` behind
+		// `-webkit-` for years, and a footer whose image ignores its mask is
+		// a photograph at full strength behind the text.
+		-webkit-mask-image: linear-gradient(
+			calc(180deg + var(--bridge-footer-image-angle)),
+			transparent 0%,
+			transparent var(--bridge-footer-image-hold),
+			rgb(0 0 0 / calc(100% - var(--bridge-footer-image-scrim))) 100%
+		);
+		mask-image: linear-gradient(
+			calc(180deg + var(--bridge-footer-image-angle)),
+			transparent 0%,
+			transparent var(--bridge-footer-image-hold),
+			rgb(0 0 0 / calc(100% - var(--bridge-footer-image-scrim))) 100%
+		);
+		// Decoration, and behind everything: it must never take a click meant
+		// for a link in the row above it.
+		pointer-events: none;
+	}
 }
 
 /**
@@ -66,8 +173,30 @@
 	@include section.container(wide);
 }
 
+/**
+ * The air around the columns.
+ *
+ * Two steps up the spacing ladder from where it started — XL/L to 3XL/2XL. The
+ * footer is the last thing on the page and the only band with four columns in
+ * it; at the old values the top of the logo sat close under the section above
+ * and the columns read as a continuation of it rather than as the foot of the
+ * page.
+ *
+ * Still asymmetric, and still by one step: the copyright strip underneath
+ * brings its own padding, so the space below the columns is the sum of the two
+ * and matching them here would leave the block sitting high.
+ */
 .bridge-footer__body {
-	padding-block: var(--wp--preset--spacing--60) var(--wp--preset--spacing--50);
+	// 3XL over the columns, 2XL *plus* XL under them. A sum rather than the
+	// next slug up, because there is no next slug up — 3XL is the top of the
+	// scale and the space wanted here is past it. Still written in the scale's
+	// own steps, so it moves when a site changes its spacing base.
+	//
+	// The extra is for the image: the background is anchored to the foot of
+	// the band, so the room below the last column is what the skyline is drawn
+	// in. Without it the columns sit on the horizon.
+	padding-block: var(--wp--preset--spacing--80)
+		calc(var(--wp--preset--spacing--70) + var(--wp--preset--spacing--60));
 }
 
 /**
@@ -89,30 +218,61 @@
 }
 
 /**
- * The three columns.
+ * The four columns.
  *
- * `auto-fit` with a floor rather than a media query: the footer collapses when
- * its own container runs out of room, which is the right question — the same
- * footer appears inside the editor canvas at half the window's width, where a
- * viewport query would still be answering "desktop".
+ * Three steps rather than two, because four columns cannot go straight from a
+ * phone to a desktop without spending a stretch of the range at a width that
+ * suits none of them:
  *
- * The floor is 26rem and that number is doing one job: it is wide enough that
- * two of them plus the gap will not fit in anything narrower than the 56rem
- * this file switches to three columns at. Below that the footer is therefore a
- * single column, never two — which is what it used to become between about
- * 560px and 900px, and two columns of three is a row of two and an orphan on
- * its own line. A phone gets one list; a desktop gets three.
+ *   under 34rem   One column. Everything is a single running list.
+ *   34–68rem      Two columns. The identity column takes the full row above
+ *                 them — it holds a paragraph, and a paragraph in a half-row
+ *                 at tablet width is four words a line — and the three short
+ *                 columns pair up underneath.
+ *   68rem and up  All four, at the widths the design asks for.
  *
- * The identity column is given more of the row on wide screens, because a logo
- * and a row of icons need width where a list of links needs height.
+ * Container queries in spirit but written as media queries, because the grid
+ * itself would have to be the container and a grid cannot query its own width.
+ * The breakpoints are therefore chosen against the *page*, which is what the
+ * editor canvas gets wrong — a footer previewed at half the window's width
+ * lays out as though it had the whole one. That is a preview being generous,
+ * not the front end being wrong, and it is the trade the old `auto-fit` made in
+ * the other direction: correct in the canvas, and prone to a two-column row
+ * with an orphan on the front end.
+ *
+ * The identity column is given the most of the row, because a logo, a sentence
+ * and a piece of lettering need width where a list of links needs height. The
+ * contact column takes rather more than a menu column: its rows are an icon
+ * plus a line of text that should not wrap.
  */
 .bridge-footer__inner {
 	display: grid;
 	gap: var(--wp--preset--spacing--50) var(--wp--preset--spacing--60);
-	grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
+	grid-template-columns: minmax(0, 1fr);
 
-	@media (width >= 56rem) {
-		grid-template-columns: 1.5fr 1fr 1fr;
+	@media (width >= 34rem) {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	@media (width >= 68rem) {
+		grid-template-columns: 1.7fr 1fr 1.15fr 1.35fr;
+	}
+}
+
+/**
+ * The identity column takes the whole row while the footer is two columns
+ * wide, and its own share once there are four.
+ *
+ * `1 / -1` rather than `span 2`: the count is what the grid above decides, and
+ * a span written here would be a second copy of it.
+ */
+.bridge-footer__col--identity {
+	@media (width >= 34rem) {
+		grid-column: 1 / -1;
+	}
+
+	@media (width >= 68rem) {
+		grid-column: auto;
 	}
 }
 
@@ -123,7 +283,7 @@
 	min-width: 0;
 }
 
-// ---- Column one: the logo and the social row -----------------------------
+// ---- Column one: the logo, the description and the strapline -------------
 
 /**
  * The mark starts at the column's left edge.
@@ -163,20 +323,14 @@
 	color: inherit;
 	// On top of the column's own gap, not instead of it. The logo is the one
 	// thing in the footer that is a mark rather than a line of text, and the
-	// space under it is what separates the identity from the accounts beside
-	// it — at the column's gap alone the social row read as the logo's second
-	// line.
+	// sentence under it is prose — at the column's gap alone the description
+	// read as the wordmark's second line.
 	//
-	// Two values, at the width the columns split at rather than at a viewport
-	// size of its own: stacked, everything in the footer is one running list
-	// and 3XL under the logo would read as a gap in it; in three columns the
-	// identity column has a whole column of height to spend and the space is
-	// what gives the mark room.
-	margin-block-end: var(--wp--preset--spacing--50);
-
-	@media (width >= 56rem) {
-		margin-block-end: var(--wp--preset--spacing--80);
-	}
+	// Less than it was, and deliberately: this margin used to separate the
+	// logo from a row of icon chips, which needed the air. What follows it now
+	// is a paragraph that belongs to the logo, so the two should read as one
+	// block with the strapline set apart underneath.
+	margin-block-end: var(--wp--preset--spacing--20);
 
 	&--text {
 		font-size: var(--wp--preset--font-size--large);
@@ -187,10 +341,26 @@
 .bridge-footer__logo-img {
 	// Height rather than width: two wordmarks of different proportions should
 	// read as the same size, and it is the cap height that says so.
-	block-size: auto;
-	max-block-size: 3rem;
+	//
+	// The header's height, published by render.php as
+	// `--bridge-footer-logo-height` from the same `header.logo.height` setting
+	// the header itself draws with. One logo, one size — the 3rem cap that was
+	// here meant a site that made its header logo larger or smaller got a
+	// footer that did not follow, and nothing on the options screen said why.
+	//
+	// A fixed height, not a maximum: a `max-block-size` only binds an image
+	// that would otherwise be taller, so a small wordmark would be drawn at its
+	// own size and a large one capped — two logos at two sizes from one
+	// setting. The fallback matches the setting's own default.
+	block-size: var(--bridge-footer-logo-height, 40px);
 	inline-size: auto;
 	max-inline-size: 100%;
+	// An SVG logo is written into the page rather than linked — see
+	// bridge_inline_svg() — so this class lands on an `<svg>` as often as on an
+	// `<img>`. An inline SVG is inline-level by default, which puts a
+	// baseline's worth of space under it inside the anchor; `object-fit` below
+	// is simply ignored on it, its `viewBox` doing that job instead.
+	display: block;
 	// Where the artwork sits when the box is bigger than it is — which is what
 	// an SVG with no width and height attributes gives you, and what a browser
 	// otherwise centres. `contain` so the shape is never stretched to fill the
@@ -201,105 +371,397 @@
 }
 
 /**
- * The contact details, between the logo and the social row.
+ * The short description.
  *
+ * A measure, not a column width. The identity column is the widest of the four
+ * and at a large window its full width would set this paragraph at twelve or
+ * thirteen words a line, which is past the point where the eye starts losing
+ * its place returning to the left edge. 30ch holds it at roughly the four
+ * lines the design draws.
+ *
+ * Slightly held back from the headings and links around it, because it is the
+ * one piece of running prose in the footer and prose at full strength beside a
+ * menu competes with it for the same attention.
+ */
+.bridge-footer__description {
+	margin: 0;
+	max-inline-size: 30ch;
+	font-size: var(--wp--preset--font-size--small);
+	line-height: 1.6;
+	opacity: 0.85;
+}
+
+/**
+ * The strapline: typed words in a script face, over a drawn stroke.
+ *
+ * `auto` margin above it, which is what puts it at the foot of the column: the
+ * column is a flex column, so the spare height collects above this rather than
+ * below the last thing in it, and the strapline sits on the same baseline as
+ * the last link in the menus beside it however long they are.
+ *
+ * `fit-content` so the block is as wide as the longest line and no wider. That
+ * is what the stroke underneath is positioned against — a full-width paragraph
+ * would put the swoosh under the column rather than under the words.
+ */
+.bridge-footer__tagline {
+	// The three numbers the strapline is tuned with, named here so they can be
+	// nudged in one place — and overridden per site from a child theme or the
+	// block's own style — rather than hunted for among the rules below.
+	//
+	//   ink     What the stroke is painted. The brand's accent, because the
+	//           swoosh is the one piece of the footer that is decoration
+	//           rather than information.
+	//   drop    The gap between the last line of the words and the stroke. The
+	//           stroke hangs below them by construction — see the rule itself
+	//           — so this reads the way it looks: positive opens the gap,
+	//           negative tucks the stroke back up under the words. In `em`, so
+	//           it follows the type size rather than staying put when the
+	//           scale changes.
+	//   spread  How wide the stroke is, against the width of the words. The
+	//           artwork usually carries its own overshoot inside its viewBox,
+	//           so this is normally at or under 100%.
+	//   room    How much height is set aside below the words for the stroke to
+	//           hang in. The stroke is positioned, so it is out of flow and
+	//           reserves no space of its own — without this it overhangs
+	//           whatever comes after the strapline, and at the foot of the
+	//           column it runs into the copyright row. Wants to be a little
+	//           more than the stroke's own drawn height plus `drop`.
+	//   tilt    The angle the whole strapline sits at. Negative is
+	//           anticlockwise, which lifts the end of the line — the way a
+	//           signature written in a hurry runs uphill.
+	//   swoosh-
+	//   tilt    The stroke's own angle, applied *on top of* the tilt above
+	//           because it sits inside the element that carries it. So this is
+	//           a difference, not a bearing: at the exact negative of `tilt`
+	//           the stroke comes back to level while the words stay leaning,
+	//           which is the pairing the artwork is drawn for — a flat stroke
+	//           under a rising line.
+	--bridge-footer-swoosh-ink: var(--wp--preset--color--accent, currentcolor);
+	--bridge-footer-swoosh-drop: 0;
+	--bridge-footer-swoosh-spread: 100%;
+	--bridge-footer-swoosh-room: 1.75em;
+	--bridge-footer-tagline-tilt: -5deg;
+	--bridge-footer-swoosh-tilt: 5deg;
+
+	position: relative;
+
+	/*
+	 * The stroke hangs below this element's box rather than inside it, so the
+	 * space it needs is held open underneath.
+	 *
+	 * A margin, and it has to be — padding would be the natural choice and is
+	 * the wrong one. A percentage offset on an absolutely positioned element
+	 * resolves against its containing block's *padding* box, so the stroke's
+	 * `inset-block-start: 100%` would land at the bottom of the padding rather
+	 * than at the bottom of the words: every pixel of room added here would
+	 * push the stroke down by the same amount and the gap could never be
+	 * closed. A margin sits outside that box and moves nothing.
+	 */
+	margin: var(--wp--preset--spacing--40) 0
+		var(--bridge-footer-swoosh-room);
+	inline-size: fit-content;
+	// The stroke is allowed to overshoot the words without widening the column
+	// or, on a narrow screen, pushing a scrollbar onto the page.
+	max-inline-size: 100%;
+
+	/**
+	 * The tilt.
+	 *
+	 * On the wrapper, not on the words, so the stroke turns with them — it is
+	 * positioned inside this element and inherits the rotation for free. Tilting
+	 * the two separately would mean keeping two angles in step, and any drift
+	 * between them reads immediately as a mistake.
+	 *
+	 * `transform-origin` at the left edge because that edge is the one the
+	 * strapline is aligned to: the logo above it, the description above that
+	 * and the copyright line below all start there. Rotating about the centre
+	 * would swing the first letter inwards and leave the block looking
+	 * indented by a few pixels that no padding explains.
+	 *
+	 * A transform does not affect layout, so the rotated block occupies the
+	 * upright one's box. At five degrees over a line or two that is a few
+	 * pixels of lean into the space above, which is padding — the reason the
+	 * angle belongs in a custom property is that this stops being true
+	 * somewhere around fifteen.
+	 */
+	transform: rotate(var(--bridge-footer-tagline-tilt));
+	transform-origin: left center;
+
+	@media (width >= 68rem) {
+		margin-block-start: auto;
+		padding-block-start: var(--wp--preset--spacing--40);
+	}
+}
+
+/**
+ * The words.
+ *
+ * The `script` preset, which inc/theme-json.php registers and the theme
+ * installs the moment a strapline is written — see BRIDGE_SCRIPT_FAMILY. It
+ * falls through to the browser's generic `cursive` while the download is
+ * pending, so the line is never briefly set in the body face.
+ *
+ * Sized against the site's scale rather than in a fixed rem, so a client who
+ * moves the base size moves this with it; `x-large` because a hand at body size
+ * reads as a mistake rather than as a flourish. The leading is tight for the
+ * same reason — a script face carries its own descenders and ascenders, and
+ * default leading opens a gap between two short lines that breaks them apart.
+ */
+.bridge-footer__tagline-text {
+	display: block;
+	font-family: var(--wp--preset--font-family--script);
+	font-size: var(--wp--preset--font-size--x-large);
+	line-height: 1.15;
+	// The one piece of the footer that should read at full strength on the
+	// ground, unlike the description above it: it is a signature, not an
+	// aside.
+	color: inherit;
+	// A script face sits on a smaller x-height than the sans around it and its
+	// glyphs lean; without this the two words run into each other at the join.
+	letter-spacing: 0.01em;
+	// Nothing below the last line but the stroke, which is positioned rather
+	// than flowed — so any descender space the face reserves is dead height
+	// between the words and their underline.
+	margin: 0;
+}
+
+/**
+ * The stroke under them.
+ *
+ * Positioned rather than stacked, because it is an underline: in the artwork it
+ * runs beneath the last line and out past the end of it, which a block image in
+ * the flow cannot do without pushing the column taller by its own height.
+ *
+ * Anchored to the block's start edge and given the full width of it, so it
+ * grows and shrinks with the words rather than with the column. Overshooting
+ * the right edge is the artwork's own business — an SVG drawn with the tail
+ * running past its last letter does that by having the tail inside its own
+ * viewBox.
+ *
+ * `block-size: auto` with a width, not the other way round: a stroke is
+ * recognised by its length.
+ */
+.bridge-footer__swoosh {
+	display: block;
+	position: absolute;
+
+	/*
+	 * Hung off the *bottom* of the words rather than aligned to it.
+	 *
+	 * `inset-block-start: 100%` puts the stroke's top edge on the block's
+	 * bottom edge, so the whole mark is below the last line whatever height it
+	 * happens to be — and the tuck below is the only thing that brings it back
+	 * up, by an amount this file chooses.
+	 *
+	 * Anchoring its *bottom* edge instead, which is what this did, only works
+	 * while the artwork is short: the mark grows upwards from a fixed baseline,
+	 * so a file with any vertical padding in its viewBox — or simply a taller
+	 * flourish — climbs into the words and strikes through them. That is not
+	 * something a drop value can be tuned around, because it changes with every
+	 * file.
+	 */
+	inset-block-start: 100%;
+	margin-block-start: var(--bridge-footer-swoosh-drop);
+	inset-inline-start: 0;
+	inline-size: var(--bridge-footer-swoosh-spread);
+	// Turned back the other way, about the same left edge the words pivot on
+	// so the two stay hinged at the point they are both aligned to. Rotating
+	// about its own centre would walk the stroke's start away from the first
+	// letter above it.
+	transform: rotate(var(--bridge-footer-swoosh-tilt));
+	transform-origin: left center;
+	// From the viewBox, which is the only thing left to give it one: the
+	// inliner strips the artboard's `width` and `height` so CSS can size the
+	// mark — see bridge_inline_svg().
+	block-size: auto;
+	// Behind nothing and in front of nothing — it simply must not intercept a
+	// click meant for the column, which an absolutely positioned mark sitting
+	// over the words otherwise would.
+	pointer-events: none;
+
+	/**
+	 * Painted here rather than in Illustrator.
+	 *
+	 * The shapes are addressed as well as the root, and that is the whole
+	 * point of the selector rather than an over-reach: `fill` inherits, but a
+	 * child that carries its own `fill="#f60"` presentation attribute is not
+	 * inheriting anything — it has a value of its own. A rule on the parent
+	 * cannot reach it. A rule that *matches the child* can, because any
+	 * declaration beats a presentation attribute in the cascade.
+	 *
+	 * Which is also why the artwork should be exported with Illustrator's
+	 * "Presentation Attributes" styling: exported as inline `style` attributes
+	 * instead, these shapes would each carry a `style="fill:…"` that this
+	 * cannot override without `!important`.
+	 *
+	 * `:where()` keeps the whole thing at the weight of the class alone, so a
+	 * site overriding the colour does not have to out-specify a list.
+	 */
+	&,
+	:where(path, g, circle, ellipse, rect, polygon, polyline, use) {
+		fill: var(--bridge-footer-swoosh-ink);
+	}
+
+	// A stroked swoosh rather than a filled one — a single pen line saved
+	// without expanding it — takes the same colour from the same property.
+	// `none` is left alone: a shape that is deliberately unstroked should stay
+	// that way rather than gaining an outline in the accent colour.
+	:where([stroke]:not([stroke="none"])) {
+		stroke: var(--bridge-footer-swoosh-ink);
+	}
+}
+
+// ---- Column four: the contact rows ---------------------------------------
+
+/**
  * `<address>` is italic in every user-agent stylesheet, which is a convention
  * for a letterhead rather than for a footer column, so it is reset — the lines
  * read as an address because of where they are and what they say.
+ *
+ * No layout of its own: it is a wrapper around a list that has one, and giving
+ * it a second would put a gap between the address rows and the social rows
+ * under them that the other rows do not have. The whole column should read as
+ * one list of ways to reach the business.
  */
 .bridge-footer__contact {
 	font-style: normal;
+	margin: 0;
+}
+
+.bridge-footer__contact-list {
+	// The glyph's size, named once. The grid track below and the cell that
+	// sits in it have to be the same width or the icons stop being flush with
+	// each other, and two hand-kept numbers is how that drifts.
+	--bridge-footer-icon: 1.375rem;
+	// The row's line height, for the same reason: the icon cell is one line
+	// box tall, and that is only true while this and the `line-height` on the
+	// row are the same number.
+	--bridge-footer-row-leading: 1.5;
+
 	display: flex;
 	flex-direction: column;
 	gap: var(--wp--preset--spacing--20);
+	list-style: none;
 	margin: 0;
+	padding: 0;
+	font-size: var(--wp--preset--font-size--small);
+}
 
-	p {
-		margin: 0;
+/**
+ * One row: a mark, then a line.
+ *
+ * Grid rather than flex, and with a fixed first track: the icons are not all
+ * the same artwork — core's social glyphs are solid shapes sized to their own
+ * box, the theme's are stroked on a 24px grid — so left to themselves the rows
+ * would start their text at three or four different offsets down the column.
+ * One track width answers that for every row at once.
+ *
+ * The track is exactly the glyph, not a roomier box with the glyph centred in
+ * it. Centred in something wider, every icon is inset from the column's left
+ * edge by half the difference — so the marks sat a few pixels to the right of
+ * the heading above them and of the logo two columns over, which is the one
+ * place in the footer where being nearly aligned reads as being wrong.
+ *
+ * `start`, not `center`: an address is two or three lines and its mark belongs
+ * beside the first of them, not floating in the middle of the block.
+ */
+.bridge-footer__contact-item {
+	display: grid;
+	grid-template-columns: var(--bridge-footer-icon) 1fr;
+	gap: var(--wp--preset--spacing--20);
+	align-items: start;
+	line-height: var(--bridge-footer-row-leading);
+}
+
+/**
+ * The mark, in the brand's colour.
+ *
+ * The one thing in the footer that does not take its colour from the ground.
+ * That is the point of it: the row is a line of body text with a spot of brand
+ * beside it, and a mark drawn in the same white as the words next to it stops
+ * being a signpost and becomes part of the sentence.
+ *
+ * Accent with a fallback to `currentcolor`, so a site whose palette has been
+ * stripped back to nothing still gets a visible icon rather than an empty cell.
+ */
+.bridge-footer__contact-icon {
+	display: grid;
+	place-items: center;
+	inline-size: var(--bridge-footer-icon);
+	// One line box tall, in `em` so it tracks the row's own font size rather
+	// than a length fixed here. This is what actually aligns the mark with the
+	// words: the cell and the first line of text are then the same height and
+	// start at the same place, so centring the glyph in the cell centres it on
+	// that line. At the 1.75rem box this used to be — half a line taller than
+	// the text beside it — every icon in the column was drawn a few pixels
+	// below the line it belonged to, and the two-line address row was the only
+	// one where it looked deliberate.
+	block-size: calc(var(--bridge-footer-row-leading) * 1em);
+	color: var(--wp--preset--color--accent, currentcolor);
+
+	// Both sets of artwork arrive with `width` and `height` attributes of their
+	// own — core's in px, the theme's in em — and these two declarations are
+	// what overrule them, because CSS beats a presentation attribute. Every
+	// glyph is then the same square, and each one's `viewBox` scales its
+	// contents into it without distortion.
+	svg {
+		inline-size: var(--bridge-footer-icon);
+		block-size: var(--bridge-footer-icon);
 	}
 
-	// The number is the one line in the column a visitor may want to act on,
-	// so it is the one that looks like a link.
-	.bridge-footer__phone a {
-		color: inherit;
+	// Core's social icons are solid shapes with no stroke; the theme's own are
+	// stroked geometry with no fill and carry `.bridge-icon`. So the fill is
+	// given to everything that is not one of ours rather than to the icon cell
+	// as a whole, which would flood the outline icons solid.
+	svg:not(.bridge-icon) {
+		fill: currentcolor;
+	}
+}
+
+.bridge-footer__contact-link {
+	color: inherit;
+	text-decoration: none;
+
+	&:hover,
+	&:focus-visible {
 		text-decoration: underline;
 		text-underline-offset: 0.2em;
 	}
 }
 
-.bridge-footer__social {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--wp--preset--spacing--20);
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-/**
- * A drawn chip, not a bare glyph.
- *
- * The touch target was always 44px and always invisible until hovered, which
- * left the row reading as a scatter of small marks — and the first one was
- * pulled a third of an inch out of the column by a negative margin, so on a
- * footer whose content is now capped at the wide container it sat outside it.
- *
- * Giving the target a permanent tint solves both: the row starts exactly on
- * the container's edge with the logo above it, and each account reads at 44px
- * rather than at the size of the glyph inside it.
- *
- * The tint is mixed from `currentcolor` rather than named, so it works on all
- * six grounds — and on the gradient — without a rule per ground.
- */
-.bridge-footer__social-link {
-	display: grid;
-	place-items: center;
-	// The 44px minimum touch target, which an icon on its own is well under.
-	inline-size: 2.75rem;
-	block-size: 2.75rem;
-	border-radius: 50%;
-	color: inherit;
-	text-decoration: none;
-	background-color: color-mix(in srgb, currentcolor 12%, transparent);
-	transition: background-color 200ms ease;
-
-	&:hover,
-	&:focus-visible {
-		background-color: color-mix(in srgb, currentcolor 26%, transparent);
-	}
-
-	svg {
-		inline-size: 1.625rem;
-		block-size: 1.625rem;
-		// Core's social icons are solid shapes, not strokes.
-		fill: currentcolor;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		transition: none;
-	}
-}
-
-// ---- Columns two and three: the menus ------------------------------------
+// ---- Columns two and three: the menus, and every column's label ----------
 
 .bridge-footer__heading {
-	margin: 0;
+	// On top of the column's own gap, which on its own set the first link
+	// almost as close to the label as the links are to each other — so the
+	// heading read as the first item in its list rather than as the name of
+	// it. Note the accent rule is drawn inside the padding below, so the space
+	// a reader sees is measured from the rule, not from the word.
+	//
+	// On the heading rather than on the menu under it, though the gap it opens
+	// is the one below each menu title: the contact column has lists instead
+	// of a menu, and spacing the navs alone would have started that column's
+	// first row higher than the first link in the two beside it.
+	margin: 0 0 var(--wp--preset--spacing--30);
 	// The body face, not the heading one. An <h2> takes the heading family
 	// from global styles, and a display serif set at the size of the links
 	// under it reads as a different voice rather than as their label — these
 	// are signposts in a footer, not titles on a page. The element stays an
 	// h2, because what it is to a screen reader has not changed.
 	font-family: var(--wp--preset--font-family--sans);
-	// One step below the links it names, which is a step the site's scale did
-	// not have until this asked for it — see bridge_compile_font_sizes().
-	font-size: var(--wp--preset--font-size--x-small);
+	// Level with the links it names, a step up from the `x-small` it was: at
+	// the bottom of the scale the labels read as fine print rather than as the
+	// four signposts across the footer. They still separate from the list
+	// underneath — uppercase, heavier, letterspaced, and with the accent rule
+	// beneath them — so the size no longer has to do that work on its own.
+	font-size: var(--wp--preset--font-size--small);
 	// One step down the same ladder the heading weight control offers, so the
 	// label is a weight the design system knows rather than a number picked
 	// here.
 	font-weight: 600;
 	// Wide, because the label is short, uppercase and set at the same size as
-	// the list beneath it: letterspacing is what separates it from the links
-	// now that the typeface no longer does.
+	// the list beneath it: letterspacing is part of what separates it from the
+	// links now that neither the typeface nor the size does.
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
 	// Surface, published by render.php — which also decides what the label
@@ -308,6 +770,32 @@
 	// A named colour rather than the dimmed inherit this was: a signpost held
 	// back by opacity reads as disabled text on a strong ground.
 	color: var(--bridge-footer-label, currentcolor);
+	// Room for the rule below, which is drawn outside the text box.
+	padding-block-end: 0.85rem;
+	position: relative;
+
+	/**
+	 * The short accent rule under each label.
+	 *
+	 * Drawn rather than a `border-block-end`, because a border would run the
+	 * width of the column and this is a mark the length of a word. It is the
+	 * same job the letterspacing does — separating a label from the list it
+	 * names — said once more in the brand's colour, which is what ties the four
+	 * headings to the icons in the last column.
+	 *
+	 * Absolutely positioned so it does not join the column's flex flow and
+	 * become a row of its own with a gap above it.
+	 */
+	&::after {
+		content: "";
+		position: absolute;
+		inset-block-end: 0;
+		inset-inline-start: 0;
+		inline-size: 2.25rem;
+		block-size: 3px;
+		border-radius: 2px;
+		background-color: var(--wp--preset--color--accent, currentcolor);
+	}
 }
 
 .bridge-footer__nav {
@@ -391,7 +879,12 @@
  * footer always had.
  */
 .bridge-footer__legal {
-	padding-block: var(--wp--preset--spacing--30);
+	// Even, at L. It was uneven — tight above, looser below — from when the
+	// strip was the last thing on a flat band and the space under it was doing
+	// the work of an end to the page. With the image running behind it the row
+	// reads as a band of its own, and a band with one line in it is centred in
+	// its own padding.
+	padding-block: var(--wp--preset--spacing--50);
 	background-color: color-mix(
 		in srgb,
 		var(--bridge-footer-legal-ink, #000)
@@ -406,14 +899,68 @@
 		color-mix(in srgb, currentcolor 15%, transparent);
 }
 
+/**
+ * The two ends of the bottom row.
+ *
+ * `space-between` with a wrap, not a two-column grid: on a phone the legal
+ * links drop under the copyright and both start at the left edge, which is
+ * what `wrap` plus the `start` alignment below gives for free. A grid would
+ * need a second rule to say the same thing.
+ *
+ * The copyright is no longer centred — it was, when it was alone in the row —
+ * because it now has company at the other end, and a line centred between the
+ * container's edges with links to its right reads as two things that missed
+ * each other rather than as a row.
+ */
+.bridge-footer__legal-inner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);
+}
+
 .bridge-footer__copyright {
 	margin: 0;
 	// Already the smallest step in the site's scale — there is nothing below
 	// `small` in theme.json, and a hand-picked length here would be the one
 	// size on the page that the typography settings cannot move.
 	font-size: var(--wp--preset--font-size--small);
-	// Centred in the strip, which is the whole wide container: the line is one
-	// short sentence and the row it sits in has nothing else in it.
-	text-align: center;
 	opacity: 0.75;
+}
+
+/**
+ * The legal links along the bottom.
+ *
+ * Separated by a hairline between items rather than by a typed "|", which
+ * would be a character in the menu's own labels that an operator has to
+ * maintain and a screen reader has to read out. `::before` on every item but
+ * the first, so the rule survives a menu of any length and a menu with one
+ * item in it has no stray mark beside it.
+ *
+ * `aria-hidden` is not needed on generated content — it is not in the
+ * accessibility tree to begin with.
+ *
+ * The row aligns left when it wraps under the copyright on a phone, and right
+ * beside it otherwise; the `justifyContent` core writes into the block's own
+ * layout class handles the second, so only the wrapped case is said here.
+ */
+.bridge-footer__nav--inline {
+	font-size: var(--wp--preset--font-size--small);
+	opacity: 0.75;
+
+	.wp-block-navigation__container {
+		align-items: center;
+		gap: var(--wp--preset--spacing--20);
+	}
+
+	.wp-block-navigation-item + .wp-block-navigation-item::before {
+		content: "";
+		display: inline-block;
+		inline-size: 1px;
+		block-size: 0.85em;
+		margin-inline-end: var(--wp--preset--spacing--20);
+		vertical-align: -0.1em;
+		background-color: color-mix(in srgb, currentcolor 40%, transparent);
+	}
 }

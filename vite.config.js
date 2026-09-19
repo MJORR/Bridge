@@ -405,6 +405,10 @@ export default defineConfig(({ mode }) => ({
 				'band-mask': resolve(__dirname, 'src/editor/band-mask.js'),
 				inspector: resolve(__dirname, 'src/scss/inspector.scss'),
 				'options-app': resolve(__dirname, 'src/admin/options-app.jsx'),
+				'site-options': resolve(
+					__dirname,
+					'src/admin/site-options.js'
+				),
 				'simple-editor': resolve(
 					__dirname,
 					'src/scss/simple-editor.scss'

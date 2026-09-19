@@ -63,7 +63,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/alternating-row',
-		'version' => '1.2.0',
+		'version' => '1.3.0',
 		'title' => 'Row',
 		'category' => 'design',
 		'icon' => 'align-pull-left',
@@ -98,6 +98,10 @@ return array(
 				'default' => false,
 			),
 			'mask' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'parallax' => array(
 				'type' => 'boolean',
 				'default' => false,
 			),
@@ -1213,27 +1217,136 @@ return array(
 		'title' => 'Hero Banner',
 		'category' => 'media',
 		'icon' => 'cover-image',
-		'description' => 'A single full-height hero. One Cover block, laid out in columns — the static counterpart to the Hero Slider.',
+		'description' => 'A single full-height hero: a headline over a photograph, a colour, a gradient, a drawn curve, or a run of colour bands at an angle with a picture behind it.',
 		'textdomain' => 'bridge',
 		'keywords' => array(
 			'hero',
 			'banner',
 			'cover',
-			'columns',
-			'split',
+			'curve',
+			'gradient',
 		),
 		'supports' => array(
-			'align' => array(
-				'full',
-			),
 			'anchor' => true,
 			'html' => false,
 			'layout' => false,
 		),
 		'attributes' => array(
-			'align' => array(
+			'background' => array(
 				'type' => 'string',
-				'default' => 'full',
+				'default' => 'image',
+			),
+			'titleLeft' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'color' => array(
+				'type' => 'string',
+				'default' => 'primary',
+			),
+			'imageId' => array(
+				'type' => 'number',
+				'default' => 0,
+			),
+			'imageUrl' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'imageAlt' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'focalPoint' => array(
+				'type' => 'object',
+				'default' => array(
+					'x' => 0.5,
+					'y' => 0.5,
+				),
+			),
+			'overlay' => array(
+				'type' => 'number',
+				'default' => 50,
+			),
+			'fixed' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'gradientAngle' => array(
+				'type' => 'number',
+				'default' => 90,
+			),
+			'gradientStops' => array(
+				'type' => 'array',
+				'default' => array(
+					array(
+						'start' => 30,
+						'end' => 60,
+						'from' => 'primary',
+						'fromAlpha' => 100,
+						'to' => 'primary',
+						'toAlpha' => 0,
+					),
+				),
+			),
+			'curveAlign' => array(
+				'type' => 'number',
+				'default' => 44,
+			),
+			'curveRadius' => array(
+				'type' => 'number',
+				'default' => 29,
+			),
+			'curveGap' => array(
+				'type' => 'number',
+				'default' => 9,
+			),
+			'curveOpacity' => array(
+				'type' => 'number',
+				'default' => 35,
+			),
+			'curvePadding' => array(
+				'type' => 'number',
+				'default' => 4,
+			),
+			'curveVertical' => array(
+				'type' => 'number',
+				'default' => 0,
+			),
+			'curveBreakpoint' => array(
+				'type' => 'number',
+				'default' => 1024,
+			),
+			'curveRadiusMobile' => array(
+				'type' => 'number',
+				'default' => 8,
+			),
+			'curveGapMobile' => array(
+				'type' => 'number',
+				'default' => 3,
+			),
+			'curveOpacityMobile' => array(
+				'type' => 'number',
+				'default' => 60,
+			),
+			'curveStackMobile' => array(
+				'type' => 'number',
+				'default' => 62,
+			),
+			'curveAngleMobile' => array(
+				'type' => 'number',
+				'default' => 0,
+			),
+			'curveOffsetMobile' => array(
+				'type' => 'number',
+				'default' => 0,
+			),
+			'curvePaddingMobile' => array(
+				'type' => 'number',
+				'default' => 4,
+			),
+			'curvePaddingBlockMobile' => array(
+				'type' => 'number',
+				'default' => 16,
 			),
 			'heightPreset' => array(
 				'type' => 'string',
@@ -1250,8 +1363,18 @@ return array(
 		),
 		'example' => array(
 			'attributes' => array(
-				'align' => 'full',
+				'background' => 'solid',
+				'color' => 'primary',
 				'heightPreset' => 'medium',
+			),
+			'innerBlocks' => array(
+				array(
+					'name' => 'core/heading',
+					'attributes' => array(
+						'level' => 1,
+						'content' => 'A headline worth the whole window',
+					),
+				),
 			),
 		),
 		'editorScript' => 'bridge-hero-banner-editor',

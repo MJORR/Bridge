@@ -86,21 +86,38 @@ if ( ! empty( $attributes['cropCorner'] ) ) {
 }
 
 /*
- * The picture behind the shape, moving.
+ * Cover, or the whole picture.
  *
- * Switched on, the image drifts inside its frame as the row crosses the screen
- * — a scroll-driven animation, so it tracks the scroll position rather than a
- * clock and needs no script. The stylesheet owns all of it; this only says
- * which rows asked.
+ * Cover is the default and the reason the block has a ratio at all: every
+ * row's media is cropped to 16/9, so a section that mixes photographs and
+ * videos comes out even down the page rather than ragged.
  *
- * Images only. A YouTube facade is an iframe and a video file is a player with
- * controls on it, and sliding either behind a window would move the thing a
- * visitor is trying to press.
+ * "Fit" is for the pictures that ratio ruins — a portrait, a diagram, a
+ * screenshot, anything whose edges are the content. There the row gives up the
+ * ratio entirely and the picture keeps its own, filling the width it is given.
+ *
+ * "Fit, with padding" is the same picture, inset from the edges of its half of
+ * the row, so it reads as something placed on the band rather than as
+ * something filling it — a logo or a product shot rather than a photograph.
+ * Padding is the *second* class and not a third value the stylesheet has to
+ * branch on: a padded row is a fitted row that has also been inset, and
+ * spelling it that way is what keeps every fit rule written once.
+ *
+ * The stylesheet owns what either of them means in each of the two layouts;
+ * this only says which rows asked.
+ *
+ * Images only, for the same reason the mask is: a video file is a player and a
+ * YouTube facade is an iframe, and neither has proportions of its own worth
+ * keeping.
  */
-$parallax = ! empty( $attributes['parallax'] ) && 'image' === $media_type && $image_id > 0;
+$image_fit = (string) ( $attributes['imageFit'] ?? 'cover' );
 
-if ( $parallax ) {
-	$media_class .= ' has-parallax';
+if ( in_array( $image_fit, array( 'contain', 'padded' ), true ) && 'image' === $media_type && $image_id > 0 ) {
+	$media_class .= ' has-fit';
+
+	if ( 'padded' === $image_fit ) {
+		$media_class .= ' has-pad';
+	}
 }
 
 if ( '' !== $mask_url ) {
@@ -199,16 +216,7 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'bridge-alternating__
 			 * every row's image out of that, including the row that is
 			 * sometimes the largest thing above the fold.
 			 */
-			/*
-			 * The frame a parallax picture moves inside.
-			 *
-			 * One extra element, and only on the rows that need it: it is what
-			 * holds the mask, the radius and the cut still while the image
-			 * behind it slides. Every other row clips those onto the image
-			 * itself, which is the simpler thing to do right up until the
-			 * image starts moving. See blocks/_alternating-content.scss.
-			 */
-			$image_html = wp_get_attachment_image(
+			echo wp_get_attachment_image( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core-escaped markup.
 				$image_id,
 				'large',
 				false,
@@ -217,10 +225,6 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'bridge-alternating__
 					'alt'   => $alt,
 				)
 			);
-
-			echo $parallax // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core-escaped markup.
-				? '<span class="bridge-alternating__frame">' . $image_html . '</span>'
-				: $image_html;
 			?>
 		<?php endif; ?>
 	</div>

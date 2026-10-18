@@ -87,14 +87,22 @@ function bridge_hero_metrics(array $attributes): array
 }
 
 /**
- * The five things a banner can be standing on, resolved to one answer.
+ * The six things a banner can be standing on, resolved to one answer.
  *
  * The block offers a background rather than asking an editor to build one out
  * of a Cover: a photograph, a flat colour, that colour graded across, a colour
- * panel whose edge is a drawn curve with a picture behind it, or a run of
- * colour bands at an angle laid over a photograph. All five are the same two
- * questions — what is behind the words, and what colour can the words be — so
- * they are answered in one place and the renderer spends the answer.
+ * panel whose edge is a drawn curve with a picture behind it, a run of colour
+ * bands at an angle laid over a photograph, or two columns with the words in
+ * one and a picture in the other. All six are the same two questions — what is
+ * behind the words, and what colour can the words be — so they are answered in
+ * one place and the renderer spends the answer.
+ *
+ * The two-column arrangement answers them the way a flat colour does, and that
+ * is the whole of what it has to say here: its picture is *beside* the words
+ * rather than under them, so it is the band's own colour the type has to be
+ * legible against, and the test below runs on the palette exactly as it does
+ * for `solid`. What makes it two columns is a layout, and layout is the
+ * stylesheet's business — see `.is-bg-columns` in blocks/_hero-banner.
  *
  * ---- The foreground is worked out, not chosen ------------------------------
  *
@@ -130,7 +138,7 @@ function bridge_hero_banner_ground(array $attributes): array
 {
 	$kind = isset($attributes['background']) ? (string) $attributes['background'] : 'image';
 
-	if (! in_array($kind, array('image', 'solid', 'gradient', 'curve', 'custom-gradient'), true)) {
+	if (! in_array($kind, array('image', 'solid', 'gradient', 'curve', 'custom-gradient', 'columns'), true)) {
 		$kind = 'image';
 	}
 

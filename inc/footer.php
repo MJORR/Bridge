@@ -65,6 +65,19 @@ function bridge_footer_menu_id(string $slot): int
 		return 0;
 	}
 
+	// A menu that is chosen but empty counts as no menu, so its column — and
+	// the heading that would otherwise sit alone above nothing — is not drawn.
+	// parse_blocks() returns the whitespace between blocks as nameless
+	// entries; only a named block is an item.
+	$items = array_filter(
+		parse_blocks((string) get_post_field('post_content', $id)),
+		static fn(array $block): bool => ! empty($block['blockName'])
+	);
+
+	if (array() === $items) {
+		return 0;
+	}
+
 	return $id;
 }
 

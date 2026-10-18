@@ -6,9 +6,9 @@
 	"title": "Hero Banner",
 	"category": "media",
 	"icon": "cover-image",
-	"description": "A single full-height hero: a headline over a photograph, a colour, a gradient, a drawn curve, or a run of colour bands at an angle with a picture behind it.",
+	"description": "A single full-height hero: a headline over a photograph, a colour, a gradient, a drawn curve, a run of colour bands at an angle with a picture behind it, or two columns with the words beside a picture.",
 	"textdomain": "bridge",
-	"keywords": ["hero", "banner", "cover", "curve", "gradient"],
+	"keywords": ["hero", "banner", "cover", "curve", "gradient", "columns"],
 	"supports": {
 		"anchor": true,
 		"html": false,
@@ -38,6 +38,10 @@
 		"imageAlt": {
 			"type": "string",
 			"default": ""
+		},
+		"imageFit": {
+			"type": "string",
+			"default": "cover"
 		},
 		"focalPoint": {
 			"type": "object",

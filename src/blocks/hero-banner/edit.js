@@ -2,8 +2,9 @@
  * Editor view for `bridge/hero-banner`.
  *
  * The banner draws its own background — a photograph, a colour, that colour
- * graded, a colour panel with a picture beside it, or a run of colour bands at
- * an angle over the picture — and holds one column of ordinary blocks. It used to be a locked `core/cover` with a columns block
+ * graded, a colour panel with a picture beside it, a run of colour bands at an
+ * angle over the picture, or two columns with the words beside a picture — and
+ * holds one column of ordinary blocks. It used to be a locked `core/cover` with a columns block
  * inside it, which meant the background was configured in Cover's own controls
  * two levels down the block tree and the layout was a template nobody could
  * change without unlocking it. Both are settings here instead.
@@ -1074,6 +1075,7 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 		imageId,
 		imageUrl,
 		imageAlt,
+		imageFit,
 		focalPoint,
 		overlay,
 		fixed,
@@ -1162,18 +1164,24 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 	const hasImage =
 		background === 'image' ||
 		background === 'curve' ||
-		background === 'custom-gradient';
+		background === 'custom-gradient' ||
+		background === 'columns';
 	const hasColor = background !== 'image';
 	const showsImage = hasImage && !!imageUrl;
 	const isFixed = background === 'image' && !!fixed && showsImage;
 
 	// A curve with no picture behind it yet is drawn as a solid panel — the
 	// curve reserves half the band for an image, and half a band of nothing is
-	// not a state to show an editor mid-decision. The custom gradient makes no
-	// such fallback: its bands are laid over the band's own colour when there is
-	// no photograph, which is a finished composition. render.php makes both
-	// calls the same way.
-	const kind = background === 'curve' && !showsImage ? 'solid' : background;
+	// not a state to show an editor mid-decision. The two-column background
+	// falls back for the same reason and more plainly: its second column holds
+	// nothing but the picture. The custom gradient makes no such fallback: its
+	// bands are laid over the band's own colour when there is no photograph,
+	// which is a finished composition. render.php makes all three calls the
+	// same way.
+	const kind =
+		(background === 'curve' || background === 'columns') && !showsImage
+			? 'solid'
+			: background;
 
 	// Core's picker deals in two shares of the image and hands back the same
 	// shape; a banner saved before the control existed has neither, and the
@@ -1354,8 +1362,15 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 			// selectors are written against. render.php adds the front end's
 			// equivalent from wp_unique_id().
 			kind === 'curve' && curveClass,
-			// render.php writes the same class from the same attribute.
-			!!titleLeft && 'is-title-left',
+			// render.php writes the same class from the same attribute — and
+			// withholds it on the two-column background for the same reason,
+			// which is that the arrangement is already what that background
+			// is. See the toggle below, which is hidden there.
+			!!titleLeft && kind !== 'columns' && 'is-title-left',
+			// How the second column's picture meets it. Only the two-column
+			// background has a second answer; render.php writes the same class
+			// from the same attribute.
+			kind === 'columns' && imageFit === 'contain' && 'has-fit',
 		]
 			.filter(Boolean)
 			.join(' '),
@@ -1438,6 +1453,10 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 			'Fills the banner. The gradient is laid over it, and shows the picture through wherever a band is not at full strength.',
 			'bridge'
 		),
+		columns: __(
+			'Sits in the second column, beside the words. Nothing is laid over it, so it needs no darkening.',
+			'bridge'
+		),
 	};
 
 	// And what the colour under it all is for, which is a different sentence
@@ -1488,6 +1507,123 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 				),
 		})
 	);
+
+	// The parts of the canvas, in the order render.php prints them. Named so
+	// the two-column background can put a container around the same set
+	// rather than a second copy of it being written out below.
+	const bannerParts = [
+		showsImage &&
+			el(
+				'div',
+				{
+					className: 'bridge-hero-banner__media',
+					style: isFixed
+						? { backgroundImage: `url(${imageUrl})` }
+						: undefined,
+				},
+				!isFixed &&
+					el('img', {
+						className: 'bridge-hero-banner__image',
+						src: imageUrl,
+						alt: imageAlt || '',
+					})
+			),
+		gradient !== '' &&
+			el('div', {
+				className: 'bridge-hero-banner__gradient',
+				'aria-hidden': 'true',
+				/*
+				 * Painted straight onto the element here, rather than left
+				 * to the stylesheet reading a custom property off the
+				 * wrapper the way the page does.
+				 *
+				 * One less thing between a swatch and the canvas. The
+				 * property route works — it is what render.php publishes,
+				 * because a gradient cannot go in a front-end style
+				 * attribute at all — but it means a colour change has to
+				 * travel from the attribute, into a variable on an
+				 * ancestor, down through inheritance, into a rule in a
+				 * separate stylesheet, before anything moves. Set on the
+				 * element it is one value on one node, which is the shortest
+				 * path the editor can take and the one least able to go
+				 * stale.
+				 */
+				style: { backgroundImage: gradient },
+			}),
+		kind === 'curve' &&
+			el(
+				'div',
+				{
+					className: 'bridge-hero-banner__curve',
+					'aria-hidden': 'true',
+				},
+				el(
+					'svg',
+					{
+						className: 'bridge-hero-banner__curve-box',
+						viewBox: '0 0 100 100',
+						preserveAspectRatio: 'none',
+						focusable: 'false',
+					},
+					el('path', {
+						className: 'bridge-hero-banner__curve-veil is-stacked',
+						d: curvePathStacked(curveMobile, curveMobile.gap),
+					}),
+					el('path', {
+						className: 'bridge-hero-banner__curve-panel is-stacked',
+						d: curvePathStacked(curveMobile),
+					}),
+					// The second curve first and the colour over it, so
+					// what shows is the band between the two edges. See
+					// render.php.
+					el('path', {
+						className: 'bridge-hero-banner__curve-veil is-wide',
+						d: curvePath(curve, curve.gap),
+					}),
+					el('path', {
+						className: 'bridge-hero-banner__curve-panel is-wide',
+						d: curvePath(curve),
+					})
+				)
+			),
+		curveCss !== '' &&
+			el('style', {
+				dangerouslySetInnerHTML: { __html: curveCss },
+			}),
+		el('div', contentProps),
+		/*
+		 * The rail and its handles, last so they are over the words.
+		 *
+		 * Only while this block itself is selected — not an inner one. The
+		 * tool's handles take pointer events, and a set of them floating
+		 * over a headline somebody is in the middle of typing is a set of
+		 * them in the way. Selecting the banner is the gesture that means
+		 * "I am arranging this", which is exactly when the rail is wanted.
+		 */
+		isSelected &&
+			kind === 'custom-gradient' &&
+			bands.length > 0 &&
+			!reframing &&
+			el(GradientTool, {
+				angle,
+				bands,
+				range: bandRange,
+				onBand: setBandEdge,
+				onAngle: (value) => setAttributes({ gradientAngle: value }),
+			}),
+		/*
+		 * And the reframe surface, last of all and over everything —
+		 * including the gradient's rail, which is why that one is held back
+		 * above. While the mode is on, the only thing the banner does is
+		 * move its picture.
+		 */
+		reframing &&
+			showsImage &&
+			el(ReframeSurface, {
+				point,
+				onChange: (value) => setAttributes({ focalPoint: value }),
+			}),
+	];
 
 	return el(
 		Fragment,
@@ -1542,6 +1678,10 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 							label: __('Custom gradient', 'bridge'),
 							value: 'custom-gradient',
 						},
+						{
+							label: __('Two columns', 'bridge'),
+							value: 'columns',
+						},
 					],
 					onChange: (value) => setAttributes({ background: value }),
 					__nextHasNoMarginBottom: true,
@@ -1552,20 +1692,30 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 				 *
 				 * Here rather than in a panel of its own because it is the
 				 * second half of the same question the select above asks: what
-				 * the banner looks like. Every background takes it, and the
-				 * arithmetic is the page's own grid — see `.is-title-left` in
-				 * blocks/_hero-banner.
+				 * the banner looks like. The arithmetic is the page's own grid
+				 * — see `.is-title-left` in blocks/_hero-banner.
+				 *
+				 * Every background takes it but one. The two-column background
+				 * already puts the words in the first column, because there is
+				 * a picture in the second; offering the toggle there would be
+				 * offering to do a thing that has been done, and switching it
+				 * on would ask for the measure twice. render.php withholds the
+				 * class on that background for the same reason, so a banner
+				 * switched over with the toggle already on is unaffected
+				 * rather than broken.
 				 */
-				el(ToggleControl, {
-					label: __('Title block on the left', 'bridge'),
-					help: __(
-						'The heading, the line under it and the buttons sit in the left-hand half of the banner, on the page’s own grid, rather than centred across the whole of it. Full width on a phone, where half a screen is not a column.',
-						'bridge'
-					),
-					checked: !!titleLeft,
-					onChange: (value) => setAttributes({ titleLeft: value }),
-					__nextHasNoMarginBottom: true,
-				}),
+				background !== 'columns' &&
+					el(ToggleControl, {
+						label: __('Title block on the left', 'bridge'),
+						help: __(
+							'The heading, the line under it and the buttons sit in the left-hand half of the banner, on the page’s own grid, rather than centred across the whole of it. Full width on a phone, where half a screen is not a column.',
+							'bridge'
+						),
+						checked: !!titleLeft,
+						onChange: (value) =>
+							setAttributes({ titleLeft: value }),
+						__nextHasNoMarginBottom: true,
+					}),
 				hasImage &&
 					el(
 						BaseControl,
@@ -1607,6 +1757,41 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 						)
 					),
 				/*
+				 * And how it meets the column it is in.
+				 *
+				 * Only here. On every other background the picture *is* the
+				 * band, and a full-bleed hero letterboxed inside the window is
+				 * a hero with strips of colour down it — so cover is the only
+				 * answer there and there is nothing to ask.
+				 */
+				background === 'columns' &&
+					showsImage &&
+					el(SelectControl, {
+						label: __('Image fit', 'bridge'),
+						help:
+							imageFit === 'contain'
+								? __(
+										'The whole picture, at its own proportions, centred against the words beside it.',
+										'bridge'
+									)
+								: __(
+										'The picture fills its column and is cropped to it, so the two halves of the banner are the same height.',
+										'bridge'
+									),
+						value: imageFit || 'cover',
+						options: [
+							{ label: __('Cover', 'bridge'), value: 'cover' },
+							{
+								label: __('Fit whole image', 'bridge'),
+								value: 'contain',
+							},
+						],
+						onChange: (value) =>
+							setAttributes({ imageFit: value || 'cover' }),
+						__nextHasNoMarginBottom: true,
+						__next40pxDefaultSize: true,
+					}),
+				/*
 				 * Where the crop is taken from.
 				 *
 				 * It earns its place on the curve above all: there the picture
@@ -1617,6 +1802,7 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 				 * the same picture in the same element.
 				 */
 				showsImage &&
+					!(background === 'columns' && imageFit === 'contain') &&
 					el(FocalPointPicker, {
 						label: __('Focal point', 'bridge'),
 						help: __(
@@ -2331,120 +2517,21 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 		el(
 			'div',
 			blockProps,
-			showsImage &&
-				el(
-					'div',
-					{
-						className: 'bridge-hero-banner__media',
-						style: isFixed
-							? { backgroundImage: `url(${imageUrl})` }
-							: undefined,
-					},
-					!isFixed &&
-						el('img', {
-							className: 'bridge-hero-banner__image',
-							src: imageUrl,
-							alt: imageAlt || '',
-						})
-				),
-			gradient !== '' &&
-				el('div', {
-					className: 'bridge-hero-banner__gradient',
-					'aria-hidden': 'true',
-					/*
-					 * Painted straight onto the element here, rather than left
-					 * to the stylesheet reading a custom property off the
-					 * wrapper the way the page does.
-					 *
-					 * One less thing between a swatch and the canvas. The
-					 * property route works — it is what render.php publishes,
-					 * because a gradient cannot go in a front-end style
-					 * attribute at all — but it means a colour change has to
-					 * travel from the attribute, into a variable on an
-					 * ancestor, down through inheritance, into a rule in a
-					 * separate stylesheet, before anything moves. Set on the
-					 * element it is one value on one node, which is the shortest
-					 * path the editor can take and the one least able to go
-					 * stale.
-					 */
-					style: { backgroundImage: gradient },
-				}),
-			kind === 'curve' &&
-				el(
-					'div',
-					{
-						className: 'bridge-hero-banner__curve',
-						'aria-hidden': 'true',
-					},
-					el(
-						'svg',
-						{
-							className: 'bridge-hero-banner__curve-box',
-							viewBox: '0 0 100 100',
-							preserveAspectRatio: 'none',
-							focusable: 'false',
-						},
-						el('path', {
-							className:
-								'bridge-hero-banner__curve-veil is-stacked',
-							d: curvePathStacked(curveMobile, curveMobile.gap),
-						}),
-						el('path', {
-							className:
-								'bridge-hero-banner__curve-panel is-stacked',
-							d: curvePathStacked(curveMobile),
-						}),
-						// The second curve first and the colour over it, so
-						// what shows is the band between the two edges. See
-						// render.php.
-						el('path', {
-							className: 'bridge-hero-banner__curve-veil is-wide',
-							d: curvePath(curve, curve.gap),
-						}),
-						el('path', {
-							className:
-								'bridge-hero-banner__curve-panel is-wide',
-							d: curvePath(curve),
-						})
-					)
-				),
-			curveCss !== '' &&
-				el('style', {
-					dangerouslySetInnerHTML: { __html: curveCss },
-				}),
-			el('div', contentProps),
 			/*
-			 * The rail and its handles, last so they are over the words.
-			 *
-			 * Only while this block itself is selected — not an inner one. The
-			 * tool's handles take pointer events, and a set of them floating
-			 * over a headline somebody is in the middle of typing is a set of
-			 * them in the way. Selecting the banner is the gesture that means
-			 * "I am arranging this", which is exactly when the rail is wanted.
+			 * Band, container, two columns — and that middle element only on the
+			 * one background that has two boxes to place. Spread rather than
+			 * passed as an array, so the parts stay positional children and need
+			 * no keys. render.php prints the same wrapper on the same condition.
 			 */
-			isSelected &&
-				kind === 'custom-gradient' &&
-				bands.length > 0 &&
-				!reframing &&
-				el(GradientTool, {
-					angle,
-					bands,
-					range: bandRange,
-					onBand: setBandEdge,
-					onAngle: (value) => setAttributes({ gradientAngle: value }),
-				}),
-			/*
-			 * And the reframe surface, last of all and over everything —
-			 * including the gradient's rail, which is why that one is held back
-			 * above. While the mode is on, the only thing the banner does is
-			 * move its picture.
-			 */
-			reframing &&
-				showsImage &&
-				el(ReframeSurface, {
-					point,
-					onChange: (value) => setAttributes({ focalPoint: value }),
-				})
+			...(kind === 'columns'
+				? [
+						el(
+							'div',
+							{ className: 'bridge-hero-banner__inner' },
+							...bannerParts
+						),
+					]
+				: bannerParts)
 		)
 	);
 };

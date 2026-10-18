@@ -5,7 +5,7 @@
  *
  * A band sized to the window, carrying a background and one column of content.
  * The background is the block's own setting rather than a Cover an editor has
- * to configure — see bridge_hero_banner_ground(), which resolves the five
+ * to configure — see bridge_hero_banner_ground(), which resolves the six
  * choices into a ground, a legible foreground and an overlay.
  *
  * Three CSS variables place the band in the page: `--bridge-hero-banner-height`
@@ -33,10 +33,12 @@ $bridge_image_id  = isset($attributes['imageId']) ? (int) $attributes['imageId']
 $bridge_image_url = isset($attributes['imageUrl']) ? (string) $attributes['imageUrl'] : '';
 $bridge_image_alt = isset($attributes['imageAlt']) ? (string) $attributes['imageAlt'] : '';
 
-// Only three of the five backgrounds carry a picture, and none of them draws an
+// Only four of the six backgrounds carry a picture, and none of them draws an
 // empty frame: a curve with no image chosen yet is a colour panel, which is a
-// banner an editor can publish rather than a hole in the page.
-$bridge_has_media = in_array($ground['kind'], array('image', 'curve', 'custom-gradient'), true)
+// banner an editor can publish rather than a hole in the page, and a
+// two-column banner with nothing in the second column is the same thing said
+// again.
+$bridge_has_media = in_array($ground['kind'], array('image', 'curve', 'custom-gradient', 'columns'), true)
 	&& ($bridge_image_id > 0 || '' !== $bridge_image_url);
 
 /**
@@ -65,8 +67,13 @@ $bridge_fixed = 'image' === $ground['kind'] && ! empty($attributes['fixed']) && 
  * band's own colour — which is a finished composition rather than a broken one.
  * A gradient fading a brand colour out to nothing across the left-hand half is
  * the same banner with or without a photograph under it.
+ *
+ * The two-column arrangement falls back for the curve's reason, and more
+ * plainly: its second column holds nothing but a picture, so with no picture
+ * chosen it is a headline ranged into half a band beside an empty half. A flat
+ * colour is the banner an editor can publish while they go and find one.
  */
-$bridge_kind = 'curve' === $ground['kind'] && ! $bridge_has_media
+$bridge_kind = in_array($ground['kind'], array('curve', 'columns'), true) && ! $bridge_has_media
 	? 'solid'
 	: $ground['kind'];
 
@@ -103,13 +110,40 @@ if ($bridge_fixed) {
  * `.is-title-left` in blocks/_hero-banner — because every term in it is a
  * property the band already publishes.
  *
- * It is offered whatever the background is. The curve already ranges its words
- * left against the picture, so there this is the same answer said twice and
- * costs nothing; everywhere else it is the difference between a centred hero
- * and a two-column one.
+ * It is offered whatever the background is, bar one. The curve already ranges
+ * its words left against the picture, so there this is the same answer said
+ * twice and costs nothing; on most backgrounds it is the difference between a
+ * centred hero and a two-column one.
+ *
+ * The exception is the two-column background, which *is* that arrangement —
+ * the words are in the first column because there is a picture in the second.
+ * The toggle is hidden in the editor there, and this is the other half of it:
+ * a banner switched over from another background carrying `titleLeft` from
+ * before does not end up with the measure applied twice, once by the grid and
+ * once by a padding rule written for a band that has no second column.
  */
-if (! empty($attributes['titleLeft'])) {
+if (! empty($attributes['titleLeft']) && 'columns' !== $bridge_kind) {
 	$bridge_classes[] = 'is-title-left';
+}
+
+/*
+ * How the two-column banner's picture meets its column.
+ *
+ * Cover is the default and what a hero usually wants: the photograph fills the
+ * column it is given and is cropped to it, so the two halves of the band are
+ * the same height and the composition is a rectangle beside a rectangle.
+ *
+ * Fit is for the picture that ratio ruins — a portrait, a product shot, a
+ * screenshot, a logo. There the column gives up its own shape and the picture
+ * keeps its proportions at the width it has been given, centred against the
+ * words beside it.
+ *
+ * Only on the two-column background. Everywhere else the picture is the band
+ * itself and there is no second answer: a full-bleed hero letterboxed inside
+ * the window is a hero with strips of colour down it.
+ */
+if ('columns' === $bridge_kind && 'contain' === (string) ($attributes['imageFit'] ?? 'cover')) {
+	$bridge_classes[] = 'has-fit';
 }
 
 $bridge_style = sprintf(
@@ -278,6 +312,27 @@ if ($bridge_has_media && ! $bridge_fixed) {
 
 ?>
 <?php echo $open_tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — get_block_wrapper_attributes() is pre-escaped. ?>
+	<?php
+	/*
+	 * The two-column background's container, and the only element in this
+	 * template that is not printed for every banner.
+	 *
+	 * Band, container, two columns. Every other background stacks its parts in
+	 * one cell of the band — a photograph under a headline, a curve over it —
+	 * and needs nothing between the band and them. This one puts two boxes side
+	 * by side, and where they stop is the site's own wide container rather than
+	 * a measurement of this block's own: the same element, with the same cap
+	 * and the same gutter, as the section below the banner. See
+	 * `.bridge-hero-banner__inner` in blocks/_hero-banner, which makes it the
+	 * grid.
+	 *
+	 * The editor prints the same wrapper on the same condition, so one
+	 * stylesheet paints both.
+	 */
+	?>
+	<?php if ('columns' === $bridge_kind) : ?>
+		<div class="bridge-hero-banner__inner">
+	<?php endif; ?>
 	<?php if ('' !== $bridge_curve_css) : ?>
 		<?php
 		/*
@@ -399,4 +454,7 @@ if ($bridge_has_media && ! $bridge_fixed) {
 	<div class="bridge-hero-banner__content">
 		<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	</div>
+	<?php if ('columns' === $bridge_kind) : ?>
+		</div>
+	<?php endif; ?>
 </div>

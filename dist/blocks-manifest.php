@@ -63,7 +63,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/alternating-row',
-		'version' => '1.3.0',
+		'version' => '1.4.0',
 		'title' => 'Row',
 		'category' => 'design',
 		'icon' => 'align-pull-left',
@@ -101,9 +101,9 @@ return array(
 				'type' => 'boolean',
 				'default' => false,
 			),
-			'parallax' => array(
-				'type' => 'boolean',
-				'default' => false,
+			'imageFit' => array(
+				'type' => 'string',
+				'default' => 'cover',
 			),
 			'maskSize' => array(
 				'type' => 'number',
@@ -1217,7 +1217,7 @@ return array(
 		'title' => 'Hero Banner',
 		'category' => 'media',
 		'icon' => 'cover-image',
-		'description' => 'A single full-height hero: a headline over a photograph, a colour, a gradient, a drawn curve, or a run of colour bands at an angle with a picture behind it.',
+		'description' => 'A single full-height hero: a headline over a photograph, a colour, a gradient, a drawn curve, a run of colour bands at an angle with a picture behind it, or two columns with the words beside a picture.',
 		'textdomain' => 'bridge',
 		'keywords' => array(
 			'hero',
@@ -1225,6 +1225,7 @@ return array(
 			'cover',
 			'curve',
 			'gradient',
+			'columns',
 		),
 		'supports' => array(
 			'anchor' => true,
@@ -1255,6 +1256,10 @@ return array(
 			'imageAlt' => array(
 				'type' => 'string',
 				'default' => '',
+			),
+			'imageFit' => array(
+				'type' => 'string',
+				'default' => 'cover',
 			),
 			'focalPoint' => array(
 				'type' => 'object',

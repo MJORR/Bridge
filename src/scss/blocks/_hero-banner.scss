@@ -2,7 +2,7 @@
  * Bridge — Hero Banner component.
  *
  * A band sized to the window, carrying a background and one column of content.
- * Five backgrounds, resolved server-side into three custom properties — a
+ * Six backgrounds, resolved server-side into three custom properties — a
  * ground, a legible foreground and an overlay — so this file paints rather than
  * decides. See bridge_hero_banner_ground() in inc/hero-blocks.php.
  *
@@ -18,6 +18,7 @@
  */
 
 @use "../abstracts/nav";
+@use "../abstracts/section" as section;
 
 .bridge-hero-banner {
 	position: relative;
@@ -597,6 +598,209 @@
 	 * costs a preview that runs a little tall rather than one that vanishes.
 	 */
 	min-height: min(var(--bridge-hero-banner-height, 100dvh), 100dvh);
+}
+
+// ---------------------------------------------------------------------------
+// Two columns — a wide container holding the words beside the picture
+// ---------------------------------------------------------------------------
+
+/**
+ * The one background where the picture is a thing in the band rather than the
+ * band itself.
+ *
+ * ---- The shape of it -------------------------------------------------------
+ *
+ * Band, container, two columns. The band is full-bleed and carries the colour,
+ * exactly as it does on every other background. Inside it is one wrapper — the
+ * site's own wide container, the same mixin every wide section on the page
+ * uses — and inside *that* are two equal columns with the theme's block gap
+ * between them: the words in the first, the picture in the second.
+ *
+ * ---- Why a wrapper and not padding on the band ----------------------------
+ *
+ * Because the container is a box the site already has, and the alternative was
+ * re-deriving it. Padding the band inward is arithmetic that has to be kept in
+ * step with `container()` by hand, and it was already a step out. A wrapper is
+ * the same element, with the same cap and the same gutter, as the section below
+ * the banner — so the headline starts on the line the logo starts on and the
+ * picture finishes on the line the section under it finishes on, because all
+ * three are the same container rather than three numbers that agree.
+ *
+ * The band keeps the vertical padding, because that is the band's business: it
+ * is what holds the picture off the top and bottom edges, and it is where the
+ * allowance for a header that overlays the banner has to be spent.
+ *
+ * `min-height` is unaffected by either: the global reset makes every box
+ * `border-box`, so padding comes out of the floor rather than adding to it.
+ *
+ * ---- What has to be undone -------------------------------------------------
+ *
+ * One thing, and it is a default this file sets for the other five backgrounds.
+ * The media is `position: absolute; inset: 0`, which makes it the whole band —
+ * in here it is a grid item like the words, so it takes its column rather than
+ * the window. The band's `> * { grid-area: 1 / 1 }` needs no undoing: the
+ * wrapper is the only child, so one cell is all there is to take.
+ *
+ * ---- Stacked ---------------------------------------------------------------
+ *
+ * One column below the nav bar, words first. `order` rather than reordering the
+ * markup: the picture is first in the tree because on every other background it
+ * is the thing behind everything, and a hero that opens with a photograph and
+ * no headline is the wrong way round on a phone. Ordering the content ahead of
+ * it also settles the desktop placement, since auto-placement reads
+ * order-modified document order — so the words take the first column without
+ * either child naming one.
+ */
+.bridge-hero-banner.is-bg-columns {
+	// The air above and below the picture, named once because the top edge
+	// spends it twice — once on its own account and once on top of whatever
+	// the header is covering. The section's own padding, so the band holds its
+	// content at the measure every other band on the site does.
+	--bridge-hero-banner-pad: var(
+		--wp--custom--section-padding,
+		var(--wp--preset--spacing--70)
+	);
+
+	padding-block: calc(
+			var(--bridge-hero-banner-lead, 0px) + var(--bridge-hero-banner-pad)
+		)
+		var(--bridge-hero-banner-pad);
+}
+
+/**
+ * The container, and the two columns in it.
+ *
+ * `container(wide)` is the whole of the first job: `wideSize`, centred, with
+ * the page's gutter inside it — see abstracts/_section, and note that every
+ * wide band on the site spends its gutter the same way, which is what makes
+ * this one line up with them rather than near them.
+ *
+ * `width: 100%` because it is a grid item in a cell the band stretches: without
+ * it the wrapper shrinks to its content and the `margin-inline: auto` inside
+ * `container()` has nothing left to centre.
+ *
+ * Only the two-column background prints this element, so the class needs no
+ * scoping of its own.
+ */
+.bridge-hero-banner__inner {
+	@include section.container(wide);
+
+	width: 100%;
+	display: grid;
+	gap: section.$grid-gap;
+
+	@media (min-width: nav.$bar) {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		// The picture takes the height the words settle, so the two columns
+		// finish level — which is the whole look of this arrangement.
+		align-items: stretch;
+	}
+}
+
+.bridge-hero-banner.is-bg-columns .bridge-hero-banner__media {
+	position: relative;
+	inset: auto;
+	// A picture with the band showing around it is a picture with edges, and
+	// this theme rounds those. The wrapper already clips its contents, so the
+	// radius here is what the photograph inside it takes.
+	border-radius: var(--wp--custom--radius--large);
+}
+
+.bridge-hero-banner.is-bg-columns .bridge-hero-banner__content {
+	order: -1;
+	align-items: flex-start;
+	text-align: start;
+	// The container above carries the gutter and the band carries the header
+	// allowance, so the content box spends neither.
+	padding-inline: 0;
+	padding-block-start: 0;
+}
+
+/**
+ * Cover, in two columns: the picture out of the flow inside its own column.
+ *
+ * Because `height: 100%` on the image is only half an answer, and on its own it
+ * is the bug this file already fixed once for the full-bleed media. A grid row
+ * sized from its contents asks every item how tall it wants to be, and an
+ * in-flow `<img>` answers with the height of the file — so a 2000px photograph
+ * made a 2000px band, with the height control reduced to a floor that no upload
+ * was ever going to fall under.
+ *
+ * Out of flow it has no say. The media wrapper is the containing block — the
+ * rule above already makes it `position: relative` — so `inset: 0` is exactly
+ * the column, however tall the words and the floor between them settle it, and
+ * the image's `height: 100%` finally has a definite box to resolve against.
+ *
+ * Only in two columns, and only for cover. Stacked, there is no second column
+ * to be as tall as and the picture is simply a full-width one under the words,
+ * so it keeps its own height; and a fitted picture is *supposed* to set its own
+ * height, which is the whole of what the setting means.
+ */
+.bridge-hero-banner.is-bg-columns:not(.has-fit) {
+	@media (min-width: nav.$bar) {
+		.bridge-hero-banner__image {
+			position: absolute;
+			inset: 0;
+		}
+	}
+}
+
+/**
+ * The whole picture, rather than the column's shape.
+ *
+ * Cover is the default and the right one for a photograph: it fills the column
+ * and is cropped to it, and the band comes out as two rectangles of the same
+ * height. It is the wrong one for a picture whose edges are the content — a
+ * portrait, a product shot, a screenshot, a logo — where the crop takes off the
+ * part that was the point.
+ *
+ * So the column stops deciding the shape. The media is centred against the
+ * words rather than stretched to them, and the image takes its own proportions
+ * at the width it has been given. `object-fit` is then a no-op, because the box
+ * and the picture are the same shape, and it is named anyway: it is what keeps
+ * the answer right at the one width where the box is settled from outside, and
+ * `cover` inherited from the rule above would crop there.
+ *
+ * The focal point goes with the crop. It moves a picture inside a box it is
+ * larger than, and there is no such box here — a transform would simply slide
+ * the whole photograph off its own column. The editor hides the picker for the
+ * same reason.
+ *
+ * ---- And the air around it -------------------------------------------------
+ *
+ * A fitted picture is one the band is showing rather than one the band is made
+ * of, and a thing being shown wants room around it. Cover has none and needs
+ * none: it fills its column edge to edge, which is what makes the two halves
+ * read as one rectangle cut in two. Here the picture is an object on a ground,
+ * and taking a step off every side is what stops it from looking like a cover
+ * picture that came up short.
+ *
+ * On the media rather than the image, so it is inset from the column on all
+ * four sides at once — the width the picture is given shrinks by the two side
+ * steps, and because the height follows the picture's own proportions it comes
+ * down with it. Smaller all round from one declaration, and the ground shows
+ * through on every side because `has-fit` gives the wrapper no background.
+ *
+ * L, from the site's own scale — the step Theme Options calls L, see
+ * bridge_spacing_steps(). The same measure, for the same reason, as the padded
+ * setting on the alternating rows.
+ */
+.bridge-hero-banner.is-bg-columns.has-fit {
+	.bridge-hero-banner__media {
+		align-self: center;
+		padding: var(--wp--preset--spacing--50);
+	}
+
+	.bridge-hero-banner__image {
+		height: auto;
+		object-fit: contain;
+		transform: none;
+		// The wrapper's radius was clipping the picture while the two shared
+		// an edge. Padded apart, the wrapper's corners are rounding nothing
+		// but transparency, so the picture takes the radius itself — the same
+		// one, inherited rather than named twice.
+		border-radius: inherit;
+	}
 }
 
 // ---------------------------------------------------------------------------

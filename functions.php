@@ -79,6 +79,9 @@ require_once get_theme_file_path('inc/enquiries.php');
 // The site's identity as JSON-LD. After site-options.php, which holds every
 // field it publishes, and after tokens.php, which holds the logo it names.
 require_once get_theme_file_path('inc/schema.php');
+// And the one thing that file deliberately leaves to the entry itself: a
+// description per post and per page, in the head of that entry.
+require_once get_theme_file_path('inc/meta-description.php');
 
 require_once get_theme_file_path('inc/cli.php');
 
@@ -910,6 +913,47 @@ function bridge_enqueue_page_editor_assets(): void
 add_action('enqueue_block_editor_assets', 'bridge_enqueue_page_editor_assets');
 
 /**
+ * The "Search description" panel, on the screens that have a description.
+ *
+ * One field, saved to post meta and printed as `<meta name="description">` in
+ * that entry's head. inc/meta-description.php registers the meta and prints
+ * the tag; src/editor/meta-description-panel.js is the control.
+ *
+ * A screen check rather than the every-screen hook below, and the list comes
+ * from bridge_meta_description_post_types() rather than being named again —
+ * so a build that filters the field onto a third post type gets the panel with
+ * it, and the site editor, the pattern editor and the widget screen never load
+ * a sidebar panel for an entry that has no meta to put in it.
+ *
+ * The same dependency set the Title Banner panel takes, less the block editor
+ * and the colour palette this one has no use for.
+ */
+function bridge_enqueue_meta_description_panel(): void
+{
+	$screen = function_exists('get_current_screen') ? get_current_screen() : null;
+
+	if (! $screen || ! in_array($screen->post_type, bridge_meta_description_post_types(), true)) {
+		return;
+	}
+
+	bridge_enqueue_script(
+		'bridge-meta-description-panel',
+		'meta-description-panel.js',
+		array(
+			'wp-plugins',
+			'wp-editor',
+			'wp-edit-post',
+			'wp-element',
+			'wp-components',
+			'wp-data',
+			'wp-core-data',
+			'wp-i18n',
+		)
+	);
+}
+add_action('enqueue_block_editor_assets', 'bridge_enqueue_meta_description_panel');
+
+/**
  * Editor scripts that belong to every screen with a block editor on it.
  *
  * Unlike the three above, these are not about the Page screen: they take the
@@ -919,6 +963,7 @@ add_action('enqueue_block_editor_assets', 'bridge_enqueue_page_editor_assets');
  */
 function bridge_enqueue_editor_assets(): void
 {
+
 	bridge_enqueue_script(
 		'bridge-paragraph-lock',
 		'paragraph-lock.js',

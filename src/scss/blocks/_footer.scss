@@ -76,6 +76,15 @@
 	//          full strength, 100% to keep it hidden the whole way down. It is
 	//          the overlay's own opacity, which is how the fade is described
 	//          and therefore how it is written; the mask below subtracts it.
+	//   focus  Which part of the picture survives the crop. The footer is a
+	//          letterbox and a photograph is not, so `cover` scales the image
+	//          to the width and spills most of a standard frame's height over
+	//          the top and bottom edges — at a 3:2 image in a 2.5:1 band, only
+	//          about three-fifths of it is ever on screen. Centred, that band
+	//          is the middle of the frame, which in a landscape is where the
+	//          horizon is. A percentage works here too and is the finer
+	//          control: `center 40%` pulls the visible band upward toward the
+	//          sky, `center 70%` downward toward the foreground.
 	//   angle  How far the fade is turned off vertical. Negative is
 	//          anticlockwise, the same sense as the strapline's tilt, and it
 	//          lifts the fade on the right — so a horizon that rises to one
@@ -84,6 +93,7 @@
 	//          mistake; a few degrees out reads as weather.
 	--bridge-footer-image-hold: 40%;
 	--bridge-footer-image-angle: -5deg;
+	--bridge-footer-image-focus: center center;
 	--bridge-footer-image-scrim: 0%;
 
 	// The image runs the whole band, copyright row included — it is the ground
@@ -104,11 +114,11 @@
 		inset: 0;
 		z-index: -1;
 		background-image: var(--bridge-footer-image);
-		// Anchored to the foot of the band. `cover` so a wide horizon fills
-		// the width; it is the bottom of the image that matters, and
-		// `bottom center` is what keeps the skyline in view when the footer is
-		// shorter than the picture's proportions.
-		background-position: bottom center;
+		// `cover` so the picture fills the band edge to edge, and `focus`
+		// decides what is kept when it cannot all fit — which, in a letterbox
+		// holding a standard-aspect photograph, is most of the time. See the
+		// note on the property above.
+		background-position: var(--bridge-footer-image-focus);
 		background-size: cover;
 		background-repeat: no-repeat;
 		// Prefixed as well as standard: Safari carried `mask-image` behind
@@ -247,7 +257,11 @@
  */
 .bridge-footer__inner {
 	display: grid;
-	gap: var(--wp--preset--spacing--50) var(--wp--preset--spacing--60);
+	// 2XL between rows while the columns stack. One gap for every row, so the
+	// strapline sits as far above the first menu as each menu sits above the
+	// next — the strapline's own bottom margin only holds room for the stroke
+	// hanging under it, so the visible space after the stroke is this gap.
+	gap: var(--wp--preset--spacing--70) var(--wp--preset--spacing--60);
 	grid-template-columns: minmax(0, 1fr);
 
 	@media (width >= 34rem) {
@@ -255,6 +269,7 @@
 	}
 
 	@media (width >= 68rem) {
+		row-gap: var(--wp--preset--spacing--50);
 		grid-template-columns: 1.7fr 1fr 1.15fr 1.35fr;
 	}
 }
@@ -389,6 +404,12 @@
 	font-size: var(--wp--preset--font-size--small);
 	line-height: 1.6;
 	opacity: 0.85;
+
+	// On a phone the column is already a comfortable measure, and 30ch left
+	// the paragraph stopping short of the menus' width under it.
+	@media (width < 34rem) {
+		max-inline-size: none;
+	}
 }
 
 /**
@@ -457,8 +478,7 @@
 	 * push the stroke down by the same amount and the gap could never be
 	 * closed. A margin sits outside that box and moves nothing.
 	 */
-	margin: var(--wp--preset--spacing--40) 0
-		var(--bridge-footer-swoosh-room);
+	margin: var(--wp--preset--spacing--40) 0 var(--bridge-footer-swoosh-room);
 	inline-size: fit-content;
 	// The stroke is allowed to overshoot the words without widening the column
 	// or, on a narrow screen, pushing a scrollbar onto the page.
@@ -795,6 +815,12 @@
 		block-size: 3px;
 		border-radius: 2px;
 		background-color: var(--wp--preset--color--accent, currentcolor);
+
+		// Half the column on a phone, where the column is the full width of
+		// the screen and a word-length mark under it looks like a stray dash.
+		@media (width < 34rem) {
+			inline-size: 50%;
+		}
 	}
 }
 
@@ -805,6 +831,12 @@
 	// column, which is tighter than the row spacing a header wants.
 	.wp-block-navigation__container {
 		gap: var(--wp--preset--spacing--20);
+
+		// Looser while the footer is stacked: the links are tap targets on a
+		// phone or a tablet, and at XS they ran together under a thumb.
+		@media (width < 68rem) {
+			gap: var(--wp--preset--spacing--40);
+		}
 	}
 
 	a {

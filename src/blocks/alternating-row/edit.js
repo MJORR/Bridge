@@ -51,6 +51,29 @@ const ALLOWED_BLOCKS = [
 	'core/buttons',
 ];
 
+/**
+ * What each way of fitting a picture does, in the editor's own words.
+ *
+ * Out here rather than nested in the control because it is three sentences of
+ * copy and a lookup, and the control is already the longest thing in the
+ * inspector. Keyed by the attribute's own values, so a fourth would be a line
+ * here and a line in the options list rather than another branch.
+ */
+const FIT_HELP = {
+	cover: __(
+		'The picture fills a 16:9 area, cropped to it — the same shape the videos take, so a section that mixes the two stays even.',
+		'bridge'
+	),
+	contain: __(
+		'The whole picture is shown, at its own proportions, however tall or wide that makes it.',
+		'bridge'
+	),
+	padded: __(
+		'The whole picture, held off the edges of its half of the row by an L of space — so it reads as a picture placed on the band rather than as one filling it.',
+		'bridge'
+	),
+};
+
 const TEMPLATE = [
 	['core/heading', { level: 3, placeholder: __('Row heading', 'bridge') }],
 	[
@@ -136,7 +159,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		mask,
 		maskSize,
 		cropCorner,
-		parallax,
+		imageFit,
 	} = attributes;
 
 	// The band this row sits in decides whether a cut corner means anything:
@@ -166,14 +189,12 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			}
 		: undefined;
 
-	// Images only, and only once there is one: a moving frame around nothing
-	// is an empty box that slides. Matches the guard in render.php.
-	const moving = !!parallax && mediaType === 'image' && !!imageUrl;
-
-	const withFrame = (image) =>
-		moving
-			? el('span', { className: 'bridge-alternating__frame' }, image)
-			: image;
+	// Images only, and only once there is one. A video file is a player with
+	// controls on it and a YouTube facade is an iframe; neither has a shape of
+	// its own to keep, so both stay at 16/9. Matches the guard in render.php.
+	const fitAllowed = mediaType === 'image' && !!imageUrl;
+	const fitted = fitAllowed && imageFit !== 'cover';
+	const padded = fitAllowed && imageFit === 'padded';
 
 	const blockProps = useBlockProps({ className: 'bridge-alternating__row' });
 
@@ -368,19 +389,26 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						__nextHasNoMarginBottom: true,
 					}),
 				mediaType === 'image' &&
-					el(ToggleControl, {
-						label: __('Move the picture as it scrolls', 'bridge'),
-						help: masked
-							? __(
-									'The shape stays put and the picture drifts behind it, so what the cut-out is showing changes as the row goes by.',
-									'bridge'
-								)
-							: __(
-									'The picture drifts inside its frame as the row crosses the screen. Most noticeable with the mask shape switched on, where the shape becomes a window onto it.',
-									'bridge'
-								),
-						checked: !!parallax,
-						onChange: (value) => setAttributes({ parallax: value }),
+					el(SelectControl, {
+						label: __('Image fit', 'bridge'),
+						help: FIT_HELP[imageFit] || FIT_HELP.cover,
+						value: imageFit || 'cover',
+						options: [
+							{
+								label: __('Cover (16:9)', 'bridge'),
+								value: 'cover',
+							},
+							{
+								label: __('Fit whole image', 'bridge'),
+								value: 'contain',
+							},
+							{
+								label: __('Fit, with padding', 'bridge'),
+								value: 'padded',
+							},
+						],
+						onChange: (value) =>
+							setAttributes({ imageFit: value || 'cover' }),
 						__nextHasNoMarginBottom: true,
 					}),
 				mediaType === 'image' &&
@@ -411,23 +439,19 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						'bridge-alternating__media',
 						masked ? 'has-mask' : '',
 						cropCorner && !bandIsFull ? 'has-crop' : '',
-						moving ? 'has-parallax' : '',
+						fitted ? 'has-fit' : '',
+						padded ? 'has-pad' : '',
 					]
 						.filter(Boolean)
 						.join(' '),
 					style: maskStyle,
 				},
 				imageUrl
-					? // The frame is the extra element a moving picture needs —
-						// it holds the shape still while the image slides. Only
-						// the rows that move render it, exactly as in render.php.
-						withFrame(
-							el('img', {
-								className: 'bridge-alternating__image',
-								src: imageUrl,
-								alt: alt || '',
-							})
-						)
+					? el('img', {
+							className: 'bridge-alternating__image',
+							src: imageUrl,
+							alt: alt || '',
+						})
 					: el(
 							'span',
 							{ className: 'bridge-alternating__placeholder' },

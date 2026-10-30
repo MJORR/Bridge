@@ -8,6 +8,7 @@
 @use "../abstracts/carousel" as carousel;
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
+@use "../abstracts/rhythm" as rhythm;
 
 @include intro.section-intro;
 
@@ -140,32 +141,30 @@
 
 	display: flex;
 	flex-direction: column;
-	gap: var(--wp--preset--spacing--20);
 	margin: 0;
+
+	// The site's rhythm: the rating, the quote and who said it.
+	@include rhythm.stack($gap: var(--bridge-heading-gap));
 
 	&__quote {
 		display: flex;
 		flex-direction: column;
-		// The smallest step the spacing scale actually publishes. It asked for
-		// `--wp--preset--spacing--10`, which the scale does not generate — it
-		// starts at 20 — so the declaration was invalid and the gap resolved
-		// to nothing, putting the attribution hard against the quote.
-		gap: var(--wp--preset--spacing--20);
 		margin: 0;
 		padding: 0;
 		border: 0;
 		// Pushes the attribution to the foot of the card, so the names line up
 		// across a row of quotes of different lengths.
 		flex-grow: 1;
+
+		// A quote's title is a <p>; it is still the heading of what follows.
+		@include rhythm.stack(
+			$gap: var(--bridge-heading-gap),
+			$headings: ".bridge-testimonial__title"
+		);
 	}
 
 	&__title {
-		margin: 0;
 		font-weight: 600;
-	}
-
-	&__text {
-		margin: 0;
 	}
 
 	&__attribution {
@@ -183,7 +182,6 @@
 	}
 
 	&__rating {
-		margin: 0;
 		display: flex;
 		gap: 0.1em;
 		line-height: 1;

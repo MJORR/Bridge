@@ -9,6 +9,16 @@
  * same compiled stylesheet is also loaded.
  */
 
+// Centring applies to a plain title as well as a banner, so it sits outside
+// the banner scope. banner-preview.js sets the class only in the editor.
+body.bridge-banner-align-center {
+	.wp-block-post-title,
+	.editor-post-title,
+	.editor-post-title__input {
+		text-align: center;
+	}
+}
+
 body.bridge-has-banner {
 	.wp-block-post-title,
 	.editor-post-title,
@@ -24,14 +34,6 @@ body.bridge-has-banner {
 		transition:
 			background-color 150ms ease,
 			color 150ms ease;
-	}
-
-	&.bridge-banner-align-center {
-		.wp-block-post-title,
-		.editor-post-title,
-		.editor-post-title__input {
-			text-align: center;
-		}
 	}
 
 	// Full width: stretch to the canvas edges and square off the corners to
@@ -70,10 +72,11 @@ body.bridge-title-hidden {
 	/**
 	 * Air above the prompt on an empty canvas.
 	 *
-	 * With the title field gone, core's appender — "Add a Hero Slider to start
-	 * this page" on a landing page, its own wording elsewhere — starts hard
-	 * against the top edge of the canvas. That is not what the published page
-	 * looks like, and it reads as the editor having cut something off.
+	 * With the title field gone, core's appender — "Add a Hero Slider or Hero
+	 * Banner to start this page" on a landing page, its own wording elsewhere —
+	 * starts hard against the top edge of the canvas. That is not what the
+	 * published page looks like, and it reads as the editor having cut
+	 * something off.
 	 *
 	 * Both halves are spent from one value, and neither alone is enough.
 	 *

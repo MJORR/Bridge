@@ -136,12 +136,13 @@
 			update({ bridge_banner_color: match ? match.slug : '' });
 		};
 
-		// Alignment and background only mean something once there is a banner
-		// to align and colour. Named positively rather than as "not none", so
-		// a fourth style that draws no banner — as `hidden` does — does not
-		// have to remember to opt out of controls that cannot apply to it.
+		// Alignment means something wherever a title is drawn, banner or not;
+		// a background only once there is a banner to colour. Named
+		// positively, so a style that draws nothing — as `hidden` does — does
+		// not have to remember to opt out of controls that cannot apply to it.
 		const showBannerControls =
 			style === 'contained' || style === 'fullwidth';
+		const showAlignControl = showBannerControls || style === 'none';
 
 		return el(
 			PluginDocumentSettingPanel,
@@ -164,7 +165,7 @@
 						'bridge'
 					),
 				}),
-				showBannerControls &&
+				showAlignControl &&
 					el(ToggleControl, {
 						label: __('Centre the title', 'bridge'),
 						checked: align === 'center',

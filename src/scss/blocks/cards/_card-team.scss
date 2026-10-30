@@ -169,7 +169,6 @@
 	// The role. Muted like an excerpt, because it is supporting text — but it
 	// is one authored line, so it never grows to fill the card.
 	.post-card--team .post-card__subtitle {
-		margin: 0;
 		font-size: var(--wp--preset--font-size--small);
 		line-height: 1.4;
 		color: var(--post-card-muted);
@@ -181,7 +180,6 @@
 	// stretched link covers the whole card, and a pointer landing on this
 	// follows the card's own link.
 	.post-card--team .post-card__cta {
-		margin-block-start: var(--wp--preset--spacing--20);
 		// The card is the click target; this must not claim to be one of its
 		// own, or a pointer over it reads as hovering something else.
 		cursor: inherit;

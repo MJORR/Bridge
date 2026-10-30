@@ -1,0 +1,102 @@
+/**
+ * Bridge — one vertical rhythm, for every block that stacks its own parts.
+ *
+ * Three gaps, all set in Theme Options → Design → Layout and spacing:
+ *
+ *   the block gap      between any two parts
+ *   the heading gap    from a heading to whatever it introduces
+ *   the buttons gap    between a button and the text around it
+ *
+ * Core's layout containers get these from base/_rhythm.scss. A block that lays
+ * out its own children — a hero's content, a card's body, a call to action —
+ * is not one of those containers, so it includes this mixin on the element
+ * whose children are the parts, and gets exactly the same answer.
+ *
+ * Margins, never a flex `gap`. A gap is one number for every pair, and the
+ * whole point is that a heading-to-text pair and a text-to-button pair are not
+ * the same distance. Mixing the two was how this site got its uneven spacing:
+ * a container's gap and a child's margin both applied, and added up.
+ *
+ * A part's own `margin: 0` written later in a block's file ties with these
+ * rules and wins on source order, so a block using this drops those.
+ *
+ * @param $gap       Between any two parts. A card's body passes the heading
+ *                   gap: its parts are a title and a few short lines, and the
+ *                   block gap set them as far apart as two paragraphs of copy.
+ * @param $headings  What counts as a heading here, beyond h1–h6 — a title that
+ *                   is marked up as a <p>, say.
+ * @param $kicker    A small label above the title (an eyebrow, a prefix). It
+ *                   belongs to the title, so it sits the smallest step above it.
+ * @param $buttons   This block's own button-like parts, beyond a core Buttons
+ *                   block.
+ * @param $pin       Push `$buttons` to the bottom of a column of equal-height
+ *                   cards, keeping at least the buttons gap above them.
+ */
+
+$heading-tags: "h1, h2, h3, h4, h5, h6";
+
+@mixin stack(
+	$gap: var(--wp--style--block-gap, var(--wp--preset--spacing--50)),
+	$headings: null,
+	$kicker: null,
+	$buttons: null,
+	$pin: false
+) {
+	$all-headings: $heading-tags;
+
+	@if $headings {
+		$all-headings: "#{$heading-tags}, #{$headings}";
+	}
+
+	> * {
+		margin-block: 0;
+	}
+
+	// Two classes, to outweigh the margin components/_button.scss gives every
+	// `.wp-element-button` — which would otherwise tie with the line above and
+	// win or lose on which stylesheet loaded last.
+	@if $buttons {
+		> :is(#{$buttons}) {
+			margin-block: 0;
+		}
+	}
+
+	> * + * {
+		margin-block-start: $gap;
+	}
+
+	> :is(#{$all-headings}) + * {
+		margin-block-start: var(--bridge-heading-gap);
+	}
+
+	@if $kicker {
+		> :is(#{$kicker}) + * {
+			margin-block-start: var(--wp--preset--spacing--20);
+		}
+	}
+
+	> * + .wp-block-buttons:not(:empty),
+	> .wp-block-buttons:not(:empty) + * {
+		margin-block-start: var(--bridge-buttons-gap);
+	}
+
+	// Separate from the rule above: `:is()` takes the weight of its heaviest
+	// argument, and sharing one with `.wp-block-buttons:not(:empty)` made this
+	// outweigh the pin below.
+	@if $buttons {
+		> * + :is(#{$buttons}),
+		> :is(#{$buttons}) + * {
+			margin-block-start: var(--bridge-buttons-gap);
+		}
+	}
+
+	@if $pin and $buttons {
+		> :is(#{$buttons}) {
+			margin-block-start: auto;
+		}
+
+		> :has(+ :is(#{$buttons})) {
+			margin-block-end: var(--bridge-buttons-gap);
+		}
+	}
+}

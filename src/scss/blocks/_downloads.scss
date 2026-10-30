@@ -5,6 +5,7 @@
 @use "../abstracts/card" as card;
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
+@use "../abstracts/rhythm" as rhythm;
 
 @include intro.section-intro;
 
@@ -98,17 +99,19 @@
 
 		display: flex;
 		flex-direction: column;
-		// The smallest step the spacing scale actually publishes. It asked for
-		// `--wp--preset--spacing--10`, which the scale does not generate — it
-		// starts at 20 — so the declaration was invalid and the gap resolved
-		// to nothing, which is why the three lines of this card sat on top of
-		// one another.
-		gap: var(--wp--preset--spacing--20);
 		flex-grow: 1;
+
+		// The site's rhythm: title and meta the heading gap apart, the
+		// download link pinned to the bottom with the buttons gap above it.
+		@include rhythm.stack(
+			$gap: var(--bridge-heading-gap),
+			$headings: ".bridge-download__title",
+			$buttons: ".bridge-download__link",
+			$pin: true
+		);
 	}
 
 	&__title {
-		margin: 0;
 		font-size: var(--bridge-download-heading, inherit);
 		font-weight: 600;
 		// Filenames run long and arbitrary; wrapping mid-word keeps one from
@@ -117,25 +120,13 @@
 	}
 
 	&__meta {
-		margin: 0;
 		font-size: var(--wp--preset--font-size--small);
 		opacity: 0.75;
 	}
 
 	&__link {
-		/**
-		 * Pushed to the bottom of the card, so the links line up across a row
-		 * of cards whose titles run to different lengths.
-		 *
-		 * The air above it is padding rather than margin, because `auto` is
-		 * already spending this side: a length here would replace the push and
-		 * leave every link at whatever height its own card's text ended at. On
-		 * a card with no file metadata the auto margin collapses to nothing,
-		 * and this is what keeps the link off the title in that case.
-		 */
-		margin-block-start: auto;
-		padding-block-start: var(--wp--preset--spacing--20);
-
+		// Pinned to the bottom by the stack above, so the links line up
+		// across a row of cards whose titles run to different lengths.
 		align-self: flex-start;
 		font-weight: 600;
 		// The whole card is not the link — a preview image that opens a

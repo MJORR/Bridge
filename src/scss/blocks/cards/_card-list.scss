@@ -194,12 +194,6 @@
 	.post-card--list .post-card__body {
 		display: flex;
 		flex-direction: column;
-		// A step up from the grid card's XS. A card's body is a column a few
-		// hundred pixels wide where XS is enough to separate three short
-		// lines; a row's is half the band, and at that measure the same gap
-		// reads as a paragraph that has run together. S is the site's next
-		// step, so this stays on the scale rather than inventing a number.
-		gap: var(--wp--preset--spacing--30);
 		// The base pads the body away from the card's edges. There are no card
 		// edges here — the row's own padding is what holds the words off the
 		// container, and the shading rules at the end of this file are what
@@ -327,7 +321,6 @@
 		// and the band's own foreground on an Inverted one, so it is never a
 		// dark blue on a dark blue.
 		color: var(--post-card-accent);
-		margin-block-start: var(--wp--preset--spacing--20);
 		align-self: flex-start;
 
 		&::after {

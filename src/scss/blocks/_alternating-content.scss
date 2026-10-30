@@ -2,6 +2,7 @@
  * Bridge — Alternating Content and its rows.
  */
 @use "../abstracts/section" as section;
+@use "../abstracts/rhythm" as rhythm;
 
 /**
  * How far the wide container's media column is centred from the middle of a
@@ -315,19 +316,9 @@ $mask-shift: calc(
 	&__copy {
 		min-width: 0;
 
-		> * {
-			margin-block: 0;
-		}
-
 		// The copy is ordinary blocks with no layout container of their own, so
-		// the gap between them is named here — as the global one, so a site
-		// that widens its rhythm widens this too.
-		> * + * {
-			margin-block-start: var(
-				--wp--style--block-gap,
-				var(--wp--preset--spacing--30)
-			);
-		}
+		// the site's rhythm is applied here.
+		@include rhythm.stack;
 	}
 
 	&__placeholder {

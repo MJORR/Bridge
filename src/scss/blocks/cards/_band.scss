@@ -22,6 +22,7 @@
 @use "../../abstracts/carousel" as carousel;
 @use "../../abstracts/section" as section;
 @use "../../abstracts/section-intro" as intro;
+@use "../../abstracts/rhythm" as rhythm;
 
 @include intro.section-intro;
 
@@ -303,8 +304,15 @@
 
 		display: flex;
 		flex-direction: column;
-		gap: var(--wp--preset--spacing--20);
 		flex: 1;
+
+		// The site's rhythm. A card's parts are a title and a few short
+		// lines, so they sit the heading gap apart rather than a paragraph's.
+		@include rhythm.stack(
+			$gap: var(--bridge-heading-gap),
+			$kicker: ".post-card__eyebrow",
+			$buttons: ".post-card__read-more, .post-card__cta, .post-card__go"
+		);
 	}
 
 	// The short line above the title — a pageless item's Subtitle. Small and
@@ -313,7 +321,6 @@
 	// it reads as belonging to the title under it rather than as a row of
 	// its own.
 	.post-card__eyebrow {
-		margin: 0 0 calc(var(--wp--preset--spacing--20) * -0.5);
 		font-size: var(--wp--preset--font-size--small);
 		font-weight: 500;
 		line-height: 1.4;
@@ -321,7 +328,6 @@
 	}
 
 	.post-card__title {
-		margin: 0;
 		// A step on the site's own type scale, chosen per style in Theme
 		// Options. The fallback is a preset rather than a length, so a card
 		// whose token has never been saved is still on the scale — there is no
@@ -363,7 +369,6 @@
 	}
 
 	.post-card__excerpt {
-		margin: 0;
 		font-size: var(--wp--preset--font-size--small);
 		line-height: 1.5;
 		color: var(--post-card-muted);

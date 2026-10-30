@@ -53,7 +53,7 @@
 	 * on the site and therefore says nothing about this one. A landing page has
 	 * a first move, and this is it.
 	 */
-	const PLACEHOLDER = 'Add a Hero Slider to start this page';
+	const PLACEHOLDER = 'Add a Hero Slider or Hero Banner to start this page';
 	/**
 	 * Whether the post has finished loading.
 	 *

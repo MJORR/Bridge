@@ -892,9 +892,8 @@ add_action('wp_head', 'bridge_inline_hero_slider_css', 0);
 /**
  * Editor scripts that belong only to the Page edit screen.
  *
- *   template-watcher    Subscribes to template changes and hides the
- *                       post-title field on a Landing Page that has a hero,
- *                       which is the block carrying the headline there. It
+ *   template-watcher    Subscribes to template changes and gives a Landing
+ *                       Page no title banner. It
  *                       used to insert that hero as well; see the note in the
  *                       file for why nothing does that any more.
  *   page-banner-panel   The "Title Banner" document panel: banner style,

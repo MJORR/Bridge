@@ -13,6 +13,8 @@
  * ask for them.
  */
 
+@use "rhythm";
+
 @mixin section-intro {
 	.bridge-section__intro {
 		// Its own row, whatever the parent is doing — a grid parent would
@@ -20,20 +22,8 @@
 		grid-column: 1 / -1;
 		width: 100%;
 
-		// Margins dropped in favour of the parent's gap, so the space between
-		// a section's parts is one value rather than whichever margin won the
-		// collapse.
-		> * {
-			margin-block: 0;
-		}
-
-		// The global rhythm, so a site that widens the space between its blocks
-		// widens the space under a section's headline with it.
-		> * + * {
-			margin-block-start: var(
-				--wp--style--block-gap,
-				var(--wp--preset--spacing--30)
-			);
-		}
+		// The site's rhythm: the heading gap under the headline, the block
+		// gap between anything else.
+		@include rhythm.stack;
 	}
 }

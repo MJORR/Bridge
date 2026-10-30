@@ -21,7 +21,6 @@
  * the window, the words inside it stop at the site's wide container. See the
  * note in render.php for why that is two wrappers rather than one.
  */
-@use "../abstracts/section" as section;
 
 .bridge-footer {
 	background-color: var(
@@ -169,44 +168,43 @@
 /**
  * The two rows, and what they line up with.
  *
- * The section blocks' own container, not a hand-rolled one and not core's
- * `has-global-padding`. Both of those cap the row at `wideSize` and then put
- * the gutter *outside* it; `section.container(wide)` spends the gutter inside,
- * which is a whole `spacing--40` further in. Every wide band on the site is
- * drawn by that mixin, so anything else here lines the footer up with nothing
- * — the logo sat a gutter to the left of the section above it.
- *
- * One mixin, two rows, so the copyright line starts on the logo as well.
+ * The header and the page body: both take Theme Options' Page side padding
+ * (core's root padding) as their gutter and cap the content at the wide size
+ * *inside* it. The footer does the same, so its logo starts on the header's
+ * logo and the copyright line starts there too, at every width — and moves
+ * with the setting rather than with a step written here.
  */
 .bridge-footer__inner,
 .bridge-footer__legal-inner {
-	@include section.container(wide);
+	--bridge-footer-gutter: var(
+		--wp--style--root--padding-left,
+		var(--wp--preset--spacing--40)
+	);
+
+	box-sizing: border-box;
+	max-width: calc(
+		var(--wp--style--global--wide-size) + 2 * var(--bridge-footer-gutter)
+	);
+	margin-inline: auto;
+	padding-inline: var(--bridge-footer-gutter);
 }
 
 /**
- * The air around the columns.
+ * The air around the columns: Theme Options' Section padding, the same band
+ * spacing every section of the page uses.
  *
- * Two steps up the spacing ladder from where it started — XL/L to 3XL/2XL. The
- * footer is the last thing on the page and the only band with four columns in
- * it; at the old values the top of the logo sat close under the section above
- * and the columns read as a continuation of it rather than as the foot of the
- * page.
- *
- * Still asymmetric, and still by one step: the copyright strip underneath
- * brings its own padding, so the space below the columns is the sum of the two
- * and matching them here would leave the block sitting high.
+ * One step more below than above. The background image is anchored to the
+ * foot of the band, so the room below the last column is what the skyline is
+ * drawn in; without it the columns sit on the horizon.
  */
 .bridge-footer__body {
-	// 3XL over the columns, 2XL *plus* XL under them. A sum rather than the
-	// next slug up, because there is no next slug up — 3XL is the top of the
-	// scale and the space wanted here is past it. Still written in the scale's
-	// own steps, so it moves when a site changes its spacing base.
-	//
-	// The extra is for the image: the background is anchored to the foot of
-	// the band, so the room below the last column is what the skyline is drawn
-	// in. Without it the columns sit on the horizon.
-	padding-block: var(--wp--preset--spacing--80)
-		calc(var(--wp--preset--spacing--70) + var(--wp--preset--spacing--60));
+	--bridge-footer-section: var(
+		--wp--custom--section-padding,
+		var(--wp--preset--spacing--70)
+	);
+
+	padding-block: var(--bridge-footer-section)
+		calc(var(--bridge-footer-section) + var(--wp--preset--spacing--60));
 }
 
 /**
@@ -410,6 +408,14 @@
 	@media (width < 34rem) {
 		max-inline-size: none;
 	}
+
+	// On a tablet the identity column spans the whole footer, and 30ch left
+	// the paragraph a narrow strip down the left of an empty row. 60ch is the
+	// ordinary reading measure: wide enough to use the row, short enough to
+	// read.
+	@media (34rem <= width < 68rem) {
+		max-inline-size: 60ch;
+	}
 }
 
 /**
@@ -478,7 +484,10 @@
 	 * push the stroke down by the same amount and the gap could never be
 	 * closed. A margin sits outside that box and moves nothing.
 	 */
-	margin: var(--wp--preset--spacing--40) 0 var(--bridge-footer-swoosh-room);
+	// The space above is two steps more than it looks like it needs: the
+	// tilt below lifts the far end of the line into it, and at S the
+	// strapline's top edge came within a few pixels of the description.
+	margin: var(--wp--preset--spacing--60) 0 var(--bridge-footer-swoosh-room);
 	inline-size: fit-content;
 	// The stroke is allowed to overshoot the words without widening the column
 	// or, on a narrow screen, pushing a scrollbar onto the page.
@@ -507,9 +516,20 @@
 	transform: rotate(var(--bridge-footer-tagline-tilt));
 	transform-origin: left center;
 
+	// Below the four-column layout the menus sit directly under this, and the
+	// room above was not enough: the tilt drops the stroke's far end by about
+	// a tenth of its width (sin 5° — some 25px on a typical strapline), all of
+	// it below the box. Without this the stroke ended a few pixels above the
+	// menu headings. The extra step keeps the full row gap clear beneath it.
+	@media (width < 68rem) {
+		--bridge-footer-swoosh-room: calc(
+			1.75em + var(--wp--preset--spacing--60)
+		);
+	}
+
 	@media (width >= 68rem) {
 		margin-block-start: auto;
-		padding-block-start: var(--wp--preset--spacing--40);
+		padding-block-start: var(--wp--preset--spacing--60);
 	}
 }
 

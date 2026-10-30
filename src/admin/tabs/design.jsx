@@ -290,6 +290,36 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 				/>
 
 				<SelectControl
+					label={__('Gap under headings', 'bridge')}
+					value={layout.headingGap}
+					options={spacingOptions}
+					onChange={(value) =>
+						setGroup('layout', 'headingGap', value)
+					}
+					help={__(
+						'Between any heading and the text under it, in every block and on every page. Usually a step or two smaller than the gap between blocks.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+
+				<SelectControl
+					label={__('Gap around buttons', 'bridge')}
+					value={layout.buttonsGap}
+					options={spacingOptions}
+					onChange={(value) =>
+						setGroup('layout', 'buttonsGap', value)
+					}
+					help={__(
+						'Between a row of buttons and the text above or below it, in every block and on every page.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+
+				<SelectControl
 					label={__('Page side padding', 'bridge')}
 					value={layout.rootPadding}
 					options={spacingOptions}

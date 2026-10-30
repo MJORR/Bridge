@@ -3,6 +3,7 @@
  */
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
+@use "../abstracts/rhythm" as rhythm;
 
 @include intro.section-intro;
 
@@ -40,21 +41,23 @@
 .bridge-goal {
 	display: flex;
 	flex-direction: column;
-	// Deliberately tighter than the grid's own gap: the label belongs to the
-	// number above it, and a figure whose two halves are as far apart as two
-	// figures are from each other reads as four things rather than two.
-	gap: var(--wp--preset--spacing--20);
 	align-items: flex-start;
 	margin: 0;
 
 	// No card surface. A figure is not a panel — it is a number standing on
 	// the band, which is why this block can sit on any skin without needing
 	// a ground of its own.
+
+	// The site's rhythm: the figure is the heading of its label.
+	@include rhythm.stack(
+		$gap: var(--bridge-heading-gap),
+		$headings: ".bridge-goal__value"
+	);
+
 	&__value {
 		display: flex;
 		align-items: baseline;
 		flex-wrap: wrap;
-		margin: 0;
 		font-size: var(
 			--bridge-goal-size,
 			var(--wp--preset--font-size--xx-large)
@@ -93,7 +96,6 @@
 	}
 
 	&__label {
-		margin: 0;
 		font-size: var(--wp--preset--font-size--small);
 		font-weight: 600;
 		letter-spacing: 0.02em;

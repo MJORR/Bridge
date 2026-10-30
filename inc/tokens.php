@@ -1479,6 +1479,8 @@ function bridge_token_constraints(): array
 			'blockGap'         => array('options' => bridge_spacing_slugs()),
 			'rootPadding'      => array('options' => bridge_spacing_slugs()),
 			'sectionPadding'   => array('options' => bridge_spacing_slugs()),
+			'headingGap'       => array('options' => bridge_spacing_slugs()),
+			'buttonsGap'       => array('options' => bridge_spacing_slugs()),
 		),
 	);
 }
@@ -1747,6 +1749,11 @@ function bridge_token_defaults(): array
 			// section and the next, where the horizontal gutter only has to
 			// keep text off the edge of the screen.
 			'sectionPadding'   => '70',
+			// The two gaps that differ from the block gap: a heading sits
+			// closer to the text it introduces, and a row of buttons stands
+			// further off the text around it. See base/_rhythm.scss.
+			'headingGap'       => '40',
+			'buttonsGap'       => '60',
 		),
 		// Content types the client asked for, declared rather than coded.
 		// Empty by default: a theme that shipped with a "Projects" post type
@@ -2308,6 +2315,8 @@ function bridge_sanitize_tokens(array $raw): array
 		'blockGap'         => bridge_pick_token('layout', 'blockGap', $raw_layout['blockGap'] ?? '', $dl['blockGap']),
 		'rootPadding'      => bridge_pick_token('layout', 'rootPadding', $raw_layout['rootPadding'] ?? '', $dl['rootPadding']),
 		'sectionPadding'   => bridge_pick_token('layout', 'sectionPadding', $raw_layout['sectionPadding'] ?? '', $dl['sectionPadding']),
+		'headingGap'       => bridge_pick_token('layout', 'headingGap', $raw_layout['headingGap'] ?? '', $dl['headingGap']),
+		'buttonsGap'       => bridge_pick_token('layout', 'buttonsGap', $raw_layout['buttonsGap'] ?? '', $dl['buttonsGap']),
 	);
 
 	// ---- Icons ------------------------------------------------------------

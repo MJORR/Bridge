@@ -501,6 +501,10 @@ function bridge_compile_theme_json(array $tokens): array
 	// section patterns — and a property lets all of them name one value
 	// instead of each being regenerated whenever the setting moves.
 	$section_padding = sprintf('var(--wp--preset--spacing--%s)', $layout['sectionPadding']);
+	// The same, for the two gaps base/_rhythm.scss spends on every heading
+	// and every row of buttons, in every block.
+	$heading_gap = sprintf('var(--wp--preset--spacing--%s)', $layout['headingGap']);
+	$buttons_gap = sprintf('var(--wp--preset--spacing--%s)', $layout['buttonsGap']);
 
 	// The card surface. Published the same way and for the same reason: six
 	// blocks draw a card, each in its own stylesheet bundle, and a custom
@@ -778,6 +782,8 @@ function bridge_compile_theme_json(array $tokens): array
 			// and `--wp--custom--card--shadow-hover`.
 			'custom'     => array(
 				'sectionPadding' => $section_padding,
+				'headingGap'     => $heading_gap,
+				'buttonsGap'     => $buttons_gap,
 				'card'           => $card,
 				// The chosen skin's geometry, and the colour scheme of each of
 				// the four grounds. components/_button.scss is the only thing

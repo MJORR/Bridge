@@ -27,14 +27,14 @@
 	// Not a link, and deliberately not shaped like a button. The title above is
 	// the link; this is the line that says the card is clickable, and giving it
 	// a button's fill would promise a second, separate action.
-	.post-card--summary .post-card__read-more:not(.post-card__read-more--button) {
+	.post-card--summary
+		.post-card__read-more:not(.post-card__read-more--button) {
 		font-size: var(--wp--preset--font-size--small);
 		font-weight: 500;
 		// The one accent on the card, and skin-aware: `--post-card-accent` is
 		// the link colour on a light band and the band's own foreground on an
 		// Inverted one, so this never becomes a dark blue on a dark blue.
 		color: var(--post-card-accent);
-		margin-top: var(--wp--preset--spacing--20);
 		align-self: flex-start;
 
 		// The arrow used to be typed into the block's default text, where no
@@ -54,7 +54,6 @@
  * it; only the placement is said again here.
  */
 .bridge-cards-grid .post-card__read-more--button {
-	margin-block-start: var(--wp--preset--spacing--30);
 	align-self: flex-start;
 	cursor: inherit;
 }

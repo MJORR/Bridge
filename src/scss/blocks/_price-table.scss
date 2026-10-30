@@ -4,6 +4,7 @@
 @use "../abstracts/card" as card;
 @use "../abstracts/section" as section;
 @use "../abstracts/section-intro" as intro;
+@use "../abstracts/rhythm" as rhythm;
 
 @include intro.section-intro;
 
@@ -38,10 +39,15 @@
 
 	display: flex;
 	flex-direction: column;
-	gap: var(--wp--preset--spacing--20);
 	margin: 0;
 	text-align: center;
 	border: 1px solid color-mix(in srgb, currentcolor 12%, transparent);
+
+	// The site's rhythm. The title is a <p>, so it is named as the heading.
+	@include rhythm.stack(
+		$gap: var(--bridge-heading-gap),
+		$headings: ".bridge-price-card__title"
+	);
 
 	&__image {
 		@include section.media-fill("1 / 1");
@@ -52,19 +58,16 @@
 	}
 
 	&__title {
-		margin: 0;
 		font-weight: 600;
 	}
 
 	&__price {
-		margin: 0;
 		font-size: var(--wp--preset--font-size--x-large);
 		line-height: 1.1;
 		font-weight: 700;
 	}
 
 	&__description {
-		margin: 0;
 		// Pushes nothing below it, but keeps cards of unequal copy the same
 		// height so the row reads as a set rather than a staircase.
 		flex-grow: 1;

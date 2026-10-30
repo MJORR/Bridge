@@ -72,14 +72,6 @@
 		background-color: var(--wp--preset--color--accent);
 	}
 
-	// ---- The title ------------------------------------------------------
-	// The size itself comes from `--post-card-heading` in the base; what is
-	// left here is the air under it, which a Tile needs more of than the other
-	// two because its heading is the largest thing on the card.
-	.post-card--tile .post-card__title {
-		margin-bottom: var(--wp--preset--spacing--20);
-	}
-
 	// ---- The rule -------------------------------------------------------
 	// The hover state, and the reason this style needs no colour change to
 	// signal one: the rule runs from its resting inset to the full width of

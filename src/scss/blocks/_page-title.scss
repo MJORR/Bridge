@@ -66,28 +66,59 @@
 	}
 }
 
-// Full-width banner pages: drop the block-gap margin the site layout
-// (:where(.wp-site-blocks) > * + *) adds above main, so the banner sits flush
-// beneath the header with no gap between the nav and the banner. The body
-// class is added by bridge_banner_body_class() only for these pages.
-.bridge-banner-fullwidth main {
+// ---- The page's opening ------------------------------------------------
+//
+// Every gap here is a Theme Options setting, so a standard page is spaced by
+// the same three numbers as everything inside it:
+//
+//   header → title       section padding (the top of the page's first band)
+//   title → first block   heading gap (a title introduces what follows it)
+//   last block → footer   section padding (`.bridge-content`'s own)
+//
+// The block gap the site layout puts above <main> is dropped whenever the
+// page opens on a title, so it is not added to the section padding.
+$section-padding: var(
+	--wp--custom--section-padding,
+	var(--wp--preset--spacing--70)
+);
+
+main:has(> .bridge-page-title, > .bridge-title-banner) {
 	margin-block-start: 0;
 }
 
-// No-title pages: the same flush join, one layer deeper. The block renders
-// nothing, so `.bridge-content` becomes the first child of main and the page
-// opens on whatever the operator put first — but two pieces of spacing are
-// still measuring from a title that is not there. The margin above main is
-// the gap between the header and the page's first band; the content region's
-// top padding is the air a title would have sat in. Both go. Only the top
-// padding, though: the matching bottom padding is still holding the
-// content off the footer, and nothing about hiding a title changes that.
+main > .bridge-page-title {
+	padding-block-start: $section-padding;
+}
+
+// The content's own top padding is the air above a band; under a plain title
+// the band has already started, so the heading gap is all there is.
+.bridge-page-title + .bridge-content {
+	margin-block-start: var(--bridge-heading-gap);
+	padding-block-start: 0;
+}
+
+// A contained banner is a box floating in the page: the header clears it by
+// the section padding, as it would the first band.
+main > .bridge-title-banner.is-style-contained {
+	margin-block-start: $section-padding;
+}
+
+// After either banner, the content starts a band of its own: its section
+// padding is the gap, not that plus the block gap.
+.bridge-title-banner + .bridge-content {
+	margin-block-start: 0;
+}
+
+// No-title pages. The block renders nothing, so `.bridge-content` is the first
+// child of main and its own section padding keeps the first line of text off
+// the header. Only a full-width first block — a hero, a band — sits flush
+// under the header instead, the way it does on the landing template.
 .bridge-title-hidden {
 	main {
 		margin-block-start: 0;
 	}
 
-	.bridge-content {
+	.bridge-content:has(> .alignfull:first-child) {
 		padding-block-start: 0;
 	}
 }

@@ -1,0 +1,60 @@
+/**
+ * Bridge — the vertical rhythm between text and buttons, site-wide.
+ *
+ * Two gaps differ from the block gap everywhere, so they are stated once here
+ * rather than reset inside each block that happens to hold a heading. Both are
+ * Theme Options settings:
+ *
+ *   A heading sits closer to the text under it. A title introduces what
+ *   follows it, and the full block gap set it apart instead.
+ *
+ *   A row of buttons stands further off the text around it. A button is a
+ *   target, not a line of copy, and butted up at the text's own rhythm it
+ *   reads as part of the paragraph.
+ *
+ * `:root` plus `:is()` so these outweigh core's layout rules
+ * (`:root :where(.is-layout-flow) > *`, one class's worth) without leaning on
+ * which stylesheet loads last. In the editor,
+ * `add_editor_style()` rewrites `:root` to the canvas wrapper, so the canvas
+ * gets the same gaps.
+ */
+
+// Both set in Theme Options → Design → Layout and spacing, published by
+// inc/theme-json.php. The fallbacks are the shipped defaults.
+:root {
+	--bridge-heading-gap: var(
+		--wp--custom--heading-gap,
+		var(--wp--preset--spacing--40)
+	);
+	--bridge-buttons-gap: var(
+		--wp--custom--buttons-gap,
+		var(--wp--preset--spacing--60)
+	);
+}
+
+// Core's layout containers: post content, groups, columns, a Cover's inside,
+// and the editor canvas, which wears the same classes. A block that stacks its
+// own parts is none of these and spends the same gaps through
+// abstracts/_rhythm's `stack` mixin instead — so the two never both apply to
+// one pair and add up.
+$flow: ".is-layout-flow, .is-layout-constrained";
+
+// A heading to whatever it introduces.
+:root :is(#{$flow}) > :is(h1, h2, h3, h4, h5, h6) + * {
+	margin-block-start: var(--bridge-heading-gap);
+}
+
+// Not an empty Buttons block: one left behind with nothing in it would open
+// the widest gap on the page around nothing at all.
+:root :is(#{$flow}) > * + .wp-block-buttons:not(:empty),
+:root :is(#{$flow}) > .wp-block-buttons:not(:empty) + * {
+	margin-block-start: var(--bridge-buttons-gap);
+}
+
+// The gap above is the button's breathing room now. The margin
+// components/_button.scss gives every button would be added on top of it, so
+// a Buttons block's links drop it; a lone `.wp-element-button` — a form's
+// submit, a search toggle — keeps it.
+:root .wp-block-buttons .wp-block-button__link {
+	margin-block: 0;
+}

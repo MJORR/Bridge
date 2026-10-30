@@ -8,6 +8,7 @@
 @use "../abstracts/band-mask" as mask;
 @use "../abstracts/section" as section;
 @use "../abstracts/on-dark" as on-dark;
+@use "../abstracts/rhythm" as rhythm;
 
 .bridge-cta {
 	// The decorative mask shape, when the block asks for one — the same shape,
@@ -43,9 +44,6 @@
 		z-index: 2;
 		display: flex;
 		flex-direction: column;
-		// The global rhythm, so the space inside the band follows the space
-		// between blocks everywhere else on the site.
-		gap: var(--wp--style--block-gap, var(--wp--preset--spacing--30));
 		// Stretched, not centred. `align-items: center` shrink-wrapped every
 		// child to its own content, so a paragraph the editor had left-aligned
 		// still sat as a centred column — the alignment control appeared to do
@@ -53,6 +51,10 @@
 		// alignment decides, which is the control the editor was reaching for.
 		align-items: stretch;
 		text-align: center;
+
+		// The site's rhythm, so the space inside the band follows the space
+		// between blocks, under headings and around buttons everywhere else.
+		@include rhythm.stack;
 	}
 
 	// The wide setting. Narrow is the default here — a call to action is a

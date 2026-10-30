@@ -307,6 +307,19 @@
 		flex: 1;
 	}
 
+	// The short line above the title — a pageless item's Subtitle. Small and
+	// a little held back, so the title stays the thing the card is about. It
+	// shares the body's gap with everything else, and pulls in half of it so
+	// it reads as belonging to the title under it rather than as a row of
+	// its own.
+	.post-card__eyebrow {
+		margin: 0 0 calc(var(--wp--preset--spacing--20) * -0.5);
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 500;
+		line-height: 1.4;
+		opacity: 0.8;
+	}
+
 	.post-card__title {
 		margin: 0;
 		// A step on the site's own type scale, chosen per style in Theme

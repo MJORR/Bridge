@@ -171,6 +171,26 @@ $read_more_text  = '' !== $read_more_text ? $read_more_text : __( 'Read more', '
 $button_text     = trim( (string) ( $attributes['buttonText'] ?? '' ) );
 $button_text     = '' !== $button_text ? $button_text : __( 'View profile', 'bridge' );
 
+/**
+ * How every card's link cue is drawn: a text link, the site's button or its
+ * Outline button. One setting for the whole band, so changing twelve cards to
+ * Outline is one change rather than twelve, and a row never mixes the two.
+ *
+ * Empty is the style's own default — Team has always drawn a button, the
+ * others a text link — so a block saved before this setting existed renders
+ * exactly as it did. What Solid and Outline look like is Theme Options'.
+ */
+$link_style   = sanitize_key( $attributes['linkStyle'] ?? '' );
+$link_styles  = array(
+	'text'    => '',
+	'button'  => 'wp-element-button',
+	'outline' => 'wp-element-button is-style-outline',
+);
+if ( ! isset( $link_styles[ $link_style ] ) ) {
+	$link_style = 'team' === $card_style && ! $is_list ? 'button' : 'text';
+}
+$link_class   = $link_styles[ $link_style ];
+
 $orderby_map = array(
 	'date'          => 'date',
 	'title'         => 'title',

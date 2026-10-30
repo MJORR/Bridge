@@ -110,12 +110,7 @@
 }
 
 /**
- * The answer box.
- *
- * Nothing hides `.wp-editor-tools` — the strip that would hold the Visual and
- * Text tabs and the media button — because core does not print it at all when
- * there is nothing to put in it. See the guard around it in
- * class-wp-editor.php: no media button and no quicktags means no container.
+ * The answer box. The Visual and Text tabs sit above it in core's own strip.
  */
 #postdivrich .wp-editor-container {
 	border-radius: 3px;
@@ -137,4 +132,73 @@
 	font-size: 15px;
 	line-height: 1.6;
 	color: #1e1e1e;
+}
+
+/**
+ * The link field, under the body.
+ *
+ * Spaced off the editor by the same distance the body sits under the title,
+ * so the three read as one form.
+ */
+.bridge-simple-editor__link {
+	margin-top: 1.5rem;
+
+	input[type="url"] {
+		min-height: 40px;
+	}
+
+	.description {
+		margin-top: 0.35rem;
+	}
+}
+
+/**
+ * The link's text field, under the address.
+ */
+.bridge-simple-editor__link-options {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 1rem 2rem;
+	margin-top: 1rem;
+
+	p {
+		margin: 0;
+	}
+
+	label {
+		display: block;
+		margin-bottom: 0.35rem;
+		font-weight: 600;
+	}
+
+	input[type="text"] {
+		min-height: 40px;
+	}
+}
+
+/**
+ * The subtitle field, above the title.
+ *
+ * Printed after the title by the only hook that reaches this column (see
+ * bridge_simple_editor_subtitle_field()), and put first here: the column is
+ * made a flex column and this is ordered ahead of everything in it, so the
+ * form reads in the order the item will — subtitle, then title, then details.
+ */
+#post-body-content {
+	display: flex;
+	flex-direction: column;
+}
+
+.bridge-simple-editor__subtitle {
+	order: -1;
+	margin-bottom: 1.25rem;
+
+	input[type="text"] {
+		min-height: 40px;
+	}
+
+	.description {
+		margin-top: 0.35rem;
+	}
 }

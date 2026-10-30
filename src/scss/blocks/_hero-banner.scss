@@ -298,6 +298,27 @@
 	> * {
 		width: 100%;
 		max-width: var(--wp--style--global--wide-size, 1200px);
+
+		// One gap between every pair of children, set below. The content is a
+		// flex column, so nothing collapses: left alone, a headline's own
+		// margin (an em of a very large font) opened a far wider gap under it
+		// than the paragraph left above the buttons.
+		margin-block: 0;
+	}
+
+	// The global rhythm, so a site that widens the space between its blocks
+	// widens this with it.
+	> * + * {
+		margin-block-start: var(
+			--wp--style--block-gap,
+			var(--wp--preset--spacing--30)
+		);
+	}
+
+	// The breathing room every button carries elsewhere would be added on top
+	// of the gap above, so the last step down would be the widest.
+	.wp-block-button__link {
+		margin-block: 0;
 	}
 }
 

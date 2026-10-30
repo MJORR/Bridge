@@ -27,7 +27,7 @@ export function ButtonsTab({
 			<Section
 				title={__('Button skin', 'bridge')}
 				description={__(
-					'One of three finished designs, applied to every button on the site — the block, the header’s call to action and anything a plugin renders as one. Pick the shape; the colours are answered separately below, per band, so a skin can be swapped without revisiting them.',
+					'One of four finished designs, applied to every button on the site — the block, the header’s call to action and anything a plugin renders as one. Pick the shape; the colours are answered separately below, per band, so a skin can be swapped without revisiting them.',
 					'bridge'
 				)}
 			>
@@ -100,7 +100,7 @@ export function ButtonsTab({
 					<li>
 						<strong>{__('Hover', 'bridge')}</strong>
 						{__(
-							'CSS only, no JavaScript, and never colour alone — §1.4.1. Solid’s fill climbs from the bottom edge and Pill’s sweeps across from the leading one; Edge draws a rule under the label. All three also change fill, and all three answer a keyboard the same way.',
+							'CSS only, no JavaScript, and never colour alone — §1.4.1. Solid’s fill climbs from the bottom edge and Pill’s sweeps across from the leading one; Edge draws a rule under the label; Block’s panel rises from the bottom edge in the opposite colour and flips the label. All four also change fill, and all four answer a keyboard the same way.',
 							'bridge'
 						)}
 					</li>
@@ -129,7 +129,7 @@ export function ButtonsTab({
  *
  * @param {Object} props Component props.
  */
-export function ButtonsPreview({ payload, preview }) {
+export function ButtonsPreview({ payload, preview, skin }) {
 	const { buttonGrounds } = payload;
 
 	return (
@@ -146,6 +146,7 @@ export function ButtonsPreview({ payload, preview }) {
 				schemes={preview.buttons}
 				custom={preview.custom?.button}
 				palette={preview.palette}
+				skin={skin}
 			/>
 		</>
 	);

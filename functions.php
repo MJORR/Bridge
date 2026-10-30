@@ -133,6 +133,39 @@ function bridge_enqueue_assets(): void
 add_action('wp_enqueue_scripts', 'bridge_enqueue_assets');
 
 /**
+ * The Block button skin's stylesheet, when Block is the chosen skin.
+ *
+ * Its own file rather than part of main.css, so the rules that turn every
+ * button into an outline with a rising panel are on the page only on a site
+ * that asked for them — and the other three skins are drawn by main.css
+ * exactly as they are without it. See src/scss/button-block.scss.
+ */
+function bridge_uses_button_block(): bool
+{
+	return 'block' === (string) (bridge_get_tokens()['buttons']['skin'] ?? '');
+}
+
+function bridge_enqueue_button_block(): void
+{
+	if (bridge_uses_button_block() && bridge_register_style('bridge-button-block', 'button-block.css', array('bridge-style'))) {
+		wp_enqueue_style('bridge-button-block');
+	}
+}
+add_action('wp_enqueue_scripts', 'bridge_enqueue_button_block', 20);
+
+/**
+ * And in the editor, after main.css, so a button in the canvas is the button
+ * the page will draw.
+ */
+function bridge_button_block_editor_style(): void
+{
+	if (bridge_uses_button_block()) {
+		add_editor_style('dist/button-block.css');
+	}
+}
+add_action('after_setup_theme', 'bridge_button_block_editor_style', 20);
+
+/**
  * Ship the core block styles the page actually uses, and no others.
  *
  * `wp_should_load_separate_core_block_assets()` defaults to **false** — still,
@@ -463,7 +496,8 @@ function bridge_register_blocks(): void
 	// page that never receives the file gets the sliding row it always got.
 	// What it adds is the measurement CSS cannot make — whether the logos
 	// already fit, in which case they stand still. See src/js/logo-slider-view.js.
-	bridge_register_section_block('logo-slider', true, true);
+	// `wp-core-data` for the media store the editor resolves logo urls from.
+	bridge_register_section_block('logo-slider', true, true, array('wp-core-data'));
 	bridge_register_section_block('alternating-content');
 	// No view script: the accordion is a <details> element, so the opening,
 	// the closing and the "one at a time" all ship with the browser.
@@ -629,7 +663,9 @@ function bridge_register_blocks(): void
 	bridge_register_script(
 		'bridge-cards-editor',
 		'cards-editor.js',
-		array_merge($previewed, array('bridge-band-mask'))
+		// api-fetch and url for the block's own preview request — see
+		// CardsPreview in src/blocks/cards/edit.js.
+		array_merge($previewed, array('bridge-band-mask', 'wp-api-fetch', 'wp-url'))
 	);
 
 	/**

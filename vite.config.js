@@ -229,6 +229,8 @@ export default defineConfig(({ mode }) => ({
 		rollupOptions: {
 			input: {
 				main: resolve(__dirname, 'src/main.js'),
+				// The Block button skin, loaded only when it is chosen.
+				'button-block': resolve(__dirname, 'src/scss/button-block.scss'),
 				slider: resolve(__dirname, 'src/js/slider.js'),
 				'header-cta-backdrop': resolve(
 					__dirname,

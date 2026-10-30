@@ -83,6 +83,16 @@ function bridge_card_data_defaults(): array
 		// than the post, because it is the same on every card in the grid.
 		'cta_text'  => '',
 
+		// A pageless item's own link wording, set by the item's Link fields —
+		// see inc/simple-editor.php. Empty on everything else, and the
+		// partials fall back to the block's own cue.
+		'item_link_text'   => '',
+
+		// The short line above the title — a pageless item's Subtitle field,
+		// see inc/simple-editor.php. Empty on everything else, and every
+		// style skips the element when it is.
+		'eyebrow'          => '',
+
 		// Imagery. `thumbnail_id` of 0 means the card draws a stand-in, and
 		// `placeholder_logo_id` of 0 means that stand-in is the neutral pattern
 		// rather than the site's mark.

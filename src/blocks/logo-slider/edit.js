@@ -29,8 +29,10 @@ const {
 	InspectorControls,
 	MediaUpload,
 	MediaUploadCheck,
+	MediaPlaceholder,
 } = window.wp.blockEditor;
-const { createElement: el, Fragment } = window.wp.element;
+const { useSelect } = window.wp.data;
+const { createElement: el, Fragment, useMemo } = window.wp.element;
 const {
 	PanelBody,
 	SelectControl,
@@ -81,13 +83,53 @@ const toImage = (item) => ({
 	name: item.title || item.filename || '',
 });
 
+// The stored url is a snapshot of the site the logo was picked on, so a site
+// that has moved domain keeps pointing every preview at the old one. The id is
+// what render.php trusts, so the editor asks the media store for it too and
+// only falls back to the stored url while that request is in flight.
+const useCurrentUrls = (images) => {
+	// The media records themselves, which the store keeps by reference, so
+	// the shallow compare useSelect makes sees an unchanged list as unchanged.
+	const records = useSelect(
+		(select) =>
+			images.map((image) =>
+				image.id ? select('core').getMedia(image.id) : null
+			),
+		[images]
+	);
+
+	return useMemo(
+		() =>
+			images.map((image, index) => {
+				const media = records[index];
+
+				return media
+					? {
+							...image,
+							url:
+								media.media_details?.sizes?.medium
+									?.source_url || media.source_url,
+						}
+					: image;
+			}),
+		[images, records]
+	);
+};
+
+const toImages = (media) =>
+	(Array.isArray(media) ? media : [media]).map(toImage);
+
 // The row of logos, one per line, each with its own controls.
-const RowPicker = ({ addLabel, images, onChange }) => {
+const RowPicker = ({ addLabel, images: stored, onChange }) => {
+	const images = useCurrentUrls(stored);
+
+	// Edits go back as the stored set, so the resolved url never overwrites
+	// what was saved.
 	const removeAt = (index) =>
-		onChange(images.filter((image, at) => at !== index));
+		onChange(stored.filter((image, at) => at !== index));
 
 	const moveBy = (index, step) => {
-		const next = images.slice();
+		const next = stored.slice();
 
 		next.splice(index + step, 0, next.splice(index, 1)[0]);
 		onChange(next);
@@ -161,13 +203,7 @@ const RowPicker = ({ addLabel, images, onChange }) => {
 				addToGallery: false,
 				allowedTypes: ['image'],
 				title: __('Add logos', 'bridge'),
-				onSelect: (media) =>
-					onChange([
-						...images,
-						...(Array.isArray(media) ? media : [media]).map(
-							toImage
-						),
-					]),
+				onSelect: (media) => onChange([...stored, ...toImages(media)]),
 				render: ({ open }) =>
 					el(
 						'div',
@@ -197,6 +233,9 @@ const Edit = ({ attributes, setAttributes }) => {
 		logoSpace,
 		speed,
 	} = attributes;
+
+	const firstRow = useCurrentUrls(images);
+	const secondRowImages = useCurrentUrls(imagesSecond);
 
 	// Anything that is not `full` is `wide` — the block used to offer `narrow`
 	// too, and a block still carrying it should draw as a width that exists.
@@ -433,13 +472,32 @@ const Edit = ({ attributes, setAttributes }) => {
 				),
 				// Static in the editor: a row sliding under the cursor makes
 				// the block hard to select and the intro hard to click into.
-				el(
-					'div',
-					{
-						className: `bridge-logos__row is-static is-${imageDisplay}`,
-					},
-					preview(images, 'first')
-				),
+				// An empty row is a band with nothing in it but a placeholder
+				// line of text, which reads as a broken block. Until there is
+				// a logo, the canvas asks for one.
+				images.length > 0
+					? el(
+							'div',
+							{
+								className: `bridge-logos__row is-static is-${imageDisplay}`,
+							},
+							preview(firstRow, 'first')
+						)
+					: el(MediaPlaceholder, {
+							icon: 'images-alt2',
+							labels: {
+								title: __('Logo Slider', 'bridge'),
+								instructions: __(
+									'Upload or choose the logos to show. Order, size and speed are in the block settings.',
+									'bridge'
+								),
+							},
+							accept: 'image/*',
+							allowedTypes: ['image'],
+							multiple: true,
+							onSelect: (media) =>
+								setAttributes({ images: toImages(media) }),
+						}),
 				secondRow &&
 					imagesSecond.length > 0 &&
 					el(
@@ -447,7 +505,7 @@ const Edit = ({ attributes, setAttributes }) => {
 						{
 							className: `bridge-logos__row is-static is-${imageDisplay}`,
 						},
-						preview(imagesSecond, 'second')
+						preview(secondRowImages, 'second')
 					)
 			)
 		)

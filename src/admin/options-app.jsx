@@ -489,6 +489,7 @@ function OptionsApp() {
 										<ButtonsPreview
 											payload={payload}
 											preview={preview}
+											skin={draft.buttons?.skin}
 										/>
 									)}
 								</div>

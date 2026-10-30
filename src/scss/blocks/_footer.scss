@@ -815,12 +815,6 @@
 		block-size: 3px;
 		border-radius: 2px;
 		background-color: var(--wp--preset--color--accent, currentcolor);
-
-		// Half the column on a phone, where the column is the full width of
-		// the screen and a word-length mark under it looks like a stray dash.
-		@media (width < 34rem) {
-			inline-size: 50%;
-		}
 	}
 }
 

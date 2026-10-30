@@ -456,6 +456,75 @@ function bridge_light_logo_id(): int
 }
 
 /**
+ * The favicon's attachment ID, or 0 when none is set or it is not usable.
+ *
+ * Only PNG and SVG are accepted. The picker already limits the library to
+ * those, but the ID is checked again here because an attachment can be
+ * replaced or deleted after it was chosen, and a tag pointing at a JPEG or a
+ * missing file is worse than WordPress's own Site Icon.
+ *
+ * @return int Attachment ID, or 0.
+ */
+function bridge_favicon_id(): int
+{
+	$tokens = bridge_get_tokens();
+	$id     = max(0, (int) ($tokens['header']['logo']['faviconId'] ?? 0));
+
+	if ($id <= 0) {
+		return 0;
+	}
+
+	$mime = (string) get_post_mime_type($id);
+
+	return in_array($mime, array('image/png', 'image/svg+xml'), true) ? $id : 0;
+}
+
+/**
+ * Print the favicon links for the chosen image.
+ *
+ * One file serves every size: an SVG scales, and a PNG is taken as uploaded
+ * (core's Site Icon crops to 512px, this does not). A PNG also doubles as the
+ * Apple touch icon; iOS ignores SVG there, so an SVG gets no touch icon.
+ */
+function bridge_print_favicon(): void
+{
+	$id  = bridge_favicon_id();
+	$url = $id > 0 ? wp_get_attachment_url($id) : false;
+
+	if (! $url) {
+		return;
+	}
+
+	$mime = (string) get_post_mime_type($id);
+
+	printf('<link rel="icon" href="%s" type="%s" />' . "\n", esc_url($url), esc_attr($mime));
+
+	if ('image/png' === $mime) {
+		printf('<link rel="apple-touch-icon" href="%s" />' . "\n", esc_url($url));
+	}
+}
+
+/**
+ * Swap core's Site Icon for the theme's favicon wherever core prints it.
+ *
+ * Only when a favicon is set: with none, core's tags stay, so a site that set
+ * a Site Icon in the Customizer keeps it. Two icon declarations would leave the
+ * browser to pick one, which is the same as not choosing.
+ */
+function bridge_replace_site_icon(): void
+{
+	if (bridge_favicon_id() <= 0) {
+		return;
+	}
+
+	foreach (array('wp_head' => 99, 'admin_head' => 10, 'login_head' => 10) as $hook => $priority) {
+		remove_action($hook, 'wp_site_icon', $priority);
+		add_action($hook, 'bridge_print_favicon', $priority);
+	}
+}
+add_action('init', 'bridge_replace_site_icon');
+
+/**
  * The header's site logo, or the site name when no logo is set.
  *
  * Two images of one wordmark: a dark logo drawn for a light ground and a light

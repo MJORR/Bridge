@@ -1,0 +1,38 @@
+/**
+ * Bridge — the Block button skin.
+ *
+ * Loaded only when Block is the chosen skin in Theme Options → Buttons, after
+ * main.css, on the site and in the editor — see bridge_enqueue_button_block()
+ * in functions.php. The rules are the `block` mixin in abstracts/_button.scss;
+ * the selectors are the ones components/_button.scss gives the filled and the
+ * Outline button, so this sits on exactly the buttons the skin governs and
+ * wins on order.
+ */
+@use "abstracts/button" as button;
+
+// The main button: solid ink, the opposite colour rising.
+.wp-block-button__link:not(.has-background, .has-text-color),
+.wp-element-button:not(.has-background, .has-text-color) {
+	@include button.block("solid");
+}
+
+// The Outline button: an outline in ink, ink rising.
+.wp-block-button.is-style-outline
+	> .wp-block-button__link.wp-element-button:not(
+		.has-background,
+		.has-text-color
+	),
+.wp-block-button
+	.wp-block-button__link.is-style-outline.wp-element-button:not(
+		.has-background,
+		.has-text-color
+	),
+// A theme-drawn link outside any Buttons block wearing the Outline style —
+// a card's cue or an item's link, set by the block's "Show link as".
+.wp-element-button.is-style-outline:not(
+		.wp-block-button__link,
+		.has-background,
+		.has-text-color
+	) {
+	@include button.block("outline");
+}

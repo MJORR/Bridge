@@ -8,7 +8,7 @@
  * editor's own — a heading and an optional summary line, edited in place as
  * inner blocks, the way every other section block on this theme works. The
  * grid is a query, so only the server can know what is in it, and it comes
- * from <ServerSideRender> calling render.php.
+ * from the block-renderer endpoint calling render.php — see CardsPreview.
  *
  * The `isPreview` attribute is what keeps the two from colliding: it is set
  * only on the preview request, never on the block, and it tells render.php to
@@ -32,7 +32,9 @@ const {
 } = window.wp.components;
 const { useSelect } = window.wp.data;
 const { __, sprintf } = window.wp.i18n;
-const ServerSideRender = window.wp.serverSideRender;
+const { useState, useEffect, useRef, RawHTML } = window.wp.element;
+const apiFetch = window.wp.apiFetch;
+const { addQueryArgs } = window.wp.url;
 
 // The mask shape's controls and preview styling, shared with every other band
 // that offers them. Its own script handle, named in this block's dependencies
@@ -151,6 +153,95 @@ const cardStyleHas = (style, field) =>
 		CARD_STYLES.find((s) => s.value === style) ?? CARD_STYLES[0]
 	).fields.includes(field);
 
+/**
+ * The grid, as render.php draws it.
+ *
+ * In place of core's <ServerSideRender>, which since WordPress 7.0 turns any
+ * failed request into the string "[object Object]": apiFetch rejects with the
+ * REST error as a plain object, and core stringifies it. This keeps the
+ * server's own message, so a failed preview says why.
+ *
+ * POST rather than GET, so the attributes travel as JSON in the body instead
+ * of thirty query-string pairs, and debounced like core's so dragging a
+ * slider is one request rather than one per step. The last good grid stays on
+ * screen, dimmed, while the next one loads.
+ *
+ * @param {Object}      props
+ * @param {Object}      props.attributes Block attributes, plus isPreview.
+ * @param {number|null} props.postId     The post being edited, if any.
+ */
+const CardsPreview = ({ attributes, postId }) => {
+	const [state, setState] = useState({ status: 'loading', html: '' });
+	const last = useRef('');
+	const body = JSON.stringify({ attributes });
+
+	useEffect(() => {
+		const controller = new AbortController();
+		const timer = setTimeout(
+			() => {
+				setState((prev) => ({ ...prev, status: 'loading' }));
+				apiFetch({
+					path: addQueryArgs(`/wp/v2/block-renderer/${BLOCK_NAME}`, {
+						context: 'edit',
+						...(postId ? { post_id: postId } : {}),
+					}),
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body,
+					signal: controller.signal,
+				})
+					.then((res) => {
+						last.current = res?.rendered || '';
+						setState({ status: 'success', html: last.current });
+					})
+					.catch((error) => {
+						if (error?.name === 'AbortError') {
+							return;
+						}
+						setState({
+							status: 'error',
+							html: '',
+							message:
+								error?.message ||
+								error?.code ||
+								__('Could not render preview.', 'bridge'),
+						});
+					});
+			},
+			last.current ? 500 : 0
+		);
+
+		return () => {
+			clearTimeout(timer);
+			controller.abort();
+		};
+	}, [body, postId]);
+
+	if ('error' === state.status) {
+		return el(Placeholder, { label: __('Cards', 'bridge') }, state.message);
+	}
+
+	if ('loading' === state.status) {
+		return last.current
+			? el(
+					'div',
+					{ style: { opacity: 0.5 } },
+					el(RawHTML, null, last.current)
+				)
+			: el(Placeholder, { label: __('Cards', 'bridge') }, el(Spinner));
+	}
+
+	if (!state.html) {
+		return el(
+			Placeholder,
+			{ label: __('Cards', 'bridge') },
+			__('No posts match the current settings.', 'bridge')
+		);
+	}
+
+	return el(RawHTML, null, state.html);
+};
+
 const Edit = ({ attributes, setAttributes }) => {
 	const {
 		source,
@@ -174,6 +265,7 @@ const Edit = ({ attributes, setAttributes }) => {
 		showReadMore,
 		readMoreText,
 		buttonText,
+		linkStyle,
 	} = attributes;
 
 	// Named once. Six places read it — the panel decides what to show, and the
@@ -184,14 +276,22 @@ const Edit = ({ attributes, setAttributes }) => {
 		? cardStyle
 		: 'summary';
 
-	// Public, viewable post types. Falls back to post/page while loading.
+	// Viewable post types, plus the content types with no pages of their own
+	// — not viewable, but material a band is exactly where it goes. Core's
+	// own editor types (wp_block, wp_template…) have an admin screen too, so
+	// the `wp_` prefix keeps them out. Falls back to post/page while loading.
 	const postTypeOptions = useSelect((select) => {
 		const types = select('core').getPostTypes({ per_page: -1 });
 		if (!types) {
 			return POST_TYPE_FALLBACK;
 		}
 		return types
-			.filter((t) => t.viewable && t.slug !== 'attachment')
+			.filter(
+				(t) =>
+					t.slug !== 'attachment' &&
+					(t.viewable ||
+						(t.visibility?.show_ui && !t.slug.startsWith('wp_')))
+			)
 			.map((t) => ({ label: t.name, value: t.slug }));
 	}, []);
 
@@ -235,10 +335,15 @@ const Edit = ({ attributes, setAttributes }) => {
 
 	// Current post ID — passed to SSR so the block-renderer endpoint
 	// validates against a real post and doesn't return rest_post_invalid_id.
-	const postId = useSelect(
-		(select) => select('core/editor')?.getCurrentPostId() ?? null,
-		[]
-	);
+	//
+	// Numbers only. In the Site Editor, and in the post editor while its
+	// template is being edited, the "current post" is a template whose id is
+	// a string ("bridge//single"), and the endpoint rejects the whole request
+	// for a post_id that is not an integer.
+	const postId = useSelect((select) => {
+		const id = select('core/editor')?.getCurrentPostId();
+		return Number.isInteger(id) && id > 0 ? id : null;
+	}, []);
 
 	// The band. The same classes render.php puts on the front end, so the
 	// editor shows the section skin, the background colour and the width the
@@ -260,7 +365,7 @@ const Edit = ({ attributes, setAttributes }) => {
 			 * The list's own settings are deliberately not here.
 			 *
 			 * They ride on the grid, which render.php serves to the canvas
-			 * through <ServerSideRender> — so the preview draws them from the
+			 * through the preview request — so the preview draws them from the
 			 * same lines the front end does and there is nothing to keep in
 			 * step. Copying them onto the band, which is what this block used
 			 * to do, meant two lists of classes that had to stay identical by
@@ -586,6 +691,33 @@ const Edit = ({ attributes, setAttributes }) => {
 					value: readMoreText,
 					onChange: (value) => setAttributes({ readMoreText: value }),
 				}),
+			(isList ||
+				cardStyleHas(style, 'readMore') ||
+				cardStyleHas(style, 'button')) &&
+				el(SelectControl, {
+					label: __('Show link as', 'bridge'),
+					help: __(
+						'For every card in this block. What the buttons look like is set in Theme Options → Buttons.',
+						'bridge'
+					),
+					// Empty is the style's own default, which is what
+					// render.php draws for it — so the control shows that
+					// rather than a blank.
+					value:
+						linkStyle ||
+						(!isList && cardStyleHas(style, 'button')
+							? 'button'
+							: 'text'),
+					options: [
+						{ label: __('Text link', 'bridge'), value: 'text' },
+						{ label: __('Button', 'bridge'), value: 'button' },
+						{
+							label: __('Outline button', 'bridge'),
+							value: 'outline',
+						},
+					],
+					onChange: (value) => setAttributes({ linkStyle: value }),
+				}),
 			cardStyleHas(style, 'button') &&
 				el(TextControl, {
 					label: __('Button text', 'bridge'),
@@ -601,30 +733,9 @@ const Edit = ({ attributes, setAttributes }) => {
 		MaskPanel(attributes, setAttributes)
 	);
 
-	const ssrProps = {
-		block: BLOCK_NAME,
-		// Never saved on the block — this object is only what the preview
-		// request carries, and it asks render.php for the grid on its own.
-		attributes: { ...attributes, isPreview: true },
-		EmptyResponsePlaceholder: () =>
-			el(
-				Placeholder,
-				{ label: __('Cards', 'bridge') },
-				__('No posts match the current settings.', 'bridge')
-			),
-		LoadingResponsePlaceholder: () =>
-			el(Placeholder, { label: __('Cards', 'bridge') }, el(Spinner)),
-		ErrorResponsePlaceholder: ({ response }) =>
-			el(
-				Placeholder,
-				{ label: __('Cards', 'bridge') },
-				response?.errorMsg || __('Could not render preview.', 'bridge')
-			),
-	};
-
-	if (postId) {
-		ssrProps.urlQueryArgs = { post_id: postId };
-	}
+	// Never saved on the block — this object is only what the preview
+	// request carries, and it asks render.php for the grid on its own.
+	const previewAttributes = { ...attributes, isPreview: true };
 
 	return el(
 		Fragment,
@@ -637,7 +748,10 @@ const Edit = ({ attributes, setAttributes }) => {
 				'div',
 				{ className: 'bridge-cards__inner' },
 				el('div', introProps),
-				el(ServerSideRender, ssrProps)
+				el(CardsPreview, {
+					attributes: previewAttributes,
+					postId,
+				})
 			)
 		)
 	);

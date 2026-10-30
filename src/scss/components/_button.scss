@@ -103,6 +103,13 @@
 	.wp-block-button__link.is-style-outline.wp-element-button:not(
 		.has-background,
 		.has-text-color
+	),
+// A theme-drawn link outside any Buttons block wearing the Outline style —
+// a card's cue or an item's link, set by the block's "Show link as".
+.wp-element-button.is-style-outline:not(
+		.wp-block-button__link,
+		.has-background,
+		.has-text-color
 	) {
 	@include button.ghost;
 }

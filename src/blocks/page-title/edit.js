@@ -25,10 +25,12 @@ const Edit = () => {
 
 	// Current post ID — passed to SSR so render.php resolves the real page
 	// (and its title) instead of falling back to the sample preview.
-	const postId = useSelect(
-		(select) => select('core/editor')?.getCurrentPostId() ?? null,
-		[]
-	);
+	// Numbers only: a template's id is a string, and the endpoint rejects a
+	// post_id that is not an integer — see the Cards block.
+	const postId = useSelect((select) => {
+		const id = select('core/editor')?.getCurrentPostId();
+		return Number.isInteger(id) && id > 0 ? id : null;
+	}, []);
 
 	// Live banner settings from the edited (unsaved) post meta. Selecting a
 	// banner in the "Title Banner" panel updates this immediately, so the
@@ -49,11 +51,16 @@ const Edit = () => {
 		},
 		LoadingResponsePlaceholder: () =>
 			el(Placeholder, { label: __('Page Title', 'bridge') }, el(Spinner)),
-		ErrorResponsePlaceholder: ({ response }) =>
+		// Core passes the failure as `message` since WordPress 7.0; older
+		// versions passed `response.errorMsg`. Either way the server's own
+		// words are shown, so a failed preview says why.
+		ErrorResponsePlaceholder: ({ message, response }) =>
 			el(
 				Placeholder,
 				{ label: __('Page Title', 'bridge') },
-				response?.errorMsg || __('Could not render preview.', 'bridge')
+				message ||
+					response?.errorMsg ||
+					__('Could not render preview.', 'bridge')
 			),
 	};
 

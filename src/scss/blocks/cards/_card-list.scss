@@ -249,7 +249,7 @@
 	 * title's link — the colour is the accent set below, and the underline
 	 * arrives on hover rather than sitting under it at rest.
 	 */
-	.post-card--list a.post-card__read-more {
+	.post-card--list a.post-card__read-more:not(.post-card__read-more--button) {
 		text-decoration: none;
 
 		&:hover,
@@ -320,7 +320,7 @@
 	 * half the band wide, and the cue wants the step the rest of this column is
 	 * spaced by rather than the tighter one a card uses.
 	 */
-	.post-card--list .post-card__read-more {
+	.post-card--list .post-card__read-more:not(.post-card__read-more--button) {
 		font-size: var(--wp--preset--font-size--small);
 		font-weight: 500;
 		// Skin-aware, like the summary card's: the link colour on a light band

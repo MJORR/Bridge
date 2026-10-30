@@ -622,11 +622,12 @@ export function LayoutPicker({ label, help, value, options, onChange }) {
  *
  * Uses the media modal WordPress already prints on this screen rather than a
  * bespoke uploader, so operators get the library they know — search, recent,
- * alt text and all.
+ * alt text and all. `types` narrows the library to the given MIME types, for a
+ * slot like the favicon that can only use some of them.
  *
  * @param {Object} props Component props.
  */
-export function LogoPicker({ label, help, value, onChange }) {
+export function LogoPicker({ label, help, value, onChange, types = 'image' }) {
 	const [url, setUrl] = useState('');
 
 	// Resolve the stored attachment ID to a thumbnail. The media store is
@@ -645,7 +646,7 @@ export function LogoPicker({ label, help, value, onChange }) {
 	const open = () => {
 		const frame = wp.media({
 			title: label,
-			library: { type: 'image' },
+			library: { type: types },
 			multiple: false,
 			button: { text: __('Use this image', 'bridge') },
 		});

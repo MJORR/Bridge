@@ -71,6 +71,9 @@
 	--bridge-button-ghost-hover: var(
 		--wp--custom--button--on-#{$name}--ghost-hover
 	);
+	// Read only by the Block skin's own stylesheet — see `block` below.
+	--bridge-button-block: var(--wp--custom--button--on-#{$name}--block);
+	--bridge-button-block-fg: var(--wp--custom--button--on-#{$name}--block-fg);
 	--bridge-button-ring: var(--wp--custom--button--on-#{$name}--ring);
 }
 
@@ -107,6 +110,9 @@
 	--bridge-button-ghost-hover: var(
 		--wp--custom--button--fill-#{$slug}--ghost-hover
 	);
+	// Read only by the Block skin's own stylesheet — see `block` below.
+	--bridge-button-block: var(--wp--custom--button--fill-#{$slug}--block);
+	--bridge-button-block-fg: var(--wp--custom--button--fill-#{$slug}--block-fg);
 	--bridge-button-ring: var(--wp--custom--button--fill-#{$slug}--ring);
 }
 
@@ -464,5 +470,124 @@
 			--bridge-button-ghost-hover,
 			var(--wp--custom--button--on-default--ghost-hover)
 		);
+	}
+}
+
+/**
+ * The Block skin.
+ *
+ * Not built from `fill`. Every other skin is the same filled button with a
+ * different shape and a different hover movement, and is described by the
+ * custom properties `fill` reads. Block is a different button, with a panel
+ * that slides up from the bottom under the pointer. So it is its own set of
+ * rules, loaded only when Block is the chosen skin — button-block.scss on the
+ * site and in the editor, modifier classes on the options screen — and
+ * nothing here reaches the other three.
+ *
+ * Two variants, each the other inside out. `ink` is white on a dark band and
+ * dark on a light one (`--bridge-button-block`, per ground, from
+ * bridge_button_scheme()); `label` is its opposite (`--bridge-button-block-fg`).
+ *
+ *   solid    The main button. Filled with ink, label in the opposite colour.
+ *            Under the pointer a panel of that opposite colour slides up and
+ *            the label turns to ink.
+ *   outline  The Outline button. Transparent, edged and labelled in ink.
+ *            Under the pointer a panel of ink slides up and the label turns to
+ *            the opposite colour.
+ *
+ * Either way the panel is `::before`, the full size of the button and scaled
+ * to nothing against its bottom edge, scaling up to full height over 0.6s
+ * behind the label; the 2px border stays in ink throughout.
+ *
+ * Laid over `shape` + `fill` (or `ghost`) rather than instead of them,
+ * because the stylesheet that draws every button is already on the page; so
+ * each thing those set that Block does not want is set back here.
+ *
+ * @param {String} $variant `solid` or `outline`.
+ */
+@mixin block($variant: "solid") {
+	--bridge-block-ink: var(
+		--bridge-button-block,
+		var(--wp--custom--button--on-default--block, #1e1e1e)
+	);
+	--bridge-block-label: var(
+		--bridge-button-block-fg,
+		var(--wp--custom--button--on-default--block-fg, #fff)
+	);
+
+	@if $variant == "solid" {
+		--bridge-block-rest-bg: var(--bridge-block-ink);
+		--bridge-block-rest-fg: var(--bridge-block-label);
+		--bridge-block-panel: var(--bridge-block-label);
+		--bridge-block-hover-fg: var(--bridge-block-ink);
+	}
+
+	@if $variant == "outline" {
+		--bridge-block-rest-bg: transparent;
+		--bridge-block-rest-fg: var(--bridge-block-ink);
+		--bridge-block-panel: var(--bridge-block-ink);
+		--bridge-block-hover-fg: var(--bridge-block-label);
+	}
+
+	// The panel's containing block. `shape` sets this already; said again
+	// here so the Block rules do not depend on another file to hold the
+	// panel inside the button.
+	position: relative;
+	z-index: 0;
+	background-color: var(--bridge-block-rest-bg);
+	border: 2px solid var(--bridge-block-ink);
+	border-radius: 0;
+	box-shadow: none;
+	color: var(--bridge-block-rest-fg);
+	font-weight: 700;
+	text-transform: uppercase;
+	transition: color 0.6s ease;
+
+	&::before,
+	[dir="rtl"] &::before {
+		content: "";
+		position: absolute;
+		inset: auto auto 0 0;
+		z-index: -1;
+		width: 100%;
+		height: 100%;
+		border-radius: 0;
+		background-color: var(--bridge-block-panel);
+		opacity: 1;
+		clip-path: none;
+		// The climb is a scale from the bottom edge, not a growing height. A
+		// height change lays the panel out and repaints it on every frame; a
+		// transform is composited, so the browser only moves an existing
+		// layer. The panel is a flat colour with square corners, so scaling
+		// it looks exactly like growing it.
+		transform: scaleY(0);
+		transform-origin: bottom;
+		transition: transform 0.6s ease;
+		// Its own layer before the pointer arrives, so the first frame of the
+		// climb is not spent creating one.
+		will-change: transform;
+	}
+
+	&:hover,
+	&:focus-visible {
+		background-color: var(--bridge-block-rest-bg);
+		border-color: var(--bridge-block-ink);
+		box-shadow: none;
+		color: var(--bridge-block-hover-fg);
+		text-decoration: none;
+
+		&::before,
+		[dir="rtl"] &::before {
+			transform: scaleY(1);
+			clip-path: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		transition: none;
+
+		&::before {
+			transition: none;
+		}
 	}
 }

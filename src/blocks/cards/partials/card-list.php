@@ -47,6 +47,7 @@
  *
  * @var array  $card           The card record. See bridge_card_data_defaults().
  * @var bool   $show_read_more Whether to draw the read-more cue.
+ * @var string $link_class     Button classes for the cue, or '' for a text link.
  * @var string $read_more_text Its wording.
  *
  * @package Bridge
@@ -72,19 +73,28 @@ $card_show_badge = false;
 		<?php require __DIR__ . '/image.php'; ?>
 	</a>
 	<div class="post-card__body">
+		<?php if ( '' !== $card['eyebrow'] ) : ?>
+			<p class="post-card__eyebrow"><?php echo esc_html( $card['eyebrow'] ); ?></p>
+		<?php endif; ?>
 		<h3 class="post-card__title">
 			<a class="post-card__link" href="<?php echo esc_url( $card['permalink'] ); ?>"><?php echo esc_html( $card['title'] ); ?></a>
 		</h3>
 		<p class="post-card__excerpt"><?php echo esc_html( $card['excerpt'] ); ?></p>
-		<?php if ( $show_read_more ) : ?>
+		<?php if ( $show_read_more || '' !== $card['item_link_text'] ) : ?>
 			<?php
 			// An anchor here where the grid styles draw a span: with the row
 			// no longer clickable end to end, the cue has to be a target
 			// rather than a note about one. Hidden from assistive technology
 			// and out of the tab order for the reason above — the title is
 			// the link, and this is that link said again for a thumb.
+			//
+			// A pageless item with a link of its own says its own words —
+			// see inc/simple-editor.php. How it is drawn is the block's
+			// one Link style setting, the same for every card.
+			$card_cue_text  = '' !== $card['item_link_text'] ? $card['item_link_text'] : $read_more_text;
+			$card_cue_class = '' !== $link_class ? 'post-card__read-more post-card__read-more--button ' . $link_class : 'post-card__read-more';
 			?>
-			<a class="post-card__read-more" href="<?php echo esc_url( $card['permalink'] ); ?>" tabindex="-1" aria-hidden="true"><?php echo esc_html( $read_more_text ); ?></a>
+			<a class="<?php echo esc_attr( $card_cue_class ); ?>" href="<?php echo esc_url( $card['permalink'] ); ?>" tabindex="-1" aria-hidden="true"><?php echo esc_html( $card_cue_text ); ?></a>
 		<?php endif; ?>
 	</div>
 </article>

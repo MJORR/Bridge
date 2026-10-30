@@ -885,7 +885,7 @@ function bridge_card_shadow_choices(): array
  *                  so the hover colour is a known hex whose contrast can be
  *                  measured. See bridge_button_schemes().
  *
- * Filterable so a client build can ship a fourth. The slugs are stored in the
+ * Filterable so a client build can ship a fifth. The slugs are stored in the
  * token record, so a filter that renames one strands the sites using it.
  *
  * @return array<string, array<string, string|float>>
@@ -962,6 +962,26 @@ function bridge_button_skins(): array
 				// mostly length reads as the button answering.
 				'wipeWidth'     => '0px',
 				'wipeHeight'    => '100%',
+				'fill'          => 0.12,
+			),
+			'block'   => array(
+				'name'          => __('Block', 'bridge'),
+				'description'   => __('An outline at rest: square corners, a 2px border and a bold uppercase label, white on a dark band and dark on a light one. Under the pointer a panel in the same colour slides up from the bottom and fills it, and the label flips to read on it. Its own stylesheet — see src/scss/button-block.scss.', 'bridge'),
+				'radius'        => '0',
+				'paddingBlock'  => '0.75rem',
+				'paddingInline' => '1.75rem',
+				// Bold rather than the 600 the others use: an outline carries
+				// less ink than a fill, and the label has to make up for it.
+				'weight'        => '700',
+				'transform'     => 'uppercase',
+				'letterSpacing' => '0.04em',
+				'borderWidth'   => '2px',
+				'shadow'        => 'none',
+				'shadowHover'   => 'none',
+				'sweep'         => '0px',
+				'wipe'          => '1',
+				'wipeWidth'     => '100%',
+				'wipeHeight'    => '0px',
 				'fill'          => 0.12,
 			),
 		)
@@ -1284,6 +1304,18 @@ function bridge_button_scheme(string $fill, string $ground, string $foreground, 
 	$border       = $edge >= BRIDGE_BUTTON_EDGE_FLOOR ? $fill : $boundary;
 	$hover_border = $hover_edge >= BRIDGE_BUTTON_EDGE_FLOOR ? $hover_fill : $boundary;
 
+	// The darker of the two label colours, for the Block skin on a light
+	// band. See `block` below.
+	$darkest = $labels[0] ?? '#000000';
+
+	foreach ($labels as $candidate) {
+		if (bridge_relative_luminance($candidate) < bridge_relative_luminance($darkest)) {
+			$darkest = $candidate;
+		}
+	}
+
+	$block = bridge_is_light_color($ground) ? $darkest : '#ffffff';
+
 	return array(
 		'bg'          => strtolower($fill),
 		'fg'          => strtolower($label),
@@ -1307,6 +1339,13 @@ function bridge_button_scheme(string $fill, string $ground, string $foreground, 
 		// the readable answer, it still is.
 		'ghost'       => strtolower($ghost),
 		'ghostHover'  => strtolower(bridge_readable_on($ghost, $labels)),
+		// The Block skin's ink: its border, its resting label and the panel
+		// that slides up on hover. White on a dark band, the palette's darkest
+		// label colour on a light one. `blockFg` is the label once the panel
+		// has filled the button, picked by ratio like every other label here
+		// — dark on the white panel, light on the dark one.
+		'block'       => strtolower($block),
+		'blockFg'     => strtolower(bridge_readable_on($block, $labels)),
 		// Focus. Offset clear of the button's own edge, so the ring is
 		// measured against the band rather than against the button.
 		'ring'        => strtolower($boundary),
@@ -1430,6 +1469,7 @@ function bridge_token_constraints(): array
 			// truncated name is what every later lookup misses.
 			'slugMaxLength' => 20,
 			'reserved'      => bridge_reserved_post_type_slugs(),
+			'icons'         => bridge_post_type_icons(),
 		),
 		'layout'     => array(
 			'contentSize'      => array('min' => 320, 'max' => 1600, 'step' => 10, 'unit' => 'px'),
@@ -1634,7 +1674,9 @@ function bridge_token_defaults(): array
 			// Two images of one wordmark: `id` is the dark logo, drawn for a
 			// light ground, and `lightId` the light one for a dark ground.
 			// Either may be 0 — a site with a single logo uses it everywhere.
-			'logo'            => array('id' => 0, 'lightId' => 0, 'height' => 40),
+			// `faviconId` is the browser-tab icon, a PNG or SVG; 0 leaves
+			// WordPress's own Site Icon in charge.
+			'logo'            => array('id' => 0, 'lightId' => 0, 'faviconId' => 0, 'height' => 40),
 			// `color` is the button's fill, as a palette slug rather than a hex, so
 			// the CTA follows the brand when it changes. Accent because that is
 			// what the header hard-coded before this was a setting, so a site that
@@ -2556,9 +2598,10 @@ function bridge_sanitize_tokens(array $raw): array
 		'shadow'          => ! empty($raw_header['shadow']),
 		'paddingBlock'    => (int) round(bridge_clamp_token('header', 'paddingBlock', $raw_header['paddingBlock'] ?? null, (float) $defaults['header']['paddingBlock'])),
 		'logo'            => array(
-			'id'      => max(0, (int) ($raw_logo['id'] ?? 0)),
-			'lightId' => $light_id,
-			'height'  => (int) round(bridge_clamp_token('header', 'logoHeight', $raw_logo['height'] ?? null, (float) $defaults['header']['logo']['height'])),
+			'id'        => max(0, (int) ($raw_logo['id'] ?? 0)),
+			'lightId'   => $light_id,
+			'faviconId' => max(0, (int) ($raw_logo['faviconId'] ?? 0)),
+			'height'    => (int) round(bridge_clamp_token('header', 'logoHeight', $raw_logo['height'] ?? null, (float) $defaults['header']['logo']['height'])),
 		),
 		'cta'             => array(
 			'enabled' => $cta_enabled,
@@ -2738,6 +2781,24 @@ function bridge_sanitize_tokens(array $raw): array
 			// box on every existing content type the first time anything
 			// pressed Save.
 			'hasCategories' => ! empty($entry['hasCategories']),
+			// Whether items get a Link field — an address somewhere else and
+			// the words for it. Only offered on a type with no pages, which
+			// has no address of its own (see inc/simple-editor.php), but
+			// stored as given. Absent means no, for the reason `hasCategories`
+			// gives.
+			'hasLink'       => ! empty($entry['hasLink']),
+			// Whether items get a featured image. Only offered on a type with
+			// no pages — a type with pages always has one — but stored as
+			// given. Absent means no, for the reason `hasCategories` gives.
+			'hasImage'      => ! empty($entry['hasImage']),
+			// The sidebar icon. Empty means the default, which follows
+			// `hasPages` — see bridge_post_type_icon(). Anything not on the
+			// theme's list is dropped to empty rather than stored, so a stale
+			// or mistyped name falls back to a real icon.
+			'icon'          => isset($entry['icon']) && is_string($entry['icon'])
+				&& in_array($entry['icon'], bridge_post_type_icons(), true)
+				? $entry['icon']
+				: '',
 		);
 	}
 

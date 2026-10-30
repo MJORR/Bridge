@@ -38,8 +38,98 @@
 
 import { Section } from '../controls';
 
-const { Button, Notice, TextControl, ToggleControl } = wp.components;
+const { BaseControl, Button, Dropdown, Notice, TextControl, ToggleControl } =
+	wp.components;
 const { __, sprintf } = wp.i18n;
+
+/**
+ * The sidebar icon for one row.
+ *
+ * A button showing the icon the type will be drawn with, opening a grid of
+ * the ones the server accepts — `constraints.postTypes.icons`, so the picker
+ * cannot offer a name the sanitiser would drop. Dashicons rather than the
+ * theme's own set because that is what `menu_icon` takes, and the admin
+ * already has the font loaded.
+ *
+ * "Default" stores an empty string, which the server reads as "follow Pages
+ * on the site" — so a type that has never been given an icon keeps changing
+ * with that switch, as it always has.
+ *
+ * @param {Object}   props
+ * @param {string}   props.id       Id for the toggle, so the label names it.
+ * @param {string}   props.value    Stored icon, or '' for the default.
+ * @param {string}   props.fallback What the default currently resolves to.
+ * @param {string[]} props.icons    The accepted icons.
+ * @param {Function} props.onChange Receives the new value.
+ */
+function IconPicker({ id, value, fallback, icons, onChange }) {
+	const shown = value || fallback;
+	const name = (icon) => icon.replace(/^dashicons-/, '').replace(/-/g, ' ');
+
+	return (
+		<BaseControl
+			id={id}
+			label={__('Icon', 'bridge')}
+			help={__('In the admin sidebar.', 'bridge')}
+			__nextHasNoMarginBottom
+		>
+			<Dropdown
+				popoverProps={{ placement: 'bottom-start' }}
+				renderToggle={({ isOpen, onToggle }) => (
+					<Button
+						id={id}
+						className="bridge-cpt__icon-toggle"
+						variant="secondary"
+						onClick={onToggle}
+						aria-expanded={isOpen}
+						label={sprintf(
+							/* translators: %s: the icon's name. */
+							__('Choose icon (current: %s)', 'bridge'),
+							name(shown)
+						)}
+						showTooltip
+						__next40pxDefaultSize
+					>
+						<span className={`dashicons ${shown}`} aria-hidden />
+					</Button>
+				)}
+				renderContent={({ onClose }) => (
+					<div className="bridge-cpt__icon-grid">
+						<Button
+							className="bridge-cpt__icon-default"
+							variant={value ? 'tertiary' : 'primary'}
+							isPressed={!value}
+							onClick={() => {
+								onChange('');
+								onClose();
+							}}
+						>
+							{__('Default', 'bridge')}
+						</Button>
+						{icons.map((icon) => (
+							<Button
+								key={icon}
+								className="bridge-cpt__icon-option"
+								isPressed={icon === value}
+								label={name(icon)}
+								showTooltip
+								onClick={() => {
+									onChange(icon);
+									onClose();
+								}}
+							>
+								<span
+									className={`dashicons ${icon}`}
+									aria-hidden
+								/>
+							</Button>
+						))}
+					</div>
+				)}
+			/>
+		</BaseControl>
+	);
+}
 
 /**
  * A post type name from a display name.
@@ -156,6 +246,9 @@ export function CptTab({ draft, payload, setPostTypes }) {
 				enabled: true,
 				hasPages: true,
 				hasCategories: false,
+				hasLink: false,
+				hasImage: false,
+				icon: '',
 			},
 		]);
 
@@ -190,6 +283,9 @@ export function CptTab({ draft, payload, setPostTypes }) {
 				// Absent means no here, and the sanitiser agrees — see the
 				// comment beside it for why this one is the other way round.
 				const hasCategories = !!row.hasCategories;
+				// Absent means no, like categories.
+				const hasLink = !!row.hasLink;
+				const hasImage = !!row.hasImage;
 
 				return (
 					<div
@@ -197,6 +293,20 @@ export function CptTab({ draft, payload, setPostTypes }) {
 						key={index}
 					>
 						<div className="bridge-cpt__fields">
+							<IconPicker
+								id={`bridge-cpt-icon-${index}`}
+								value={row.icon || ''}
+								fallback={
+									hasPages
+										? 'dashicons-portfolio'
+										: 'dashicons-editor-help'
+								}
+								icons={limits.icons || []}
+								onChange={(value) =>
+									patch(index, { icon: value })
+								}
+							/>
+
 							<TextControl
 								label={__('Singular', 'bridge')}
 								help={__('One of them.', 'bridge')}
@@ -330,6 +440,60 @@ export function CptTab({ draft, payload, setPostTypes }) {
 									patch(index, { hasCategories: value })
 								}
 							/>
+
+							{
+								// Only for material with no pages: a type
+								// with pages links to its own page, and the
+								// Link field lives on the two-field screen
+								// only these types get.
+								!hasPages && (
+									<ToggleControl
+										label={__('Link', 'bridge')}
+										help={
+											hasLink
+												? __(
+														'Each item gets a Link and Link text, for blocks that show it to point somewhere.',
+														'bridge'
+													)
+												: __(
+														'No link. Items are shown but not clicked.',
+														'bridge'
+													)
+										}
+										checked={hasLink}
+										__nextHasNoMarginBottom
+										onChange={(value) =>
+											patch(index, { hasLink: value })
+										}
+									/>
+								)
+							}
+
+							{
+								// Likewise pageless only: a type with pages
+								// always has a featured image.
+								!hasPages && (
+									<ToggleControl
+										label={__('Featured image', 'bridge')}
+										help={
+											hasImage
+												? __(
+														'Each item gets a Featured image box in the editing sidebar.',
+														'bridge'
+													)
+												: __(
+														'No image. Items are text only.',
+														'bridge'
+													)
+										}
+										checked={hasImage}
+										__nextHasNoMarginBottom
+										onChange={(value) =>
+											patch(index, { hasImage: value })
+										}
+									/>
+								)
+							}
 						</div>
 
 						{error ? (

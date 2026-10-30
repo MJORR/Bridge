@@ -522,6 +522,21 @@ final class SanitizeTokensTest extends BridgeTestCase
 		$this->assertSame(9, $tokens['header']['logo']['lightId']);
 	}
 
+	public function test_the_favicon_id_is_kept_and_a_bad_one_falls_to_zero(): void
+	{
+		$tokens = bridge_sanitize_tokens(
+			array('header' => array('logo' => array('faviconId' => '12')))
+		);
+
+		$this->assertSame(12, $tokens['header']['logo']['faviconId']);
+
+		$tokens = bridge_sanitize_tokens(
+			array('header' => array('logo' => array('faviconId' => -3)))
+		);
+
+		$this->assertSame(0, $tokens['header']['logo']['faviconId']);
+	}
+
 	/**
 	 * A call to action was implied by having filled both fields, before it had
 	 * a switch of its own. Records written under that rule must not have their

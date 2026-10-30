@@ -132,6 +132,11 @@
 		"buttonText": {
 			"type": "string",
 			"default": ""
+		},
+		"linkStyle": {
+			"type": "string",
+			"enum": ["", "text", "button", "outline"],
+			"default": ""
 		}
 	},
 	"example": {

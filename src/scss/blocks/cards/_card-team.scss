@@ -187,3 +187,15 @@
 		cursor: inherit;
 	}
 }
+
+/**
+ * A pageless item that asked for a text link rather than the button.
+ *
+ * Drawn the way the summary card's read-more cue is — the card's accent, a
+ * step down in size — so the two cues read as the same thing.
+ */
+.bridge-cards-grid .post-card--team .post-card__cta--text {
+	font-size: var(--wp--preset--font-size--small);
+	font-weight: 500;
+	color: var(--post-card-accent);
+}

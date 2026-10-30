@@ -35,6 +35,9 @@ $card_show_badge = false;
 <article class="post-card post-card--cover">
 	<?php require __DIR__ . '/image.php'; ?>
 	<div class="post-card__body">
+		<?php if ( '' !== $card['eyebrow'] ) : ?>
+			<p class="post-card__eyebrow"><?php echo esc_html( $card['eyebrow'] ); ?></p>
+		<?php endif; ?>
 		<h3 class="post-card__title">
 			<a class="post-card__link" href="<?php echo esc_url( $card['permalink'] ); ?>"><?php echo esc_html( $card['title'] ); ?></a>
 		</h3>

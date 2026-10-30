@@ -1855,12 +1855,43 @@ $slot-height: 40px;
  */
 .bridge-cpt__fields {
 	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+	// The icon first, at its own width: it is a single button, and a share of
+	// the row would leave it floating in an empty field-width track.
+	grid-template-columns: auto repeat(3, minmax(0, 1fr)) auto;
 	align-items: start;
 	gap: 1rem;
 
 	@media (max-width: 48rem) {
 		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+/**
+ * The icon picker: a square button showing the current icon, and a grid of
+ * the alternatives in its popover.
+ */
+.bridge-cpt__icon-toggle.components-button {
+	justify-content: center;
+	inline-size: 40px;
+	padding: 0;
+}
+
+.bridge-cpt__icon-grid {
+	display: grid;
+	grid-template-columns: repeat(8, 36px);
+	gap: 4px;
+	padding: 8px;
+
+	.bridge-cpt__icon-default {
+		grid-column: 1 / -1;
+		justify-content: center;
+	}
+
+	.bridge-cpt__icon-option.components-button {
+		justify-content: center;
+		inline-size: 36px;
+		block-size: 36px;
+		padding: 0;
 	}
 }
 
@@ -2143,6 +2174,16 @@ $slot-height: 40px;
 
 .bridge-button-sample--ghost {
 	@include button.ghost;
+}
+
+// The Block skin, drawn by the same mixin its own stylesheet uses on the site:
+// the main button solid, the Outline one outlined.
+.bridge-button-sample--block {
+	@include button.block("solid");
+}
+
+.bridge-button-sample--block-outline {
+	@include button.block("outline");
 }
 
 // One band per ground, each holding a pair of buttons and the ratios measured

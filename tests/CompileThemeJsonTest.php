@@ -151,6 +151,8 @@ final class CompileThemeJsonTest extends BridgeTestCase
 					'hoverBorder',
 					'ghost',
 					'ghostHover',
+					'block',
+					'blockFg',
 					'ring',
 				),
 				array_keys($button[$key])

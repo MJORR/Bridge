@@ -43,6 +43,9 @@ final class PostTypesTest extends BridgeTestCase
 					'enabled'       => true,
 					'hasPages'      => true,
 					'hasCategories' => false,
+					'hasLink'       => false,
+					'hasImage'      => false,
+					'icon'          => '',
 				),
 			),
 			$this->sanitize(
@@ -55,6 +58,46 @@ final class PostTypesTest extends BridgeTestCase
 				)
 			)
 		);
+	}
+
+	// ---- The icon ---------------------------------------------------------
+
+	public function test_an_offered_icon_is_kept(): void
+	{
+		$rows = $this->sanitize(
+			array(
+				array(
+					'singular' => 'Venue',
+					'icon'     => 'dashicons-location',
+				),
+			)
+		);
+
+		$this->assertSame('dashicons-location', $rows[0]['icon']);
+		$this->assertSame('dashicons-location', bridge_post_type_icon($rows[0]));
+	}
+
+	/** Not on the list means the default, never a broken square in the menu. */
+	public function test_an_unknown_icon_falls_back_to_the_default(): void
+	{
+		$rows = $this->sanitize(
+			array(
+				array(
+					'singular' => 'Venue',
+					'icon'     => 'dashicons-nonsense',
+				),
+				array(
+					'singular' => 'Question',
+					'hasPages' => false,
+					'icon'     => array('dashicons-location'),
+				),
+			)
+		);
+
+		$this->assertSame('', $rows[0]['icon']);
+		$this->assertSame('dashicons-portfolio', bridge_post_type_icon($rows[0]));
+		$this->assertSame('', $rows[1]['icon']);
+		$this->assertSame('dashicons-editor-help', bridge_post_type_icon($rows[1]));
 	}
 
 	/** The default for the whole group is "this site has none". */
@@ -485,6 +528,25 @@ final class PostTypesTest extends BridgeTestCase
 
 		$this->assertSame(
 			array('title', 'editor', 'revisions', 'page-attributes'),
+			$supports
+		);
+	}
+
+	/** The Featured image switch gives a pageless type the image, and only that. */
+	public function test_a_pageless_type_with_an_image_gets_a_thumbnail(): void
+	{
+		$supports = bridge_post_type_args(
+			array(
+				'singular' => 'Project',
+				'plural'   => 'Projects',
+				'slug'     => 'project',
+				'hasPages' => false,
+				'hasImage' => true,
+			)
+		)['supports'];
+
+		$this->assertSame(
+			array('title', 'editor', 'thumbnail', 'revisions', 'page-attributes'),
 			$supports
 		);
 	}

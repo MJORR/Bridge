@@ -106,6 +106,8 @@ export function groundVars(scheme) {
 		'--bridge-button-hover-border': scheme?.hoverBorder,
 		'--bridge-button-ghost': scheme?.ghost,
 		'--bridge-button-ghost-hover': scheme?.ghostHover,
+		'--bridge-button-block': scheme?.block,
+		'--bridge-button-block-fg': scheme?.blockFg,
 		'--bridge-button-ring': scheme?.ring,
 	};
 }

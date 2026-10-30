@@ -101,12 +101,14 @@ $questions = new WP_Query(
 		'ignore_sticky_posts'    => true,
 		// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query — one term on one taxonomy, which is the join this block exists to make.
 		'tax_query'              => $tax_query,
-		// Three queries this block has no use for. `no_found_rows` drops the
-		// row count that only exists to build pagination; the two cache
-		// primers fetch terms and meta for posts that render neither.
+		// Two queries this block has no use for. `no_found_rows` drops the
+		// row count that only exists to build pagination; the term primer
+		// fetches terms for posts that render none.
+		//
+		// The meta primer stays on: each answer's link lives in its meta, and
+		// one primed query beats a lookup per question.
 		'no_found_rows'          => true,
 		'update_post_term_cache' => false,
-		'update_post_meta_cache' => false,
 	)
 );
 
@@ -153,7 +155,18 @@ echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.Out
 				<details class="bridge-faq"
 					<?php echo '' !== $group ? ' name="' . esc_attr( $group ) . '"' : ''; ?>>
 					<summary class="bridge-faq__question">
-						<span class="bridge-faq__text"><?php the_title(); ?></span>
+						<span class="bridge-faq__text">
+							<?php
+							// The question's subtitle, above it, when the FAQ
+							// type has the field — see inc/simple-editor.php.
+							$bridge_faq_subtitle = bridge_item_subtitle( get_the_ID() );
+
+							if ( '' !== $bridge_faq_subtitle ) :
+								?>
+								<span class="bridge-faq__eyebrow"><?php echo esc_html( $bridge_faq_subtitle ); ?></span>
+							<?php endif; ?>
+							<?php the_title(); ?>
+						</span>
 						<?php
 						// No label: the question beside it already says what
 						// this opens, and naming the chevron as well would
@@ -175,6 +188,11 @@ echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.Out
 						// else. It is a post, and this is what a post's body
 						// is.
 						the_content();
+
+						// The answer's own link, when it has one — the
+						// site's button or a text link, as the FAQ asked.
+						// See inc/simple-editor.php.
+						echo bridge_item_link_html( get_the_ID(), 'bridge-faq__link' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts.
 						?>
 					</div>
 				</details>

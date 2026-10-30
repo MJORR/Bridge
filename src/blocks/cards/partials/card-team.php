@@ -20,7 +20,8 @@
  * band it lands on points the button variables at the right ground, which is
  * why nothing here names a colour.
  *
- * @var array $card The card record. See bridge_card_data_defaults().
+ * @var array  $card       The card record. See bridge_card_data_defaults().
+ * @var string $link_class Button classes for the cue, or '' for a text link.
  *
  * @package Bridge
  */
@@ -35,6 +36,9 @@ $card_show_badge = false;
 <article class="post-card post-card--team">
 	<?php require __DIR__ . '/image.php'; ?>
 	<div class="post-card__body">
+		<?php if ( '' !== $card['eyebrow'] ) : ?>
+			<p class="post-card__eyebrow"><?php echo esc_html( $card['eyebrow'] ); ?></p>
+		<?php endif; ?>
 		<h3 class="post-card__title">
 			<a class="post-card__link" href="<?php echo esc_url( $card['permalink'] ); ?>"><?php echo esc_html( $card['title'] ); ?></a>
 		</h3>
@@ -46,8 +50,14 @@ $card_show_badge = false;
 			?>
 			<p class="post-card__subtitle"><?php echo esc_html( $card['subtitle'] ); ?></p>
 		<?php endif; ?>
-		<?php if ( '' !== $card['cta_text'] ) : ?>
-			<span class="post-card__cta wp-element-button" aria-hidden="true"><?php echo esc_html( $card['cta_text'] ); ?></span>
+		<?php
+		// A pageless item with a link of its own says its own words — see
+		// inc/simple-editor.php. Drawn in the block's Link style.
+		$card_cta_text = '' !== $card['item_link_text'] ? $card['item_link_text'] : $card['cta_text'];
+
+		if ( '' !== $card_cta_text ) :
+			?>
+			<span class="<?php echo esc_attr( '' !== $link_class ? 'post-card__cta ' . $link_class : 'post-card__cta post-card__cta--text' ); ?>" aria-hidden="true"><?php echo esc_html( $card_cta_text ); ?></span>
 		<?php endif; ?>
 	</div>
 </article>

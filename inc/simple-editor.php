@@ -295,10 +295,9 @@ add_filter('wp_editor_expand', 'bridge_disable_editor_expand', 10, 2);
  * such-and-such page". Six buttons is the whole of what an answer needs.
  *
  * Teeny mode is what takes the rest away: no media button, no block quotes, no
- * alignment, no full-screen. `quicktags` off removes the Text tab — an HTML
- * view is a way to paste markup the front end then has to be trusted with, and
- * the answer renders through the_content() where the block editor's own
- * sanitising is not in the path.
+ * alignment, no full-screen. The Text tab stays, so the HTML can be edited by
+ * hand — what it accepts is still what the author's role may post: core runs
+ * kses over the body on save for anyone without `unfiltered_html`.
  *
  * @param array<string, mixed> $settings  Editor settings.
  * @param string               $editor_id Which editor on the page.
@@ -314,7 +313,9 @@ function bridge_simple_editor_settings(array $settings, string $editor_id): arra
 
 	$settings['teeny']         = true;
 	$settings['media_buttons'] = false;
-	$settings['quicktags']     = false;
+	// The Text tab, for editing the HTML. Core's buttons, minus the ones
+	// the visual toolbar does not offer either.
+	$settings['quicktags']     = array('buttons' => 'strong,em,link,ul,ol,li,code,close');
 	// TinyMCE's height. `textarea_rows` is the same measurement for the plain
 	// textarea a user gets with the visual editor switched off in their
 	// profile; core reads one or the other, never both, so both are set.
@@ -463,3 +464,467 @@ function bridge_simple_editor_help(): void
 	}
 }
 add_action('admin_head', 'bridge_simple_editor_help');
+
+// ---- The link field -------------------------------------------------------
+
+/**
+ * The meta keys a pageless item's link is stored under.
+ *
+ * A type with no pages has no address of its own, so a card or an answer
+ * drawn from one has nowhere to point — this is where an author says where it
+ * should go instead: a partner's site, a booking page, a page elsewhere on
+ * this site. Alongside it, what the link says.
+ *
+ * Not how it is drawn. Text link, button or Outline button is the block's
+ * setting — Cards and FAQs each have one — so a band of twelve items changes
+ * style in one place rather than twelve.
+ */
+const BRIDGE_ITEM_LINK_KEY      = 'bridge_link';
+const BRIDGE_ITEM_LINK_TEXT_KEY = 'bridge_link_text';
+
+/**
+ * Whether this post type's items have a Link field.
+ *
+ * Pageless and switched on in Theme Options → Content types. Off for a type
+ * whose items are read where they are, like FAQs; on for one whose items
+ * point somewhere, like projects.
+ *
+ * @param string $post_type Post type slug.
+ */
+function bridge_post_type_has_link(string $post_type): bool
+{
+	if (! bridge_is_simple_editor_post_type($post_type)) {
+		return false;
+	}
+
+	foreach (bridge_active_post_types() as $entry) {
+		if ($post_type === (string) ($entry['slug'] ?? '')) {
+			return ! empty($entry['hasLink']);
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Register the link meta on every type that has one.
+ *
+ * Priority 20, after bridge_register_declared_post_types() at the default 10:
+ * register_post_meta() on a type that does not exist yet registers nothing a
+ * REST request can see.
+ */
+function bridge_register_item_link(): void
+{
+	$fields = array(
+		BRIDGE_ITEM_LINK_KEY      => array('string', '', 'bridge_sanitize_item_link'),
+		BRIDGE_ITEM_LINK_TEXT_KEY => array('string', '', 'sanitize_text_field'),
+	);
+
+	foreach (bridge_simple_editor_post_types() as $post_type) {
+		if (! bridge_post_type_has_link($post_type)) {
+			continue;
+		}
+
+		$object     = get_post_type_object($post_type);
+		$capability = $object->cap->edit_posts ?? 'edit_posts';
+
+		foreach ($fields as $key => list($type, $default, $sanitize)) {
+			register_post_meta(
+				$post_type,
+				$key,
+				array(
+					'type'              => $type,
+					'single'            => true,
+					'default'           => $default,
+					'show_in_rest'      => true,
+					'sanitize_callback' => $sanitize,
+					'auth_callback'     => static function () use ($capability): bool {
+						return current_user_can($capability);
+					},
+				)
+			);
+		}
+	}
+}
+add_action('init', 'bridge_register_item_link', 20);
+
+/**
+ * A link, as it will be stored.
+ *
+ * `esc_url_raw()` keeps http(s), mailto and tel and drops anything else — a
+ * `javascript:` URL typed here would otherwise be printed into every card that
+ * draws this item. A bare domain gains `http://`, which is what an author
+ * typing "example.com" meant.
+ *
+ * @param mixed $value Raw field value.
+ */
+function bridge_sanitize_item_link($value): string
+{
+	$value = trim((string) $value);
+
+	return '' === $value ? '' : esc_url_raw($value);
+}
+
+/**
+ * Everything about one item's link, or an empty url when it has none.
+ *
+ * The text falls back to "Read more" rather than to nothing, so an author who
+ * fills in only the address still gets a link a reader can see.
+ *
+ * @param int $post_id Item.
+ * @return array{url:string, text:string}
+ */
+function bridge_item_link(int $post_id): array
+{
+	$url = '';
+
+	// Switching the type's Link off hides every link it had without deleting
+	// one, so switching it back on restores them.
+	if (bridge_post_type_has_link((string) get_post_type($post_id))) {
+		$url = (string) get_post_meta($post_id, BRIDGE_ITEM_LINK_KEY, true);
+	}
+
+	$text = trim((string) get_post_meta($post_id, BRIDGE_ITEM_LINK_TEXT_KEY, true));
+
+	return array(
+		'url'  => $url,
+		'text' => '' !== $text ? $text : __('Read more', 'bridge'),
+	);
+}
+
+/**
+ * One item's link as markup, or an empty string when it has none.
+ *
+ * The buttons are the site's own — `wp-element-button`, the class every other
+ * button in the theme wears, and `is-style-outline` for the Outline one — so
+ * Theme Options' button settings reach them. The text link is a plain anchor,
+ * drawn in the site's link colour.
+ *
+ * @param int    $post_id Item.
+ * @param string $class   Extra class for the caller's own layout.
+ * @param string $style   'text', 'button' or 'outline' — the block's choice.
+ */
+function bridge_item_link_html(int $post_id, string $class = '', string $style = 'text'): string
+{
+	$link = bridge_item_link($post_id);
+
+	if ('' === $link['url']) {
+		return '';
+	}
+
+	$styles = array(
+		'text'    => 'bridge-item-link--text',
+		'button'  => 'wp-element-button',
+		'outline' => 'wp-element-button is-style-outline',
+	);
+
+	$classes = array('bridge-item-link', $styles[ $style ] ?? $styles['text']);
+
+	if ('' !== $class) {
+		$classes[] = $class;
+	}
+
+	return sprintf(
+		'<a class="%1$s" href="%2$s">%3$s</a>',
+		esc_attr(implode(' ', $classes)),
+		esc_url($link['url']),
+		esc_html($link['text'])
+	);
+}
+
+/**
+ * The link fields, under the Details box.
+ *
+ * `edit_form_after_editor` is the hook directly below `#postdivrich`, inside
+ * `#post-body-content` — the same column the two fields above it sit in, so
+ * the link reads as part of the form rather than as a metabox beside it.
+ *
+ * @param WP_Post $post Post being edited.
+ */
+function bridge_simple_editor_link_field($post): void
+{
+	$post_type = $post instanceof WP_Post ? (string) $post->post_type : '';
+
+	if (! bridge_post_type_has_link($post_type)) {
+		return;
+	}
+
+	$url  = (string) get_post_meta($post->ID, BRIDGE_ITEM_LINK_KEY, true);
+	$text = (string) get_post_meta($post->ID, BRIDGE_ITEM_LINK_TEXT_KEY, true);
+
+	wp_nonce_field('bridge_item_link', 'bridge_item_link_nonce');
+	?>
+	<div class="bridge-simple-editor__link">
+		<label class="bridge-simple-editor__label" for="bridge-item-link"><?php esc_html_e('Link', 'bridge'); ?></label>
+		<input
+			type="url"
+			id="bridge-item-link"
+			name="bridge_item_link"
+			class="large-text"
+			value="<?php echo esc_attr($url); ?>"
+			placeholder="https://"
+			aria-describedby="bridge-item-link-help"
+		/>
+		<p class="description" id="bridge-item-link-help">
+			<?php esc_html_e('Optional. Where this item goes when it is clicked — it has no page of its own, so blocks that show it link here instead. Leave empty for no link.', 'bridge'); ?>
+		</p>
+
+		<div class="bridge-simple-editor__link-options">
+			<p class="bridge-simple-editor__link-text">
+				<label for="bridge-item-link-text"><?php esc_html_e('Link text', 'bridge'); ?></label>
+				<input
+					type="text"
+					id="bridge-item-link-text"
+					name="bridge_item_link_text"
+					class="regular-text"
+					value="<?php echo esc_attr($text); ?>"
+					placeholder="<?php esc_attr_e('Read more', 'bridge'); ?>"
+				/>
+			</p>
+
+		</div>
+	</div>
+	<?php
+}
+add_action('edit_form_after_editor', 'bridge_simple_editor_link_field');
+
+/**
+ * Save the link fields.
+ *
+ * The nonce is what says the fields were on the form: a quick edit or a REST
+ * save does not carry it, and must not be read as the author clearing them.
+ * Each one empty is deleted rather than stored, so an item that never had a
+ * link carries no meta for one.
+ *
+ * @param int $post_id Post being saved.
+ */
+function bridge_save_item_link(int $post_id): void
+{
+	if (! isset($_POST['bridge_item_link_nonce'])
+		|| ! wp_verify_nonce(sanitize_key(wp_unslash($_POST['bridge_item_link_nonce'])), 'bridge_item_link')
+	) {
+		return;
+	}
+
+	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+		return;
+	}
+
+	if (! bridge_post_type_has_link((string) get_post_type($post_id)) || ! current_user_can('edit_post', $post_id)) {
+		return;
+	}
+
+	// phpcs:disable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized — sanitised below.
+	$values = array(
+		BRIDGE_ITEM_LINK_KEY      => bridge_sanitize_item_link(wp_unslash($_POST['bridge_item_link'] ?? '')),
+		BRIDGE_ITEM_LINK_TEXT_KEY => sanitize_text_field(wp_unslash($_POST['bridge_item_link_text'] ?? '')),
+	);
+	// phpcs:enable
+
+	foreach ($values as $key => $value) {
+		if ('' === $value) {
+			delete_post_meta($post_id, $key);
+		} else {
+			update_post_meta($post_id, $key, $value);
+		}
+	}
+}
+add_action('save_post', 'bridge_save_item_link');
+
+/**
+ * Cards point a pageless item at its link.
+ *
+ * Its permalink is an address the type does not answer — the type is not
+ * publicly queryable, so the card's title would link to a 404. With a link
+ * set, the card follows it, and the cue under the card (the styles that draw
+ * one) says the item's own text, in the block's Link style. Without one,
+ * the record is left as it was.
+ *
+ * @param array   $card The card record.
+ * @param WP_Post $post The post it was built from.
+ * @return array
+ */
+function bridge_card_data_item_link($card, $post)
+{
+	if (! is_array($card) || ! $post instanceof WP_Post) {
+		return $card;
+	}
+
+	$link = bridge_item_link((int) $post->ID);
+
+	if ('' !== $link['url']) {
+		$card['permalink']      = $link['url'];
+		$card['item_link_text'] = $link['text'];
+	}
+
+	return $card;
+}
+add_filter('bridge_card_data', 'bridge_card_data_item_link', 10, 2);
+
+// ---- The subtitle field ---------------------------------------------------
+
+/**
+ * The meta key a pageless item's subtitle is stored under.
+ *
+ * A short line printed above the item's title — "Subtitle here" over
+ * "MAIN TITLE". Every type with no pages has the field; left empty, nothing
+ * is printed.
+ */
+const BRIDGE_ITEM_SUBTITLE_KEY = 'bridge_subtitle';
+
+/**
+ * Whether this post type's items have a subtitle.
+ *
+ * Every pageless type does. A type with pages is edited in the block editor,
+ * where this field does not exist.
+ *
+ * @param string $post_type Post type slug.
+ */
+function bridge_post_type_has_subtitle(string $post_type): bool
+{
+	return bridge_is_simple_editor_post_type($post_type);
+}
+
+/**
+ * Register the subtitle meta on every type that has one.
+ *
+ * Priority 20 for the reason bridge_register_item_link() gives.
+ */
+function bridge_register_item_subtitle(): void
+{
+	foreach (bridge_simple_editor_post_types() as $post_type) {
+		if (! bridge_post_type_has_subtitle($post_type)) {
+			continue;
+		}
+
+		$object     = get_post_type_object($post_type);
+		$capability = $object->cap->edit_posts ?? 'edit_posts';
+
+		register_post_meta(
+			$post_type,
+			BRIDGE_ITEM_SUBTITLE_KEY,
+			array(
+				'type'              => 'string',
+				'single'            => true,
+				'default'           => '',
+				'show_in_rest'      => true,
+				'sanitize_callback' => 'sanitize_text_field',
+				'auth_callback'     => static function () use ($capability): bool {
+					return current_user_can($capability);
+				},
+			)
+		);
+	}
+}
+add_action('init', 'bridge_register_item_subtitle', 20);
+
+/**
+ * One item's subtitle, or an empty string.
+ *
+ * Empty whenever the type has the field switched off, so a subtitle written
+ * while it was on is not printed after it has been turned off — and comes
+ * back if it is turned on again.
+ *
+ * @param int $post_id Item.
+ */
+function bridge_item_subtitle(int $post_id): string
+{
+	if (! bridge_post_type_has_subtitle((string) get_post_type($post_id))) {
+		return '';
+	}
+
+	return trim((string) get_post_meta($post_id, BRIDGE_ITEM_SUBTITLE_KEY, true));
+}
+
+/**
+ * The subtitle field.
+ *
+ * Printed on `edit_form_after_title`, the only hook inside the form's main
+ * column near the title, and moved above the title by the stylesheet — see
+ * `.bridge-simple-editor__subtitle` in src/scss/admin/_simple-editor.scss —
+ * so the form reads in the order the item will: subtitle, then title.
+ *
+ * Priority 5, ahead of the body label on the same hook.
+ *
+ * @param WP_Post $post Post being edited.
+ */
+function bridge_simple_editor_subtitle_field($post): void
+{
+	$post_type = $post instanceof WP_Post ? (string) $post->post_type : '';
+
+	if (! bridge_post_type_has_subtitle($post_type)) {
+		return;
+	}
+
+	$value = (string) get_post_meta($post->ID, BRIDGE_ITEM_SUBTITLE_KEY, true);
+
+	wp_nonce_field('bridge_item_subtitle', 'bridge_item_subtitle_nonce');
+	?>
+	<div class="bridge-simple-editor__subtitle">
+		<label class="bridge-simple-editor__label" for="bridge-item-subtitle"><?php esc_html_e('Subtitle', 'bridge'); ?></label>
+		<input
+			type="text"
+			id="bridge-item-subtitle"
+			name="bridge_item_subtitle"
+			class="large-text"
+			value="<?php echo esc_attr($value); ?>"
+			autocomplete="off"
+			aria-describedby="bridge-item-subtitle-help"
+		/>
+		<p class="description" id="bridge-item-subtitle-help">
+			<?php esc_html_e('Optional. A short line shown above the title.', 'bridge'); ?>
+		</p>
+	</div>
+	<?php
+}
+add_action('edit_form_after_title', 'bridge_simple_editor_subtitle_field', 5);
+
+/**
+ * Save the subtitle field. The nonce rule is bridge_save_item_link()'s.
+ *
+ * @param int $post_id Post being saved.
+ */
+function bridge_save_item_subtitle(int $post_id): void
+{
+	if (! isset($_POST['bridge_item_subtitle_nonce'])
+		|| ! wp_verify_nonce(sanitize_key(wp_unslash($_POST['bridge_item_subtitle_nonce'])), 'bridge_item_subtitle')
+	) {
+		return;
+	}
+
+	if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+		return;
+	}
+
+	if (! bridge_post_type_has_subtitle((string) get_post_type($post_id)) || ! current_user_can('edit_post', $post_id)) {
+		return;
+	}
+
+	$subtitle = sanitize_text_field(wp_unslash($_POST['bridge_item_subtitle'] ?? '')); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized — sanitised here.
+
+	if ('' === $subtitle) {
+		delete_post_meta($post_id, BRIDGE_ITEM_SUBTITLE_KEY);
+	} else {
+		update_post_meta($post_id, BRIDGE_ITEM_SUBTITLE_KEY, $subtitle);
+	}
+}
+add_action('save_post', 'bridge_save_item_subtitle');
+
+/**
+ * Cards carry the subtitle as `eyebrow`, which every style prints above the
+ * title. Not `subtitle`: that key is the line *under* a name — Team's role —
+ * and the two can both be wanted on one card.
+ *
+ * @param array   $card The card record.
+ * @param WP_Post $post The post it was built from.
+ * @return array
+ */
+function bridge_card_data_item_subtitle($card, $post)
+{
+	if (is_array($card) && $post instanceof WP_Post) {
+		$card['eyebrow'] = bridge_item_subtitle((int) $post->ID);
+	}
+
+	return $card;
+}
+add_filter('bridge_card_data', 'bridge_card_data_item_subtitle', 10, 2);

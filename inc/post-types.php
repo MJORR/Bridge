@@ -162,6 +162,94 @@ function bridge_post_type_limit(): int
 }
 
 /**
+ * The menu icons an operator may give a declared type.
+ *
+ * A list rather than any Dashicon name, because the sanitiser has to be able
+ * to say no: a typo stored as `menu_icon` draws an empty square in the sidebar
+ * with nothing to say why. Sent to the options page too, so the picker offers
+ * exactly what the server will keep.
+ *
+ * @return string[] Dashicon class names.
+ */
+function bridge_post_type_icons(): array
+{
+	return array(
+		'dashicons-portfolio',
+		'dashicons-editor-help',
+		'dashicons-admin-post',
+		'dashicons-admin-page',
+		'dashicons-media-document',
+		'dashicons-format-gallery',
+		'dashicons-format-image',
+		'dashicons-format-video',
+		'dashicons-format-audio',
+		'dashicons-format-quote',
+		'dashicons-format-status',
+		'dashicons-groups',
+		'dashicons-admin-users',
+		'dashicons-businessperson',
+		'dashicons-id',
+		'dashicons-building',
+		'dashicons-store',
+		'dashicons-location',
+		'dashicons-location-alt',
+		'dashicons-calendar-alt',
+		'dashicons-clock',
+		'dashicons-megaphone',
+		'dashicons-testimonial',
+		'dashicons-star-filled',
+		'dashicons-awards',
+		'dashicons-heart',
+		'dashicons-thumbs-up',
+		'dashicons-products',
+		'dashicons-cart',
+		'dashicons-tag',
+		'dashicons-money-alt',
+		'dashicons-chart-bar',
+		'dashicons-clipboard',
+		'dashicons-book',
+		'dashicons-book-alt',
+		'dashicons-welcome-learn-more',
+		'dashicons-lightbulb',
+		'dashicons-hammer',
+		'dashicons-admin-tools',
+		'dashicons-admin-home',
+		'dashicons-palmtree',
+		'dashicons-car',
+		'dashicons-food',
+		'dashicons-coffee',
+		'dashicons-pets',
+		'dashicons-microphone',
+		'dashicons-art',
+		'dashicons-camera',
+		'dashicons-shield',
+		'dashicons-sos',
+	);
+}
+
+/**
+ * The menu icon a declared type is drawn with.
+ *
+ * The operator's choice when it is one the theme offers, otherwise the
+ * default that follows `hasPages` — a briefcase for a type with pages, a
+ * question mark for block-only material, which is what FAQs usually are.
+ *
+ * @param array $entry One declared type.
+ */
+function bridge_post_type_icon(array $entry): string
+{
+	$icon = (string) ($entry['icon'] ?? '');
+
+	if (in_array($icon, bridge_post_type_icons(), true)) {
+		return $icon;
+	}
+
+	$has_pages = ! isset($entry['hasPages']) || ! empty($entry['hasPages']);
+
+	return $has_pages ? 'dashicons-portfolio' : 'dashicons-editor-help';
+}
+
+/**
  * Slugs an operator may not take.
  *
  * Three groups, and all three fail differently:
@@ -414,6 +502,19 @@ function bridge_post_type_args(array $entry, int $index = 0): array
 	// switch existed described a public type.
 	$has_pages = ! isset($entry['hasPages']) || ! empty($entry['hasPages']);
 
+	// A pageless type can ask for a featured image back, for a block that
+	// draws one (a project logo, a team photo). A type with pages has one
+	// regardless, so the switch only ever adds.
+	$has_image = $has_pages || ! empty($entry['hasImage']);
+
+	$supports = $has_pages
+		? array('title', 'editor', 'excerpt', 'thumbnail', 'revisions', 'page-attributes')
+		: array('title', 'editor', 'revisions', 'page-attributes');
+
+	if ($has_image && ! in_array('thumbnail', $supports, true)) {
+		array_splice($supports, 2, 0, 'thumbnail');
+	}
+
 	return array(
 		'labels'              => array(
 			'name'                  => $plural,
@@ -469,7 +570,7 @@ function bridge_post_type_args(array $entry, int $index = 0): array
 		// the FAQs block reads to list its questions in the editor.
 		'show_in_rest'        => true,
 		'hierarchical'        => false,
-		'menu_icon'           => $has_pages ? 'dashicons-portfolio' : 'dashicons-editor-help',
+		'menu_icon'           => bridge_post_type_icon($entry),
 		// Below Pages (20) and above Comments (25), so declared types read as
 		// content rather than as settings. Spaced by their position in the
 		// record, so several of them keep the order the operator put them in
@@ -488,14 +589,13 @@ function bridge_post_type_args(array $entry, int $index = 0): array
 		// viewable post types, so it never sees a pageless type either.
 		//
 		// That is what makes writing an FAQ two fields: a question and an
-		// answer, with nothing else on the screen to fill in for nobody.
+		// answer, with nothing else on the screen to fill in for nobody —
+		// unless the type's Featured image switch puts the image back.
 		//
 		// Still no `custom-fields` on either: it turns on the meta panel and
 		// the meta REST surface, neither of which a locked-down brochure site
 		// has a use for.
-		'supports'            => $has_pages
-			? array('title', 'editor', 'excerpt', 'thumbnail', 'revisions', 'page-attributes')
-			: array('title', 'editor', 'revisions', 'page-attributes'),
+		'supports'            => $supports,
 		// A type with no pages has no URLs, so it has no rewrite rules and no
 		// query variable. Leaving either in place would keep `?faq=slug`
 		// resolving to a page the theme never designed.

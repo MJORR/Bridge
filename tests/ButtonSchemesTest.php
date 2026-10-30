@@ -60,6 +60,8 @@ final class ButtonSchemesTest extends BridgeTestCase
 			'hoverBorder',
 			'ghost',
 			'ghostHover',
+			'block',
+			'blockFg',
 			'ring',
 			'audit',
 		);

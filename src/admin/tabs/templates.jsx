@@ -227,6 +227,17 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					)}
 				/>
 
+				<LogoPicker
+					label={__('Favicon', 'bridge')}
+					value={header.logo.faviconId}
+					onChange={(id) => setHeader('logo.faviconId', id)}
+					types={['image/png', 'image/svg+xml']}
+					help={__(
+						'The icon in the browser tab, as a PNG or SVG. A square image of at least 512px works best. Optional — without one the WordPress Site Icon is used.',
+						'bridge'
+					)}
+				/>
+
 				<RangeControl
 					label={__('Logo height (px)', 'bridge')}
 					value={header.logo.height}

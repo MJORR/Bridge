@@ -1081,10 +1081,22 @@ export function ButtonSkinPicker({ skins, active, scheme, onChange }) {
 						className="bridge-button-skin__sample"
 						style={{ ...skinVars(skin), ...groundVars(scheme) }}
 					>
-						<span className="bridge-button-sample">
+						<span
+							className={
+								skin.slug === 'block'
+									? 'bridge-button-sample bridge-button-sample--block'
+									: 'bridge-button-sample'
+							}
+						>
 							{__('Get in touch', 'bridge')}
 						</span>
-						<span className="bridge-button-sample bridge-button-sample--ghost">
+						<span
+							className={
+								skin.slug === 'block'
+									? 'bridge-button-sample bridge-button-sample--ghost bridge-button-sample--block-outline'
+									: 'bridge-button-sample bridge-button-sample--ghost'
+							}
+						>
 							{__('Learn more', 'bridge')}
 						</span>
 					</span>
@@ -1112,7 +1124,7 @@ export function ButtonSkinPicker({ skins, active, scheme, onChange }) {
  *
  * @param {Object} props Component props.
  */
-export function ButtonPreview({ grounds, schemes, custom, palette }) {
+export function ButtonPreview({ grounds, schemes, custom, palette, skin }) {
 	const color = (slug) => palette?.find((c) => c.slug === slug)?.color;
 
 	return (
@@ -1141,10 +1153,24 @@ export function ButtonPreview({ grounds, schemes, custom, palette }) {
 						</span>
 
 						<span className="bridge-preview__button-row">
-							<span className="bridge-button-sample">
-								{__('Solid', 'bridge')}
+							<span
+								className={
+									skin === 'block'
+										? 'bridge-button-sample bridge-button-sample--block'
+										: 'bridge-button-sample'
+								}
+							>
+								{skin === 'block'
+									? __('Block', 'bridge')
+									: __('Solid', 'bridge')}
 							</span>
-							<span className="bridge-button-sample bridge-button-sample--ghost">
+							<span
+								className={
+									skin === 'block'
+										? 'bridge-button-sample bridge-button-sample--ghost bridge-button-sample--block-outline'
+										: 'bridge-button-sample bridge-button-sample--ghost'
+								}
+							>
 								{__('Outline', 'bridge')}
 							</span>
 						</span>

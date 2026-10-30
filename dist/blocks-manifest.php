@@ -406,6 +406,16 @@ return array(
 				'type' => 'string',
 				'default' => '',
 			),
+			'linkStyle' => array(
+				'type' => 'string',
+				'enum' => array(
+					'',
+					'text',
+					'button',
+					'outline',
+				),
+				'default' => '',
+			),
 		),
 		'example' => array(
 			'attributes' => array(

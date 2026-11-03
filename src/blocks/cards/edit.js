@@ -74,6 +74,13 @@ const ORDERBY_OPTIONS = [
 	{ label: __('Random', 'bridge'), value: 'rand' },
 ];
 
+// Offered only for a post type with no archive that has the Order field —
+// see `hasCustomOrder` in Edit.
+const CUSTOM_ORDER_OPTION = {
+	label: __('Custom order', 'bridge'),
+	value: 'menu_order',
+};
+
 const ORDER_OPTIONS = [
 	{ label: __('Descending', 'bridge'), value: 'desc' },
 	{ label: __('Ascending', 'bridge'), value: 'asc' },
@@ -295,6 +302,26 @@ const Edit = ({ attributes, setAttributes }) => {
 			.map((t) => ({ label: t.name, value: t.slug }));
 	}, []);
 
+	// Custom order is the Order number on each entry's edit screen. It is
+	// offered for a type with no archive of its own — a pageless type such as
+	// Projects, whose only listing is a block like this one — and only where
+	// the type has that field to fill in.
+	const hasCustomOrder = useSelect(
+		(select) => {
+			const type = select('core').getPostType(postType);
+			return (
+				!!type &&
+				!type.has_archive &&
+				!!type.supports?.['page-attributes']
+			);
+		},
+		[postType]
+	);
+
+	const orderByOptions = hasCustomOrder
+		? [CUSTOM_ORDER_OPTION, ...ORDERBY_OPTIONS]
+		: ORDERBY_OPTIONS;
+
 	// Category list — only fetched when we need it (postType === 'post').
 	const availableCategories = useSelect(
 		(select) =>
@@ -435,7 +462,17 @@ const Edit = ({ attributes, setAttributes }) => {
 					value: postType,
 					options: postTypeOptions,
 					onChange: (value) =>
-						setAttributes({ postType: value, categories: [] }),
+						setAttributes({
+							postType: value,
+							categories: [],
+							// Custom order belongs to the type it was chosen
+							// for. Moving to another type puts the default back
+							// rather than leaving a sort the panel no longer
+							// offers.
+							...(orderBy === 'menu_order'
+								? { orderBy: 'date', order: 'desc' }
+								: {}),
+						}),
 				}),
 			source !== 'main' &&
 				el(RangeControl, {
@@ -450,8 +487,15 @@ const Edit = ({ attributes, setAttributes }) => {
 				el(SelectControl, {
 					label: __('Order by', 'bridge'),
 					value: orderBy,
-					options: ORDERBY_OPTIONS,
-					onChange: (value) => setAttributes({ orderBy: value }),
+					options: orderByOptions,
+					// Custom order reads 1, 2, 3 from the top, so it starts
+					// ascending. The Order control can still flip it.
+					onChange: (value) =>
+						setAttributes(
+							value === 'menu_order'
+								? { orderBy: value, order: 'asc' }
+								: { orderBy: value }
+						),
 				}),
 			source !== 'main' &&
 				el(SelectControl, {

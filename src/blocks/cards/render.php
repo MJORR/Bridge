@@ -196,9 +196,20 @@ $orderby_map = array(
 	'title'         => 'title',
 	'modified_date' => 'modified',
 	'rand'          => 'rand',
+	'menu_order'    => 'menu_order',
 );
 $orderby_key = $orderby_map[ $order_by ] ?? 'date';
 $order       = in_array( $order, array( 'ASC', 'DESC' ), true ) ? $order : 'DESC';
+
+// Custom order: the Order number set on each entry's edit screen. Posts that
+// share a number fall back to title, so the result is stable rather than
+// whatever order the database returns them in.
+if ( 'menu_order' === $orderby_key ) {
+	$orderby_key = array(
+		'menu_order' => $order,
+		'title'      => 'ASC',
+	);
+}
 
 // ---- The band ----------------------------------------------------------
 // The grid keeps its own class rather than being styled through the

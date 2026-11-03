@@ -633,15 +633,16 @@
 }
 
 /**
- * The one thing that differs: the colour, on every other row starting with the
- * first.
+ * The one thing that differs: the colour, on every other row.
  *
- * `odd`, not `even`: the list is striped from the top rather than carrying an
+ * Shaded alone, `odd`: the list is striped from the top rather than carrying an
  * accent that happens to land on row two, and a three-row list reads
- * shaded-plain-shaded rather than the other way about. With **Alternate the
- * sides** on as well the two fall into step — the shaded rows all take the
- * picture on one side and the plain rows on the other — which is a rhythm
- * rather than a coincidence, and worth knowing before both switches go on.
+ * shaded-plain-shaded rather than the other way about.
+ *
+ * With **Alternate the sides** on as well, `even`: the first row is plain and
+ * the shading starts on row two. The two switches stay in step either way —
+ * the shaded rows all take the picture on one side and the plain rows on the
+ * other — and here the shaded rows are the ones that flip.
  *
  * ---- A wash, not a colour ----------------------------------------------------
  *
@@ -667,7 +668,8 @@
  * foreground, so this is the right dark on a light band and the right light on
  * a dark one, from one declaration.
  */
-.bridge-cards-grid.is-contrast .post-card--list:nth-child(odd) {
+.bridge-cards-grid.is-contrast:not(.is-alternate) .post-card--list:nth-child(odd),
+.bridge-cards-grid.is-contrast.is-alternate .post-card--list:nth-child(even) {
 	background-color: color-mix(
 		in srgb,
 		currentcolor var(--bridge-list-shade, 12%),

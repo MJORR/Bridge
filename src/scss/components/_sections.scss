@@ -55,6 +55,19 @@
 }
 
 /**
+ * A page that ends on a full-width band meets the footer.
+ *
+ * The content region's bottom padding is the air between the last line of
+ * text and the footer. When the last block is a full-width section, that band
+ * already carries its own padding, so the region's padding only added a strip
+ * of page background between a coloured section and the footer. The top-edge
+ * version of this rule is in blocks/_page-title.scss, for no-title pages.
+ */
+.bridge-content:has(> .alignfull:last-child) {
+	padding-block-end: 0;
+}
+
+/**
  * The air a full-bleed hero owes whatever follows it.
  *
  * The other half of the paragraph above. A standard page opens with the title

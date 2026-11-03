@@ -208,7 +208,7 @@
 	}
 
 	&:hover::after,
-	&:focus-visible::after {
+	&:focus-visible:not([contenteditable])::after {
 		transform: scaleX(1);
 	}
 
@@ -219,8 +219,14 @@
 	 * radius, survives a forced-colours mode, and cannot be clipped by an
 	 * ancestor's overflow. The offset is what keeps the ring measurable
 	 * against the band rather than against the button's own edge.
+	 *
+	 * Every `:focus-visible` in this file skips `[contenteditable]`. In the
+	 * editor the button's label is a contenteditable field, and a focused
+	 * editable element always matches `:focus-visible`, so typing in a button
+	 * drew this ring and the hover state around it. On the site a button is
+	 * never editable, so nothing changes there.
 	 */
-	&:focus-visible {
+	&:focus-visible:not([contenteditable]) {
 		outline: 3px solid
 			var(
 				--bridge-button-ring,
@@ -351,7 +357,7 @@
 	}
 
 	&:hover,
-	&:focus-visible {
+	&:focus-visible:not([contenteditable]) {
 		/**
 		 * The box under the climbing layer.
 		 *
@@ -418,7 +424,7 @@
  */
 @mixin wash {
 	&:hover,
-	&:focus-visible {
+	&:focus-visible:not([contenteditable]) {
 		background-image: linear-gradient(
 			color-mix(in srgb, currentcolor 12%, transparent),
 			color-mix(in srgb, currentcolor 12%, transparent)
@@ -456,7 +462,7 @@
 	);
 
 	&:hover,
-	&:focus-visible {
+	&:focus-visible:not([contenteditable]) {
 		background-color: var(
 			--bridge-button-ghost,
 			var(--wp--custom--button--on-default--ghost)
@@ -569,7 +575,7 @@
 	}
 
 	&:hover,
-	&:focus-visible {
+	&:focus-visible:not([contenteditable]) {
 		background-color: var(--bridge-block-rest-bg);
 		border-color: var(--bridge-block-ink);
 		box-shadow: none;

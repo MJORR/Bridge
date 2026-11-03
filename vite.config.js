@@ -409,6 +409,10 @@ export default defineConfig(({ mode }) => ({
 					'src/editor/top-level-only.js'
 				),
 				'band-mask': resolve(__dirname, 'src/editor/band-mask.js'),
+				'empty-buttons': resolve(
+					__dirname,
+					'src/editor/empty-buttons.js'
+				),
 				inspector: resolve(__dirname, 'src/scss/inspector.scss'),
 				'options-app': resolve(__dirname, 'src/admin/options-app.jsx'),
 				'site-options': resolve(__dirname, 'src/admin/site-options.js'),

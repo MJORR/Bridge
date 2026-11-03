@@ -68,6 +68,7 @@ require_once get_theme_file_path('inc/activation.php');
 require_once get_theme_file_path('inc/capabilities.php');
 require_once get_theme_file_path('inc/lockdown.php');
 require_once get_theme_file_path('inc/svg.php');
+require_once get_theme_file_path('inc/login-logo.php');
 require_once get_theme_file_path('inc/site-options.php');
 require_once get_theme_file_path('inc/admin-page.php');
 require_once get_theme_file_path('inc/simple-editor.php');
@@ -1078,6 +1079,17 @@ function bridge_enqueue_editor_assets(): void
 		'top-level-only.js',
 		array(
 			'wp-hooks',
+		)
+	);
+
+	// Deleting the last button in a Buttons row deletes the row too, rather
+	// than leaving an empty box behind. See src/editor/empty-buttons.js.
+	bridge_enqueue_script(
+		'bridge-empty-buttons',
+		'empty-buttons.js',
+		array(
+			'wp-data',
+			'wp-block-editor',
 		)
 	);
 

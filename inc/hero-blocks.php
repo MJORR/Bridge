@@ -1454,3 +1454,31 @@ function bridge_hero_strip_bare_align(string $open_tag): string
 
 	return $processor->get_updated_html();
 }
+
+/**
+ * A button with nothing in it renders nothing.
+ *
+ * The hero seeds a Buttons block with one button. Leaving that button blank, or
+ * deleting it, still prints its wrapper — an empty `.wp-block-button` or an
+ * empty `.wp-block-buttons` — and the empty box takes a gap in the content
+ * stack like any other child. Site-wide rather than hero-only: an empty button
+ * wrapper is never wanted anywhere, and a render filter cannot see its parent.
+ *
+ * "Nothing" means no visible text and no image or icon.
+ *
+ * @param string $block_content Rendered block HTML.
+ * @return string The same HTML, or '' when it holds nothing to show.
+ */
+function bridge_drop_empty_buttons(string $block_content): string
+{
+	if (preg_match('/<(img|svg)\b/i', $block_content)) {
+		return $block_content;
+	}
+
+	$text = html_entity_decode(wp_strip_all_tags($block_content), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+	$text = trim(str_replace("\u{00A0}", ' ', $text));
+
+	return '' === $text ? '' : $block_content;
+}
+add_filter('render_block_core/button', 'bridge_drop_empty_buttons');
+add_filter('render_block_core/buttons', 'bridge_drop_empty_buttons');

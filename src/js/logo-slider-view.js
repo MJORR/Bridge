@@ -89,21 +89,27 @@ const setWidth = (row) => {
 };
 
 /**
- * Decide whether one row travels.
+ * Decide whether each row travels.
  *
- * @param {HTMLElement} row The row element.
+ * Every row is measured first and every class written after. Writing one row's
+ * class before measuring the next would dirty the layout between the two reads
+ * and force the browser to lay the page out again, once per row.
+ *
+ * @param {HTMLElement[]} list The rows to settle.
  */
-const apply = (row) => {
+const applyAll = (list) => {
 	// clientWidth, not the bounding rect: the row is what clips the logos, and
 	// its transform-free content box is the space they actually have.
-	row.classList.toggle(STATIC, setWidth(row) <= row.clientWidth + SLACK);
+	const fits = list.map((row) => setWidth(row) <= row.clientWidth + SLACK);
+
+	list.forEach((row, i) => row.classList.toggle(STATIC, fits[i]));
 };
 
 const rows = [];
 let queued = false;
 
-// Resizing fires continuously; the measurement only has to be right once the
-// window has stopped moving, and a frame is a cheap way to say so.
+// For the window `resize` fallback and the `load` event: a frame batches a
+// burst of them into one measurement.
 const schedule = () => {
 	if (queued) {
 		return;
@@ -112,7 +118,7 @@ const schedule = () => {
 	queued = true;
 	window.requestAnimationFrame(() => {
 		queued = false;
-		rows.forEach(apply);
+		applyAll(rows);
 	});
 };
 
@@ -124,17 +130,22 @@ const init = () => {
 	}
 
 	rows.push(...found);
-	rows.forEach(apply);
 
 	if (typeof window.ResizeObserver === 'function') {
 		// The row, not the window: a row narrows when the window does, but it
 		// also narrows when a sidebar opens or the page's own container
 		// changes, and none of those are resize events.
-		const observer = new window.ResizeObserver(schedule);
+		//
+		// No measurement at start-up: an observer reports every row once as
+		// soon as it is observed, and it reports after the browser has done
+		// its own layout, so reading sizes there costs nothing extra. Measuring
+		// straight away instead is what PageSpeed flags as a forced reflow.
+		const observer = new window.ResizeObserver(() => applyAll(rows));
 
 		rows.forEach((row) => observer.observe(row));
 	} else {
 		window.addEventListener('resize', schedule);
+		schedule();
 	}
 
 	// The logos ship with width and height attributes, so the row is already

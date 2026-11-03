@@ -470,13 +470,17 @@ function initNavCollapse() {
 		requestAnimationFrame(sync);
 	};
 
-	new ResizeObserver(schedule).observe(row);
+	// Run straight from the observer rather than a frame later. The observer
+	// fires after the browser has laid the page out, so the sizes `sync` reads
+	// are already known. By the next frame something else may have changed
+	// the page, and reading then makes the browser lay it out again first.
+	// It also reports the row once when observing starts, which is what takes
+	// the place of measuring during start-up.
+	new ResizeObserver(sync).observe(row);
 
 	// A font that swaps late changes what the menu needs without changing the
 	// size of anything the observer is watching.
 	document.fonts?.ready.then(schedule);
-
-	sync();
 }
 
 function initHeader() {

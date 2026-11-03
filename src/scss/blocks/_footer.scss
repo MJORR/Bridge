@@ -27,6 +27,28 @@
 		--bridge-footer-bg,
 		var(--wp--preset--color--surface)
 	);
+
+	/*
+	 * Not drawn until it is near the screen.
+	 *
+	 * The footer is below the fold on every page that has content, and the
+	 * browser skips laying out and painting it until it scrolls close. Fonts
+	 * only download for text that is drawn, so the tagline's script face
+	 * (Caveat, used nowhere else) leaves the page-load critical path, which
+	 * PageSpeed flagged.
+	 *
+	 * `contain-intrinsic-size` is the height held for the footer while it is
+	 * skipped, so the scrollbar does not jump when it is drawn. `auto` makes the
+	 * browser remember the real height once it has been drawn, so the
+	 * estimate only matters the first time.
+	 *
+	 * The cost: this also clips anything painted outside the footer's box.
+	 * Everything in it, swoosh and image layer included, is positioned inside
+	 * the footer, so nothing is lost today. A future flyout or drop-down that
+	 * hangs out of the footer would need this rule taken off.
+	 */
+	content-visibility: auto;
+	contain-intrinsic-size: auto 600px;
 }
 
 /**

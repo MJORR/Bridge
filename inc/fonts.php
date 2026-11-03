@@ -678,6 +678,20 @@ function bridge_preload_fonts(): void
 		),
 	);
 
+	// Buttons are set in the body family at the button skin's own weight, and
+	// the header's call to action and the hero's button are above the fold. So
+	// the body family at that weight is a third face, unless it is already 400.
+	$skins       = bridge_button_skins();
+	$skin        = $skins[$tokens['buttons']['skin'] ?? ''] ?? reset($skins);
+	$button_wght = (int) ($skin['weight'] ?? 400);
+
+	if (400 !== $button_wght) {
+		$roles[] = array(
+			'family'  => (string) ($type['googleBody'] ?? ''),
+			'weights' => array($button_wght),
+		);
+	}
+
 	$seen = array();
 
 	foreach ($roles as $role) {

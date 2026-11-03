@@ -193,6 +193,50 @@ add_action('after_setup_theme', 'bridge_button_block_editor_style', 20);
 add_filter('should_load_separate_core_block_assets', '__return_true');
 
 /**
+ * Room for the navigation block's stylesheet in the inline budget.
+ *
+ * Core writes small block stylesheets into the page instead of linking them,
+ * smallest first, until 40KB is spent. A typical Bridge page spends about 25KB
+ * on its other blocks, which leaves no room for the navigation block's 21KB —
+ * so the one block on every page, in the header, was the one linked as a
+ * render-blocking request. 60KB fits it with room to spare (about 3KB more of
+ * compressed HTML). main.css, at over 100KB, stays a cached file either way.
+ */
+add_filter(
+	'styles_inline_size_limit',
+	static fn(): int => 60000
+);
+
+/**
+ * Lighter WebP and JPEG resizes.
+ *
+ * Core saves WebP at quality 86 and JPEG at 82. For photographs, and a hero is
+ * almost always a photograph filling the window, that is well past the point
+ * where anyone can see a difference, and it is the largest file on the page.
+ * At 86 the hero's 768px WebP came out at 94KB; PageSpeed put two thirds of
+ * that down to compression alone.
+ *
+ * Applies to sizes WordPress generates from now on. Existing uploads keep their
+ * files until their sizes are regenerated (`wp media regenerate`).
+ *
+ * @param int    $quality   Quality core would use.
+ * @param string $mime_type Mime type being saved.
+ * @return int
+ */
+add_filter(
+	'wp_editor_set_quality',
+	static function (int $quality, string $mime_type = ''): int {
+		return match ($mime_type) {
+			'image/webp' => 72,
+			'image/jpeg' => 75,
+			default      => $quality,
+		};
+	},
+	10,
+	2
+);
+
+/**
  * Register a compiled script from /dist, if the build produced it.
  *
  * Every script this theme loads is a Vite artefact, versioned by its own

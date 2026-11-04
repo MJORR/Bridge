@@ -1434,6 +1434,10 @@ function bridge_token_constraints(): array
 		'posts'      => array(
 			'template' => array('options' => array_keys(bridge_post_templates())),
 			'image'    => array('options' => array_keys(bridge_post_image_shapes())),
+			// The tallest the Cover band may stand, as a share of the window
+			// height. Below ~20vh the headline has no photograph left around
+			// it; at 100 the article starts entirely below the fold.
+			'coverMaxHeight' => array('min' => 20, 'max' => 100, 'step' => 1, 'unit' => 'vh'),
 		),
 		'header'     => array(
 			// Every layout stacks or rows the same two elements; none puts the
@@ -1441,6 +1445,11 @@ function bridge_token_constraints(): array
 			// can hold as a client's services grow.
 			'layout'       => array('options' => array('left', 'centre', 'two-row')),
 			'contrast'     => array('options' => array('auto', 'light', 'dark')),
+			// The primary menu's type size, as a font-size preset slug. Only the
+			// two steps that read as a menu bar: `small` is what the header has
+			// always used, `medium` matches body copy. The top bar is not offered
+			// this — it stays at `small` as the quieter of the two menus.
+			'navFontSize'  => array('options' => array('small', 'medium')),
 			'logoHeight'   => array('min' => 16, 'max' => 120, 'step' => 2, 'unit' => 'px'),
 			// 0 is a header whose logo touches the edges of its ground — flush
 			// is a legitimate look, so it is a legitimate value. Above ~80 the
@@ -1622,6 +1631,9 @@ function bridge_token_defaults(): array
 			// theme drew before this was a setting, so a site that never opens
 			// the control keeps the picture it had.
 			'image'      => 'rounded',
+			// The Cover band's height, in vh. 52 is the share of the window
+			// the stylesheet aimed for before this was a setting.
+			'coverMaxHeight' => 52,
 			// Whether a single post sits on `surface` rather than on the page
 			// colour every other template uses. Off, because the page colour
 			// is what the theme drew before this was a setting.
@@ -1701,6 +1713,10 @@ function bridge_token_defaults(): array
 				// stays stored either way, so turning it back on restores the
 				// colour that was chosen rather than the default.
 				'accentEnabled' => true,
+				// The primary menu's font-size preset. `small` is what the
+				// header hard-coded before this was a setting. The top bar is
+				// not governed by it.
+				'fontSize'      => 'small',
 			),
 		),
 		'footer'     => array(
@@ -2464,6 +2480,17 @@ function bridge_sanitize_tokens(array $raw): array
 			$raw_posts['image'] ?? '',
 			$defaults['posts']['image']
 		),
+		// Briefly stored in pixels (240–960) before it became vh. Anything
+		// above 100 can only be one of those, so it falls to the default
+		// rather than being clamped to a full-window band.
+		'coverMaxHeight' => (int) round(bridge_clamp_token(
+			'posts',
+			'coverMaxHeight',
+			(is_numeric($raw_posts['coverMaxHeight'] ?? null) && (float) $raw_posts['coverMaxHeight'] <= 100)
+				? $raw_posts['coverMaxHeight']
+				: null,
+			(float) $defaults['posts']['coverMaxHeight']
+		)),
 		// Cast rather than defaulted, the way `site.feeds` is: this one
 		// defaults to *off*, so "missing" and "off" are the same answer and
 		// there is nothing for a fallback to disambiguate.
@@ -2544,6 +2571,13 @@ function bridge_sanitize_tokens(array $raw): array
 	$nav['accentEnabled'] = isset($raw_nav['accentEnabled'])
 		? (bool) $raw_nav['accentEnabled']
 		: (bool) $defaults['header']['nav']['accentEnabled'];
+
+	$nav['fontSize'] = bridge_pick_token(
+		'header',
+		'navFontSize',
+		$raw_nav['fontSize'] ?? '',
+		$defaults['header']['nav']['fontSize']
+	);
 
 	$header_bg = bridge_pick_palette_slug(
 		$raw_header['backgroundColor'] ?? null,

@@ -385,7 +385,13 @@ $bridge_cta_style = sprintf(
 ) . $bridge_cta_alt;
 
 $bridge_logo = bridge_header_logo( $bridge_header, $bridge_background );
-$bridge_nav  = bridge_header_nav( bridge_header_menu_id( 'primary' ), $bridge_justify );
+// The primary menu's size is a Theme Options choice; the top bar below keeps
+// its own fixed `small`.
+$bridge_nav  = bridge_header_nav(
+	bridge_header_menu_id( 'primary' ),
+	$bridge_justify,
+	array( 'fontSize' => (string) ( $bridge_header['nav']['fontSize'] ?? 'small' ) )
+);
 
 // The top bar renders only once it has a menu: an empty strip is worse than
 // no strip. The call to action is not part of it — there is one button, and

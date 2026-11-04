@@ -333,6 +333,22 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					__next40pxDefaultSize
 				/>
 
+				<SelectControl
+					label={__('Menu font size', 'bridge')}
+					value={header.nav.fontSize ?? 'small'}
+					options={[
+						{ label: __('Default', 'bridge'), value: 'small' },
+						{ label: __('Medium', 'bridge'), value: 'medium' },
+					]}
+					onChange={(value) => setHeader('nav.fontSize', value)}
+					help={__(
+						'The size of the main menu\u2019s items and their dropdowns. Default sits a step below body text; Medium matches it. The top bar is not affected.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+
 				<ToggleControl
 					label={__('Nav accent', 'bridge')}
 					checked={Boolean(header.nav.accentEnabled)}

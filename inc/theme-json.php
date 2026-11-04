@@ -789,6 +789,11 @@ function bridge_compile_theme_json(array $tokens): array
 				// the four grounds. components/_button.scss is the only thing
 				// that reads these; every button on the site goes through it.
 				'button'         => bridge_compile_button_custom($tokens),
+				// `--wp--custom--post--cover-max-height`, read by the Cover
+				// layout in blocks/_post.scss.
+				'post'           => array(
+					'coverMaxHeight' => (int) ($tokens['posts']['coverMaxHeight'] ?? 52) . 'vh',
+				),
 			),
 			'typography' => array(
 				'fontFamilies' => bridge_compile_font_families($type),

@@ -158,15 +158,28 @@ body.bridge-single--surface {
  * each, is also what makes the pair below correct; this one was written as one
  * and drew the trail 13px right of the headline it is supposed to label.
  *
- * Empty when the trail is switched off in Theme Options, or on any page whose
- * trail is a single step — `bridge/breadcrumb` renders nothing at all in both
- * cases. An empty div is zero-height but still a child of a constrained
- * `main`, which would spend a block gap on it, so it is taken out of the flow
- * entirely. `:has()` rather than `:empty`, which the template's own
- * indentation defeats: the wrapper always holds a whitespace text node.
+ * Not rendered at all when the trail is off or a single step —
+ * `bridge_drop_empty_article_crumbs()` drops the wrapper with the empty
+ * breadcrumb in it, so the head is then the first child of `main`.
+ *
+ * It carries the space under the header itself. A single post's `main` has no
+ * top margin (see below), so a trail that is there brings its own air and one
+ * that is not leaves none behind.
  */
-.bridge-article__crumbs:not(:has(.bridge-breadcrumb)) {
-	display: none;
+.bridge-article__crumbs {
+	margin-block-start: var(--wp--preset--spacing--40);
+}
+
+/**
+ * No gap above a single post's `main`.
+ *
+ * Core gives every child of `.wp-site-blocks` after the first a block gap
+ * through `:where(.wp-site-blocks) > *`, which put a strip of page ground
+ * between the header and the article. What sits under the header now decides
+ * the space itself: the trail above, or the head's own margin.
+ */
+.bridge-single .wp-site-blocks > main {
+	margin-block-start: 0;
 }
 
 .bridge-article__crumbs-inner {
@@ -296,6 +309,13 @@ body.bridge-single--surface {
  * cover at both ends.
  */
 .bridge-single--cover {
+	// With no trail above it, the band meets the header. The head's own
+	// `margin-block` outranks core's zero-specificity first-child reset, so it
+	// is cleared here. With a trail, the band follows it and keeps its air.
+	main > .bridge-article__head:first-child {
+		margin-block-start: 0;
+	}
+
 	// Bled, so no container — the photograph is the band.
 	.bridge-article__head-inner {
 		max-width: none;
@@ -304,7 +324,11 @@ body.bridge-single--surface {
 		display: grid;
 		// One named cell, and everything in it.
 		grid-template-areas: "cover";
-		min-height: clamp(20rem, 52vh, 34rem);
+		// Theme Options' "Cover maximum height", in vh. A minimum rather than a
+		// fixed height so a long headline can still stretch the row: the title
+		// is never clipped. The photograph is out of the flow (below), so this
+		// is the only thing that sizes the band.
+		min-height: var(--wp--custom--post--cover-max-height, 52vh);
 		position: relative;
 		isolation: isolate;
 
@@ -339,10 +363,15 @@ body.bridge-single--surface {
 		}
 	}
 
+	// Out of the flow, so the photograph's own proportions take no part in
+	// sizing the band. In flow it set the row to its natural height at full
+	// width — about 56vw for a 16:9 image — and the height cap above never
+	// came into play. Positioned against the inner column, which is already
+	// `position: relative`, so it still fills exactly the band.
 	.bridge-article__media {
+		position: absolute;
+		inset: 0;
 		z-index: 0;
-		align-self: stretch;
-		height: 100%;
 
 		img {
 			width: 100%;

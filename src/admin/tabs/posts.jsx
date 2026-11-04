@@ -26,11 +26,16 @@
 import { LayoutPicker, Section } from '../controls';
 import { PostTemplatePreview } from '../preview';
 
-const { ToggleControl } = wp.components;
+const { RangeControl, ToggleControl } = wp.components;
 const { __ } = wp.i18n;
 
 export function PostsTab({ draft, payload, setGroup }) {
-	const { postTemplates, postImages } = payload;
+	const { postTemplates, postImages, constraints } = payload;
+	const coverLimits = constraints?.posts?.coverMaxHeight || {
+		min: 20,
+		max: 100,
+		step: 1,
+	};
 
 	const current = draft.posts?.template || 'classic';
 	const image = draft.posts?.image || 'rounded';
@@ -74,6 +79,28 @@ export function PostsTab({ draft, payload, setGroup }) {
 							{entry.description}
 						</p>
 					))}
+
+				{/* Cover only: the other two layouts take their height from
+				 * the photograph or a fixed ratio, so there is nothing here
+				 * for them to cap. */}
+				{current === 'cover' && (
+					<RangeControl
+						label={__('Cover maximum height (vh)', 'bridge')}
+						value={draft.posts?.coverMaxHeight ?? 52}
+						min={coverLimits.min}
+						max={coverLimits.max}
+						step={coverLimits.step}
+						onChange={(value) =>
+							setGroup('posts', 'coverMaxHeight', value ?? 52)
+						}
+						help={__(
+							'How tall the photograph band stands, as a share of the window\u2019s height \u2014 50 is half the screen. The photograph is cropped to fill it. A very long headline can still push the band taller so that none of it is cut off.',
+							'bridge'
+						)}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+				)}
 			</Section>
 
 			{/*

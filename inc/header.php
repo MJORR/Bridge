@@ -880,6 +880,47 @@ function bridge_header_nav_items(string $nav): string
 }
 
 /**
+ * The search form as the last row of the mobile panel.
+ *
+ * Wherever the menu is a single button, the header row has no room left for
+ * the search icon beside the logo and the toggle — on a phone it wrapped onto
+ * a line of its own — so the icon is hidden there and the field lives in the
+ * panel instead, the one place a phone visitor is already looking for the
+ * site's controls. Built as a list item for the same reason the call to action
+ * is: the panel is a list core owns, and nothing outside it can be moved in.
+ *
+ * Marked `.bridge-nav__search` so the stylesheet can hide it in the menu bar,
+ * where the header's own icon is showing. It carries the term on a results
+ * page, as the header's field does.
+ *
+ * @param string $id The header instance's search id, so this field's id
+ *                   cannot collide with the header panel's.
+ */
+function bridge_header_nav_search(string $id): string
+{
+	$field = $id . '-menu-field';
+
+	return sprintf(
+		'<li class="wp-block-navigation-item bridge-nav__search">' .
+			'<form role="search" method="get" class="bridge-nav__search-form" action="%1$s">' .
+				'<label class="screen-reader-text" for="%2$s">%3$s</label>' .
+				'<div class="bridge-header__search-control">%4$s' .
+					'<input class="bridge-header__search-field" id="%2$s" type="search" name="s" value="%5$s" placeholder="%6$s" />' .
+				'</div>' .
+				'<button class="bridge-header__search-submit" type="submit">%7$s</button>' .
+			'</form>' .
+		'</li>',
+		esc_url(home_url('/')),
+		esc_attr($field),
+		esc_html__('Search this site', 'bridge'),
+		bridge_render_icon('search'),
+		esc_attr(get_search_query(false)),
+		esc_attr__('Search…', 'bridge'),
+		esc_html__('Search', 'bridge')
+	);
+}
+
+/**
  * Mark every row of a chunk of menu markup as belonging to the panel alone.
  *
  * The rows the panel borrows — the top bar's — are real items in the bar's own

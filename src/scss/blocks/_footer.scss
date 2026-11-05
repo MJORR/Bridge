@@ -408,11 +408,8 @@
 /**
  * The short description.
  *
- * A measure, not a column width. The identity column is the widest of the four
- * and at a large window its full width would set this paragraph at twelve or
- * thirteen words a line, which is past the point where the eye starts losing
- * its place returning to the left edge. 30ch holds it at roughly the four
- * lines the design draws.
+ * Fills the identity column at every width, so its right edge lines up with
+ * the logo and the rest of the column rather than stopping short of them.
  *
  * Slightly held back from the headings and links around it, because it is the
  * one piece of running prose in the footer and prose at full strength beside a
@@ -420,24 +417,9 @@
  */
 .bridge-footer__description {
 	margin: 0;
-	max-inline-size: 30ch;
 	font-size: var(--wp--preset--font-size--small);
 	line-height: 1.6;
 	opacity: 0.85;
-
-	// On a phone the column is already a comfortable measure, and 30ch left
-	// the paragraph stopping short of the menus' width under it.
-	@media (width < 34rem) {
-		max-inline-size: none;
-	}
-
-	// On a tablet the identity column spans the whole footer, and 30ch left
-	// the paragraph a narrow strip down the left of an empty row. 60ch is the
-	// ordinary reading measure: wide enough to use the row, short enough to
-	// read.
-	@media (34rem <= width < 68rem) {
-		max-inline-size: 60ch;
-	}
 }
 
 /**

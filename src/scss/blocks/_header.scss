@@ -2095,8 +2095,45 @@ body:has(.bridge-header--sticky.is-scrolled:not(.bridge-header--transparent)) {
 	 * can live with, and duplicating the search control to fix it would be a
 	 * worse trade.
 	 */
-	.bridge-header__search-toggle {
-		order: -1;
+	/**
+	 * No search icon here at all.
+	 *
+	 * A phone row cannot hold the logo, the toggle and the icon together — the
+	 * icon wrapped onto a line of its own under the logo — so the search moves
+	 * into the panel as its last row (bridge_header_nav_search()) and the icon
+	 * and the band it opens are both taken out of this row. The band goes too,
+	 * so a results page, which opens it by default, does not hang a field
+	 * under a header that no longer has a control to close it.
+	 */
+	.bridge-header__search-toggle,
+	.bridge-header__search-panel {
+		display: none;
+	}
+
+	/**
+	 * The logo gives way to the menu toggle rather than running under it.
+	 *
+	 * Drawn at its set height, a wide wordmark is wider than a phone's row
+	 * once the toggle has its 44px — and with `max-width: none` the drawing
+	 * spilled out of its box and under the button. Here it may shrink: the
+	 * anchor gives up its min-content floor, and the mark is capped at the
+	 * width it is given. The height stays the setting, so the row does not
+	 * change height; an inline SVG scales its drawing down inside that box
+	 * (its own `meet` fitting), and an <img> is held to its proportions by
+	 * `object-fit`, set flush left so it stays on the content edge.
+	 */
+	.bridge-header__row .bridge-header__logo {
+		min-width: 0;
+	}
+
+	.bridge-header__row .bridge-header__logo--dual {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.bridge-header__row .bridge-header__logo :where(img, svg) {
+		max-width: 100%;
+		object-fit: contain;
+		object-position: left center;
 	}
 }
 

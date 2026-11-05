@@ -502,6 +502,13 @@ if ( '' !== $bridge_top_nav ) {
 	);
 }
 
+// The search field, as the very last row of the mobile panel — where the menu
+// is a single button the header's own search icon is hidden, so this is the
+// search on a phone. See bridge_header_nav_search().
+if ( $bridge_search ) {
+	$bridge_nav = bridge_header_nav_append( $bridge_nav, bridge_header_nav_search( $bridge_search_id ) );
+}
+
 // The same class header.js toggles, written into the markup instead. The
 // stylesheet has one rule for an open panel and does not care which of the two
 // put the class there.

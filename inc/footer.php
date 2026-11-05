@@ -82,6 +82,29 @@ function bridge_footer_menu_id(string $slot): int
 }
 
 /**
+ * A footer heading: the operator's wording from Theme Options, or the theme's.
+ *
+ * Stored empty until someone types one (see the `footer.labels` defaults), so
+ * the theme's own words stay translatable for every site that never changes
+ * them. A label of only spaces counts as empty — the sanitiser trims it.
+ *
+ * @param string $slot `explore`, `services`, `contact` or `legal`.
+ */
+function bridge_footer_label(string $slot): string
+{
+	$defaults = array(
+		'explore'  => __('Explore', 'bridge'),
+		'services' => __('Services', 'bridge'),
+		'contact'  => __('Get in touch', 'bridge'),
+		'legal'    => __('Legal', 'bridge'),
+	);
+
+	$label = trim((string) (bridge_get_tokens()['footer']['labels'][$slot] ?? ''));
+
+	return '' !== $label ? $label : (string) ($defaults[$slot] ?? '');
+}
+
+/**
  * One footer column's menu, rendered through core.
  *
  * A navigation block rather than a hand-built list, for the reason the header
@@ -411,8 +434,9 @@ function bridge_footer_contact(): string
 {
 	$address = bridge_site_option('address');
 	$phone   = bridge_site_option('phone');
+	$email   = sanitize_email(bridge_site_option('service_email'));
 
-	if ('' === $address && '' === $phone) {
+	if ('' === $address && '' === $phone && '' === $email) {
 		return '';
 	}
 
@@ -447,6 +471,31 @@ function bridge_footer_contact(): string
 				// A "number" with no digits in it is not one to dial, but it
 				// may still be something an operator meant to say.
 				: esc_html($phone)
+		);
+	}
+
+	// The customer service address, from Site Options, after the phone: the
+	// same order a letterhead runs in. `mailto:` so a tap opens the visitor's
+	// email app; antispambot() writes the address as entities, which reads
+	// the same to a person and slightly less plainly to a scraper.
+	//
+	// Not passed through esc_url()/esc_html(): both would re-encode the `&` of
+	// those entities and break the link. Safe without them, because
+	// sanitize_email() above has already reduced the address to the
+	// characters an email address may contain — none of which can close an
+	// attribute or open a tag — and antispambot() only adds numeric entities.
+	if ('' !== $email) {
+		$rows .= bridge_footer_contact_row(
+			bridge_render_icon('mail', array('size' => 'medium')),
+			sprintf(
+				'<a class="bridge-footer__contact-link" href="mailto:%s">%s</a>',
+				// Entities only in the link, not the `%xx` form antispambot()
+				// can also mix in: browsers decode entities before the URL is
+				// used, but not every email app decodes percent-escapes in the
+				// domain part of a `mailto:`.
+				antispambot($email), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — see above.
+				antispambot($email) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — see above.
+			)
 		);
 	}
 

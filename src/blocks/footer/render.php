@@ -179,21 +179,21 @@ $bridge_wrapper = get_block_wrapper_attributes(
 					// landmark's sections, and a screen-reader user listing the
 					// headings on a page should find "Explore" among them.
 					?>
-					<h2 class="bridge-footer__heading"><?php esc_html_e( 'Explore', 'bridge' ); ?></h2>
-					<?php echo bridge_footer_nav( $bridge_explore, __( 'Explore', 'bridge' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
+					<h2 class="bridge-footer__heading"><?php echo esc_html( bridge_footer_label( 'explore' ) ); ?></h2>
+					<?php echo bridge_footer_nav( $bridge_explore, bridge_footer_label( 'explore' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
 				</div>
 			<?php endif; ?>
 
 			<?php if ( $bridge_services > 0 ) : ?>
 				<div class="bridge-footer__col bridge-footer__col--menu">
-					<h2 class="bridge-footer__heading"><?php esc_html_e( 'Services', 'bridge' ); ?></h2>
-					<?php echo bridge_footer_nav( $bridge_services, __( 'Services', 'bridge' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
+					<h2 class="bridge-footer__heading"><?php echo esc_html( bridge_footer_label( 'services' ) ); ?></h2>
+					<?php echo bridge_footer_nav( $bridge_services, bridge_footer_label( 'services' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
 				</div>
 			<?php endif; ?>
 
 			<?php if ( $bridge_has_contact ) : ?>
 				<div class="bridge-footer__col bridge-footer__col--contact">
-					<h2 class="bridge-footer__heading"><?php esc_html_e( 'Get in touch', 'bridge' ); ?></h2>
+					<h2 class="bridge-footer__heading"><?php echo esc_html( bridge_footer_label( 'contact' ) ); ?></h2>
 					<?php echo $bridge_contact; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>
 					<?php echo $bridge_social; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>
 				</div>
@@ -204,7 +204,7 @@ $bridge_wrapper = get_block_wrapper_attributes(
 	<div class="bridge-footer__legal">
 		<div class="bridge-footer__legal-inner">
 			<p class="bridge-footer__copyright"><?php echo esc_html( bridge_footer_copyright() ); ?></p>
-			<?php echo bridge_footer_nav( $bridge_legal, __( 'Legal', 'bridge' ), 'horizontal' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
+			<?php echo bridge_footer_nav( $bridge_legal, bridge_footer_label( 'legal' ), 'horizontal' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
 		</div>
 	</div>
 </div>

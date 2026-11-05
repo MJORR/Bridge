@@ -290,6 +290,10 @@
 
 	@media (width >= 68rem) {
 		row-gap: var(--wp--preset--spacing--50);
+		// 2XL between the four columns, a step up from the XL the paired
+		// tablet layout keeps: four columns side by side need more air between
+		// them to read as separate lists.
+		column-gap: var(--wp--preset--spacing--70);
 		grid-template-columns: 1.7fr 1fr 1.15fr 1.35fr;
 	}
 }
@@ -316,6 +320,25 @@
 	flex-direction: column;
 	gap: var(--wp--preset--spacing--30);
 	min-width: 0;
+}
+
+/**
+ * In four columns, the identity column is never narrower than the logo.
+ *
+ * At 1.7fr of a 1088–1400px row the column came out a little short of a wide
+ * wordmark, and the logo was scaled down to fit — a footer logo visibly smaller
+ * than the header's. With the column's `min-width: 0` lifted, the grid's own
+ * automatic minimum keeps the track at least as wide as its content (the logo
+ * is the widest thing in it) and takes the difference from the three menu
+ * columns, which are lists and can spare it.
+ *
+ * After `.bridge-footer__col` on purpose: the two are one class each, so the
+ * later one wins.
+ */
+.bridge-footer__col--identity {
+	@media (width >= 68rem) {
+		min-width: auto;
+	}
 }
 
 // ---- Column one: the logo, the description and the strapline -------------
@@ -390,6 +413,14 @@
 	block-size: var(--bridge-footer-logo-height, 40px);
 	inline-size: auto;
 	max-inline-size: 100%;
+
+	// In four columns the column is sized to fit the logo (see
+	// `.bridge-footer__col--identity`), so the cap comes off and the mark is
+	// drawn at exactly the header's size. The cap stays below that, where the
+	// column is the width of the page and a phone may be narrower than the mark.
+	@media (width >= 68rem) {
+		max-inline-size: none;
+	}
 	// An SVG logo is written into the page rather than linked — see
 	// bridge_inline_svg() — so this class lands on an `<svg>` as often as on an
 	// `<img>`. An inline SVG is inline-level by default, which puts a
@@ -546,15 +577,16 @@
  * pending, so the line is never briefly set in the body face.
  *
  * Sized against the site's scale rather than in a fixed rem, so a client who
- * moves the base size moves this with it; `x-large` because a hand at body size
- * reads as a mistake rather than as a flourish. The leading is tight for the
+ * moves the base size moves this with it; `large` because a hand at body size
+ * reads as a mistake rather than as a flourish, and anything bigger shouts
+ * over the column it closes. The leading is tight for the
  * same reason — a script face carries its own descenders and ascenders, and
  * default leading opens a gap between two short lines that breaks them apart.
  */
 .bridge-footer__tagline-text {
 	display: block;
 	font-family: var(--wp--preset--font-family--script);
-	font-size: var(--wp--preset--font-size--x-large);
+	font-size: var(--wp--preset--font-size--large);
 	line-height: 1.15;
 	// The one piece of the footer that should read at full strength on the
 	// ground, unlike the description above it: it is a signature, not an

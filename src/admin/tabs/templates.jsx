@@ -35,6 +35,12 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 	const setFooterMenu = (slot, id) =>
 		setGroup('footer', 'menus', { ...draft.footer.menus, [slot]: id });
 
+	// Empty is a real value here, not a missing one: it means "the theme's own
+	// wording", which is what the placeholder shows.
+	const footerLabels = draft.footer.labels ?? {};
+	const setFooterLabel = (slot, value) =>
+		setGroup('footer', 'labels', { ...footerLabels, [slot]: value });
+
 	return (
 		<>
 			<Section
@@ -530,6 +536,21 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 
 				{draft.footer.style === 'columns' && (
 					<>
+						<TextControl
+							label={__('Explore heading', 'bridge')}
+							value={footerLabels.explore ?? ''}
+							onChange={(value) =>
+								setFooterLabel('explore', value)
+							}
+							placeholder={__('Explore', 'bridge')}
+							help={__(
+								'Leave blank to use the default shown.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
 						<SelectControl
 							label={__('Explore menu', 'bridge')}
 							value={String(draft.footer.menus.explore)}
@@ -539,6 +560,17 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							onChange={(value) =>
 								setFooterMenu('explore', Number(value))
 							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<TextControl
+							label={__('Services heading', 'bridge')}
+							value={footerLabels.services ?? ''}
+							onChange={(value) =>
+								setFooterLabel('services', value)
+							}
+							placeholder={__('Services', 'bridge')}
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
 						/>
@@ -554,6 +586,34 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							}
 							help={__(
 								'The two menu columns. A column with no menu is not drawn: a heading with nothing under it is worse than three columns. Menus themselves are still built in the Site Editor.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<TextControl
+							label={__('Contact heading', 'bridge')}
+							value={footerLabels.contact ?? ''}
+							onChange={(value) =>
+								setFooterLabel('contact', value)
+							}
+							placeholder={__('Get in touch', 'bridge')}
+							help={__(
+								'The heading over the address, phone and social column.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<TextControl
+							label={__('Legal menu name', 'bridge')}
+							value={footerLabels.legal ?? ''}
+							onChange={(value) => setFooterLabel('legal', value)}
+							placeholder={__('Legal', 'bridge')}
+							help={__(
+								'Not shown on screen — the legal links have no heading. This is the name screen readers announce for them.',
 								'bridge'
 							)}
 							__nextHasNoMarginBottom

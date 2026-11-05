@@ -1744,6 +1744,13 @@ function bridge_token_defaults(): array
 			// no longer a column at all — it runs along the bottom row beside
 			// the copyright, which is where a privacy link belongs.
 			'menus'           => array('explore' => 0, 'services' => 0, 'legal' => 0),
+			// The headings over the footer's columns, and the name of the
+			// legal links. Empty means the theme's own wording ("Explore",
+			// "Services", "Get in touch", "Legal"), resolved at render time by
+			// bridge_footer_label() — stored empty rather than as the words
+			// themselves so a site that never changes them keeps getting them
+			// translated.
+			'labels'          => array('explore' => '', 'services' => '', 'contact' => '', 'legal' => ''),
 		),
 		// Deviations from the theme's curated block set, not the set itself.
 		// Storing the whole list would freeze it: a block added by a later
@@ -2205,6 +2212,31 @@ function bridge_hex_or($value, string $fallback): string
 	$hex = is_scalar($value) ? sanitize_hex_color((string) $value) : null;
 
 	return (is_string($hex) && '' !== $hex) ? $hex : $fallback;
+}
+
+/**
+ * The footer's headings, as plain short strings.
+ *
+ * Always the four known slots, whatever arrives: unknown keys are dropped and
+ * missing ones come back empty, which bridge_footer_label() reads as "use the
+ * theme's wording". Plain text — a heading is not a place for markup — and
+ * capped, because a heading that runs to a paragraph is a typo rather than a
+ * choice.
+ *
+ * @param mixed $raw Candidate labels, keyed by slot.
+ * @return array{explore: string, services: string, contact: string, legal: string}
+ */
+function bridge_sanitize_footer_labels($raw): array
+{
+	$raw    = is_array($raw) ? $raw : array();
+	$labels = array();
+
+	foreach (array('explore', 'services', 'contact', 'legal') as $slot) {
+		$value          = is_scalar($raw[$slot] ?? null) ? sanitize_text_field((string) $raw[$slot]) : '';
+		$labels[$slot] = function_exists('mb_substr') ? mb_substr($value, 0, 60) : substr($value, 0, 60);
+	}
+
+	return $labels;
 }
 
 /**
@@ -2695,6 +2727,7 @@ function bridge_sanitize_tokens(array $raw): array
 			'services' => max(0, (int) ($raw_footer_menus['services'] ?? 0)),
 			'legal'    => max(0, (int) ($raw_footer_menus['legal'] ?? 0)),
 		),
+		'labels'          => bridge_sanitize_footer_labels($raw_footer['labels'] ?? array()),
 	);
 
 	// ---- Site output ------------------------------------------------------

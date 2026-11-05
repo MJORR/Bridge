@@ -890,6 +890,65 @@
 	}
 }
 
+/**
+ * On a phone, the banner takes one alignment, and the title decides it.
+ *
+ * The ranged-left arrangements above are desktop answers, and below the bar
+ * they stand down — but the words inside the banner can carry alignments of
+ * their own from the editor, and those do not stand down with them. A heading
+ * set to "left" kept it while the paragraph under it fell back to the centre
+ * and the button went wherever its own justification said: a title on the
+ * left, a line in the middle, a button back on the left. Three alignments in
+ * one block reads as broken rather than designed.
+ *
+ * So the title is the one answer and everything else follows it:
+ *
+ *   - A title set to left: the description and the buttons go left with it.
+ *   - Otherwise: all of it is centred, overriding any left-hand choice on the
+ *     description or the buttons.
+ *
+ * A right-aligned choice is left alone either way — that is a deliberate
+ * exception rather than a desktop habit.
+ *
+ * `:has()` so the content box can ask what its title is doing; it is the only
+ * place that sees the heading and its siblings at once.
+ *
+ * Not the curve: it stacks at its own breakpoint, which is a setting, and
+ * centres its content there itself (see bridge_hero_curve_css()). Above that
+ * breakpoint the words sit beside the drawn edge and must stay ranged left.
+ */
+@media (max-width: nav.$panel) {
+	.bridge-hero-banner:not(.is-bg-curve) .bridge-hero-banner__content {
+		align-items: center;
+		text-align: center;
+
+		> :not(.has-text-align-right) {
+			text-align: center;
+		}
+
+		> .wp-block-buttons:not(.is-content-justification-right) {
+			justify-content: center;
+		}
+
+		// The title is left: everything follows it.
+		&:has(> .wp-block-heading.has-text-align-left) {
+			align-items: flex-start;
+			text-align: start;
+
+			> :not(.has-text-align-right, .has-text-align-center) {
+				text-align: left;
+			}
+
+			> .wp-block-buttons:not(
+					.is-content-justification-right,
+					.is-content-justification-center
+				) {
+				justify-content: flex-start;
+			}
+		}
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Custom gradient — a run of colour bands at an angle, over the picture
 // ---------------------------------------------------------------------------

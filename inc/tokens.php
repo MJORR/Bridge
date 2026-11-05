@@ -1757,8 +1757,13 @@ function bridge_token_defaults(): array
 		// theme release would arrive switched off, because it could not be in
 		// a list written before it existed.
 		'blocks'     => array(
-			'enabled'  => array(),
-			'disabled' => array(),
+			'enabled'          => array(),
+			'disabled'         => array(),
+			// Off by default, so a site that never opens the control keeps
+			// the editor it had: core's Block Directory, which offers to
+			// install third-party blocks from WordPress.org when an inserter
+			// search finds nothing. See bridge_disable_block_directory().
+			'disableDirectory' => false,
 		),
 		'layout'     => array(
 			'contentSize'      => 720,
@@ -2929,8 +2934,11 @@ function bridge_sanitize_tokens(array $raw): array
 		'footer'     => $footer,
 		'layout'     => $layout,
 		'blocks'     => array(
-			'enabled'  => $enabled,
-			'disabled' => $disabled,
+			'enabled'          => $enabled,
+			'disabled'         => $disabled,
+			// Cast rather than defaulted: a boolean's "missing" and "off" are
+			// the same answer.
+			'disableDirectory' => ! empty($raw_blocks['disableDirectory']),
 		),
 		'postTypes'  => $post_types,
 		'site'       => $site,

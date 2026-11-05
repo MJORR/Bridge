@@ -119,6 +119,33 @@ function bridge_disable_remote_patterns($load): bool
 add_filter('should_load_remote_block_patterns', 'bridge_disable_remote_patterns');
 
 /**
+ * Switch off the Block Directory when Theme Options says so.
+ *
+ * The directory is the panel core shows when an inserter search finds no
+ * installed block: it lists third-party blocks from WordPress.org and installs
+ * one, plugin and all, in a single click. On a site whose block library is a
+ * deliberate decision (see the Blocks tab), that is a way round it.
+ *
+ * The setting rather than lockdown, unlike the patterns above: this is an
+ * operator's choice on the Blocks tab, and it applies for everyone, including
+ * administrators — the same reading the block switches have.
+ *
+ * Blocks that are already installed are not affected, and nor is the Plugins
+ * screen; this only removes the offer to install new ones from the editor.
+ * Core hooks the directory's assets in its default filters, which have run by
+ * `after_setup_theme`, so it can be unhooked here.
+ */
+function bridge_disable_block_directory(): void
+{
+	if (empty(bridge_get_tokens()['blocks']['disableDirectory'])) {
+		return;
+	}
+
+	remove_action('enqueue_block_editor_assets', 'wp_enqueue_editor_block_directory_assets');
+}
+add_action('after_setup_theme', 'bridge_disable_block_directory', 20);
+
+/**
  * The blocks a client may insert.
  *
  * An allowlist rather than a denylist: core adds blocks every release, and a

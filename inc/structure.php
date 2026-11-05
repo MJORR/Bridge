@@ -344,3 +344,27 @@ function bridge_drop_empty_article_crumbs(string $block_content, array $block): 
 	return str_contains($block_content, 'bridge-breadcrumb') ? $block_content : '';
 }
 add_filter('render_block_core/group', 'bridge_drop_empty_article_crumbs', 10, 2);
+
+/**
+ * An empty paragraph block renders nothing.
+ *
+ * The editor leaves one behind whenever someone clicks into an empty page and
+ * then inserts a block below it, so a page that looks as if it opens on a hero
+ * actually opens on `<p></p>`. It has no height and shows nothing, but it is
+ * still the content's first child — so the hero is no longer `:first-child`,
+ * the rule that sits a full-width first block flush under the header (see the
+ * no-title pages section of blocks/_page-title.scss) never matches, and the
+ * hero takes a block gap above it as well. Seventy pixels of page background
+ * between the header and the banner, from a block nobody can see.
+ *
+ * Only a paragraph with nothing at all in it. One holding `&nbsp;` or a `<br>`
+ * is a deliberate spacer, however unfashionable, and is left alone.
+ *
+ * @param string $block_content Rendered block HTML.
+ * @return string The same HTML, or '' for an empty paragraph.
+ */
+function bridge_drop_empty_paragraphs(string $block_content): string
+{
+	return preg_match('#^\s*<p\b[^>]*>\s*</p>\s*$#i', $block_content) ? '' : $block_content;
+}
+add_filter('render_block_core/paragraph', 'bridge_drop_empty_paragraphs');

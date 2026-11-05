@@ -10,8 +10,9 @@ import { BlockLibrary, Section } from '../controls';
 import { SkinPreview } from '../preview';
 
 const { __ } = wp.i18n;
+const { ToggleControl } = wp.components;
 
-export function BlocksTab({ draft, payload, preview, setBlocks }) {
+export function BlocksTab({ draft, payload, preview, setBlocks, setGroup }) {
 	const { blockLibrary, sectionSkins } = payload;
 
 	return (
@@ -42,6 +43,27 @@ export function BlocksTab({ draft, payload, preview, setBlocks }) {
 					skins={sectionSkins}
 					palette={preview?.palette}
 					fontFamilies={preview?.fontFamilies}
+				/>
+			</Section>
+
+			<Section
+				title={__('Third-party blocks', 'bridge')}
+				description={__(
+					'Whether the editor can install new blocks from the WordPress.org Block Directory.',
+					'bridge'
+				)}
+			>
+				<ToggleControl
+					label={__('Disable third-party blocks', 'bridge')}
+					checked={Boolean(draft.blocks.disableDirectory)}
+					onChange={(on) =>
+						setGroup('blocks', 'disableDirectory', on)
+					}
+					help={__(
+						'When on, searching the block inserter no longer offers blocks from WordPress.org to install, so the library above stays the whole library. Blocks already installed by plugins are not affected.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
 				/>
 			</Section>
 		</>

@@ -1466,6 +1466,12 @@ function bridge_token_constraints(): array
 			// this existed. Past about 60% the strip has stopped being a shade
 			// of the footer and become a second colour.
 			'legalShade'      => array('min' => -60, 'max' => 60, 'step' => 5, 'unit' => '%'),
+			// The mask shape, on the same scales the section blocks offer —
+			// see src/editor/band-mask.js and bridge_band_mask().
+			'maskShade'       => array('min' => -100, 'max' => 100, 'step' => 5, 'unit' => '%'),
+			'maskSize'        => array('min' => 10, 'max' => 200, 'step' => 5, 'unit' => ''),
+			'maskEdge'        => array('options' => array('left', 'right')),
+			'maskBleed'       => array('min' => 0, 'max' => 90, 'step' => 5, 'unit' => '%'),
 		),
 		// Not a range and not a list of options — the shape of a declared post
 		// type. Sent to the options page so the form can refuse a slug before
@@ -1728,6 +1734,14 @@ function bridge_token_defaults(): array
 			// Level with the footer, which is the strip every site had before
 			// the control existed.
 			'legalShade'      => 0,
+			// The site's mask shape behind the columns, with the same four
+			// settings and defaults a section block gives it. Off by default,
+			// for the reason the gradient is.
+			'mask'            => false,
+			'maskShade'       => -20,
+			'maskSize'        => 60,
+			'maskEdge'        => 'right',
+			'maskBleed'       => 0,
 			// The ground the footer sits on. Surface, because that is the
 			// colour both footer parts were painted before this was a
 			// setting — a site that never opens the control keeps the footer
@@ -2733,6 +2747,19 @@ function bridge_sanitize_tokens(array $raw): array
 			'legal'    => max(0, (int) ($raw_footer_menus['legal'] ?? 0)),
 		),
 		'labels'          => bridge_sanitize_footer_labels($raw_footer['labels'] ?? array()),
+		// Stored under the attribute names the section blocks use, so the
+		// footer hands this group to bridge_band_mask() as it stands.
+		'mask'            => ! empty($raw_footer['mask']),
+		'maskShade'       => (int) round(
+			bridge_clamp_token('footer', 'maskShade', $raw_footer['maskShade'] ?? null, (float) $defaults['footer']['maskShade'])
+		),
+		'maskSize'        => (int) round(
+			bridge_clamp_token('footer', 'maskSize', $raw_footer['maskSize'] ?? null, (float) $defaults['footer']['maskSize'])
+		),
+		'maskEdge'        => bridge_pick_token('footer', 'maskEdge', $raw_footer['maskEdge'] ?? '', $defaults['footer']['maskEdge']),
+		'maskBleed'       => (int) round(
+			bridge_clamp_token('footer', 'maskBleed', $raw_footer['maskBleed'] ?? null, (float) $defaults['footer']['maskBleed'])
+		),
 	);
 
 	// ---- Site output ------------------------------------------------------

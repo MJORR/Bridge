@@ -37,7 +37,11 @@
 // own parts is none of these and spends the same gaps through
 // abstracts/_rhythm's `stack` mixin instead — so the two never both apply to
 // one pair and add up.
-$flow: ".is-layout-flow, .is-layout-constrained";
+// Core's two flowing layouts, and the Section block's content column, which
+// is the theme's own wrapper rather than a core layout and so carries neither
+// class — without it a row of buttons in a Section sat at a paragraph's
+// margin under the text, and a heading at the full one.
+$flow: ".is-layout-flow, .is-layout-constrained, .bridge-section__inner";
 
 // A heading to whatever it introduces.
 :root :is(#{$flow}) > :is(h1, h2, h3, h4, h5, h6) + * {
@@ -46,9 +50,20 @@ $flow: ".is-layout-flow, .is-layout-constrained";
 
 // Not an empty Buttons block: one left behind with nothing in it would open
 // the widest gap on the page around nothing at all.
-:root :is(#{$flow}) > * + .wp-block-buttons:not(:empty),
-:root :is(#{$flow}) > .wp-block-buttons:not(:empty) + * {
+//
+// An image in the flow of text takes the same room. Like a row of buttons it
+// is not a line of copy, and at the text's own rhythm it sat a paragraph's
+// margin under the words above it — tight enough to read as part of them.
+:root :is(#{$flow}) > * + :is(.wp-block-buttons:not(:empty), .wp-block-image),
+:root :is(#{$flow}) > :is(.wp-block-buttons:not(:empty), .wp-block-image) + * {
 	margin-block-start: var(--bridge-buttons-gap);
+}
+
+// Core gives an image a 1em bottom margin of its own. The rule above already
+// spaces whatever follows it, so that margin only ever added to the gap — and
+// as the last thing in a section it sat on top of the section's padding.
+:root :is(#{$flow}) > .wp-block-image {
+	margin-block-end: 0;
 }
 
 // The gap above is the button's breathing room now. The margin

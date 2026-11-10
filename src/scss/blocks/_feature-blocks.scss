@@ -75,11 +75,37 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 	// number chosen here. 16rem is the Cards band's floor, and the panels are
 	// the same kind of object.
 	&__list {
-		@include section.auto-grid(16rem, section.$grid-gap);
+		@include section.auto-grid(
+			var(--bridge-features-min, 16rem),
+			section.$grid-gap
+		);
 
 		list-style: none;
 		margin: 0;
 		padding: 0;
+	}
+
+	// Five across. At the Cards band's 16rem floor five panels and their gaps
+	// are wider than the wide container, so auto-fit would quietly drop to
+	// four; a smaller floor lets the fifth fit, and narrower screens still
+	// step down as before.
+	&--dense {
+		--bridge-features-min: 9rem;
+	}
+
+	// Step numbers over the titles. The counter numbers panels only — the
+	// intro heading in the editor's flat list is not a panel — and a panel
+	// whose label was typed still counts, so the ones after it stay in order.
+	&--show-numbers &__list {
+		counter-reset: bridge-feature-step;
+	}
+
+	&--show-numbers .bridge-feature {
+		counter-increment: bridge-feature-step;
+	}
+
+	&--show-numbers .bridge-feature__prefix--auto::before {
+		content: counter(bridge-feature-step, decimal-leading-zero);
 	}
 
 	// Flush panels. The gap goes, and with it the rounded corners — a grid of
@@ -118,7 +144,8 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 		text-align: center;
 
 		.bridge-feature__button,
-		.bridge-feature__link {
+		.bridge-feature__link,
+		.bridge-feature__arrow {
 			align-self: center;
 		}
 	}
@@ -490,6 +517,50 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 		align-self: flex-start;
 	}
 
+	/**
+	 * The arrow at the foot of the panel.
+	 *
+	 * Pinned to the bottom edge — `auto` takes up whatever height the row's
+	 * tallest panel left over, so the arrows sit on one line across the row —
+	 * and never closer than the Large gap to whatever is above it. The gap is
+	 * padding rather than margin because the margin is the `auto` doing the
+	 * pinning, and the two cannot both be the margin.
+	 *
+	 * Two classes, to outweigh the stack's `> * + *` gap and its pin on the
+	 * cues. The icon strokes in `currentColor`, so it is the panel's text
+	 * colour: the band's, the one picked in the sidebar, or the ink on a
+	 * photograph.
+	 */
+	&__body > &__arrow {
+		display: block;
+		align-self: flex-start;
+		margin-block-start: auto;
+		padding-block-start: var(--wp--preset--spacing--50);
+		line-height: 0;
+		color: inherit;
+
+		.bridge-icon {
+			display: block;
+			transition: transform 200ms ease;
+		}
+	}
+
+	// With the arrow there, it is the thing pinned to the bottom — the button
+	// or link above it goes back to sitting under the words, rather than both
+	// splitting the free space between them and leaving the button floating.
+	// Zero, not the buttons gap: the stack already puts that gap on the end
+	// of whatever comes before the cue, and flex items do not collapse
+	// margins, so stating it here too doubled it.
+	&__body:has(> &__arrow) > :is(&__button, &__link) {
+		margin-block-start: 0;
+	}
+
+	// A nudge towards where the panel goes, on a panel that goes somewhere.
+	&.is-linked:hover &__arrow .bridge-icon,
+	&.is-linked:focus-within &__arrow .bridge-icon {
+		transform: translateX(0.25em);
+	}
+
 	// Not a button, and deliberately not shaped like one: this is the line that
 	// says the panel is clickable, and giving it a fill would promise a second,
 	// separate action. The same cue the Summary card draws.
@@ -591,6 +662,8 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 	// contents, photograph and all. Only the quiet cue stretches: a button is
 	// a target already. See the note in the child's render.php.
 	&.is-linked {
+		cursor: pointer;
+
 		.bridge-feature__link::after {
 			content: "";
 			position: absolute;
@@ -615,6 +688,25 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 		}
 	}
 
+	// The covering link a button panel gets, so the whole panel is clickable
+	// while the button stays the one focusable control. Above the photograph
+	// and words; below the button, which keeps its own hover and press.
+	&__cover-link {
+		position: absolute;
+		inset: 0;
+		z-index: 2;
+
+		// When it is the panel's link, the ring is drawn on the panel by
+		// `:focus-within` above, not again on this invisible box.
+		&:focus-visible {
+			outline: none;
+		}
+	}
+
+	&.is-linked &__button {
+		z-index: 3;
+	}
+
 	/**
 	 * The one panel in the set being pointed at.
 	 *
@@ -636,9 +728,52 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 		);
 	}
 
+	/**
+	 * The panel's own colours, chosen in its sidebar.
+	 *
+	 * After the panel styles and the highlight, and one class heavier than
+	 * either, so a colour an editor picked survives a Plain or Outlined band
+	 * and is not tinted over. Painted the way the highlight is — on the cut
+	 * corner's layer as well as the box — so the chamfer still shows.
+	 */
+	.bridge-features &.has-card-background:not(&--cover) {
+		--bridge-card-layer-bg: var(--bridge-feature-bg);
+
+		background-color: var(
+			--bridge-card-own-bg,
+			var(--wp--custom--card--own-bg, var(--bridge-feature-bg))
+		);
+	}
+
+	// A plain band takes a panel's padding away because it has no ground; a
+	// panel with a colour of its own has one again.
+	.bridge-features--panels-plain &.has-card-background &__body {
+		@include card.padding;
+	}
+
+	&.has-card-text {
+		color: var(--bridge-feature-text);
+
+		.bridge-feature__title,
+		.bridge-feature__text,
+		.bridge-feature__link {
+			color: inherit;
+		}
+	}
+
+	&--cover.has-card-text {
+		--bridge-feature-ink: var(--bridge-feature-text);
+	}
+
 	@media (prefers-reduced-motion: reduce) {
-		&__media > img {
+		&__media > img,
+		&__arrow .bridge-icon {
 			transition: none;
+		}
+
+		&.is-linked:hover &__arrow .bridge-icon,
+		&.is-linked:focus-within &__arrow .bridge-icon {
+			transform: none;
 		}
 
 		&:hover &__media > img {

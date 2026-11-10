@@ -17,11 +17,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$title   = trim( (string) ( $attributes['title'] ?? '' ) );
-$text    = trim( (string) ( $attributes['text'] ?? '' ) );
+// RichText values, read back to plain text so a pasted line break is a line
+// break rather than a printed `<br>` — see bridge_rich_text_plain().
+$title   = bridge_rich_text_plain( (string) ( $attributes['title'] ?? '' ) );
+$text    = bridge_rich_text_plain( (string) ( $attributes['text'] ?? '' ) );
 $rating  = max( 0, min( 5, (int) ( $attributes['rating'] ?? 0 ) ) );
-$name    = trim( (string) ( $attributes['name'] ?? '' ) );
-$company = trim( (string) ( $attributes['company'] ?? '' ) );
+$name    = bridge_rich_text_plain( (string) ( $attributes['name'] ?? '' ), false );
+$company = bridge_rich_text_plain( (string) ( $attributes['company'] ?? '' ), false );
 
 if ( '' === $text && '' === $title ) {
 	return;
@@ -113,10 +115,10 @@ if ( '' !== $name ) {
 
 	<blockquote class="bridge-testimonial__quote">
 		<?php if ( '' !== $title ) : ?>
-			<p class="bridge-testimonial__title"><?php echo esc_html( $title ); ?></p>
+			<p class="bridge-testimonial__title"><?php echo bridge_plain_text_html( $title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped inside. ?></p>
 		<?php endif; ?>
 		<?php if ( '' !== $text ) : ?>
-			<p class="bridge-testimonial__text"><?php echo esc_html( $text ); ?></p>
+			<p class="bridge-testimonial__text"><?php echo bridge_plain_text_html( $text ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped inside. ?></p>
 		<?php endif; ?>
 	</blockquote>
 

@@ -34,7 +34,7 @@ bridge_mark_enquiries_in_use();
 $form_id  = bridge_enquiry_form_id();
 $response = bridge_enquiry_response( $form_id );
 
-$width = 'wide' === ( $attributes['width'] ?? 'narrow' ) ? 'wide' : 'narrow';
+$width = 'narrow' === ( $attributes['width'] ?? 'wide' ) ? 'narrow' : 'wide';
 
 $classes = 'bridge-contact bridge-contact--' . $width;
 

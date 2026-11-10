@@ -161,6 +161,32 @@ if ( $is_list ) {
 }
 
 $is_carousel     = 'carousel' === $overflow && ! $is_preview && ! $use_main;
+
+/*
+ * Pagination for a band with a query of its own: the grid or list pages
+ * through every matching post, Number of posts at a time. Never on a carousel,
+ * which pages sideways already, and not on the main-query source, which is
+ * paginated below by the archive itself.
+ *
+ * Each paginated band on a page reads its own query-string key — the first
+ * `cards-page`, the next `cards-page-2` — so two of them on one page page
+ * independently, and neither touches the page's own `paged`. Counted per
+ * request in render order, which is stable from one page load to the next.
+ */
+$paginate     = ! empty( $attributes['pagination'] ) && ! $use_main && ! $is_carousel && ! $is_preview;
+$page_key     = '';
+$current_page = 1;
+
+if ( $paginate ) {
+	// A global, not a `static`: this file is included afresh for every render,
+	// so a static here would start from zero each time.
+	$GLOBALS['bridge_cards_paginated'] = (int) ( $GLOBALS['bridge_cards_paginated'] ?? 0 ) + 1;
+	$paginated_index                   = $GLOBALS['bridge_cards_paginated'];
+
+	$page_key     = 1 === $paginated_index ? 'cards-page' : 'cards-page-' . $paginated_index;
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended — a page number in a public listing.
+	$current_page = isset( $_GET[ $page_key ] ) ? max( 1, absint( wp_unslash( $_GET[ $page_key ] ) ) ) : 1;
+}
 // Empty means "use the theme's wording", which is the only wording that can be
 // translated: a default written into block.json is a literal string that never
 // reaches a .po file, so every site in every language got the English one.
@@ -362,6 +388,12 @@ $query_args = array(
 
 if ( 'post' === $post_type && ! empty( $categories ) ) {
 	$query_args['category__in'] = $categories;
+}
+
+// Paging needs the total, which is the count `no_found_rows` skips.
+if ( $paginate ) {
+	$query_args['no_found_rows'] = false;
+	$query_args['paged']         = $current_page;
 }
 
 // The main query is taken as it stands — its post type, its ordering, its
@@ -578,17 +610,30 @@ if ( $is_carousel ) {
  * this way the markup, and so the styling, is the same on every listing the
  * theme has.
  */
-if ( $use_main && $query->max_num_pages > 1 ) {
-	$links = paginate_links(
-		array(
-			'total'     => (int) $query->max_num_pages,
-			'current'   => max( 1, get_query_var( 'paged' ) ),
-			'mid_size'  => 1,
-			'type'      => 'array',
-			'prev_text' => __( 'Previous', 'bridge' ),
-			'next_text' => __( 'Next', 'bridge' ),
-		)
+if ( ( $use_main || $paginate ) && $query->max_num_pages > 1 ) {
+	$pagination_args = array(
+		'total'     => (int) $query->max_num_pages,
+		'current'   => max( 1, get_query_var( 'paged' ) ),
+		'mid_size'  => 1,
+		'type'      => 'array',
+		'prev_text' => __( 'Previous', 'bridge' ),
+		'next_text' => __( 'Next', 'bridge' ),
 	);
+
+	// A band on a page pages through its own query-string key (see above),
+	// and returns to itself rather than to the top of the page when it has
+	// an anchor to return to.
+	if ( $paginate ) {
+		$pagination_args['current'] = $current_page;
+		$pagination_args['base']    = esc_url_raw( add_query_arg( $page_key, '%#%' ) );
+		$pagination_args['format']  = '';
+
+		if ( ! empty( $attributes['anchor'] ) ) {
+			$pagination_args['add_fragment'] = '#' . sanitize_html_class( $attributes['anchor'] );
+		}
+	}
+
+	$links = paginate_links( $pagination_args );
 
 	if ( $links ) {
 		printf(

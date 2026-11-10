@@ -2,13 +2,19 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/feature-block",
-	"version": "2.2.0",
+	"version": "2.4.0",
 	"title": "Feature",
 	"category": "design",
 	"icon": "screenoptions",
 	"description": "One feature panel: an image, a title, a line of copy and a button.",
 	"textdomain": "bridge",
 	"parent": ["bridge/feature-blocks"],
+	"usesContext": [
+		"bridge/featureNumbers",
+		"bridge/featureLayout",
+		"bridge/featureArrow",
+		"bridge/featurePanelLink"
+	],
 	"supports": { "anchor": false, "html": false, "reusable": false },
 	"attributes": {
 		"prefix": { "type": "string", "default": "" },
@@ -28,7 +34,9 @@
 			"enum": ["button", "text"],
 			"default": "button"
 		},
-		"highlight": { "type": "boolean", "default": false }
+		"highlight": { "type": "boolean", "default": false },
+		"cardBackground": { "type": "string", "default": "" },
+		"cardText": { "type": "string", "default": "" }
 	},
 	"editorScript": "bridge-feature-block-editor",
 	"render": "file:./render.php"

@@ -36,7 +36,7 @@ $graphic_id    = isset( $attributes['graphic'] ) ? (int) $attributes['graphic'] 
 
 $has_image = $background_id > 0;
 
-$width = 'wide' === ( $attributes['width'] ?? 'narrow' ) ? 'wide' : 'narrow';
+$width = 'narrow' === ( $attributes['width'] ?? 'wide' ) ? 'narrow' : 'wide';
 
 /*
  * The decorative mask shape, when the block asks for one. The same shape, the

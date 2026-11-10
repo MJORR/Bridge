@@ -21,6 +21,7 @@
  * the window, the words inside it stop at the site's wide container. See the
  * note in render.php for why that is two wrappers rather than one.
  */
+@use "../abstracts/band-mask" as mask;
 
 .bridge-footer {
 	background-color: var(
@@ -227,6 +228,15 @@
 
 	padding-block: var(--bridge-footer-section)
 		calc(var(--bridge-footer-section) + var(--wp--preset--spacing--60));
+
+	// The site's mask shape, when Theme Options asks for one — the mixin the
+	// section blocks use, so the shape sits and sizes the same way here.
+	@include mask.band-mask;
+
+	// Over the shape.
+	> .bridge-footer__inner {
+		@include mask.band-mask-content;
+	}
 }
 
 /**
@@ -254,8 +264,8 @@
  * phone to a desktop without spending a stretch of the range at a width that
  * suits none of them:
  *
- *   under 34rem   One column. Everything is a single running list.
- *   34–68rem      Two columns. The identity column takes the full row above
+ *   under 38rem   One column. Everything is a single running list.
+ *   38–68rem      Two columns. The identity column takes the full row above
  *                 them — it holds a paragraph, and a paragraph in a half-row
  *                 at tablet width is four words a line — and the three short
  *                 columns pair up underneath.
@@ -284,7 +294,7 @@
 	gap: var(--wp--preset--spacing--70) var(--wp--preset--spacing--60);
 	grid-template-columns: minmax(0, 1fr);
 
-	@media (width >= 34rem) {
+	@media (width >= 38rem) {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
@@ -306,7 +316,7 @@
  * a span written here would be a second copy of it.
  */
 .bridge-footer__col--identity {
-	@media (width >= 34rem) {
+	@media (width >= 38rem) {
 		grid-column: 1 / -1;
 	}
 
@@ -335,9 +345,14 @@
  * After `.bridge-footer__col` on purpose: the two are one class each, so the
  * later one wins.
  */
+// stylelint-disable-next-line no-duplicate-selectors -- order matters, see above.
 .bridge-footer__col--identity {
 	@media (width >= 68rem) {
 		min-width: auto;
+		// Extra air between the identity column and the first menu, on top of
+		// the grid's column gap — only once the four sit in one row. Stacked or
+		// paired, the column has nothing beside it to clear.
+		margin-inline-end: var(--wp--preset--spacing--60);
 	}
 }
 
@@ -940,6 +955,12 @@
 	&:hover,
 	&:focus-visible {
 		background-color: transparent;
+		// The underline the `a` rule above asks for. components/_primary-nav
+		// switches it off for every navigation block, header or not, at three
+		// classes — more than `.bridge-footer__nav a:hover` has — so it is
+		// restated here, where the specificity is enough to win.
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
 	}
 }
 

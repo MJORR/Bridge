@@ -57,10 +57,16 @@ const Edit = ({ attributes, setAttributes }) => {
 		gutters,
 		overflowStyle,
 		panelStyle,
+		showNumbers,
+		showArrow,
+		panelLink,
 		textAlignment,
 	} = attributes;
 
 	const isNumbered = layout === 'numbered';
+	// The numbered layout draws its own badges, so the line-above-the-title
+	// numbers are a grid-only setting.
+	const hasStepNumbers = !isNumbered && !!showNumbers;
 
 	const blockProps = useBlockProps({
 		className: [
@@ -78,6 +84,8 @@ const Edit = ({ attributes, setAttributes }) => {
 				? 'bridge-features--carousel'
 				: '',
 			gutters || isNumbered ? '' : 'bridge-features--flush',
+			hasStepNumbers ? 'bridge-features--show-numbers' : '',
+			!isNumbered && columns >= 5 ? 'bridge-features--dense' : '',
 			hasMask(attributes) ? 'has-mask' : '',
 			'is-editor-preview',
 		]
@@ -155,7 +163,7 @@ const Edit = ({ attributes, setAttributes }) => {
 						value: columns,
 						onChange: (value) => setAttributes({ columns: value }),
 						min: 1,
-						max: 4,
+						max: 5,
 						step: 1,
 					}),
 				!isNumbered &&
@@ -207,6 +215,38 @@ const Edit = ({ attributes, setAttributes }) => {
 						{ label: __('Outlined', 'bridge'), value: 'outline' },
 					],
 					onChange: (value) => setAttributes({ panelStyle: value }),
+				}),
+				!isNumbered &&
+					el(ToggleControl, {
+						label: __('Show step numbers', 'bridge'),
+						help: __(
+							'Puts 01, 02, 03… above each title, in panel order. Type over a number on a panel to change its label.',
+							'bridge'
+						),
+						checked: !!showNumbers,
+						onChange: (value) =>
+							setAttributes({ showNumbers: value }),
+						__nextHasNoMarginBottom: true,
+					}),
+				el(ToggleControl, {
+					label: __('Show arrow icon', 'bridge'),
+					help: __(
+						'An arrow in a circle at the bottom of every panel, in the panel’s text colour.',
+						'bridge'
+					),
+					checked: !!showArrow,
+					onChange: (value) => setAttributes({ showArrow: value }),
+					__nextHasNoMarginBottom: true,
+				}),
+				el(ToggleControl, {
+					label: __('Make panel the link', 'bridge'),
+					help: __(
+						'The whole panel is the link: no button or link text is shown, only each panel’s link address is used.',
+						'bridge'
+					),
+					checked: !!panelLink,
+					onChange: (value) => setAttributes({ panelLink: value }),
+					__nextHasNoMarginBottom: true,
 				}),
 				el(SelectControl, {
 					label: __('Text alignment', 'bridge'),

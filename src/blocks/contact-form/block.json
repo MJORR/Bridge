@@ -18,7 +18,7 @@
 	"attributes": {
 		"width": {
 			"type": "string",
-			"default": "narrow"
+			"default": "wide"
 		},
 		"panel": {
 			"type": "boolean",

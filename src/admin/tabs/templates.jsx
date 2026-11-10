@@ -9,8 +9,14 @@
 import { LayoutPicker, LogoPicker, Section } from '../controls';
 import { TemplateList } from '../preview';
 
-const { RangeControl, SelectControl, TextControl, ToggleControl } =
-	wp.components;
+const {
+	RangeControl,
+	SelectControl,
+	TextControl,
+	ToggleControl,
+	__experimentalToggleGroupControl: ToggleGroupControl,
+	__experimentalToggleGroupControlOption: ToggleGroupControlOption,
+} = wp.components;
 const { __, sprintf } = wp.i18n;
 
 export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
@@ -534,6 +540,109 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					__next40pxDefaultSize
 				/>
 
+				{/*
+				 * The mask shape, with the four controls a section block's
+				 * Mask shape panel has — same scales, same wording — so the
+				 * footer and the bands read as one system. The shape itself
+				 * is picked further down, under Brand shapes.
+				 */}
+				<ToggleControl
+					label={__('Show the mask shape', 'bridge')}
+					checked={Boolean(draft.footer.mask)}
+					onChange={(on) => setGroup('footer', 'mask', on)}
+					help={
+						draft.brand.maskShapeId
+							? __(
+									'Paints the site’s mask shape behind the footer’s columns, as a lighter or darker shade of the footer’s colour.',
+									'bridge'
+								)
+							: __(
+									'No mask shape has been set yet — choose one under Brand shapes below.',
+									'bridge'
+								)
+					}
+					__nextHasNoMarginBottom
+				/>
+
+				{draft.footer.mask && (
+					<>
+						<RangeControl
+							label={__('Mask shade', 'bridge')}
+							value={draft.footer.maskShade}
+							min={constraints.footer.maskShade.min}
+							max={constraints.footer.maskShade.max}
+							step={constraints.footer.maskShade.step}
+							onChange={(value) =>
+								setGroup('footer', 'maskShade', value ?? -20)
+							}
+							help={__(
+								'How much lighter or darker the shape is than the footer behind it. Below zero darkens, above zero lightens. At zero there is no shape.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<RangeControl
+							label={__('Mask size', 'bridge')}
+							value={draft.footer.maskSize}
+							min={constraints.footer.maskSize.min}
+							max={constraints.footer.maskSize.max}
+							step={constraints.footer.maskSize.step}
+							onChange={(value) =>
+								setGroup('footer', 'maskSize', value || 60)
+							}
+							help={__(
+								'How large the shape is drawn. It is held to a floor on a narrow screen and a ceiling on a wide one, so it stays a crop of something large rather than a complete object on a phone.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<ToggleGroupControl
+							label={__('Held against', 'bridge')}
+							help={__(
+								'Which edge of the footer the shape sits against.',
+								'bridge'
+							)}
+							value={draft.footer.maskEdge || 'right'}
+							isBlock
+							onChange={(value) =>
+								setGroup('footer', 'maskEdge', value || 'right')
+							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						>
+							<ToggleGroupControlOption
+								value="left"
+								label={__('Left', 'bridge')}
+							/>
+							<ToggleGroupControlOption
+								value="right"
+								label={__('Right', 'bridge')}
+							/>
+						</ToggleGroupControl>
+
+						<RangeControl
+							label={__('Run past the edge (percent)', 'bridge')}
+							value={draft.footer.maskBleed}
+							min={constraints.footer.maskBleed.min}
+							max={constraints.footer.maskBleed.max}
+							step={constraints.footer.maskBleed.step}
+							onChange={(value) =>
+								setGroup('footer', 'maskBleed', value ?? 0)
+							}
+							help={__(
+								'How much of the shape is pushed off that edge and cropped by it. A share of the shape rather than of the footer, so it keeps its proportion at every screen width.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+					</>
+				)}
+
 				{draft.footer.style === 'columns' && (
 					<>
 						<TextControl
@@ -686,7 +795,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					value={draft.brand.maskShapeId}
 					onChange={(id) => setGroup('brand', 'maskShapeId', id)}
 					help={__(
-						'A silhouette the Cards, Downloads, FAQs and Call to action bands can paint behind their content. Each band decides whether to show it and how light or dark to shade it; the shape itself is set once, here.',
+						'A silhouette the Cards, Downloads, FAQs, Testimonials and Call to action bands, and the footer, can paint behind their content. Each band decides whether to show it and how light or dark to shade it; the shape itself is set once, here.',
 						'bridge'
 					)}
 				/>

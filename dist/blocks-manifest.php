@@ -172,7 +172,7 @@ return array(
 		'attributes' => array(
 			'width' => array(
 				'type' => 'string',
-				'default' => 'narrow',
+				'default' => 'wide',
 			),
 			'backgroundImage' => array(
 				'type' => 'number',
@@ -251,7 +251,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/cards',
-		'version' => '1.0.0',
+		'version' => '1.1.0',
 		'title' => 'Cards',
 		'category' => 'widgets',
 		'icon' => 'grid-view',
@@ -346,6 +346,10 @@ return array(
 			'numberOfPosts' => array(
 				'type' => 'number',
 				'default' => 6,
+			),
+			'pagination' => array(
+				'type' => 'boolean',
+				'default' => false,
 			),
 			'columns' => array(
 				'type' => 'number',
@@ -463,7 +467,7 @@ return array(
 		'attributes' => array(
 			'width' => array(
 				'type' => 'string',
-				'default' => 'narrow',
+				'default' => 'wide',
 			),
 			'panel' => array(
 				'type' => 'boolean',
@@ -667,7 +671,7 @@ return array(
 		'attributes' => array(
 			'width' => array(
 				'type' => 'string',
-				'default' => 'narrow',
+				'default' => 'wide',
 			),
 			'exclusive' => array(
 				'type' => 'boolean',
@@ -729,7 +733,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/feature-block',
-		'version' => '2.2.0',
+		'version' => '2.4.0',
 		'title' => 'Feature',
 		'category' => 'design',
 		'icon' => 'screenoptions',
@@ -737,6 +741,12 @@ return array(
 		'textdomain' => 'bridge',
 		'parent' => array(
 			'bridge/feature-blocks',
+		),
+		'usesContext' => array(
+			'bridge/featureNumbers',
+			'bridge/featureLayout',
+			'bridge/featureArrow',
+			'bridge/featurePanelLink',
 		),
 		'supports' => array(
 			'anchor' => false,
@@ -802,6 +812,14 @@ return array(
 				'type' => 'boolean',
 				'default' => false,
 			),
+			'cardBackground' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'cardText' => array(
+				'type' => 'string',
+				'default' => '',
+			),
 		),
 		'editorScript' => 'bridge-feature-block-editor',
 		'render' => 'file:./render.php',
@@ -810,7 +828,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/feature-blocks',
-		'version' => '2.0.0',
+		'version' => '2.2.0',
 		'title' => 'Feature Blocks',
 		'category' => 'design',
 		'icon' => 'grid-view',
@@ -867,6 +885,18 @@ return array(
 				),
 				'default' => 'card',
 			),
+			'showNumbers' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'showArrow' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'panelLink' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
 			'textAlignment' => array(
 				'type' => 'string',
 				'default' => 'left',
@@ -895,6 +925,12 @@ return array(
 				'type' => 'number',
 				'default' => 0,
 			),
+		),
+		'providesContext' => array(
+			'bridge/featureNumbers' => 'showNumbers',
+			'bridge/featureLayout' => 'layout',
+			'bridge/featureArrow' => 'showArrow',
+			'bridge/featurePanelLink' => 'panelLink',
 		),
 		'example' => array(
 			'attributes' => array(
@@ -1864,7 +1900,7 @@ return array(
 		'attributes' => array(
 			'width' => array(
 				'type' => 'string',
-				'default' => 'narrow',
+				'default' => 'wide',
 			),
 		),
 		'example' => array(
@@ -1891,7 +1927,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/split-content',
-		'version' => '1.0.0',
+		'version' => '1.1.0',
 		'title' => 'Split Content',
 		'category' => 'design',
 		'icon' => 'columns',
@@ -2022,7 +2058,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/testimonials',
-		'version' => '1.0.0',
+		'version' => '1.1.0',
 		'title' => 'Testimonials',
 		'category' => 'design',
 		'icon' => 'format-quote',
@@ -2043,7 +2079,7 @@ return array(
 		'attributes' => array(
 			'width' => array(
 				'type' => 'string',
-				'default' => 'narrow',
+				'default' => 'wide',
 			),
 			'cardStyle' => array(
 				'type' => 'string',
@@ -2056,6 +2092,30 @@ return array(
 			'overflowStyle' => array(
 				'type' => 'string',
 				'default' => 'wrap',
+			),
+			'mask' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'maskShade' => array(
+				'type' => 'number',
+				'default' => -20,
+			),
+			'maskSize' => array(
+				'type' => 'number',
+				'default' => 60,
+			),
+			'maskEdge' => array(
+				'type' => 'string',
+				'enum' => array(
+					'left',
+					'right',
+				),
+				'default' => 'right',
+			),
+			'maskBleed' => array(
+				'type' => 'number',
+				'default' => 0,
 			),
 		),
 		'providesContext' => array(

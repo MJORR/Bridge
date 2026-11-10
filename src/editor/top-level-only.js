@@ -58,6 +58,22 @@ const { addFilter } = window.wp.hooks;
 const TOP_LEVEL_ONLY = ['bridge/faqs'];
 
 /**
+ * Whether a block is one of a Split Content block's two columns.
+ *
+ * @param {string} clientId The block to test.
+ * @return {boolean} True for a split column.
+ */
+const isSplitColumn = (clientId) => {
+	const store = window.wp.data.select('core/block-editor');
+
+	return (
+		store.getBlockName(clientId) === 'core/group' &&
+		store.getBlockName(store.getBlockRootClientId(clientId)) ===
+			'bridge/split-content'
+	);
+};
+
+/**
  * @param {boolean} canInsert    Whether the editor would allow this.
  * @param {Object}  blockType    The block being offered.
  * @param {?string} rootClientId The block it would go inside, or null at the root.
@@ -70,7 +86,13 @@ const rootOnly = (canInsert, blockType, rootClientId) => {
 
 	// `undefined` at the root of the editor, a client id anywhere else. Never
 	// widened to true: another filter may have had a reason to say no.
-	return rootClientId ? false : canInsert;
+	if (!rootClientId) {
+		return canInsert;
+	}
+
+	// The one nested place a band is sized to its container rather than to
+	// the window: a Split Content column. See split-content.scss.
+	return isSplitColumn(rootClientId) ? canInsert : false;
 };
 
 addFilter(

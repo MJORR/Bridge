@@ -156,6 +156,15 @@ $bridge_ground = sprintf(
 	'' !== $bridge_image ? '--bridge-footer-image: ' . $bridge_image . ';' : ''
 );
 
+// The site's mask shape behind the columns, set in Theme Options → Templates →
+// Footer with the controls the section blocks have, and drawn by the same
+// helper. On the body rather than the wrapper: the wrapper's `::before` is the
+// background image, and the copyright row is a strip of its own the shape has
+// no business crossing.
+list( $bridge_mask_class, $bridge_mask_style ) = function_exists( 'bridge_band_mask' )
+	? bridge_band_mask( $bridge_footer )
+	: array( '', '' );
+
 $bridge_wrapper = get_block_wrapper_attributes(
 	array(
 		'class' => implode( ' ', $bridge_classes ),
@@ -164,7 +173,7 @@ $bridge_wrapper = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $bridge_wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core. ?>>
-	<div class="bridge-footer__body">
+	<div class="bridge-footer__body<?php echo esc_attr( $bridge_mask_class ); ?>"<?php echo '' !== $bridge_mask_style ? ' style="' . esc_attr( $bridge_mask_style ) . '"' : ''; ?>>
 		<div class="bridge-footer__inner">
 			<div class="bridge-footer__col bridge-footer__col--identity">
 				<?php echo bridge_footer_logo(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>

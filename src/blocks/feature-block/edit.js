@@ -67,7 +67,35 @@ const MediaField = ({ label, help, id, url, onSelect, onClear }) =>
 		})
 	);
 
-const Edit = ({ attributes, setAttributes }) => {
+/*
+ * The arrow-in-a-circle, drawn here as the same geometry the front end takes
+ * from the icon library (src/icons/arrow-circle-right.svg). `currentColor`,
+ * so it is whatever colour the panel's text is.
+ */
+const ARROW = el(
+	'span',
+	{ className: 'bridge-feature__arrow', 'aria-hidden': true },
+	el(
+		'svg',
+		{
+			className: 'bridge-icon bridge-icon--large',
+			viewBox: '0 0 24 24',
+			width: '2.25em',
+			height: '2.25em',
+			fill: 'none',
+			stroke: 'currentColor',
+			strokeWidth: 1.6,
+			strokeLinecap: 'round',
+			strokeLinejoin: 'round',
+			focusable: 'false',
+		},
+		el('circle', { cx: 12, cy: 12, r: 10 }),
+		el('path', { d: 'M7.5 12h9' }),
+		el('path', { d: 'm12.5 8 4 4-4 4' })
+	)
+);
+
+const Edit = ({ attributes, setAttributes, context, clientId }) => {
 	const {
 		prefix,
 		prefixColor,
@@ -83,7 +111,39 @@ const Edit = ({ attributes, setAttributes }) => {
 		linkText,
 		linkStyle,
 		highlight,
+		cardBackground,
+		cardText,
 	} = attributes;
+
+	// The number line over the title is only drawn when the band asks for it,
+	// and never on the numbered layout, which has badges of its own.
+	const showPrefix =
+		!!context?.['bridge/featureNumbers'] &&
+		context?.['bridge/featureLayout'] !== 'numbered';
+
+	// This panel's position among its sibling panels — the intro heading and
+	// paragraph share the list in the editor, so they are not counted.
+	const position = useSelect(
+		(select) => {
+			const store = select('core/block-editor');
+			const root = store.getBlockRootClientId(clientId);
+			const siblings = store
+				.getBlocks(root)
+				.filter((block) => block.name === 'bridge/feature-block');
+
+			return (
+				siblings.findIndex((block) => block.clientId === clientId) + 1
+			);
+		},
+		[clientId]
+	);
+	// The arrow at the foot of the panel, switched on for the whole band.
+	const showArrow = !!context?.['bridge/featureArrow'];
+	// The band's call: the panel is the link, so there is no cue to word or
+	// style — only the address is asked for.
+	const panelLink = !!context?.['bridge/featurePanelLink'];
+
+	const autoNumber = String(Math.max(1, position)).padStart(2, '0');
 
 	// The site's palette, which is the only set of colours a wash may take —
 	// custom colours are off in theme.json, so this is the whole choice.
@@ -135,6 +195,18 @@ const Edit = ({ attributes, setAttributes }) => {
 		style['--bridge-feature-wash-opacity'] = overlayOpacity / 100;
 	}
 
+	// Per-panel colours. The ground is not offered on a cover panel — the
+	// photograph is the ground there — but the text colour is.
+	if (cardBackground && !isCover) {
+		style['--bridge-feature-bg'] =
+			`var(--wp--preset--color--${cardBackground})`;
+	}
+
+	if (cardText) {
+		style['--bridge-feature-text'] =
+			`var(--wp--preset--color--${cardText})`;
+	}
+
 	if (prefixColor) {
 		style['--bridge-feature-prefix-ink'] =
 			`var(--wp--preset--color--${prefixColor})`;
@@ -145,8 +217,10 @@ const Edit = ({ attributes, setAttributes }) => {
 			'bridge-feature',
 			isCover ? 'bridge-feature--cover' : '',
 			isSummary ? 'bridge-feature--summary' : '',
-			linkUrl && linkStyle === 'text' ? 'is-linked' : '',
+			linkUrl ? 'is-linked' : '',
 			highlight ? 'is-highlighted' : '',
+			cardBackground && !isCover ? 'has-card-background' : '',
+			cardText ? 'has-card-text' : '',
 		]
 			.filter(Boolean)
 			.join(' '),
@@ -215,10 +289,58 @@ const Edit = ({ attributes, setAttributes }) => {
 					__nextHasNoMarginBottom: true,
 				})
 			),
-			// Only where there is a line to colour. An editor who has not
-			// written one has nothing this control could change, and the same
-			// test the wash controls below are gated on.
-			prefix &&
+			el(
+				PanelBody,
+				{ title: __('Colours', 'bridge'), initialOpen: true },
+				!isCover &&
+					el(
+						BaseControl,
+						{
+							label: __('Background colour', 'bridge'),
+							help: __(
+								'Left empty the panel uses the card colour set in Theme Options.',
+								'bridge'
+							),
+							__nextHasNoMarginBottom: true,
+						},
+						el(ColorPalette, {
+							colors: themeColors,
+							value: slugToHex(cardBackground),
+							onChange: (hex) =>
+								setAttributes({
+									cardBackground: hexToSlug(hex),
+								}),
+							disableCustomColors: true,
+							clearable: true,
+						})
+					),
+				el(
+					BaseControl,
+					{
+						label: __('Text colour', 'bridge'),
+						help: isCover
+							? __(
+									'Left empty it is chosen for contrast against the wash.',
+									'bridge'
+								)
+							: __(
+									'Left empty it follows the band’s text colour.',
+									'bridge'
+								),
+						__nextHasNoMarginBottom: true,
+					},
+					el(ColorPalette, {
+						colors: themeColors,
+						value: slugToHex(cardText),
+						onChange: (hex) =>
+							setAttributes({ cardText: hexToSlug(hex) }),
+						disableCustomColors: true,
+						clearable: true,
+					})
+				)
+			),
+			// Only when the band has step numbers switched on.
+			showPrefix &&
 				el(
 					PanelBody,
 					{
@@ -297,35 +419,41 @@ const Edit = ({ attributes, setAttributes }) => {
 						setAttributes({ linkUrl: value.url || '' }),
 					settings: [],
 				}),
-				el(TextControl, {
-					label: __('Link text', 'bridge'),
-					value: linkText,
-					placeholder:
-						linkStyle === 'button'
-							? __('Find out more', 'bridge')
-							: __('Read more', 'bridge'),
-					onChange: (value) => setAttributes({ linkText: value }),
-					__nextHasNoMarginBottom: true,
-				}),
-				el(SelectControl, {
-					label: __('Show it as', 'bridge'),
-					help:
-						linkStyle === 'button'
-							? __(
-									'A button is its own target, so the rest of the panel is not clickable.',
-									'bridge'
-								)
-							: __(
-									'A quiet line of text, with the whole panel as the click target.',
-									'bridge'
-								),
-					value: linkStyle,
-					options: [
-						{ label: __('Button', 'bridge'), value: 'button' },
-						{ label: __('Text link', 'bridge'), value: 'text' },
-					],
-					onChange: (value) => setAttributes({ linkStyle: value }),
-				})
+				panelLink &&
+					el(
+						'p',
+						{ className: 'components-base-control__help' },
+						__(
+							'The whole panel links here. Turn off “Make panel the link” on the Feature Blocks band to show a button or text link instead.',
+							'bridge'
+						)
+					),
+				!panelLink &&
+					el(TextControl, {
+						label: __('Link text', 'bridge'),
+						value: linkText,
+						placeholder:
+							linkStyle === 'button'
+								? __('Find out more', 'bridge')
+								: __('Read more', 'bridge'),
+						onChange: (value) => setAttributes({ linkText: value }),
+						__nextHasNoMarginBottom: true,
+					}),
+				!panelLink &&
+					el(SelectControl, {
+						label: __('Show it as', 'bridge'),
+						help: __(
+							'Either way the whole panel is clickable on the page.',
+							'bridge'
+						),
+						value: linkStyle,
+						options: [
+							{ label: __('Button', 'bridge'), value: 'button' },
+							{ label: __('Text link', 'bridge'), value: 'text' },
+						],
+						onChange: (value) =>
+							setAttributes({ linkStyle: value }),
+					})
 			)
 		),
 		el(
@@ -352,14 +480,17 @@ const Edit = ({ attributes, setAttributes }) => {
 			el(
 				'div',
 				{ className: 'bridge-feature__body' },
-				el(RichText, {
-					tagName: 'span',
-					className: 'bridge-feature__prefix',
-					value: prefix,
-					allowedFormats: [],
-					onChange: (value) => setAttributes({ prefix: value }),
-					placeholder: __('01', 'bridge'),
-				}),
+				showPrefix &&
+					el(RichText, {
+						tagName: 'span',
+						className: 'bridge-feature__prefix',
+						value: prefix,
+						allowedFormats: [],
+						onChange: (value) => setAttributes({ prefix: value }),
+						// Its position, which is what the page prints when the
+						// field is left empty.
+						placeholder: autoNumber,
+					}),
 				el(RichText, {
 					tagName: 'h3',
 					className: 'bridge-feature__title',
@@ -377,6 +508,7 @@ const Edit = ({ attributes, setAttributes }) => {
 					placeholder: __('A line about it', 'bridge'),
 				}),
 				linkUrl &&
+					!panelLink &&
 					(linkStyle === 'button'
 						? el(
 								'span',
@@ -390,7 +522,8 @@ const Edit = ({ attributes, setAttributes }) => {
 								'span',
 								{ className: 'bridge-feature__link' },
 								linkText || __('Read more', 'bridge')
-							))
+							)),
+				showArrow && ARROW
 			)
 		)
 	);

@@ -264,6 +264,7 @@ const Edit = ({ attributes, setAttributes }) => {
 		listContrastStrength,
 		postType,
 		numberOfPosts,
+		pagination,
 		columns,
 		orderBy,
 		order,
@@ -598,6 +599,18 @@ const Edit = ({ attributes, setAttributes }) => {
 					],
 					onChange: (value) =>
 						setAttributes({ overflowStyle: value }),
+				}),
+			source !== 'main' &&
+				(isList || overflowStyle !== 'carousel') &&
+				el(ToggleControl, {
+					label: __('Pagination', 'bridge'),
+					help: __(
+						'Page numbers under the cards. Number of posts becomes how many show per page. Not offered for a carousel.',
+						'bridge'
+					),
+					checked: !!pagination,
+					onChange: (value) => setAttributes({ pagination: value }),
+					__nextHasNoMarginBottom: true,
 				}),
 
 			// ---- List ----------------------------------------------------

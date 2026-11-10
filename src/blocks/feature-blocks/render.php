@@ -36,7 +36,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$columns   = max( 1, min( 4, (int) ( $attributes['columns'] ?? 3 ) ) );
+$columns   = max( 1, min( 5, (int) ( $attributes['columns'] ?? 3 ) ) );
 $width     = 'narrow' === ( $attributes['width'] ?? 'wide' ) ? 'narrow' : 'wide';
 $gutters   = ! empty( $attributes['gutters'] );
 $alignment = 'center' === ( $attributes['textAlignment'] ?? 'left' ) ? 'center' : 'left';
@@ -66,6 +66,11 @@ $panel_style  = in_array( $panel_style, $panel_styles, true ) ? $panel_style : '
 $overflow    = 'carousel' === ( $attributes['overflowStyle'] ?? 'wrap' ) ? 'carousel' : 'wrap';
 $is_carousel = 'carousel' === $overflow && 'grid' === $layout;
 
+// Step numbers over each title: a grid-only setting, because the numbered
+// layout already draws its own badges. The panels read it through block
+// context and print the label; this only starts the counter they draw from.
+$show_numbers = 'grid' === $layout && ! empty( $attributes['showNumbers'] );
+
 list( $intro, $items ) = bridge_section_split( $block, 'bridge/feature-block' );
 
 if ( '' === trim( $intro . $items ) ) {
@@ -74,7 +79,7 @@ if ( '' === trim( $intro . $items ) ) {
 
 $classes = sprintf(
 	'bridge-features bridge-features--%s bridge-features--%s bridge-features--text-%s'
-		. ' bridge-features--panels-%s%s%s',
+		. ' bridge-features--panels-%s%s%s%s%s',
 	$width,
 	$layout,
 	$alignment,
@@ -83,7 +88,11 @@ $classes = sprintf(
 	// Flush panels are a grid treatment: a numbered column already sets its
 	// own rhythm between steps, and one with no gap is a single block of text
 	// with numbers in it.
-	$gutters || 'numbered' === $layout ? '' : ' bridge-features--flush'
+	$gutters || 'numbered' === $layout ? '' : ' bridge-features--flush',
+	$show_numbers ? ' bridge-features--show-numbers' : '',
+	// Five across needs a smaller floor per panel or the wide container
+	// cannot fit them and the grid quietly drops to four.
+	'grid' === $layout && $columns >= 5 ? ' bridge-features--dense' : ''
 );
 
 list( $intro_html, $label_id ) = bridge_section_intro( $intro, 'bridge-features__intro' );

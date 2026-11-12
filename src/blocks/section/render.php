@@ -36,7 +36,7 @@ if ( '' === trim( (string) $content ) ) {
 	return;
 }
 
-$width = 'wide' === ( $attributes['width'] ?? 'narrow' ) ? 'wide' : 'narrow';
+$width = 'narrow' === ( $attributes['width'] ?? 'wide' ) ? 'narrow' : 'wide';
 
 // The heading inside names the landmark, exactly as it does for every other
 // band. A section with no heading gets no name and is not announced as a

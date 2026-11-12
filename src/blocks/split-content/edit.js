@@ -2,7 +2,10 @@
  * Editor view for `bridge/split-content`.
  *
  * Two core/group columns, locked to two — the block is a split, and a third
- * column would make it something else. What goes inside each is unrestricted.
+ * column would make it something else. What goes inside each is unrestricted:
+ * text, images, and the theme's own bands, which split-content.scss sizes to
+ * the column instead of to the window — and either column's heading can be
+ * deleted.
  */
 
 const { useBlockProps, useInnerBlocksProps, InspectorControls } =
@@ -53,10 +56,18 @@ const Edit = ({ attributes, setAttributes }) => {
 		{
 			allowedBlocks: ['core/group'],
 			template: TEMPLATE,
-			// Two columns, no more and no fewer. The groups carry
-			// `templateLock: false` of their own, which stops this cascading
-			// into them — everything inside a column stays freely editable.
-			templateLock: 'all',
+			// Two columns, no more and no fewer — and `insert`, not `all`.
+			//
+			// Under `all` the editor keeps the inner blocks matched to the
+			// template, and it compares *recursively*: the heading and the
+			// paragraph seeded into each column are part of the template, so
+			// deleting a heading, or adding an image, made the columns stop
+			// matching and the editor put them back as they were. `insert`
+			// stops columns being added, removed or moved without ever
+			// re-syncing, so the template only seeds a new block. The groups
+			// carry `templateLock: false` of their own, so inside a column
+			// everything stays freely editable.
+			templateLock: 'insert',
 		}
 	);
 

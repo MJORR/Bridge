@@ -9,8 +9,14 @@
 import { LayoutPicker, LogoPicker, Section } from '../controls';
 import { TemplateList } from '../preview';
 
-const { RangeControl, SelectControl, TextControl, ToggleControl } =
-	wp.components;
+const {
+	RangeControl,
+	SelectControl,
+	TextControl,
+	ToggleControl,
+	__experimentalToggleGroupControl: ToggleGroupControl,
+	__experimentalToggleGroupControlOption: ToggleGroupControlOption,
+} = wp.components;
 const { __, sprintf } = wp.i18n;
 
 export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
@@ -34,6 +40,12 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 	// shell — two call sites in one file is not a setter.
 	const setFooterMenu = (slot, id) =>
 		setGroup('footer', 'menus', { ...draft.footer.menus, [slot]: id });
+
+	// Empty is a real value here, not a missing one: it means "the theme's own
+	// wording", which is what the placeholder shows.
+	const footerLabels = draft.footer.labels ?? {};
+	const setFooterLabel = (slot, value) =>
+		setGroup('footer', 'labels', { ...footerLabels, [slot]: value });
 
 	return (
 		<>
@@ -333,6 +345,22 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					__next40pxDefaultSize
 				/>
 
+				<SelectControl
+					label={__('Menu font size', 'bridge')}
+					value={header.nav.fontSize ?? 'small'}
+					options={[
+						{ label: __('Default', 'bridge'), value: 'small' },
+						{ label: __('Medium', 'bridge'), value: 'medium' },
+					]}
+					onChange={(value) => setHeader('nav.fontSize', value)}
+					help={__(
+						'The size of the main menu\u2019s items and their dropdowns. Default sits a step below body text; Medium matches it. The top bar is not affected.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+
 				<ToggleControl
 					label={__('Nav accent', 'bridge')}
 					checked={Boolean(header.nav.accentEnabled)}
@@ -512,8 +540,126 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					__next40pxDefaultSize
 				/>
 
+				{/*
+				 * The mask shape, with the four controls a section block's
+				 * Mask shape panel has — same scales, same wording — so the
+				 * footer and the bands read as one system. The shape itself
+				 * is picked further down, under Brand shapes.
+				 */}
+				<ToggleControl
+					label={__('Show the mask shape', 'bridge')}
+					checked={Boolean(draft.footer.mask)}
+					onChange={(on) => setGroup('footer', 'mask', on)}
+					help={
+						draft.brand.maskShapeId
+							? __(
+									'Paints the site’s mask shape behind the footer’s columns, as a lighter or darker shade of the footer’s colour.',
+									'bridge'
+								)
+							: __(
+									'No mask shape has been set yet — choose one under Brand shapes below.',
+									'bridge'
+								)
+					}
+					__nextHasNoMarginBottom
+				/>
+
+				{draft.footer.mask && (
+					<>
+						<RangeControl
+							label={__('Mask shade', 'bridge')}
+							value={draft.footer.maskShade}
+							min={constraints.footer.maskShade.min}
+							max={constraints.footer.maskShade.max}
+							step={constraints.footer.maskShade.step}
+							onChange={(value) =>
+								setGroup('footer', 'maskShade', value ?? -20)
+							}
+							help={__(
+								'How much lighter or darker the shape is than the footer behind it. Below zero darkens, above zero lightens. At zero there is no shape.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<RangeControl
+							label={__('Mask size', 'bridge')}
+							value={draft.footer.maskSize}
+							min={constraints.footer.maskSize.min}
+							max={constraints.footer.maskSize.max}
+							step={constraints.footer.maskSize.step}
+							onChange={(value) =>
+								setGroup('footer', 'maskSize', value || 60)
+							}
+							help={__(
+								'How large the shape is drawn. It is held to a floor on a narrow screen and a ceiling on a wide one, so it stays a crop of something large rather than a complete object on a phone.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<ToggleGroupControl
+							label={__('Held against', 'bridge')}
+							help={__(
+								'Which edge of the footer the shape sits against.',
+								'bridge'
+							)}
+							value={draft.footer.maskEdge || 'right'}
+							isBlock
+							onChange={(value) =>
+								setGroup('footer', 'maskEdge', value || 'right')
+							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						>
+							<ToggleGroupControlOption
+								value="left"
+								label={__('Left', 'bridge')}
+							/>
+							<ToggleGroupControlOption
+								value="right"
+								label={__('Right', 'bridge')}
+							/>
+						</ToggleGroupControl>
+
+						<RangeControl
+							label={__('Run past the edge (percent)', 'bridge')}
+							value={draft.footer.maskBleed}
+							min={constraints.footer.maskBleed.min}
+							max={constraints.footer.maskBleed.max}
+							step={constraints.footer.maskBleed.step}
+							onChange={(value) =>
+								setGroup('footer', 'maskBleed', value ?? 0)
+							}
+							help={__(
+								'How much of the shape is pushed off that edge and cropped by it. A share of the shape rather than of the footer, so it keeps its proportion at every screen width.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+					</>
+				)}
+
 				{draft.footer.style === 'columns' && (
 					<>
+						<TextControl
+							label={__('Explore heading', 'bridge')}
+							value={footerLabels.explore ?? ''}
+							onChange={(value) =>
+								setFooterLabel('explore', value)
+							}
+							placeholder={__('Explore', 'bridge')}
+							help={__(
+								'Leave blank to use the default shown.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
 						<SelectControl
 							label={__('Explore menu', 'bridge')}
 							value={String(draft.footer.menus.explore)}
@@ -523,6 +669,17 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							onChange={(value) =>
 								setFooterMenu('explore', Number(value))
 							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<TextControl
+							label={__('Services heading', 'bridge')}
+							value={footerLabels.services ?? ''}
+							onChange={(value) =>
+								setFooterLabel('services', value)
+							}
+							placeholder={__('Services', 'bridge')}
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
 						/>
@@ -538,6 +695,34 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							}
 							help={__(
 								'The two menu columns. A column with no menu is not drawn: a heading with nothing under it is worse than three columns. Menus themselves are still built in the Site Editor.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<TextControl
+							label={__('Contact heading', 'bridge')}
+							value={footerLabels.contact ?? ''}
+							onChange={(value) =>
+								setFooterLabel('contact', value)
+							}
+							placeholder={__('Get in touch', 'bridge')}
+							help={__(
+								'The heading over the address, phone and social column.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+
+						<TextControl
+							label={__('Legal menu name', 'bridge')}
+							value={footerLabels.legal ?? ''}
+							onChange={(value) => setFooterLabel('legal', value)}
+							placeholder={__('Legal', 'bridge')}
+							help={__(
+								'Not shown on screen — the legal links have no heading. This is the name screen readers announce for them.',
 								'bridge'
 							)}
 							__nextHasNoMarginBottom
@@ -610,7 +795,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					value={draft.brand.maskShapeId}
 					onChange={(id) => setGroup('brand', 'maskShapeId', id)}
 					help={__(
-						'A silhouette the Cards, Downloads, FAQs and Call to action bands can paint behind their content. Each band decides whether to show it and how light or dark to shade it; the shape itself is set once, here.',
+						'A silhouette the Cards, Downloads, FAQs, Testimonials and Call to action bands, and the footer, can paint behind their content. Each band decides whether to show it and how light or dark to shade it; the shape itself is set once, here.',
 						'bridge'
 					)}
 				/>

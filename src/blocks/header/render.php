@@ -385,7 +385,13 @@ $bridge_cta_style = sprintf(
 ) . $bridge_cta_alt;
 
 $bridge_logo = bridge_header_logo( $bridge_header, $bridge_background );
-$bridge_nav  = bridge_header_nav( bridge_header_menu_id( 'primary' ), $bridge_justify );
+// The primary menu's size is a Theme Options choice; the top bar below keeps
+// its own fixed `small`.
+$bridge_nav  = bridge_header_nav(
+	bridge_header_menu_id( 'primary' ),
+	$bridge_justify,
+	array( 'fontSize' => (string) ( $bridge_header['nav']['fontSize'] ?? 'small' ) )
+);
 
 // The top bar renders only once it has a menu: an empty strip is worse than
 // no strip. The call to action is not part of it — there is one button, and
@@ -494,6 +500,13 @@ if ( '' !== $bridge_top_nav ) {
 		$bridge_nav,
 		bridge_header_nav_extras( bridge_header_nav_items( $bridge_top_nav ) )
 	);
+}
+
+// The search field, as the very last row of the mobile panel — where the menu
+// is a single button the header's own search icon is hidden, so this is the
+// search on a phone. See bridge_header_nav_search().
+if ( $bridge_search ) {
+	$bridge_nav = bridge_header_nav_append( $bridge_nav, bridge_header_nav_search( $bridge_search_id ) );
 }
 
 // The same class header.js toggles, written into the markup instead. The

@@ -992,3 +992,55 @@ function bridge_post_meta_html(string $attributes = ''): string
 
 	return sprintf('<div %s>%s</div>', $attributes, $list);
 }
+
+/**
+ * A RichText attribute as plain text, keeping its line breaks.
+ *
+ * The blocks that take their words through RichText with every format switched
+ * off still get HTML back from it: a line break — Shift+Enter, or anything
+ * pasted with more than one line in it — is saved as `<br>`, and an ampersand
+ * as `&amp;`. Printed through `esc_html()` both came out as literal text on
+ * the page. So the value is read back to the text it stands for first: breaks
+ * to newlines, any other tag a paste dragged in stripped, entities decoded.
+ *
+ * Print the result with bridge_plain_text_html(); hand it straight to anything
+ * that wants plain text, such as schema.
+ *
+ * @param string $value     The stored attribute.
+ * @param bool   $multiline Keep line breaks. Off, they become spaces — for a
+ *                          name or a label that is one line by nature.
+ * @return string Plain text, `\n` between lines, trimmed.
+ */
+function bridge_rich_text_plain(string $value, bool $multiline = true): string
+{
+	$text = preg_replace('#<br\s*/?>#i', "\n", $value);
+	// Paragraph and div boundaries from a paste are line breaks too.
+	$text = preg_replace('#</(p|div|li|h[1-6])>#i', "\n", (string) $text);
+	$text = html_entity_decode(wp_strip_all_tags((string) $text, false), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+	// Non-breaking spaces, which pasting from a word processor is full of.
+	$text = str_replace("\u{00A0}", ' ', $text);
+
+	$lines = array_map(
+		static fn(string $line): string => trim((string) preg_replace('/[ \t]+/', ' ', $line)),
+		explode("\n", str_replace(array("\r\n", "\r"), "\n", $text))
+	);
+
+	if (! $multiline) {
+		return trim(implode(' ', array_filter($lines, 'strlen')));
+	}
+
+	// At most one blank line in a row, and none at either end.
+	return trim((string) preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines)));
+}
+
+/**
+ * Plain text from bridge_rich_text_plain(), escaped, with its line breaks
+ * printed as `<br>`.
+ *
+ * @param string $text Plain text.
+ * @return string Safe HTML.
+ */
+function bridge_plain_text_html(string $text): string
+{
+	return nl2br(esc_html($text), false);
+}

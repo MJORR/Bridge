@@ -315,3 +315,56 @@ function bridge_post_body_class(array $classes): array
 	return $classes;
 }
 add_filter('body_class', 'bridge_post_body_class');
+
+/**
+ * Drop the single post's trail rail when there is no trail.
+ *
+ * `templates/single.html` always wraps `bridge/breadcrumb` in a band and a
+ * column. The breadcrumb renders nothing when the trail is off in Theme
+ * Options, or is a single step, but the two wrappers were still printed and
+ * had to be hidden in CSS. Leaving them out keeps the head as the real first
+ * child of `main`, so the margins above it can be written plainly.
+ *
+ * Matched on the class the template gives the outer group. The breadcrumb's
+ * own wrapper class is how "there is a trail" is told, since the block
+ * returns '' when there is none.
+ *
+ * @param string $block_content Rendered block HTML.
+ * @param array  $block         The parsed block.
+ * @return string The same HTML, or '' for a rail with no trail in it.
+ */
+function bridge_drop_empty_article_crumbs(string $block_content, array $block): string
+{
+	$class = (string) ($block['attrs']['className'] ?? '');
+
+	if (! in_array('bridge-article__crumbs', preg_split('/\s+/', $class), true)) {
+		return $block_content;
+	}
+
+	return str_contains($block_content, 'bridge-breadcrumb') ? $block_content : '';
+}
+add_filter('render_block_core/group', 'bridge_drop_empty_article_crumbs', 10, 2);
+
+/**
+ * An empty paragraph block renders nothing.
+ *
+ * The editor leaves one behind whenever someone clicks into an empty page and
+ * then inserts a block below it, so a page that looks as if it opens on a hero
+ * actually opens on `<p></p>`. It has no height and shows nothing, but it is
+ * still the content's first child — so the hero is no longer `:first-child`,
+ * the rule that sits a full-width first block flush under the header (see the
+ * no-title pages section of blocks/_page-title.scss) never matches, and the
+ * hero takes a block gap above it as well. Seventy pixels of page background
+ * between the header and the banner, from a block nobody can see.
+ *
+ * Only a paragraph with nothing at all in it. One holding `&nbsp;` or a `<br>`
+ * is a deliberate spacer, however unfashionable, and is left alone.
+ *
+ * @param string $block_content Rendered block HTML.
+ * @return string The same HTML, or '' for an empty paragraph.
+ */
+function bridge_drop_empty_paragraphs(string $block_content): string
+{
+	return preg_match('#^\s*<p\b[^>]*>\s*</p>\s*$#i', $block_content) ? '' : $block_content;
+}
+add_filter('render_block_core/paragraph', 'bridge_drop_empty_paragraphs');

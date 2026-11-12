@@ -530,7 +530,7 @@ function bridge_register_blocks(): void
 		'before'
 	);
 	bridge_register_section_block('call-to-action', true, false, array('bridge-band-mask'));
-	bridge_register_section_block('testimonials');
+	bridge_register_section_block('testimonials', true, false, array('bridge-band-mask'));
 	// The downloads band offers the decorative mask shape, so its editor script
 	// names the shared handle that draws those controls.
 	bridge_register_section_block('downloads', true, false, array('bridge-band-mask'));

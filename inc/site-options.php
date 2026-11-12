@@ -160,6 +160,12 @@ function bridge_site_options_schema(): array
 			'label'   => __('Phone', 'bridge'),
 			'help'    => __('Written the way it should be read. The dialling link is built from it separately, so spaces and brackets are safe here.', 'bridge'),
 		),
+		'service_email' => array(
+			'section' => 'business',
+			'type'    => 'text',
+			'label'   => __('Customer service email', 'bridge'),
+			'help'    => __('The address customers can write to. When it is filled in it appears in the footer\'s Get in touch column, with an email icon, as a link that opens their email app. Not the notifications address below — that one is where the contact form sends enquiries, and is never shown on the site.', 'bridge'),
+		),
 		'notify_email' => array(
 			'section' => 'notifications',
 			'type'    => 'text',
@@ -348,6 +354,21 @@ function bridge_sanitize_site_options($input): array
 	}
 
 	$clean['notify_email'] = sanitize_email($clean['notify_email']);
+
+	// The public address, printed in the footer. Kept rather than cleared on a
+	// typo, like the notifications address above: the old value is at least an
+	// address that worked, and a customer clicking a broken one is the failure
+	// nobody reports.
+	if ('' !== $clean['service_email'] && ! is_email($clean['service_email'])) {
+		bridge_site_options_error(
+			'bridge_bad_service_email',
+			__('The customer service email does not look like an email address, so the old one has been kept.', 'bridge')
+		);
+
+		$clean['service_email'] = (string) (bridge_get_site_options()['service_email'] ?? '');
+	}
+
+	$clean['service_email'] = sanitize_email($clean['service_email']);
 
 	// Google's keys are URL-safe; anything else is a paste that went wrong —
 	// a whole URL, or a key with a stray quote around it.

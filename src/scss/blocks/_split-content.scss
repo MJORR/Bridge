@@ -18,6 +18,14 @@
 		// one query — they answer the same question and were asked twice.
 		@include section.two-column {
 			grid-template-columns: 1fr 1fr;
+			// Twice the block gap between the columns once they sit side by
+			// side: at one block gap two columns of text read as one block
+			// that has been split. Stacked, the row gap stays at one, the
+			// space between any two blocks. Still a multiple of the setting,
+			// so it moves with Theme Options → Design → Gap between blocks.
+			column-gap: calc(
+				2 * var(--wp--style--block-gap, var(--wp--preset--spacing--60))
+			);
 		}
 	}
 
@@ -46,5 +54,43 @@
 	// without it, and a long URL in one column would push the other off.
 	&__column {
 		min-width: 0;
+	}
+
+	/**
+	 * The theme's own bands, dropped into a column.
+	 *
+	 * A band is a full-bleed stripe: `100vw` wide and pulled out by
+	 * `calc(50% - 50vw)`, which only lands on the window's edges at the top
+	 * level of a page. In a column it grows to the window's width and centres
+	 * on the column instead, hanging off one side of the page. Here it is the
+	 * column's width and nothing more.
+	 *
+	 * Its inner container gives up its cap and its gutter too — the split's
+	 * own container already has both, and a second gutter would indent the
+	 * band's content from the text beside it.
+	 */
+	&__column .bridge-band.bridge-band.alignfull {
+		width: auto;
+		max-width: none;
+		margin-inline: 0;
+	}
+
+	&__column .bridge-band > [class*="__inner"] {
+		max-width: none;
+		margin-inline: 0;
+		padding-inline: 0;
+	}
+
+	// The section padding is the air between bands of the page. In a column
+	// it would push the band's content below the text beside it — so it goes,
+	// except on a band that paints a ground of its own, where it is what keeps
+	// the words off the edge of the colour.
+	&__column
+		.bridge-section:not(
+			[class*="-background-color"],
+			[class*="is-style-bridge-"],
+			[style*="background"]
+		) {
+		padding-block: 0;
 	}
 }

@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$width = 'wide' === ( $attributes['width'] ?? 'narrow' ) ? 'wide' : 'narrow';
+$width = 'narrow' === ( $attributes['width'] ?? 'wide' ) ? 'narrow' : 'wide';
 
 // The FAQ type, and never anything else. Not an attribute: the block is called
 // FAQs and the theme declares the type it reads, so there was never a second

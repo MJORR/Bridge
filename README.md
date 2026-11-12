@@ -3,6 +3,8 @@
 **One global design system, set once, applied everywhere.** Brand colours,
 fonts, cards and buttons are set globally within theme options.
 
+An example site can be seen here: [magnusorr.com](https://magnusorr.com)
+
 Requires WordPress 6.6 or later and PHP 8.1 or later. The site can be installed and run without a developer as the CSS files are pre-compiled within the theme folder.
 
 - [Getting started](#getting-started)

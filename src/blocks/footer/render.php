@@ -156,6 +156,15 @@ $bridge_ground = sprintf(
 	'' !== $bridge_image ? '--bridge-footer-image: ' . $bridge_image . ';' : ''
 );
 
+// The site's mask shape behind the columns, set in Theme Options → Templates →
+// Footer with the controls the section blocks have, and drawn by the same
+// helper. On the body rather than the wrapper: the wrapper's `::before` is the
+// background image, and the copyright row is a strip of its own the shape has
+// no business crossing.
+list( $bridge_mask_class, $bridge_mask_style ) = function_exists( 'bridge_band_mask' )
+	? bridge_band_mask( $bridge_footer )
+	: array( '', '' );
+
 $bridge_wrapper = get_block_wrapper_attributes(
 	array(
 		'class' => implode( ' ', $bridge_classes ),
@@ -164,7 +173,7 @@ $bridge_wrapper = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $bridge_wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core. ?>>
-	<div class="bridge-footer__body">
+	<div class="bridge-footer__body<?php echo esc_attr( $bridge_mask_class ); ?>"<?php echo '' !== $bridge_mask_style ? ' style="' . esc_attr( $bridge_mask_style ) . '"' : ''; ?>>
 		<div class="bridge-footer__inner">
 			<div class="bridge-footer__col bridge-footer__col--identity">
 				<?php echo bridge_footer_logo(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>
@@ -179,21 +188,21 @@ $bridge_wrapper = get_block_wrapper_attributes(
 					// landmark's sections, and a screen-reader user listing the
 					// headings on a page should find "Explore" among them.
 					?>
-					<h2 class="bridge-footer__heading"><?php esc_html_e( 'Explore', 'bridge' ); ?></h2>
-					<?php echo bridge_footer_nav( $bridge_explore, __( 'Explore', 'bridge' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
+					<h2 class="bridge-footer__heading"><?php echo esc_html( bridge_footer_label( 'explore' ) ); ?></h2>
+					<?php echo bridge_footer_nav( $bridge_explore, bridge_footer_label( 'explore' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
 				</div>
 			<?php endif; ?>
 
 			<?php if ( $bridge_services > 0 ) : ?>
 				<div class="bridge-footer__col bridge-footer__col--menu">
-					<h2 class="bridge-footer__heading"><?php esc_html_e( 'Services', 'bridge' ); ?></h2>
-					<?php echo bridge_footer_nav( $bridge_services, __( 'Services', 'bridge' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
+					<h2 class="bridge-footer__heading"><?php echo esc_html( bridge_footer_label( 'services' ) ); ?></h2>
+					<?php echo bridge_footer_nav( $bridge_services, bridge_footer_label( 'services' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
 				</div>
 			<?php endif; ?>
 
 			<?php if ( $bridge_has_contact ) : ?>
 				<div class="bridge-footer__col bridge-footer__col--contact">
-					<h2 class="bridge-footer__heading"><?php esc_html_e( 'Get in touch', 'bridge' ); ?></h2>
+					<h2 class="bridge-footer__heading"><?php echo esc_html( bridge_footer_label( 'contact' ) ); ?></h2>
 					<?php echo $bridge_contact; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>
 					<?php echo $bridge_social; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>
 				</div>
@@ -204,7 +213,7 @@ $bridge_wrapper = get_block_wrapper_attributes(
 	<div class="bridge-footer__legal">
 		<div class="bridge-footer__legal-inner">
 			<p class="bridge-footer__copyright"><?php echo esc_html( bridge_footer_copyright() ); ?></p>
-			<?php echo bridge_footer_nav( $bridge_legal, __( 'Legal', 'bridge' ), 'horizontal' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
+			<?php echo bridge_footer_nav( $bridge_legal, bridge_footer_label( 'legal' ), 'horizontal' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core block output. ?>
 		</div>
 	</div>
 </div>

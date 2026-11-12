@@ -17,7 +17,7 @@
 	"attributes": {
 		"width": {
 			"type": "string",
-			"default": "narrow"
+			"default": "wide"
 		},
 		"backgroundImage": {
 			"type": "number"

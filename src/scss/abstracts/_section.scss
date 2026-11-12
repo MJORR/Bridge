@@ -93,10 +93,17 @@ $two-column: 48rem;
 		);
 		// stylelint-enable scss/operator-no-newline-after
 	} @else {
-		// No compensation here, unlike `narrow`: there is no page-wide column
-		// for a wide band to line up with, and every wide band on the site
-		// spends its gutter inside `wideSize`, so they stay consistent.
-		max-width: var(--wp--style--global--wide-size);
+		// The same compensation as `narrow`, for the column the header, the
+		// footer and the hero banner already sit on: `wideSize` is where their
+		// content starts, not where their box does. Spent inside it, the
+		// gutter set every wide band's words a gutter in from the logo above.
+		// stylelint-disable scss/operator-no-newline-after -- as above.
+		max-width: calc(
+			var(--wp--style--global--wide-size) +
+				2 *
+				var(--wp--preset--spacing--40)
+		);
+		// stylelint-enable scss/operator-no-newline-after
 	}
 
 	margin-inline: auto;

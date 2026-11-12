@@ -1434,6 +1434,10 @@ function bridge_token_constraints(): array
 		'posts'      => array(
 			'template' => array('options' => array_keys(bridge_post_templates())),
 			'image'    => array('options' => array_keys(bridge_post_image_shapes())),
+			// The tallest the Cover band may stand, as a share of the window
+			// height. Below ~20vh the headline has no photograph left around
+			// it; at 100 the article starts entirely below the fold.
+			'coverMaxHeight' => array('min' => 20, 'max' => 100, 'step' => 1, 'unit' => 'vh'),
 		),
 		'header'     => array(
 			// Every layout stacks or rows the same two elements; none puts the
@@ -1441,6 +1445,11 @@ function bridge_token_constraints(): array
 			// can hold as a client's services grow.
 			'layout'       => array('options' => array('left', 'centre', 'two-row')),
 			'contrast'     => array('options' => array('auto', 'light', 'dark')),
+			// The primary menu's type size, as a font-size preset slug. Only the
+			// two steps that read as a menu bar: `small` is what the header has
+			// always used, `medium` matches body copy. The top bar is not offered
+			// this — it stays at `small` as the quieter of the two menus.
+			'navFontSize'  => array('options' => array('small', 'medium')),
 			'logoHeight'   => array('min' => 16, 'max' => 120, 'step' => 2, 'unit' => 'px'),
 			// 0 is a header whose logo touches the edges of its ground — flush
 			// is a legitimate look, so it is a legitimate value. Above ~80 the
@@ -1457,6 +1466,12 @@ function bridge_token_constraints(): array
 			// this existed. Past about 60% the strip has stopped being a shade
 			// of the footer and become a second colour.
 			'legalShade'      => array('min' => -60, 'max' => 60, 'step' => 5, 'unit' => '%'),
+			// The mask shape, on the same scales the section blocks offer —
+			// see src/editor/band-mask.js and bridge_band_mask().
+			'maskShade'       => array('min' => -100, 'max' => 100, 'step' => 5, 'unit' => '%'),
+			'maskSize'        => array('min' => 10, 'max' => 200, 'step' => 5, 'unit' => ''),
+			'maskEdge'        => array('options' => array('left', 'right')),
+			'maskBleed'       => array('min' => 0, 'max' => 90, 'step' => 5, 'unit' => '%'),
 		),
 		// Not a range and not a list of options — the shape of a declared post
 		// type. Sent to the options page so the form can refuse a slug before
@@ -1622,6 +1637,9 @@ function bridge_token_defaults(): array
 			// theme drew before this was a setting, so a site that never opens
 			// the control keeps the picture it had.
 			'image'      => 'rounded',
+			// The Cover band's height, in vh. 52 is the share of the window
+			// the stylesheet aimed for before this was a setting.
+			'coverMaxHeight' => 52,
 			// Whether a single post sits on `surface` rather than on the page
 			// colour every other template uses. Off, because the page colour
 			// is what the theme drew before this was a setting.
@@ -1701,6 +1719,10 @@ function bridge_token_defaults(): array
 				// stays stored either way, so turning it back on restores the
 				// colour that was chosen rather than the default.
 				'accentEnabled' => true,
+				// The primary menu's font-size preset. `small` is what the
+				// header hard-coded before this was a setting. The top bar is
+				// not governed by it.
+				'fontSize'      => 'small',
 			),
 		),
 		'footer'     => array(
@@ -1712,6 +1734,14 @@ function bridge_token_defaults(): array
 			// Level with the footer, which is the strip every site had before
 			// the control existed.
 			'legalShade'      => 0,
+			// The site's mask shape behind the columns, with the same four
+			// settings and defaults a section block gives it. Off by default,
+			// for the reason the gradient is.
+			'mask'            => false,
+			'maskShade'       => -20,
+			'maskSize'        => 60,
+			'maskEdge'        => 'right',
+			'maskBleed'       => 0,
 			// The ground the footer sits on. Surface, because that is the
 			// colour both footer parts were painted before this was a
 			// setting — a site that never opens the control keeps the footer
@@ -1728,14 +1758,26 @@ function bridge_token_defaults(): array
 			// no longer a column at all — it runs along the bottom row beside
 			// the copyright, which is where a privacy link belongs.
 			'menus'           => array('explore' => 0, 'services' => 0, 'legal' => 0),
+			// The headings over the footer's columns, and the name of the
+			// legal links. Empty means the theme's own wording ("Explore",
+			// "Services", "Get in touch", "Legal"), resolved at render time by
+			// bridge_footer_label() — stored empty rather than as the words
+			// themselves so a site that never changes them keeps getting them
+			// translated.
+			'labels'          => array('explore' => '', 'services' => '', 'contact' => '', 'legal' => ''),
 		),
 		// Deviations from the theme's curated block set, not the set itself.
 		// Storing the whole list would freeze it: a block added by a later
 		// theme release would arrive switched off, because it could not be in
 		// a list written before it existed.
 		'blocks'     => array(
-			'enabled'  => array(),
-			'disabled' => array(),
+			'enabled'          => array(),
+			'disabled'         => array(),
+			// Off by default, so a site that never opens the control keeps
+			// the editor it had: core's Block Directory, which offers to
+			// install third-party blocks from WordPress.org when an inserter
+			// search finds nothing. See bridge_disable_block_directory().
+			'disableDirectory' => false,
 		),
 		'layout'     => array(
 			'contentSize'      => 720,
@@ -2192,6 +2234,31 @@ function bridge_hex_or($value, string $fallback): string
 }
 
 /**
+ * The footer's headings, as plain short strings.
+ *
+ * Always the four known slots, whatever arrives: unknown keys are dropped and
+ * missing ones come back empty, which bridge_footer_label() reads as "use the
+ * theme's wording". Plain text — a heading is not a place for markup — and
+ * capped, because a heading that runs to a paragraph is a typo rather than a
+ * choice.
+ *
+ * @param mixed $raw Candidate labels, keyed by slot.
+ * @return array{explore: string, services: string, contact: string, legal: string}
+ */
+function bridge_sanitize_footer_labels($raw): array
+{
+	$raw    = is_array($raw) ? $raw : array();
+	$labels = array();
+
+	foreach (array('explore', 'services', 'contact', 'legal') as $slot) {
+		$value          = is_scalar($raw[$slot] ?? null) ? sanitize_text_field((string) $raw[$slot]) : '';
+		$labels[$slot] = function_exists('mb_substr') ? mb_substr($value, 0, 60) : substr($value, 0, 60);
+	}
+
+	return $labels;
+}
+
+/**
  * Reduce arbitrary input to a complete, valid token set.
  *
  * Total by design: anything missing, malformed or out of range is replaced
@@ -2464,6 +2531,17 @@ function bridge_sanitize_tokens(array $raw): array
 			$raw_posts['image'] ?? '',
 			$defaults['posts']['image']
 		),
+		// Briefly stored in pixels (240–960) before it became vh. Anything
+		// above 100 can only be one of those, so it falls to the default
+		// rather than being clamped to a full-window band.
+		'coverMaxHeight' => (int) round(bridge_clamp_token(
+			'posts',
+			'coverMaxHeight',
+			(is_numeric($raw_posts['coverMaxHeight'] ?? null) && (float) $raw_posts['coverMaxHeight'] <= 100)
+				? $raw_posts['coverMaxHeight']
+				: null,
+			(float) $defaults['posts']['coverMaxHeight']
+		)),
 		// Cast rather than defaulted, the way `site.feeds` is: this one
 		// defaults to *off*, so "missing" and "off" are the same answer and
 		// there is nothing for a fallback to disambiguate.
@@ -2544,6 +2622,13 @@ function bridge_sanitize_tokens(array $raw): array
 	$nav['accentEnabled'] = isset($raw_nav['accentEnabled'])
 		? (bool) $raw_nav['accentEnabled']
 		: (bool) $defaults['header']['nav']['accentEnabled'];
+
+	$nav['fontSize'] = bridge_pick_token(
+		'header',
+		'navFontSize',
+		$raw_nav['fontSize'] ?? '',
+		$defaults['header']['nav']['fontSize']
+	);
 
 	$header_bg = bridge_pick_palette_slug(
 		$raw_header['backgroundColor'] ?? null,
@@ -2660,6 +2745,20 @@ function bridge_sanitize_tokens(array $raw): array
 			'explore'  => $explore_menu,
 			'services' => max(0, (int) ($raw_footer_menus['services'] ?? 0)),
 			'legal'    => max(0, (int) ($raw_footer_menus['legal'] ?? 0)),
+		),
+		'labels'          => bridge_sanitize_footer_labels($raw_footer['labels'] ?? array()),
+		// Stored under the attribute names the section blocks use, so the
+		// footer hands this group to bridge_band_mask() as it stands.
+		'mask'            => ! empty($raw_footer['mask']),
+		'maskShade'       => (int) round(
+			bridge_clamp_token('footer', 'maskShade', $raw_footer['maskShade'] ?? null, (float) $defaults['footer']['maskShade'])
+		),
+		'maskSize'        => (int) round(
+			bridge_clamp_token('footer', 'maskSize', $raw_footer['maskSize'] ?? null, (float) $defaults['footer']['maskSize'])
+		),
+		'maskEdge'        => bridge_pick_token('footer', 'maskEdge', $raw_footer['maskEdge'] ?? '', $defaults['footer']['maskEdge']),
+		'maskBleed'       => (int) round(
+			bridge_clamp_token('footer', 'maskBleed', $raw_footer['maskBleed'] ?? null, (float) $defaults['footer']['maskBleed'])
 		),
 	);
 
@@ -2862,8 +2961,11 @@ function bridge_sanitize_tokens(array $raw): array
 		'footer'     => $footer,
 		'layout'     => $layout,
 		'blocks'     => array(
-			'enabled'  => $enabled,
-			'disabled' => $disabled,
+			'enabled'          => $enabled,
+			'disabled'         => $disabled,
+			// Cast rather than defaulted: a boolean's "missing" and "off" are
+			// the same answer.
+			'disableDirectory' => ! empty($raw_blocks['disableDirectory']),
 		),
 		'postTypes'  => $post_types,
 		'site'       => $site,

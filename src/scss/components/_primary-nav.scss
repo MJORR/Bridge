@@ -281,7 +281,8 @@
 		// hides this one.
 		.wp-block-navigation__container
 			> .wp-block-navigation-item:not(.bridge-nav__cta):not(
-				.bridge-nav__extra
+				.bridge-nav__extra,
+				.bridge-nav__search
 			) {
 			position: relative;
 			display: flex;
@@ -464,7 +465,8 @@
 		.bridge-nav--primary
 		.wp-block-navigation__container
 		> .wp-block-navigation-item:not(.bridge-nav__cta):not(
-			.bridge-nav__extra
+			.bridge-nav__extra,
+			.bridge-nav__search
 		) {
 		// The marker sits on the header's top edge, flush against it — the
 		// same line the hover surface starts at, so the two read as one object
@@ -562,15 +564,16 @@
 		.bridge-header__end
 		> .bridge-nav--primary:last-child
 		.wp-block-navigation__container
-		> .wp-block-navigation-item:not(.bridge-nav__cta, .bridge-nav__extra):last-child,
+		> .wp-block-navigation-item:not(.bridge-nav__cta, .bridge-nav__extra, .bridge-nav__search):last-child,
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-header__row
 		.bridge-header__end
 		> .bridge-nav--primary:last-child
 		.wp-block-navigation__container
-		> .wp-block-navigation-item:not(.bridge-nav__cta, .bridge-nav__extra):has(
+		> .wp-block-navigation-item:not(.bridge-nav__cta, .bridge-nav__extra, .bridge-nav__search):has(
 			+ .bridge-nav__cta,
-			+ .bridge-nav__extra
+			+ .bridge-nav__extra,
+			+ .bridge-nav__search
 		) {
 		padding-inline-end: 0;
 	}
@@ -771,6 +774,53 @@
 		.bridge-nav--primary
 		.bridge-nav__extra {
 		display: none;
+	}
+}
+
+/**
+ * The search field, as the panel's last row.
+ *
+ * Hidden in the menu bar by the same test as the rows above, because there the
+ * header's own search icon is showing. In the panel it is a form rather than a
+ * link, so it takes none of the row treatment: no divider, no full-bleed
+ * press state — just the field and its button, held off the rows above.
+ *
+ * The field's ground is mixed from the panel's own text colour rather than
+ * named, so it reads on whichever ground the panel is painted. 1rem type on
+ * the input because iOS zooms the page into any field set smaller than 16px,
+ * and a menu that lurches sideways the moment you tap search is the bad look
+ * this replaced.
+ */
+@media (min-width: nav.$bar) {
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-nav--primary
+		.bridge-nav__search {
+		display: none;
+	}
+}
+
+.bridge-header
+	.wp-block-navigation.bridge-nav--primary
+	.wp-block-navigation__responsive-container.is-menu-open
+	.bridge-nav__search {
+	--bridge-search-field: color-mix(in srgb, currentcolor 14%, transparent);
+
+	padding-block: var(--wp--preset--spacing--40);
+
+	.bridge-nav__search-form {
+		display: flex;
+		align-items: stretch;
+		gap: var(--wp--preset--spacing--20);
+		width: 100%;
+	}
+
+	.bridge-header__search-control {
+		min-width: 0;
+	}
+
+	.bridge-header__search-field {
+		min-width: 0;
+		font-size: 1rem;
 	}
 }
 

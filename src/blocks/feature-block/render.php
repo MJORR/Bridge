@@ -59,8 +59,10 @@ $prefix     = trim( (string) ( $attributes['prefix'] ?? '' ) );
 // band, a dark one and over a photograph at the same time — so an empty value
 // here is a working default rather than a missing setting.
 $prefix_ink = sanitize_key( (string) ( $attributes['prefixColor'] ?? '' ) );
-$title      = trim( (string) ( $attributes['title'] ?? '' ) );
-$text       = trim( (string) ( $attributes['text'] ?? '' ) );
+// RichText values, read back to plain text so a pasted line break is a line
+// break rather than a printed `<br>` — see bridge_rich_text_plain().
+$title      = bridge_rich_text_plain( (string) ( $attributes['title'] ?? '' ) );
+$text       = bridge_rich_text_plain( (string) ( $attributes['text'] ?? '' ) );
 // `graphicId` rather than `imageId`, and the name is the only thing left of
 // what it used to be: a small icon floated at the top of the panel. It is the
 // panel's photograph now, drawn in the card frame. Renaming the attribute
@@ -72,6 +74,21 @@ $link_url   = trim( (string) ( $attributes['linkUrl'] ?? '' ) );
 $link_text  = trim( (string) ( $attributes['linkText'] ?? '' ) );
 $link_style = 'text' === ( $attributes['linkStyle'] ?? 'button' ) ? 'text' : 'button';
 $highlight  = ! empty( $attributes['highlight'] );
+$card_bg    = sanitize_key( (string) ( $attributes['cardBackground'] ?? '' ) );
+$card_text  = sanitize_key( (string) ( $attributes['cardText'] ?? '' ) );
+
+// The number line is the band's call: printed only when it has step numbers
+// switched on, and never on the numbered layout, which draws badges instead.
+// A panel left empty takes its position from a CSS counter on the list.
+// The arrow at the foot of the panel — the band's call, like the numbers.
+$show_arrow = ! empty( $block->context['bridge/featureArrow'] );
+
+// The band can make the panel itself the link: no button, no link text, and
+// the covering link below becomes the real, focusable one.
+$panel_link = ! empty( $block->context['bridge/featurePanelLink'] );
+
+$show_prefix = ! empty( $block->context['bridge/featureNumbers'] )
+	&& 'numbered' !== ( $block->context['bridge/featureLayout'] ?? 'grid' );
 
 if ( '' === $title && '' === $text && 0 === $image && 0 === $background ) {
 	return;
@@ -125,6 +142,14 @@ if ( $background > 0 ) {
 			array( bridge_palette_hex( 'background' ), bridge_palette_hex( 'text' ) )
 		);
 
+		// A text colour chosen on the panel wins over the contrast pick: the
+		// editor has said what they want. The button ground follows it.
+		$chosen_ink = '' !== $card_text && function_exists( 'bridge_palette_hex' ) ? bridge_palette_hex( $card_text ) : '';
+
+		if ( '' !== $chosen_ink ) {
+			$ink = $chosen_ink;
+		}
+
 		$style .= sprintf(
 			'--bridge-feature-wash:var(--wp--preset--color--%s);--bridge-feature-ink:%s;',
 			$wash,
@@ -152,7 +177,25 @@ if ( $background > 0 ) {
  * stylesheet's fallback standing, rather than write a custom property that
  * resolves to nothing and paints the line in the browser's initial colour.
  */
-if ( '' !== $prefix && '' !== $prefix_ink ) {
+/*
+ * The panel's own background and text colours. Palette slugs, checked against
+ * the palette like the wash, and spent through `var()` so a rebrand carries
+ * them. The background is not offered on a cover panel — the photograph is
+ * the ground there.
+ */
+$card_bg_hex = '' !== $card_bg && 0 === $background && function_exists( 'bridge_palette_hex' ) ? bridge_palette_hex( $card_bg ) : '';
+
+if ( '' !== $card_bg_hex ) {
+	$classes .= ' has-card-background';
+	$style   .= sprintf( '--bridge-feature-bg:var(--wp--preset--color--%s);', $card_bg );
+}
+
+if ( '' !== $card_text && function_exists( 'bridge_palette_hex' ) && '' !== bridge_palette_hex( $card_text ) ) {
+	$classes .= ' has-card-text';
+	$style   .= sprintf( '--bridge-feature-text:var(--wp--preset--color--%s);', $card_text );
+}
+
+if ( $show_prefix && '' !== $prefix && '' !== $prefix_ink ) {
 	$prefix_ink_hex = function_exists( 'bridge_palette_hex' ) ? bridge_palette_hex( $prefix_ink ) : '';
 
 	if ( '' !== $prefix_ink_hex ) {
@@ -164,15 +207,15 @@ if ( '' !== $prefix && '' !== $prefix_ink ) {
 }
 
 /*
- * The whole panel as a click target, and only for the quiet cue.
+ * The whole panel as a click target, whichever cue it shows.
  *
- * A text link is the Summary card's read-more: it names the destination and
- * the panel around it is the target, which is why it stretches. A button is a
- * target already — stretching one would make the panel's whole surface
- * pressable while showing a control that says where to press, and a second
- * later the two disagree about what happened.
+ * A text link stretches its own `::after` over the panel. A button cannot —
+ * both of its pseudo-elements are the button's fill — so a button panel gets
+ * a covering link of its own, hidden from the keyboard and screen readers so
+ * the button stays the one named, focusable control. The button sits above
+ * the cover so its own hover and click still land on it.
  */
-if ( '' !== $link_url && 'text' === $link_style ) {
+if ( '' !== $link_url ) {
 	$classes .= ' is-linked';
 }
 
@@ -230,7 +273,7 @@ $wrapper = get_block_wrapper_attributes(
 	<?php endif; ?>
 
 	<div class="bridge-feature__body">
-		<?php if ( '' !== $prefix ) : ?>
+		<?php if ( $show_prefix && '' !== $prefix ) : ?>
 			<?php
 			/*
 			 * A <span> rather than a heading of its own: "01" is part of the
@@ -240,17 +283,19 @@ $wrapper = get_block_wrapper_attributes(
 			 */
 			?>
 			<span class="bridge-feature__prefix"><?php echo esc_html( $prefix ); ?></span>
+		<?php elseif ( $show_prefix ) : ?>
+			<span class="bridge-feature__prefix bridge-feature__prefix--auto"></span>
 		<?php endif; ?>
 
 		<?php if ( '' !== $title ) : ?>
-			<h3 class="bridge-feature__title"><?php echo esc_html( $title ); ?></h3>
+			<h3 class="bridge-feature__title"><?php echo bridge_plain_text_html( $title ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped inside. ?></h3>
 		<?php endif; ?>
 
 		<?php if ( '' !== $text ) : ?>
-			<p class="bridge-feature__text"><?php echo esc_html( $text ); ?></p>
+			<p class="bridge-feature__text"><?php echo bridge_plain_text_html( $text ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped inside. ?></p>
 		<?php endif; ?>
 
-		<?php if ( '' !== $link_url ) : ?>
+		<?php if ( '' !== $link_url && ! $panel_link ) : ?>
 			<?php if ( 'button' === $link_style ) : ?>
 				<?php
 				/*
@@ -272,7 +317,13 @@ $wrapper = get_block_wrapper_attributes(
 				 */
 				$button_class = 'bridge-feature__button wp-element-button';
 
-				if ( '' !== $ink ) {
+				// A panel with its own background is a ground of its own too,
+				// so the button reads which side of the line that colour is on.
+				if ( '' !== $card_bg_hex ) {
+					$button_class .= bridge_is_light_color( $card_bg_hex )
+						? ' bridge-button--on-default'
+						: ' bridge-button--on-inverted';
+				} elseif ( '' !== $ink ) {
 					$button_class .= bridge_is_light_color( $ink )
 						? ' bridge-button--on-inverted'
 						: ' bridge-button--on-default';
@@ -287,5 +338,32 @@ $wrapper = get_block_wrapper_attributes(
 				</a>
 			<?php endif; ?>
 		<?php endif; ?>
+
+		<?php if ( $show_arrow ) : ?>
+			<?php
+			/*
+			 * Decoration: the panel's link, title and words already say where
+			 * it goes. In the text colour, because the icon strokes in
+			 * `currentColor` — white text, white arrow.
+			 */
+			?>
+			<span class="bridge-feature__arrow" aria-hidden="true">
+				<?php echo bridge_render_icon( 'arrow-circle-right', array( 'size' => 'large' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from the theme's own icon library. ?>
+			</span>
+		<?php endif; ?>
 	</div>
+
+	<?php if ( '' !== $link_url && $panel_link ) : ?>
+		<?php
+		/*
+		 * The panel is the link, so the cover is the control: focusable and
+		 * named. Named by the title rather than by its whole contents, which
+		 * is what wrapping the panel in an anchor would have done.
+		 */
+		$panel_label = '' !== $title ? bridge_rich_text_plain( $title, false ) : ( '' !== $text ? wp_trim_words( bridge_rich_text_plain( $text, false ), 12 ) : __( 'Read more', 'bridge' ) );
+		?>
+		<a class="bridge-feature__cover-link" href="<?php echo esc_url( $link_url ); ?>" aria-label="<?php echo esc_attr( $panel_label ); ?>"></a>
+	<?php elseif ( '' !== $link_url && 'button' === $link_style ) : ?>
+		<a class="bridge-feature__cover-link" href="<?php echo esc_url( $link_url ); ?>" tabindex="-1" aria-hidden="true"></a>
+	<?php endif; ?>
 </li>

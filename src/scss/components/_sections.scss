@@ -182,7 +182,7 @@
 	.is-style-bridge-surface,
 	.is-style-bridge-inverted,
 	.is-style-bridge-accent
-):not(.bridge-band--flush) {
+):not(.bridge-band) {
 	padding-inline: var(--wp--preset--spacing--40);
 }
 
@@ -251,12 +251,15 @@
  * So the band says what it is instead, and both padding rules in this file
  * stand down for it — the block keeps the responsibility it has taken on,
  * which is to inset its own words.
+ *
+ * A section band stands down too: its content container already carries the
+ * gutter, and padding the band as well set its words a second gutter in.
  */
 .alignfull:is(
 		.is-style-bridge-surface,
 		.is-style-bridge-inverted,
 		.is-style-bridge-accent
-	):not(.bridge-band--flush) {
+	):not(.bridge-band) {
 	padding-left: var(--wp--preset--spacing--40);
 	padding-right: var(--wp--preset--spacing--40);
 }
@@ -327,17 +330,12 @@
 }
 
 /**
- * A band that paints itself spends the page's side padding too, so its content
- * clears the window edge on a phone. Bands with no background of their own are
- * left alone — padding on a transparent box only pulls the content inwards
- * twice, since each block's container already has its own gutter.
+ * No side padding on a band itself, painted or not.
+ *
+ * Every band's content sits in a `section.container()`, and that container
+ * already carries the page gutter. Padding the band as well put a skinned
+ * section's words a second gutter in from the hero, the header and every
+ * unpainted band once the window was narrower than the wide size. The skin
+ * gutter above is kept for what wears a skin without a container: a plain
+ * group with the Surface style, say.
  */
-// The same gutter, for a band that carries a background without wearing one of
-// the named skins. `--flush` opts out of both — see the note above.
-.bridge-band:not(.bridge-band--flush):where(
-		[class*="has-"][class*="-background-color"],
-		[class*="is-style-bridge-"],
-		[style*="background"]
-	) {
-	padding-inline: var(--wp--preset--spacing--40);
-}

@@ -1,1 +1,1 @@
-(function(){"use strict";const{addFilter:n}=window.wp.hooks,t=["bridge/faqs"];n("blockEditor.__unstableCanInsertBlockType","bridge/top-level-only",(o,e,l)=>t.includes(e.name)&&l?!1:o)})();
+(function(){"use strict";const{addFilter:n}=window.wp.hooks,r=["bridge/faqs"],l=o=>{const t=window.wp.data.select("core/block-editor");return t.getBlockName(o)==="core/group"&&t.getBlockName(t.getBlockRootClientId(o))==="bridge/split-content"};n("blockEditor.__unstableCanInsertBlockType","bridge/top-level-only",(o,t,e)=>!r.includes(t.name)||!e||l(e)?o:!1)})();

@@ -4,6 +4,7 @@
  * One stylesheet for both blocks: a card only ever appears inside the set, so
  * splitting them would ship two files that are never useful apart.
  */
+@use "../abstracts/band-mask" as mask;
 @use "../abstracts/card" as card;
 @use "../abstracts/carousel" as carousel;
 @use "../abstracts/section" as section;
@@ -13,6 +14,10 @@
 @include intro.section-intro;
 
 .bridge-testimonials {
+	// The decorative mask shape, when the block asks for one — the same shape,
+	// controls and mixin the FAQs, Cards and Downloads bands use.
+	@include mask.band-mask;
+
 	// The content column. `narrow` is theme.json's `contentSize` — the same
 	// width the rest of the page runs at, so a band that paints edge to edge
 	// still lines its words up with everything above and below it.
@@ -33,6 +38,9 @@
 		// `card.surface` makes each card a container of its own once the cut
 		// corner is switched on.
 		container: bridge-testimonials / inline-size;
+
+		// Over the shape.
+		@include mask.band-mask-content;
 	}
 
 	// The wide setting.
@@ -185,14 +193,23 @@
 		display: flex;
 		gap: 0.1em;
 		line-height: 1;
+		// Added to the stack's gap rather than replacing it: the card is a
+		// flex column, so the two do not collapse into one.
+		margin-block-end: var(--wp--preset--spacing--40);
+		font-size: var(--wp--preset--font-size--large, 1.5rem);
+		color: var(--wp--preset--color--accent);
 	}
 
-	// Filled and empty stars are the same colour at two strengths, never two
-	// colours. Naming the accent preset here painted accent stars onto the
-	// accent skin, where the rating disappeared into its own background;
-	// currentcolor is whatever the band is already legible in.
-	&__star {
+	// Filled and empty stars are one colour at two strengths, never two
+	// colours: the accent, except on the accent skin, where accent stars
+	// would disappear into their own background and the band's text colour
+	// takes over.
+	.is-style-bridge-accent &__rating {
 		color: currentcolor;
+	}
+
+	&__star {
+		color: inherit;
 		opacity: 0.25;
 	}
 

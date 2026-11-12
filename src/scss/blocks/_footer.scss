@@ -21,6 +21,7 @@
  * the window, the words inside it stop at the site's wide container. See the
  * note in render.php for why that is two wrappers rather than one.
  */
+@use "../abstracts/band-mask" as mask;
 
 .bridge-footer {
 	background-color: var(
@@ -227,6 +228,15 @@
 
 	padding-block: var(--bridge-footer-section)
 		calc(var(--bridge-footer-section) + var(--wp--preset--spacing--60));
+
+	// The site's mask shape, when Theme Options asks for one — the mixin the
+	// section blocks use, so the shape sits and sizes the same way here.
+	@include mask.band-mask;
+
+	// Over the shape.
+	> .bridge-footer__inner {
+		@include mask.band-mask-content;
+	}
 }
 
 /**
@@ -254,8 +264,8 @@
  * phone to a desktop without spending a stretch of the range at a width that
  * suits none of them:
  *
- *   under 34rem   One column. Everything is a single running list.
- *   34–68rem      Two columns. The identity column takes the full row above
+ *   under 38rem   One column. Everything is a single running list.
+ *   38–68rem      Two columns. The identity column takes the full row above
  *                 them — it holds a paragraph, and a paragraph in a half-row
  *                 at tablet width is four words a line — and the three short
  *                 columns pair up underneath.
@@ -284,12 +294,16 @@
 	gap: var(--wp--preset--spacing--70) var(--wp--preset--spacing--60);
 	grid-template-columns: minmax(0, 1fr);
 
-	@media (width >= 34rem) {
+	@media (width >= 38rem) {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
 	@media (width >= 68rem) {
 		row-gap: var(--wp--preset--spacing--50);
+		// 2XL between the four columns, a step up from the XL the paired
+		// tablet layout keeps: four columns side by side need more air between
+		// them to read as separate lists.
+		column-gap: var(--wp--preset--spacing--70);
 		grid-template-columns: 1.7fr 1fr 1.15fr 1.35fr;
 	}
 }
@@ -302,7 +316,7 @@
  * a span written here would be a second copy of it.
  */
 .bridge-footer__col--identity {
-	@media (width >= 34rem) {
+	@media (width >= 38rem) {
 		grid-column: 1 / -1;
 	}
 
@@ -316,6 +330,30 @@
 	flex-direction: column;
 	gap: var(--wp--preset--spacing--30);
 	min-width: 0;
+}
+
+/**
+ * In four columns, the identity column is never narrower than the logo.
+ *
+ * At 1.7fr of a 1088–1400px row the column came out a little short of a wide
+ * wordmark, and the logo was scaled down to fit — a footer logo visibly smaller
+ * than the header's. With the column's `min-width: 0` lifted, the grid's own
+ * automatic minimum keeps the track at least as wide as its content (the logo
+ * is the widest thing in it) and takes the difference from the three menu
+ * columns, which are lists and can spare it.
+ *
+ * After `.bridge-footer__col` on purpose: the two are one class each, so the
+ * later one wins.
+ */
+// stylelint-disable-next-line no-duplicate-selectors -- order matters, see above.
+.bridge-footer__col--identity {
+	@media (width >= 68rem) {
+		min-width: auto;
+		// Extra air between the identity column and the first menu, on top of
+		// the grid's column gap — only once the four sit in one row. Stacked or
+		// paired, the column has nothing beside it to clear.
+		margin-inline-end: var(--wp--preset--spacing--60);
+	}
 }
 
 // ---- Column one: the logo, the description and the strapline -------------
@@ -390,6 +428,14 @@
 	block-size: var(--bridge-footer-logo-height, 40px);
 	inline-size: auto;
 	max-inline-size: 100%;
+
+	// In four columns the column is sized to fit the logo (see
+	// `.bridge-footer__col--identity`), so the cap comes off and the mark is
+	// drawn at exactly the header's size. The cap stays below that, where the
+	// column is the width of the page and a phone may be narrower than the mark.
+	@media (width >= 68rem) {
+		max-inline-size: none;
+	}
 	// An SVG logo is written into the page rather than linked — see
 	// bridge_inline_svg() — so this class lands on an `<svg>` as often as on an
 	// `<img>`. An inline SVG is inline-level by default, which puts a
@@ -408,11 +454,8 @@
 /**
  * The short description.
  *
- * A measure, not a column width. The identity column is the widest of the four
- * and at a large window its full width would set this paragraph at twelve or
- * thirteen words a line, which is past the point where the eye starts losing
- * its place returning to the left edge. 30ch holds it at roughly the four
- * lines the design draws.
+ * Fills the identity column at every width, so its right edge lines up with
+ * the logo and the rest of the column rather than stopping short of them.
  *
  * Slightly held back from the headings and links around it, because it is the
  * one piece of running prose in the footer and prose at full strength beside a
@@ -420,24 +463,9 @@
  */
 .bridge-footer__description {
 	margin: 0;
-	max-inline-size: 30ch;
 	font-size: var(--wp--preset--font-size--small);
 	line-height: 1.6;
 	opacity: 0.85;
-
-	// On a phone the column is already a comfortable measure, and 30ch left
-	// the paragraph stopping short of the menus' width under it.
-	@media (width < 34rem) {
-		max-inline-size: none;
-	}
-
-	// On a tablet the identity column spans the whole footer, and 30ch left
-	// the paragraph a narrow strip down the left of an empty row. 60ch is the
-	// ordinary reading measure: wide enough to use the row, short enough to
-	// read.
-	@media (34rem <= width < 68rem) {
-		max-inline-size: 60ch;
-	}
 }
 
 /**
@@ -564,15 +592,16 @@
  * pending, so the line is never briefly set in the body face.
  *
  * Sized against the site's scale rather than in a fixed rem, so a client who
- * moves the base size moves this with it; `x-large` because a hand at body size
- * reads as a mistake rather than as a flourish. The leading is tight for the
+ * moves the base size moves this with it; `large` because a hand at body size
+ * reads as a mistake rather than as a flourish, and anything bigger shouts
+ * over the column it closes. The leading is tight for the
  * same reason — a script face carries its own descenders and ascenders, and
  * default leading opens a gap between two short lines that breaks them apart.
  */
 .bridge-footer__tagline-text {
 	display: block;
 	font-family: var(--wp--preset--font-family--script);
-	font-size: var(--wp--preset--font-size--x-large);
+	font-size: var(--wp--preset--font-size--large);
 	line-height: 1.15;
 	// The one piece of the footer that should read at full strength on the
 	// ground, unlike the description above it: it is a signature, not an
@@ -926,6 +955,12 @@
 	&:hover,
 	&:focus-visible {
 		background-color: transparent;
+		// The underline the `a` rule above asks for. components/_primary-nav
+		// switches it off for every navigation block, header or not, at three
+		// classes — more than `.bridge-footer__nav a:hover` has — so it is
+		// restated here, where the specificity is enough to win.
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
 	}
 }
 

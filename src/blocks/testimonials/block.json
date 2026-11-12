@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/testimonials",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"title": "Testimonials",
 	"category": "design",
 	"icon": "format-quote",
@@ -23,7 +23,7 @@
 	"attributes": {
 		"width": {
 			"type": "string",
-			"default": "narrow"
+			"default": "wide"
 		},
 		"cardStyle": {
 			"type": "string",
@@ -36,6 +36,27 @@
 		"overflowStyle": {
 			"type": "string",
 			"default": "wrap"
+		},
+		"mask": {
+			"type": "boolean",
+			"default": false
+		},
+		"maskShade": {
+			"type": "number",
+			"default": -20
+		},
+		"maskSize": {
+			"type": "number",
+			"default": 60
+		},
+		"maskEdge": {
+			"type": "string",
+			"enum": ["left", "right"],
+			"default": "right"
+		},
+		"maskBleed": {
+			"type": "number",
+			"default": 0
 		}
 	},
 	"providesContext": {

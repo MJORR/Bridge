@@ -14,6 +14,10 @@ const { createElement: el, Fragment } = window.wp.element;
 const { PanelBody, RangeControl, SelectControl } = window.wp.components;
 const { __ } = window.wp.i18n;
 
+// The mask shape's controls and preview styling, shared with every other band
+// that offers it — see src/editor/band-mask.js.
+const { MaskPanel, maskStyle, hasMask } = window.bridgeBandMaskUI || {};
+
 const ALLOWED_BLOCKS = ['bridge/testimonial', 'core/heading'];
 
 // The intro: a headline, and the quotes. The summary line this used to seed
@@ -49,8 +53,11 @@ const Edit = ({ attributes, setAttributes }) => {
 			// note in _testimonials.scss. Authoring inside a scroll container
 			// fights the editor; the front end still swipes.
 			'is-editor-preview',
-		].join(' '),
-		style: { '--columns': columns },
+			hasMask(attributes) ? 'has-mask' : '',
+		]
+			.filter(Boolean)
+			.join(' '),
+		style: { '--columns': columns, ...maskStyle(attributes) },
 	});
 
 	// One flat list in the editor so cards, intro and outro can be dragged
@@ -125,7 +132,8 @@ const Edit = ({ attributes, setAttributes }) => {
 					],
 					onChange: (value) => setAttributes({ cardStyle: value }),
 				})
-			)
+			),
+			MaskPanel(attributes, setAttributes)
 		),
 		el(
 			'section',

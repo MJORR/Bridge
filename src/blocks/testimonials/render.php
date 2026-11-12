@@ -19,7 +19,7 @@ $overflow = 'carousel' === ( $attributes['overflowStyle'] ?? 'wrap' ) ? 'carouse
 // inner blocks — so the setting is the whole test.
 $is_carousel = 'carousel' === $overflow;
 $card     = 'outlined' === ( $attributes['cardStyle'] ?? 'solid' ) ? 'outlined' : 'solid';
-$width    = 'wide' === ( $attributes['width'] ?? 'narrow' ) ? 'wide' : 'narrow';
+$width    = 'narrow' === ( $attributes['width'] ?? 'wide' ) ? 'narrow' : 'wide';
 
 // The intro is whatever is not a card — see bridge_section_split(). The cards
 // need a container the intro stays out of, because in the swipe layout that
@@ -40,10 +40,14 @@ $classes = sprintf(
 
 list( $intro_html, $label_id ) = bridge_section_intro( $intro, 'bridge-testimonials__intro' );
 
+// The decorative mask shape, when the block asks for one: the same shape,
+// controls and helper the FAQs, Cards and Downloads bands use.
+list( $mask_class, $mask_style ) = bridge_band_mask( $attributes );
+
 echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 	$attributes,
-	$classes,
-	sprintf( '--columns: %d;', $columns ),
+	$classes . $mask_class,
+	sprintf( '--columns: %d;', $columns ) . $mask_style,
 	$label_id
 );
 ?>

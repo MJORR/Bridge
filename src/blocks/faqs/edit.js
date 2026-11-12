@@ -136,9 +136,24 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	// band out of a column on load would rearrange a published layout nobody
 	// asked this block to touch, so it reports and leaves the move to whoever
 	// built the page.
+	//
+	// A Split Content column is the exception: the split sizes a band to the
+	// column rather than to the window, so nothing hangs off the page there.
 	const nested = useSelect(
-		(select) =>
-			!!select('core/block-editor').getBlockRootClientId(clientId),
+		(select) => {
+			const store = select('core/block-editor');
+			const root = store.getBlockRootClientId(clientId);
+
+			if (!root) {
+				return false;
+			}
+
+			return !(
+				store.getBlockName(root) === 'core/group' &&
+				store.getBlockName(store.getBlockRootClientId(root)) ===
+					'bridge/split-content'
+			);
+		},
 		[clientId]
 	);
 

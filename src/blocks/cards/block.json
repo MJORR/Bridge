@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/cards",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"title": "Cards",
 	"category": "widgets",
 	"icon": "grid-view",
@@ -78,6 +78,10 @@
 		"numberOfPosts": {
 			"type": "number",
 			"default": 6
+		},
+		"pagination": {
+			"type": "boolean",
+			"default": false
 		},
 		"columns": {
 			"type": "number",

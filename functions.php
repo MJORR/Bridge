@@ -84,6 +84,7 @@ require_once get_theme_file_path('inc/schema.php');
 // description per post and per page, in the head of that entry.
 require_once get_theme_file_path('inc/meta-description.php');
 
+require_once get_theme_file_path('inc/package.php');
 require_once get_theme_file_path('inc/cli.php');
 
 /**

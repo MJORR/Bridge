@@ -300,9 +300,12 @@
 			 * it. This is inset by minus that padding, so the surface runs the
 			 * true full height of the header and meets the dropdown exactly.
 			 *
-			 * It paints underneath the label because core gives the anchor
-			 * `z-index: 1`, and the anchor is a flex item, where z-index
-			 * applies.
+			 * It paints underneath the label because the anchor and the caret
+			 * are given `z-index: 1` below. They are flex items, where z-index
+			 * applies without a position. Core's navigation stylesheet gives the
+			 * anchor that z-index in WordPress 7.x but not in 6.8, so the
+			 * theme states it itself: without it this surface covers the link
+			 * and swallows the click.
 			 */
 			&::before {
 				content: "";
@@ -356,6 +359,7 @@
 				display: flex;
 				align-items: center;
 				align-self: stretch;
+				z-index: 1; // Above the ::before hover surface. See above.
 				padding: 0;
 				border-radius: 0;
 				background: none;
@@ -386,6 +390,7 @@
 				display: flex;
 				align-items: center;
 				justify-content: center;
+				z-index: 1; // Above the ::before hover surface, like the anchor.
 				width: var(--bridge-nav-target-min);
 				height: var(--bridge-nav-target-min);
 				// Two pixels, and the button's own width carries the rest of

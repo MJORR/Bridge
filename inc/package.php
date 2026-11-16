@@ -10,10 +10,13 @@
  *              site icon.
  *   menus      Navigation menus (wp_navigation posts).
  *   pages      Every page (not trashed), its template, featured image, meta
- *              description, parent; and the front page / posts page choice.
+ *              description, Title Banner settings, parent; and the front page / posts page choice.
+ *   posts      Every blog post (not trashed), its featured image, excerpt,
+ *              categories and tags, meta description. Matched by slug.
  *
  * Plus every media file any of the above points at, so logos and page images
- * arrive with them.
+ * arrive with them. Files over BRIDGE_PACKAGE_MAX_MEDIA_BYTES are listed but
+ * not packed: the target uses its own copy, or the import warns.
  *
  * ---- Why it is not WordPress's own Tools > Export ---------------------------
  *
@@ -30,7 +33,7 @@
  * restored from the Export / Import screen or `wp bridge package restore`.
  *
  * Admin:  Theme Options > Export / Import
- * CLI:    wp bridge package export <file.zip> [--only=settings,menus,pages]
+ * CLI:    wp bridge package export <file.zip> [--only=settings,menus,pages,posts]
  *         wp bridge package import <file.zip> [--only=…] [--dry-run]
  *         wp bridge package restore
  *
@@ -45,10 +48,16 @@ if (! defined('ABSPATH')) {
 
 const BRIDGE_PACKAGE_FORMAT     = 'bridge-package';
 const BRIDGE_PACKAGE_VERSION    = 1;
-const BRIDGE_PACKAGE_SECTIONS   = array('settings', 'menus', 'pages');
+const BRIDGE_PACKAGE_SECTIONS   = array('settings', 'menus', 'pages', 'posts');
 const BRIDGE_PACKAGE_BACKUP     = 'bridge_package_backup';
 const BRIDGE_PACKAGE_PAGE_SLUG  = 'bridge-package';
 const BRIDGE_PACKAGE_UPLOAD_DIR = 'bridge-packages';
+
+/**
+ * Media files larger than this are indexed but not packed (keeps the .zip
+ * under typical upload limits; videos are usually already on the target).
+ */
+const BRIDGE_PACKAGE_MAX_MEDIA_BYTES = 10 * 1024 * 1024;
 
 /* ==========================================================================
  * Block references
@@ -362,7 +371,7 @@ function bridge_package_export(string $zip_path, array $sections)
 			$add_media($thumb);
 
 			$meta = array();
-			foreach (array(BRIDGE_META_DESCRIPTION_KEY, '_yoast_wpseo_title', '_yoast_wpseo_metadesc') as $key) {
+			foreach (bridge_package_page_meta_keys() as $key) {
 				$value = get_post_meta($page->ID, $key, true);
 				if ('' !== $value && null !== $value) {
 					$meta[$key] = $value;
@@ -401,6 +410,50 @@ function bridge_package_export(string $zip_path, array $sections)
 		}
 	}
 
+	if (in_array('posts', $sections, true)) {
+		$data['posts'] = array();
+		$posts = get_posts(array('post_type' => 'post', 'post_status' => array('publish', 'draft', 'pending', 'private', 'future'), 'numberposts' => -1, 'orderby' => 'ID', 'order' => 'ASC'));
+
+		foreach ($posts as $post) {
+			$add_refs(bridge_package_content_refs($post->post_content));
+			$thumb = (int) get_post_thumbnail_id($post);
+			$add_media($thumb);
+
+			$meta = array();
+			foreach (array(BRIDGE_META_DESCRIPTION_KEY, '_yoast_wpseo_title', '_yoast_wpseo_metadesc') as $key) {
+				$value = get_post_meta($post->ID, $key, true);
+				if ('' !== $value && null !== $value) {
+					$meta[$key] = $value;
+				}
+			}
+
+			$terms = array();
+			foreach (array('category', 'post_tag') as $taxonomy) {
+				$found = get_the_terms($post, $taxonomy);
+				$terms[$taxonomy] = array();
+				foreach (is_array($found) ? $found : array() as $term) {
+					$terms[$taxonomy][] = array('slug' => $term->slug, 'name' => $term->name);
+				}
+			}
+
+			$data['posts'][] = array(
+				'id'             => (int) $post->ID,
+				'slug'           => $post->post_name,
+				'title'          => $post->post_title,
+				'content'        => $post->post_content,
+				'excerpt'        => $post->post_excerpt,
+				'status'         => $post->post_status,
+				'date'           => $post->post_date,
+				'date_gmt'       => $post->post_date_gmt,
+				'comment_status' => $post->comment_status,
+				'sticky'         => is_sticky($post->ID),
+				'thumbnail'      => $thumb,
+				'terms'          => $terms,
+				'meta'           => $meta,
+			);
+		}
+	}
+
 	// What each referenced ID *is*, so the target can find its own copy.
 	$index = array('post' => array(), 'menu' => array(), 'term' => array(), 'media' => array());
 
@@ -432,6 +485,7 @@ function bridge_package_export(string $zip_path, array $sections)
 	}
 
 	$missing = array();
+	$large   = array();
 	foreach (array_keys($media) as $id) {
 		$file = (string) get_post_meta($id, '_wp_attached_file', true);
 		$abs  = get_attached_file($id);
@@ -448,6 +502,10 @@ function bridge_package_export(string $zip_path, array $sections)
 			'description' => (string) get_post_field('post_content', $id),
 			'alt'         => (string) get_post_meta($id, '_wp_attachment_image_alt', true),
 		);
+		if ($index['media'][$id]['size'] > BRIDGE_PACKAGE_MAX_MEDIA_BYTES) {
+			$large[] = $file;
+			continue; // Indexed, so a target that has it still maps it.
+		}
 		$zip->addFile($abs, 'media/' . $file);
 	}
 
@@ -471,9 +529,11 @@ function bridge_package_export(string $zip_path, array $sections)
 	return array(
 		'sections' => $sections,
 		'pages'    => count($data['pages'] ?? array()),
+		'posts'    => count($data['posts'] ?? array()),
 		'menus'    => count($data['menus'] ?? array()),
 		'media'    => count($index['media']),
 		'missing'  => $missing,
+		'large'    => $large,
 	);
 }
 
@@ -874,6 +934,134 @@ function bridge_package_import(string $zip_path, array $sections, bool $dry_run 
 		}
 	}
 
+	/* ---- Posts --------------------------------------------------------- */
+
+	if (in_array('posts', $sections, true) && ! empty($data['posts'])) {
+		foreach ($data['posts'] as $post) {
+			$label  = '' !== (string) $post['slug'] ? (string) $post['slug'] : '(no slug) ' . $post['title'];
+			$target = bridge_package_find_post('post', (string) $post['slug']);
+			if (! $target && '' === (string) $post['slug']) {
+				// Unsaved-slug drafts: the same title, only if exactly one.
+				$ids    = get_posts(array('post_type' => 'post', 'title' => (string) $post['title'], 'post_status' => array('draft', 'pending', 'private', 'future'), 'numberposts' => 2, 'fields' => 'ids'));
+				$target = 1 === count($ids) ? (int) $ids[0] : 0;
+			}
+
+			$content = bridge_package_rewrite_content((string) $post['content'], $map, $url_map);
+			$thumb   = (int) ($map['media'][(int) $post['thumbnail']] ?? 0);
+
+			if (! $target) {
+				$note('posts', $label, 'create');
+				if ($dry_run) {
+					continue;
+				}
+				$target = wp_insert_post(
+					wp_slash(array(
+						'post_type'      => 'post',
+						'post_title'     => $post['title'],
+						'post_name'      => $post['slug'],
+						'post_content'   => $content,
+						'post_excerpt'   => $post['excerpt'],
+						'post_status'    => $post['status'],
+						'post_date'      => $post['date'],
+						'post_date_gmt'  => $post['date_gmt'],
+						'comment_status' => $post['comment_status'],
+					)),
+					true
+				);
+				if (is_wp_error($target)) {
+					$warn(sprintf('Post "%s" could not be created: %s', $label, $target->get_error_message()));
+					continue;
+				}
+				$changes = array('terms', 'featured image', 'meta', 'sticky');
+			} else {
+				$current = get_post($target);
+				$changes = array();
+				if ($current->post_content !== $content) {
+					$changes[] = 'content';
+				}
+				if ($current->post_title !== $post['title']) {
+					$changes[] = 'title';
+				}
+				if ($current->post_status !== $post['status']) {
+					$changes[] = 'status';
+				}
+				if ((string) $current->post_excerpt !== (string) $post['excerpt']) {
+					$changes[] = 'excerpt';
+				}
+				if ($post['thumbnail'] && (int) get_post_thumbnail_id($target) !== $thumb) {
+					$changes[] = 'featured image';
+				}
+				foreach ((array) $post['terms'] as $taxonomy => $terms) {
+					$have = wp_get_post_terms($target, $taxonomy, array('fields' => 'slugs'));
+					$want = array_column((array) $terms, 'slug');
+					sort($want);
+					$have = is_wp_error($have) ? array() : $have;
+					sort($have);
+					if ($have !== $want) {
+						$changes[] = 'terms';
+					}
+				}
+				foreach ((array) $post['meta'] as $key => $value) {
+					if (get_post_meta($target, $key, true) !== $value) {
+						$changes[] = 'meta';
+						break;
+					}
+				}
+				if (is_sticky($target) !== (bool) $post['sticky']) {
+					$changes[] = 'sticky';
+				}
+
+				if (! $changes) {
+					$note('posts', $label, 'unchanged');
+					continue;
+				}
+				$note('posts', $label, 'update', implode(', ', array_unique($changes)));
+				if ($dry_run) {
+					continue;
+				}
+				wp_update_post(wp_slash(array(
+					'ID'             => $target,
+					'post_content'   => $content,
+					'post_title'     => $post['title'],
+					'post_excerpt'   => $post['excerpt'],
+					'post_status'    => $post['status'],
+					'comment_status' => $post['comment_status'],
+				)));
+			}
+
+			$target = (int) $target;
+			if (in_array('terms', $changes, true)) {
+				foreach ((array) $post['terms'] as $taxonomy => $terms) {
+					$ids = array();
+					foreach ((array) $terms as $term) {
+						$found = get_term_by('slug', (string) $term['slug'], $taxonomy);
+						if (! $found) {
+							$made  = wp_insert_term((string) $term['name'], $taxonomy, array('slug' => (string) $term['slug']));
+							$found = is_wp_error($made) ? null : get_term((int) $made['term_id'], $taxonomy);
+						}
+						if ($found && ! is_wp_error($found)) {
+							$ids[] = (int) $found->term_id;
+						}
+					}
+					wp_set_object_terms($target, $ids, $taxonomy);
+				}
+			}
+			if ($thumb > 0) {
+				set_post_thumbnail($target, $thumb);
+			} elseif ($post['thumbnail']) {
+				$warn(sprintf('Post "%s": its featured image was not found on this site.', $label));
+			}
+			foreach ((array) $post['meta'] as $key => $value) {
+				update_post_meta($target, $key, wp_slash($value));
+			}
+			if ($post['sticky']) {
+				stick_post($target);
+			} else {
+				unstick_post($target);
+			}
+		}
+	}
+
 	/* ---- Settings ------------------------------------------------------ */
 
 	if (in_array('settings', $sections, true) && ! empty($data['settings'])) {
@@ -952,6 +1140,7 @@ function bridge_package_import(string $zip_path, array $sections, bool $dry_run 
 
 	$scan = array_merge(
 		in_array('pages', $sections, true) ? array_column((array) ($data['pages'] ?? array()), 'content', 'path') : array(),
+		in_array('posts', $sections, true) ? array_column((array) ($data['posts'] ?? array()), 'content', 'slug') : array(),
 		in_array('menus', $sections, true) ? array_column((array) ($data['menus'] ?? array()), 'content', 'title') : array()
 	);
 	foreach ($scan as $where => $content) {
@@ -988,7 +1177,7 @@ function bridge_package_needed_media(array $data, array $index, array $sections)
 		$ids[] = (int) ($data['settings']['site_options']['footer_image'] ?? 0);
 		$ids[] = (int) ($data['settings']['site_icon'] ?? 0);
 	}
-	foreach (array('menus', 'pages') as $section) {
+	foreach (array('menus', 'pages', 'posts') as $section) {
 		if (in_array($section, $sections, true)) {
 			foreach ((array) ($data[$section] ?? array()) as $item) {
 				$ids = array_merge($ids, bridge_package_content_refs((string) $item['content'])['media']);
@@ -1015,7 +1204,8 @@ function bridge_package_import_media(string $zip_path, int $old_id, array $info,
 {
 	$file = ltrim(str_replace('\\', '/', (string) $info['file']), '/');
 
-	if ('' === $file || false !== strpos($file, '..') || ! preg_match('#^[\w\-./ ()@]+$#u', $file)) {
+	// Refuse "../" steps, not dots inside a name ("figure...2020.jpg").
+	if ('' === $file || preg_match('#(^|/)\.\.(/|$)#', $file) || ! preg_match('#^[\w\-./ ()@]+$#u', $file)) {
 		return new WP_Error('bridge_package_media', 'unsafe file name, skipped.');
 	}
 
@@ -1114,6 +1304,16 @@ function bridge_package_import_media(string $zip_path, int $old_id, array $info,
 	}
 
 	return $result;
+}
+
+/**
+ * Per-page meta the package carries: SEO description and the Title Banner
+ * panel (style, alignment, colour), which decides whether the page template
+ * prints the page title above content that has its own hero banner.
+ */
+function bridge_package_page_meta_keys(): array
+{
+	return array(BRIDGE_META_DESCRIPTION_KEY, 'bridge_banner_style', 'bridge_title_align', 'bridge_banner_color', '_yoast_wpseo_title', '_yoast_wpseo_metadesc');
 }
 
 /**
@@ -1224,7 +1424,7 @@ function bridge_package_restore_backup()
 
 function bridge_package_can_import(): bool
 {
-	return current_user_can(BRIDGE_OPERATOR_CAP) && current_user_can('edit_pages') && current_user_can('upload_files');
+	return current_user_can(BRIDGE_OPERATOR_CAP) && current_user_can('edit_pages') && current_user_can('edit_others_posts') && current_user_can('upload_files');
 }
 
 add_action(
@@ -1409,7 +1609,7 @@ add_action(
  */
 function bridge_package_render_report(array $report): void
 {
-	$labels = array('settings' => 'Settings', 'menus' => 'Menus', 'pages' => 'Pages', 'media' => 'Media');
+	$labels = array('settings' => 'Settings', 'menus' => 'Menus', 'pages' => 'Pages', 'posts' => 'Posts', 'media' => 'Media');
 	$colors = array('create' => '#1a7f37', 'add' => '#1a7f37', 'update' => '#9a6700', 'download' => '#9a6700', 'restored' => '#9a6700', 'unchanged' => '#57606a', 'exists' => '#57606a');
 
 	echo '<p>';
@@ -1455,11 +1655,12 @@ function bridge_package_render_page(): void
 	$section_labels = array(
 		'settings' => __('Theme settings — Theme Options, Site Options, fonts, site icon', 'bridge'),
 		'menus'    => __('Menus — header, footer and other navigation menus', 'bridge'),
-		'pages'    => __('Pages — every page, with its template, featured image and SEO description; front page and posts page', 'bridge'),
+		'pages'    => __('Pages — every page, with its template, featured image, title banner and SEO description; front page and posts page', 'bridge'),
+		'posts'    => __('Posts — every blog post, with its featured image, categories, tags and SEO description', 'bridge'),
 	);
 
 	echo '<div class="wrap"><h1>' . esc_html__('Export / Import', 'bridge') . '</h1>';
-	echo '<p style="max-width:760px">' . esc_html__('Move this site\'s theme settings, menus and pages to another site running Bridge. Images they use go with them. Pages and menus are matched by their address and updated in place; nothing on the other site is deleted.', 'bridge') . '</p>';
+	echo '<p style="max-width:760px">' . esc_html__('Move this site\'s theme settings, menus, pages and posts to another site running Bridge. Images they use go with them. Pages, posts and menus are matched by their address and updated in place; nothing on the other site is deleted.', 'bridge') . '</p>';
 
 	if ($error) {
 		$messages = array(
@@ -1524,7 +1725,7 @@ function bridge_package_render_page(): void
 			}
 		}
 		echo '</fieldset>';
-		echo '<p>' . esc_html__('Updated pages and menus keep their previous version as a revision. The current settings are saved first and can be restored from this screen.', 'bridge') . '</p>';
+		echo '<p>' . esc_html__('Updated pages, posts and menus keep their previous version as a revision. The current settings are saved first and can be restored from this screen.', 'bridge') . '</p>';
 		echo '<p><button type="submit" name="action" value="bridge_package_import" class="button button-primary">' . esc_html__('Import now', 'bridge') . '</button> ';
 		echo '<button type="submit" name="action" value="bridge_package_cancel" class="button">' . esc_html__('Cancel', 'bridge') . '</button></p>';
 		echo '</form></div>';
@@ -1537,7 +1738,8 @@ function bridge_package_render_page(): void
 	wp_nonce_field('bridge_package_export');
 	echo '<input type="hidden" name="action" value="bridge_package_export">';
 	foreach ($section_labels as $section => $label) {
-		printf('<p><label><input type="checkbox" name="sections[]" value="%s" checked> %s</label></p>', esc_attr($section), esc_html($label));
+		// Posts make a much larger file, so they are opt-in.
+		printf('<p><label><input type="checkbox" name="sections[]" value="%s"%s> %s</label></p>', esc_attr($section), 'posts' === $section ? '' : ' checked', esc_html($label));
 	}
 	echo '<p class="description">' . esc_html__('Site Options include the Google Maps key. Keep the downloaded file private.', 'bridge') . '</p>';
 	echo '<p><button type="submit" class="button button-primary">' . esc_html__('Download export file', 'bridge') . '</button></p></form>';
@@ -1572,7 +1774,7 @@ function bridge_package_render_page(): void
 
 if (defined('WP_CLI') && WP_CLI) {
 	/**
-	 * Export and import theme settings, menus and pages between sites.
+	 * Export and import theme settings, menus, pages and posts between sites.
 	 */
 	class Bridge_Package_CLI_Command
 	{
@@ -1585,7 +1787,7 @@ if (defined('WP_CLI') && WP_CLI) {
 		 * : Path of the .zip to write.
 		 *
 		 * [--only=<sections>]
-		 * : Comma-separated: settings, menus, pages. Default: all.
+		 * : Comma-separated: settings, menus, pages, posts. Default: all.
 		 */
 		public function export(array $args, array $assoc_args): void
 		{
@@ -1597,7 +1799,10 @@ if (defined('WP_CLI') && WP_CLI) {
 			if ($result['missing']) {
 				WP_CLI::warning('Media whose file is missing on disk (skipped): #' . implode(', #', $result['missing']));
 			}
-			WP_CLI::success(sprintf('Wrote %s: %s — %d pages, %d menus, %d media files.', $args[0], implode(', ', $result['sections']), $result['pages'], $result['menus'], $result['media']));
+			if ($result['large']) {
+				WP_CLI::warning('Listed but not packed (over ' . size_format(BRIDGE_PACKAGE_MAX_MEDIA_BYTES) . '): ' . implode(', ', $result['large']));
+			}
+			WP_CLI::success(sprintf('Wrote %s: %s — %d pages, %d posts, %d menus, %d media files.', $args[0], implode(', ', $result['sections']), $result['pages'], $result['posts'], $result['menus'], $result['media']));
 		}
 
 		/**
@@ -1609,7 +1814,7 @@ if (defined('WP_CLI') && WP_CLI) {
 		 * : The .zip made by `wp bridge package export` or the admin screen.
 		 *
 		 * [--only=<sections>]
-		 * : Comma-separated: settings, menus, pages. Default: all in the package.
+		 * : Comma-separated: settings, menus, pages, posts. Default: all in the package.
 		 *
 		 * [--dry-run]
 		 * : Show what would change and stop.

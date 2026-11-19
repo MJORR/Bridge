@@ -192,7 +192,7 @@ function bridge_navigation_menus(): array
  * chosen should fall back quietly, not rewrite the stored setting. 0 means no
  * choice — callers decide whether that leaves core to pick or renders nothing.
  *
- * @param string $slot `primary` or `utility`.
+ * @param string $slot `primary`, `utility`, `burger` or `locations`.
  */
 function bridge_header_menu_id(string $slot): int
 {
@@ -917,6 +917,132 @@ function bridge_header_nav_search(string $id): string
 		esc_attr(get_search_query(false)),
 		esc_attr__('Search…', 'bridge'),
 		esc_html__('Search', 'bridge')
+	);
+}
+
+/**
+ * The links in the locations dropdown's menu, flattened to label and address.
+ *
+ * Read from the menu's blocks rather than rendered through core's navigation
+ * block: the dropdown is a plain list in the header row, and core's markup
+ * would bring the whole navigation stylesheet and its overlay with it. A
+ * submenu's children are lifted into the same list — the dropdown is one level.
+ *
+ * @param int $menu A wp_navigation post id, or 0.
+ * @return array<int, array{label: string, url: string}>
+ */
+function bridge_header_locations_links(int $menu): array
+{
+	if ($menu <= 0) {
+		return array();
+	}
+
+	$links = array();
+	$walk  = static function (array $blocks) use (&$walk, &$links): void {
+		foreach ($blocks as $block) {
+			$name  = $block['blockName'] ?? '';
+			$attrs = $block['attrs'] ?? array();
+
+			if (in_array($name, array('core/navigation-link', 'core/navigation-submenu'), true)) {
+				$label = trim(wp_strip_all_tags((string) ($attrs['label'] ?? '')));
+				$id    = (int) ($attrs['id'] ?? 0);
+				// A link to a page follows the page: renamed or moved, the
+				// permalink is still right where the stored url is not.
+				$url = ($id > 0 && 'post-type' === ($attrs['kind'] ?? '') && get_post_status($id))
+					? (string) get_permalink($id)
+					: (string) ($attrs['url'] ?? '');
+
+				if ('' !== $label && '' !== $url) {
+					$links[] = array('label' => $label, 'url' => $url);
+				}
+			}
+
+			if (! empty($block['innerBlocks'])) {
+				$walk($block['innerBlocks']);
+			}
+		}
+	};
+
+	$walk(parse_blocks((string) get_post_field('post_content', $menu)));
+
+	return $links;
+}
+
+/**
+ * The locations dropdown's links, as rows for the mobile panel.
+ *
+ * The dropdown sits in the header row, which a phone does not show — so, like
+ * the call to action, its links are copied into the panel. A label row first,
+ * so a list of place names reads as what it is, then one row per link. Every
+ * row is marked as an extra, which is what hides the copies wherever the bar
+ * and its dropdown are on screen instead.
+ *
+ * @param array<int, array{label: string, url: string}> $links From bridge_header_locations_links().
+ * @param string $label The dropdown's own label.
+ */
+function bridge_header_locations_items(array $links, string $label): string
+{
+	if (array() === $links) {
+		return '';
+	}
+
+	$rows = sprintf(
+		'<li class="wp-block-navigation-item bridge-nav__extra bridge-nav__locations-label">' .
+			'<span class="wp-block-navigation-item__content"><span class="wp-block-navigation-item__label">%s</span></span>' .
+		'</li>',
+		esc_html($label)
+	);
+
+	foreach ($links as $link) {
+		$rows .= sprintf(
+			'<li class="wp-block-navigation-item bridge-nav__extra bridge-nav__location">' .
+				'<a class="wp-block-navigation-item__content" href="%s"><span class="wp-block-navigation-item__label">%s</span></a>' .
+			'</li>',
+			esc_url($link['url']),
+			esc_html($link['label'])
+		);
+	}
+
+	return $rows;
+}
+
+/**
+ * The locations dropdown itself, for the header row.
+ *
+ * A `<details>` element rather than a button and a script: it opens and shuts
+ * with nothing loaded, is announced as a disclosure, and keeps its state in
+ * the DOM where the stylesheet can read it. header.js only adds the manners a
+ * dropdown is expected to have — Escape, a click elsewhere — on top.
+ *
+ * @param array<int, array{label: string, url: string}> $links From bridge_header_locations_links().
+ * @param string $label The dropdown's own label.
+ */
+function bridge_header_locations_dropdown(array $links, string $label): string
+{
+	if (array() === $links) {
+		return '';
+	}
+
+	$items = '';
+
+	foreach ($links as $link) {
+		$items .= sprintf(
+			'<li><a class="bridge-header__locations-link" href="%s">%s</a></li>',
+			esc_url($link['url']),
+			esc_html($link['label'])
+		);
+	}
+
+	return sprintf(
+		'<details class="bridge-header__locations">' .
+			'<summary class="bridge-header__locations-toggle">' .
+				'<span class="bridge-header__locations-label">%s</span>%s' .
+			'</summary>' .
+			'<ul class="bridge-header__locations-menu">%s</ul>' .
+		'</details>',
+		esc_html($label),
+		bridge_render_icon('chevron-down', array('size' => 'small')),
+		$items // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped per item above.
 	);
 }
 

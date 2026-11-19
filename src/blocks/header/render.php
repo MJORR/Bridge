@@ -45,6 +45,7 @@ $bridge_justify = array(
 	'left'    => 'right',
 	'centre'  => 'center',
 	'two-row' => 'left',
+	'hybrid'  => 'left',
 );
 $bridge_justify = $bridge_justify[ $bridge_layout ] ?? 'right';
 
@@ -385,13 +386,82 @@ $bridge_cta_style = sprintf(
 ) . $bridge_cta_alt;
 
 $bridge_logo = bridge_header_logo( $bridge_header, $bridge_background );
+$bridge_hybrid = 'hybrid' === $bridge_layout;
+
 // The primary menu's size is a Theme Options choice; the top bar below keeps
 // its own fixed `small`.
-$bridge_nav  = bridge_header_nav(
-	bridge_header_menu_id( 'primary' ),
-	$bridge_justify,
-	array( 'fontSize' => (string) ( $bridge_header['nav']['fontSize'] ?? 'small' ) )
-);
+$bridge_nav_size = array( 'fontSize' => (string) ( $bridge_header['nav']['fontSize'] ?? 'small' ) );
+
+/**
+ * The Hybrid layout's menu button.
+ *
+ * Every other layout has one navigation that is a bar on a wide screen and a
+ * panel on a narrow one. Hybrid shows both at once — the button at the start of
+ * the row and the bar after the logo — so the menu is rendered twice, and this
+ * is the copy that is always the panel: core's own "always" overlay, which is
+ * the same button and dialog the other layouts collapse into, at every width.
+ *
+ * It is this copy, not the bar, that everything below appends to — the call to
+ * action, the strip's rows and the search — because the panel is the one menu
+ * a phone has and the bar beside the logo is hidden there. `bridge-nav--burger`
+ * is what keeps the menu-bar rules off it: see the Hybrid section in
+ * blocks/_header.scss.
+ */
+/*
+ * Which menu the button opens is its own setting, so the panel can hold the
+ * whole site while the bar keeps to a handful of links. Unset — or set to a
+ * menu that has since been deleted — it is the main menu again.
+ *
+ * Both copies are named for what they are. Left to core, they would share the
+ * menu's title and the second would be announced as "<title> 2" — and when they
+ * are the same menu, a screen reader lists one navigation twice with nothing
+ * to tell them apart. Only Hybrid passes a name; every other layout keeps the
+ * name core gives it.
+ */
+$bridge_burger_menu = bridge_header_menu_id( 'burger' );
+
+if ( $bridge_burger_menu <= 0 ) {
+	$bridge_burger_menu = bridge_header_menu_id( 'primary' );
+}
+
+$bridge_nav = $bridge_hybrid
+	? bridge_header_nav(
+		$bridge_burger_menu,
+		$bridge_justify,
+		array_merge(
+			$bridge_nav_size,
+			array(
+				'className'   => 'bridge-nav bridge-nav--primary bridge-nav--burger',
+				'overlayMenu' => 'always',
+				'ariaLabel'   => __( 'Full menu', 'bridge' ),
+			)
+		)
+	)
+	: bridge_header_nav(
+		bridge_header_menu_id( 'primary' ),
+		$bridge_justify,
+		$bridge_nav_size
+	);
+
+// And the bar itself: the menu's own items and nothing else, never a panel.
+// The button beside it already opens the full menu, so where the bar runs out
+// of room it is simply hidden rather than collapsed into a second panel.
+$bridge_inline_nav = '';
+
+if ( $bridge_hybrid ) {
+	$bridge_inline_nav = bridge_header_nav(
+		bridge_header_menu_id( 'primary' ),
+		'left',
+		array_merge(
+			$bridge_nav_size,
+			array(
+				'className'   => 'bridge-nav bridge-nav--primary bridge-nav--inline',
+				'overlayMenu' => 'never',
+				'ariaLabel'   => __( 'Main menu', 'bridge' ),
+			)
+		)
+	);
+}
 
 // The top bar renders only once it has a menu: an empty strip is worse than
 // no strip. The call to action is not part of it — there is one button, and
@@ -481,6 +551,31 @@ if ( $bridge_button ) {
 }
 
 /**
+ * The locations dropdown, beside the call to action.
+ *
+ * Switched on in Theme Options and filled from a menu chosen there; with the
+ * switch off, no menu, or a menu with no links, nothing is drawn at all — the
+ * same rule as the top bar. Its links are also copied into the mobile panel,
+ * straight after the call to action, because the row it sits in is not on a
+ * phone's screen.
+ */
+$bridge_locations       = '';
+$bridge_locations_label = trim( (string) ( $bridge_header['locations']['label'] ?? '' ) );
+
+if ( '' === $bridge_locations_label ) {
+	$bridge_locations_label = __( 'Locations', 'bridge' );
+}
+
+if ( ! empty( $bridge_header['locations']['enabled'] ) ) {
+	$bridge_location_links = bridge_header_locations_links( bridge_header_menu_id( 'locations' ) );
+	$bridge_locations      = bridge_header_locations_dropdown( $bridge_location_links, $bridge_locations_label );
+	$bridge_nav            = bridge_header_nav_append(
+		$bridge_nav,
+		bridge_header_locations_items( $bridge_location_links, $bridge_locations_label )
+	);
+}
+
+/**
  * The strip's rows, and the phone, as the bottom of the mobile panel.
  *
  * The panel is the only menu a phone has, and the strip is not in it: it is
@@ -525,7 +620,7 @@ $bridge_wrapper = get_block_wrapper_attributes(
 
 // The two arrangements differ only in whether the logo and the menu share a
 // row or stack; everything inside them is identical.
-$bridge_body_class = 'left' === $bridge_layout ? 'bridge-header__row' : 'bridge-header__stack';
+$bridge_body_class = in_array( $bridge_layout, array( 'left', 'hybrid' ), true ) ? 'bridge-header__row' : 'bridge-header__stack';
 
 ?>
 <div <?php echo $bridge_wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built by core. ?>>
@@ -538,10 +633,22 @@ $bridge_body_class = 'left' === $bridge_layout ? 'bridge-header__row' : 'bridge-
 	<?php endif; ?>
 
 	<div class="bridge-header__inner <?php echo esc_attr( $bridge_body_class ); ?>">
-		<?php echo $bridge_logo; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped at build. ?>
+		<?php if ( $bridge_hybrid ) : ?>
+			<div class="bridge-header__start">
+				<?php echo $bridge_nav; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — rendered by core. ?>
+				<?php echo $bridge_logo; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped at build. ?>
+				<?php echo $bridge_inline_nav; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — rendered by core. ?>
+			</div>
+		<?php else : ?>
+			<?php echo $bridge_logo; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped at build. ?>
+		<?php endif; ?>
 
 		<div class="bridge-header__end">
-			<?php echo $bridge_nav; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — rendered by core. ?>
+			<?php
+			if ( ! $bridge_hybrid ) {
+				echo $bridge_nav; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — rendered by core.
+			}
+			?>
 
 			<?php if ( $bridge_search ) : ?>
 				<button
@@ -553,6 +660,10 @@ $bridge_body_class = 'left' === $bridge_layout ? 'bridge-header__row' : 'bridge-
 					<?php echo bridge_render_icon( 'search' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from the compiled icon library. ?>
 					<span class="screen-reader-text"><?php esc_html_e( 'Search', 'bridge' ); ?></span>
 				</button>
+			<?php endif; ?>
+
+			<?php if ( '' !== $bridge_locations ) : ?>
+				<?php echo $bridge_locations; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped where it is built. ?>
 			<?php endif; ?>
 
 			<?php if ( $bridge_button ) : ?>

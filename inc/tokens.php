@@ -984,6 +984,33 @@ function bridge_button_skins(): array
 				'wipeHeight'    => '0px',
 				'fill'          => 0.12,
 			),
+			/*
+			 * Solid's movement — the deeper fill climbing from the bottom edge,
+			 * the shadow coming up with it — on a crisper shape: a corner a
+			 * little rounder than Solid's, a small uppercase label with wide
+			 * tracking, and a hairline border so the outline variant reads as
+			 * drawn rather than stamped. Last in the list so every existing
+			 * site's choice, and the order an operator has learnt, are where
+			 * they were.
+			 */
+			'rounded' => array(
+				'name'          => __('Rounded', 'bridge'),
+				'description'   => __('Rounded corners, a small uppercase label with wide tracking, and a fine 1px border on the outline version. Under the pointer the deeper fill climbs it from the bottom edge and a shadow comes up with it, as on Solid. Considered and quietly premium — for healthcare, professional and hospitality brands.', 'bridge'),
+				'radius'        => '8px',
+				'paddingBlock'  => '0.75rem',
+				'paddingInline' => '1.75rem',
+				'weight'        => '600',
+				'transform'     => 'uppercase',
+				'letterSpacing' => '0.08em',
+				'borderWidth'   => '1px',
+				'shadow'        => 'none',
+				'shadowHover'   => '0 6px 16px rgba(0, 0, 0, 0.16)',
+				'sweep'         => '0px',
+				'wipe'          => '1',
+				'wipeWidth'     => '100%',
+				'wipeHeight'    => '0px',
+				'fill'          => 0.12,
+			),
 		)
 	);
 }
@@ -1443,7 +1470,11 @@ function bridge_token_constraints(): array
 			// Every layout stacks or rows the same two elements; none puts the
 			// menu in a fixed centre column, which would cap how many items it
 			// can hold as a client's services grow.
-			'layout'       => array('options' => array('left', 'centre', 'two-row')),
+			// `hybrid` is the menu button, the logo and then the menu bar, on
+			// one row — the panel the button opens is the whole site, so the
+			// bar beside the logo can drop out when it runs short of room
+			// without anything becoming unreachable.
+			'layout'       => array('options' => array('left', 'centre', 'two-row', 'hybrid')),
 			'contrast'     => array('options' => array('auto', 'light', 'dark')),
 			// The primary menu's type size, as a font-size preset slug. Only the
 			// two steps that read as a menu bar: `small` is what the header has
@@ -1670,7 +1701,11 @@ function bridge_token_defaults(): array
 			// 0 means "let core pick" — a fresh site has no menus yet, and a
 			// header that renders nothing until someone visits a settings page
 			// is worse than one that guesses.
-			'menus'           => array('primary' => 0, 'utility' => 0),
+			//
+			// `burger` is read only by the Hybrid layout, where 0 means "the
+			// main menu again" rather than "let core pick": the button then
+			// opens exactly what it opened before the choice existed.
+			'menus'           => array('primary' => 0, 'utility' => 0, 'burger' => 0, 'locations' => 0),
 			'background'      => 'solid',
 			'backgroundColor' => 'background',
 			// The top bar's own ground. Listed here so the seed carries the
@@ -1702,6 +1737,11 @@ function bridge_token_defaults(): array
 			// what the header hard-coded before this was a setting, so a site that
 			// never opens the control keeps the button it had.
 			'cta'             => array('enabled' => false, 'label' => '', 'url' => '', 'color' => 'accent'),
+			// A dropdown beside the call to action listing one menu's links —
+			// a practice's branches, a firm's offices. Off unless switched on,
+			// and drawn only once its menu has links in it. An empty label is
+			// the theme's own wording, "Locations".
+			'locations'       => array('enabled' => false, 'label' => ''),
 			// The three colours the menu bar paints that are not the header's own
 			// ground: the surface under a hovered item, the dropdown that hangs
 			// off it, and the mark that lights the item you are on. Defaults are
@@ -2667,6 +2707,12 @@ function bridge_sanitize_tokens(array $raw): array
 		'menus'           => array(
 			'primary' => max(0, (int) ($raw_menus['primary'] ?? 0)),
 			'utility' => max(0, (int) ($raw_menus['utility'] ?? 0)),
+			'burger'  => max(0, (int) ($raw_menus['burger'] ?? 0)),
+			'locations' => max(0, (int) ($raw_menus['locations'] ?? 0)),
+		),
+		'locations'       => array(
+			'enabled' => ! empty($raw_header['locations']['enabled']),
+			'label'   => sanitize_text_field((string) ($raw_header['locations']['label'] ?? '')),
 		),
 		// Not a setting any more, and pinned rather than merely hidden.
 		//

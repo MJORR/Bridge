@@ -190,7 +190,8 @@
 // every wrapper core renders between the <nav> and the <li> to the full height
 // of the bar it is in.
 @media (min-width: nav.$bar) {
-	.bridge-header:not(.is-nav-collapsed) .bridge-nav--primary,
+	.bridge-header:not(.is-nav-collapsed)
+		.bridge-nav--primary:where(:not(.bridge-nav--burger)),
 	.bridge-header .bridge-nav--utility.wp-block-navigation {
 		// Roomier than the pill: the inset is what separates one label from
 		// the next now that the gap is gone, and it is also what sets the
@@ -467,7 +468,7 @@
 	 * pseudo-element is created against the same box.
 	 */
 	.bridge-header:not(.is-nav-collapsed)
-		.bridge-nav--primary
+		.bridge-nav--primary:where(:not(.bridge-nav--burger))
 		.wp-block-navigation__container
 		> .wp-block-navigation-item:not(.bridge-nav__cta):not(
 			.bridge-nav__extra,
@@ -569,17 +570,21 @@
 		.bridge-header__end
 		> .bridge-nav--primary:last-child
 		.wp-block-navigation__container
-		> .wp-block-navigation-item:not(.bridge-nav__cta, .bridge-nav__extra, .bridge-nav__search):last-child,
+		> .wp-block-navigation-item:not(
+			.bridge-nav__cta,
+			.bridge-nav__extra,
+			.bridge-nav__search
+		):last-child,
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-header__row
 		.bridge-header__end
 		> .bridge-nav--primary:last-child
 		.wp-block-navigation__container
-		> .wp-block-navigation-item:not(.bridge-nav__cta, .bridge-nav__extra, .bridge-nav__search):has(
-			+ .bridge-nav__cta,
-			+ .bridge-nav__extra,
-			+ .bridge-nav__search
-		) {
+		> .wp-block-navigation-item:not(
+			.bridge-nav__cta,
+			.bridge-nav__extra,
+			.bridge-nav__search
+		):has(+ .bridge-nav__cta, + .bridge-nav__extra, + .bridge-nav__search) {
 		padding-inline-end: 0;
 	}
 
@@ -598,7 +603,7 @@
 	 * it while the pointer is still on the item.
 	 */
 	.bridge-header:not(.is-nav-collapsed)
-		.bridge-nav--primary.is-hover-dismissed
+		.bridge-nav--primary:where(:not(.bridge-nav--burger)).is-hover-dismissed
 		.wp-block-navigation-item.has-child:hover
 		> .wp-block-navigation__submenu-container {
 		width: 0;
@@ -775,6 +780,8 @@
  * the same colour directly under it is two actions shouting rather than one.
  */
 @media (min-width: nav.$bar) {
+	// The burger's copy too: in the Hybrid layout the real one is in the row
+	// at this width, so the panel's would be a second of the same thing.
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.bridge-nav__extra {
@@ -797,6 +804,8 @@
  * this replaced.
  */
 @media (min-width: nav.$bar) {
+	// The burger's copy too: in the Hybrid layout the real one is in the row
+	// at this width, so the panel's would be a second of the same thing.
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.bridge-nav__search {
@@ -1337,6 +1346,8 @@
  * CSS cannot ask whether a colour is light.
  */
 @media (min-width: nav.$bar) {
+	// The burger's copy too: in the Hybrid layout the real one is in the row
+	// at this width, so the panel's would be a second of the same thing.
 	.bridge-header:not(.is-nav-collapsed)
 		.bridge-nav--primary
 		.bridge-nav__cta {
@@ -1502,5 +1513,29 @@
 		&::after {
 			transition: none;
 		}
+	}
+}
+
+/**
+ * The locations dropdown's label, as a row of the mobile panel.
+ *
+ * Not a link — the place names under it are — so it is drawn as a heading for
+ * them: the dropdown's own small tracked capitals, quieter than a row, with
+ * no rollover because there is nothing to press. Only present when the header
+ * has a locations dropdown switched on.
+ */
+.bridge-header
+	.wp-block-navigation.bridge-nav--primary
+	.bridge-nav__locations-label
+	> .wp-block-navigation-item__content {
+	font-size: var(--wp--preset--font-size--x-small, 0.8125rem);
+	font-weight: 600;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	opacity: 0.7;
+	cursor: default;
+
+	&:hover {
+		background: none;
 	}
 }

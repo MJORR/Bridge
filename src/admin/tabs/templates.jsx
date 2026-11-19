@@ -76,6 +76,11 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							label: __('Two row', 'bridge'),
 							hint: __('Stacked, left aligned', 'bridge'),
 						},
+						{
+							value: 'hybrid',
+							label: __('Hybrid', 'bridge'),
+							hint: __('Menu button, logo, menu', 'bridge'),
+						},
 					]}
 				/>
 
@@ -95,6 +100,25 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
+
+				{/* Hybrid only: the one layout with a menu button beside a
+				    menu bar, so the only one where the two can differ. */}
+				{header.layout === 'hybrid' && (
+					<SelectControl
+						label={__('Menu button opens', 'bridge')}
+						value={String(header.menus.burger ?? 0)}
+						options={menuOptions(__('The main menu', 'bridge'))}
+						onChange={(value) =>
+							setHeader('menus.burger', Number(value))
+						}
+						help={__(
+							'Hybrid shows the main menu as a bar beside the logo, and the button before the logo opens a panel. Pick a fuller menu here to have the panel hold the whole site while the bar keeps to the essentials. On a phone the bar is hidden and this panel is the only menu, so it should include everything the bar does.',
+							'bridge'
+						)}
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+				)}
 
 				<ToggleControl
 					label={__('Top bar', 'bridge')}
@@ -157,6 +181,48 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					)}
 					__nextHasNoMarginBottom
 				/>
+
+				<ToggleControl
+					label={__('Locations dropdown', 'bridge')}
+					checked={Boolean(header.locations?.enabled)}
+					onChange={(on) => setHeader('locations.enabled', on)}
+					help={__(
+						'A dropdown beside the CTA button listing the links in one menu — your practices, offices or branches. On a phone its links move into the menu panel.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+				/>
+
+				{header.locations?.enabled && (
+					<>
+						<TextControl
+							label={__('Dropdown label', 'bridge')}
+							value={header.locations?.label ?? ''}
+							onChange={(value) =>
+								setHeader('locations.label', value)
+							}
+							placeholder={__('Locations', 'bridge')}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+						<SelectControl
+							label={__('Dropdown menu', 'bridge')}
+							value={String(header.menus.locations ?? 0)}
+							options={menuOptions(
+								__('None — hide the dropdown', 'bridge')
+							)}
+							onChange={(value) =>
+								setHeader('menus.locations', Number(value))
+							}
+							help={__(
+								'Each link in this menu is one row of the dropdown. The dropdown appears once the menu has links in it. Menus themselves are built in the Site Editor.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
+					</>
+				)}
 
 				<ToggleControl
 					label={__('CTA button', 'bridge')}

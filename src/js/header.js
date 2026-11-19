@@ -52,6 +52,13 @@ const TOP_BAR = '.bridge-header__top';
 const TOP_HEIGHT = '--bridge-header-top-height';
 const NAV = '.bridge-nav--primary';
 const PRIMARY_NAV = `${ANY_HEADER} ${NAV}`;
+
+// The Hybrid layout's two copies of the main menu: the bar after the logo, and
+// the button before it that is core's overlay at every width. Where a header
+// has the bar, the bar is the menu the hover and fit rules are about — the
+// button is never a bar, so there is nothing about it to dismiss or measure.
+const INLINE_NAV = `${ANY_HEADER} .bridge-nav--inline`;
+const INLINE_COLLAPSED = 'is-inline-collapsed';
 const HAS_CHILD = '.wp-block-navigation-item.has-child';
 const DISMISSED = 'is-hover-dismissed';
 const SEARCH_TOGGLE = '.bridge-header__search-toggle';
@@ -205,7 +212,9 @@ function publishHeaderHeight() {
  * menu for the rest of the visit.
  */
 function initHoverDismiss() {
-	const nav = document.querySelector(PRIMARY_NAV);
+	const nav =
+		document.querySelector(INLINE_NAV) ??
+		document.querySelector(PRIMARY_NAV);
 
 	if (!nav) {
 		return;
@@ -332,16 +341,19 @@ function initHeaderSearch() {
  */
 function initNavCollapse() {
 	const header = document.querySelector(ANY_HEADER);
-	const nav = header?.querySelector(NAV);
+	const inline = header?.querySelector(INLINE_NAV);
+	const nav = inline ?? header?.querySelector(NAV);
 	const row = header?.querySelector(END)?.parentElement;
 	const button = nav?.querySelector(NAV_OPEN_BUTTON);
 	const container = nav?.querySelector(NAV_CONTAINER);
 
+	// A bar with a button of its own needs both halves to collapse into; the
+	// Hybrid bar has neither, because its button is the separate copy at the
+	// start of the row and is already showing.
 	if (
 		!header ||
 		!row ||
-		!button ||
-		!container ||
+		(!inline && (!button || !container)) ||
 		typeof ResizeObserver === 'undefined'
 	) {
 		return;
@@ -352,6 +364,15 @@ function initNavCollapse() {
 	let scheduled = false;
 
 	const apply = (collapsed) => {
+		// Hybrid: the bar simply stands down. The menu button beside it opens
+		// the whole menu already, so collapsing into a second panel would be
+		// two buttons for one menu — and `is-nav-collapsed` would also take
+		// the call to action out of the row, which this layout keeps.
+		if (inline) {
+			header.classList.toggle(INLINE_COLLAPSED, collapsed);
+			return;
+		}
+
 		header.classList.toggle(NAV_COLLAPSED, collapsed);
 		button.classList.toggle(NAV_ALWAYS_SHOWN, collapsed);
 		container.classList.toggle(NAV_HIDDEN_BY_DEFAULT, collapsed);
@@ -427,7 +448,7 @@ function initNavCollapse() {
 		// Not while the panel is open: the visitor is inside the menu, and
 		// taking it out from under them to swap in a bar is worse than a bar
 		// arriving a moment late.
-		if (container.classList.contains(NAV_MENU_OPEN)) {
+		if (container?.classList.contains(NAV_MENU_OPEN)) {
 			return;
 		}
 
@@ -438,7 +459,11 @@ function initNavCollapse() {
 			return;
 		}
 
-		if (!header.classList.contains(NAV_COLLAPSED)) {
+		if (
+			!header.classList.contains(
+				inline ? INLINE_COLLAPSED : NAV_COLLAPSED
+			)
+		) {
 			if (overflows()) {
 				required = row.scrollWidth;
 				apply(true);
@@ -483,12 +508,53 @@ function initNavCollapse() {
 	document.fonts?.ready.then(schedule);
 }
 
+/**
+ * The locations dropdown's manners.
+ *
+ * It is a `<details>`, so opening and shutting already work with no script;
+ * what a native disclosure does not do is behave like a dropdown — shut when
+ * the visitor presses Escape or clicks anywhere else. Escape hands focus back
+ * to the toggle, so a keyboard user is left where they were rather than on
+ * the page's body.
+ */
+function initLocations() {
+	const dropdowns = document.querySelectorAll(
+		`${ANY_HEADER} .bridge-header__locations`
+	);
+
+	if (!dropdowns.length) {
+		return;
+	}
+
+	document.addEventListener('pointerdown', (event) => {
+		dropdowns.forEach((dropdown) => {
+			if (dropdown.open && !dropdown.contains(event.target)) {
+				dropdown.open = false;
+			}
+		});
+	});
+
+	document.addEventListener('keydown', (event) => {
+		if (event.key !== 'Escape') {
+			return;
+		}
+
+		dropdowns.forEach((dropdown) => {
+			if (dropdown.open) {
+				dropdown.open = false;
+				dropdown.querySelector('summary')?.focus();
+			}
+		});
+	});
+}
+
 function initHeader() {
 	initStickyHeader();
 	publishHeaderHeight();
 	initHoverDismiss();
 	initHeaderSearch();
 	initNavCollapse();
+	initLocations();
 }
 
 if (document.readyState === 'loading') {

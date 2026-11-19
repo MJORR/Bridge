@@ -432,6 +432,21 @@ const LAYOUT_ART = {
 			[50, 38, 14, 5],
 		],
 	},
+	// The menu button drawn as its three bars, then the logo, then the menu
+	// running on from it rather than pushed to the far edge.
+	hybrid: {
+		util: [
+			[10, 27, 10, 2],
+			[10, 31, 10, 2],
+			[10, 35, 10, 2],
+		],
+		logo: [[26, 25, 24, 14]],
+		nav: [
+			[58, 30, 14, 5],
+			[76, 30, 14, 5],
+			[94, 30, 14, 5],
+		],
+	},
 	simple: {
 		logo: [[10, 28, 26, 10]],
 		nav: [[86, 30, 24, 5]],

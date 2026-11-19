@@ -442,7 +442,9 @@ function OptionsApp() {
 						</div>
 
 						{!single && (
-							<aside className="bridge-options__preview">
+							<aside
+								className={`bridge-options__preview bridge-options__preview--${tab.name}`}
+							>
 								<div className="bridge-options__preview-inner">
 									{/*
 									 * The actions live in every tab rather than once

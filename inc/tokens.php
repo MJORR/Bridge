@@ -885,7 +885,7 @@ function bridge_card_shadow_choices(): array
  *                  so the hover colour is a known hex whose contrast can be
  *                  measured. See bridge_button_schemes().
  *
- * Filterable so a client build can ship a fifth. The slugs are stored in the
+ * Filterable so a client build can ship another. The slugs are stored in the
  * token record, so a filter that renames one strands the sites using it.
  *
  * @return array<string, array<string, string|float>>
@@ -986,8 +986,8 @@ function bridge_button_skins(): array
 			),
 			/*
 			 * Solid's movement — the deeper fill climbing from the bottom edge,
-			 * the shadow coming up with it — on a crisper shape: a corner a
-			 * little rounder than Solid's, a small uppercase label with wide
+			 * the shadow coming up with it — on a crisper shape: a corner
+			 * twice Solid's, a small uppercase label with wide
 			 * tracking, and a hairline border so the outline variant reads as
 			 * drawn rather than stamped. Last in the list so every existing
 			 * site's choice, and the order an operator has learnt, are where
@@ -995,8 +995,10 @@ function bridge_button_skins(): array
 			 */
 			'rounded' => array(
 				'name'          => __('Rounded', 'bridge'),
-				'description'   => __('Rounded corners, a small uppercase label with wide tracking, and a fine 1px border on the outline version. Under the pointer the deeper fill climbs it from the bottom edge and a shadow comes up with it, as on Solid. Considered and quietly premium — for healthcare, professional and hospitality brands.', 'bridge'),
-				'radius'        => '8px',
+				'description'   => __('Generously rounded corners, a small uppercase label with wide tracking, and a fine 1px border on the outline version. Under the pointer the deeper fill climbs it from the bottom edge and a shadow comes up with it, as on Solid. Considered and quietly premium — for healthcare, professional and hospitality brands.', 'bridge'),
+				// Measured off the Town House hero buttons: a 12px arc on a
+				// 36px button, about a third of its height.
+				'radius'        => '12px',
 				'paddingBlock'  => '0.75rem',
 				'paddingInline' => '1.75rem',
 				'weight'        => '600',

@@ -27,7 +27,7 @@ export function ButtonsTab({
 			<Section
 				title={__('Button skin', 'bridge')}
 				description={__(
-					'One of four finished designs, applied to every button on the site — the block, the header’s call to action and anything a plugin renders as one. Pick the shape; the colours are answered separately below, per band, so a skin can be swapped without revisiting them.',
+					'One of the finished designs below, applied to every button on the site — the block, the header’s call to action and anything a plugin renders as one. Pick the shape; the colours are answered separately below, per band, so a skin can be swapped without revisiting them.',
 					'bridge'
 				)}
 			>

@@ -120,8 +120,8 @@
 	--bo-text-md: 0.875rem;
 	--bo-text-lg: 1rem;
 	--bo-text-xl: 1.5rem;
-	--bo-mono: ui-monospace, sfmono-regular, "SF Mono", menlo, consolas,
-		monospace;
+	--bo-mono:
+		ui-monospace, sfmono-regular, "SF Mono", menlo, consolas, monospace;
 
 	// One duration and one curve, so nothing on the screen moves at a speed
 	// nothing else moves at.
@@ -734,6 +734,22 @@ $slot-height: 40px;
 	@media (max-width: 1180px) {
 		position: static;
 		max-height: none;
+	}
+
+	/**
+	 * The Buttons tab, uncapped.
+	 *
+	 * Its preview is four short sample grounds, and every one of them is
+	 * the point: Inverted is the band most likely to fail a contrast check,
+	 * and it was the one left below the fold behind an inner scrollbar. So
+	 * here the column is as tall as its content and travels with the page —
+	 * the settings beside it are a grid of skins that is taller still, so
+	 * nothing is lost by it not being pinned.
+	 */
+	.bridge-options__preview--buttons & {
+		position: static;
+		max-height: none;
+		overflow: visible;
 	}
 
 	// A quiet scrollbar — the column is a panel, not a document.

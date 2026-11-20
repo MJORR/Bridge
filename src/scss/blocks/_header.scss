@@ -230,11 +230,84 @@
 	gap: var(--wp--preset--spacing--40);
 }
 
-// The button sits tight against the logo — it belongs to the brand group at
-// the start of the row, not to the menu that follows it.
+// XL from the burger's bars to the logo. The button is a 44px tap target with
+// its bars centred in it, so the space either side of the bars inside the
+// button is taken off, and so is the group's own gap, leaving exactly the XL
+// step of the spacing scale between what is drawn.
 .bridge-header__start > .bridge-nav--burger {
+	// Half the tap target's width that is not bar, on each side.
+	--bridge-burger-slack: calc(
+		var(--bridge-nav-toggle-size) / 2 - var(--bridge-nav-bar-width) / 2
+	);
+	--bridge-burger-gap: calc(
+		var(--wp--preset--spacing--60) - var(--wp--preset--spacing--40)
+	);
+
 	flex: none;
-	margin-inline-end: calc(var(--wp--preset--spacing--40) * -0.5);
+	margin-inline-end: calc(
+		var(--bridge-burger-gap) - var(--bridge-burger-slack)
+	);
+}
+
+// The burger in three bars rather than the theme's two. The outer pair are the
+// button's `::before` and `::after`, as on every layout, spread a little wider
+// apart; the middle one is a background image, so it needs no markup and goes
+// when the menu opens, leaving the outer pair to cross into the close mark.
+.bridge-header--hybrid
+	.bridge-nav--burger
+	.wp-block-navigation__responsive-container-open {
+	--bridge-nav-bar-gap: 0.4375rem;
+
+	background-image: linear-gradient(currentcolor, currentcolor);
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: var(--bridge-nav-bar-width) var(--bridge-nav-bar-size);
+	transition:
+		background-color var(--bridge-nav-speed) ease,
+		background-size var(--bridge-nav-toggle-speed) var(--bridge-nav-ease);
+}
+
+.bridge-header--hybrid
+	.bridge-nav--burger:has(
+		.wp-block-navigation__responsive-container.is-menu-open
+	)
+	.wp-block-navigation__responsive-container-open {
+	background-size: 0 var(--bridge-nav-bar-size);
+}
+
+/**
+ * The menu, the locations dropdown and the call to action, one run from the
+ * left with the L step of the spacing scale between each — not the bar here
+ * and the other two pushed to the far edge.
+ *
+ * Measured between what is drawn: the menu's last label carries its own
+ * `--bridge-nav-inset` of padding (12px on this layout), so that much is
+ * taken off the gap after it. The dropdown and the button keep the L step
+ * between them, in place of the rhythm margins the other layouts use.
+ */
+@media (min-width: nav.$bar) {
+	.bridge-header--hybrid .bridge-header__row {
+		justify-content: flex-start;
+		column-gap: calc(var(--wp--preset--spacing--50) - 0.75rem);
+	}
+
+	.bridge-header.bridge-header--hybrid.is-inline-collapsed
+		.bridge-header__row {
+		column-gap: var(--wp--preset--spacing--50);
+	}
+
+	.bridge-header--hybrid .bridge-header__end {
+		gap: var(--wp--preset--spacing--50);
+	}
+
+	.bridge-header.bridge-header--hybrid
+		.bridge-header__end
+		> .bridge-header__locations,
+	.bridge-header.bridge-header--hybrid
+		.bridge-header__end
+		> .bridge-header__cta {
+		margin-inline-start: 0;
+	}
 }
 
 // The panel hangs from the header, not from the 44px the button occupies —

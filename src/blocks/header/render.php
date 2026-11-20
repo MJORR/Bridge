@@ -408,6 +408,20 @@ $bridge_cta_style = sprintf(
 	$bridge_cta_scheme['ring']
 ) . $bridge_cta_alt;
 
+// The label colour, when Theme Options names one rather than leaving it to
+// the contrast arithmetic. Appended after the computed values, so in the one
+// style attribute the later declaration is the one that counts — at rest, on
+// hover, and against a light hero on a landing page alike. Auto adds nothing.
+$bridge_cta_text = (string) ( $bridge_header['cta']['textColor'] ?? '' );
+
+if ( '' !== $bridge_cta_text ) {
+	$bridge_cta_text   = sprintf( 'var(--wp--preset--color--%s)', sanitize_key( $bridge_cta_text ) );
+	$bridge_cta_style .= sprintf(
+		'--bridge-cta-fg:%1$s;--bridge-cta-hover-fg:%1$s;--bridge-cta-alt-fg:%1$s;--bridge-cta-alt-hover-fg:%1$s;',
+		$bridge_cta_text
+	);
+}
+
 $bridge_logo = bridge_header_logo( $bridge_header, $bridge_background );
 $bridge_hybrid = 'hybrid' === $bridge_layout;
 

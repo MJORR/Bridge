@@ -1756,7 +1756,9 @@ function bridge_token_defaults(): array
 			// the CTA follows the brand when it changes. Accent because that is
 			// what the header hard-coded before this was a setting, so a site that
 			// never opens the control keeps the button it had.
-			'cta'             => array('enabled' => false, 'label' => '', 'url' => '', 'color' => 'accent'),
+			// `textColor` empty is Auto: the label is worked out against the
+			// fill for contrast, which is all it ever was before the setting.
+			'cta'             => array('enabled' => false, 'label' => '', 'url' => '', 'color' => 'accent', 'textColor' => ''),
 			// A dropdown beside the call to action listing one menu's links —
 			// a practice's branches, a firm's offices. Off unless switched on,
 			// and drawn only once its menu has links in it. An empty label is
@@ -2774,10 +2776,12 @@ function bridge_sanitize_tokens(array $raw): array
 			'height'    => (int) round(bridge_clamp_token('header', 'logoHeight', $raw_logo['height'] ?? null, (float) $defaults['header']['logo']['height'])),
 		),
 		'cta'             => array(
-			'enabled' => $cta_enabled,
-			'label'   => $cta_label,
-			'url'     => $cta_url,
-			'color'   => $cta_color,
+			'enabled'   => $cta_enabled,
+			'label'     => $cta_label,
+			'url'       => $cta_url,
+			'color'     => $cta_color,
+			// A palette slug, or empty for Auto.
+			'textColor' => bridge_pick_palette_slug($raw_cta['textColor'] ?? null, ''),
 		),
 		'nav'             => $nav,
 	);

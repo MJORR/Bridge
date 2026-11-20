@@ -274,6 +274,28 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
 						/>
+						<SelectControl
+							label={__('Button text colour', 'bridge')}
+							value={header.cta.textColor ?? ''}
+							options={[
+								{ label: __('Auto', 'bridge'), value: '' },
+								...Object.entries(paletteSlugs).map(
+									([slug]) => ({
+										label: draft.brand.palette[slug].name,
+										value: slug,
+									})
+								),
+							]}
+							onChange={(value) =>
+								setHeader('cta.textColor', value)
+							}
+							help={__(
+								'The label colour of the header button. Auto picks whichever reads best against the button colour; choose a colour to set it yourself \u2014 check it is still easy to read.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+						/>
 					</>
 				)}
 			</Section>

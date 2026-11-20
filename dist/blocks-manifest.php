@@ -1165,7 +1165,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/goal',
-		'version' => '1.0.0',
+		'version' => '1.1.0',
 		'title' => 'Goal',
 		'category' => 'design',
 		'icon' => 'chart-bar',
@@ -1192,6 +1192,15 @@ return array(
 				'type' => 'string',
 				'default' => '',
 			),
+			'unitPosition' => array(
+				'type' => 'string',
+				'enum' => array(
+					'auto',
+					'before',
+					'after',
+				),
+				'default' => 'auto',
+			),
 		),
 		'editorScript' => 'bridge-goal-editor',
 		'render' => 'file:./render.php',
@@ -1200,7 +1209,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/goals',
-		'version' => '1.0.0',
+		'version' => '1.1.0',
 		'title' => 'Goals',
 		'category' => 'design',
 		'icon' => 'chart-bar',
@@ -1235,6 +1244,38 @@ return array(
 			'countUp' => array(
 				'type' => 'boolean',
 				'default' => true,
+			),
+			'figureStyle' => array(
+				'type' => 'string',
+				'enum' => array(
+					'bold',
+					'heading',
+				),
+				'default' => 'bold',
+			),
+			'labelStyle' => array(
+				'type' => 'string',
+				'enum' => array(
+					'default',
+					'eyebrow',
+				),
+				'default' => 'default',
+			),
+			'dividers' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'bottomRule' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'spacing' => array(
+				'type' => 'string',
+				'enum' => array(
+					'default',
+					'compact',
+				),
+				'default' => 'default',
 			),
 		),
 		'example' => array(

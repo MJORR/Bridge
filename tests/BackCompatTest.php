@@ -203,6 +203,16 @@ final class BackCompatTest extends BridgeTestCase
 		$band = $this->blockJson('alternating-content')['attributes'];
 		$this->assertSame('ratio', $band['sizing']['default'], 'Alternating rows: sized by the picture, as before.');
 		$this->assertSame('16-9', $band['ratio']['default'], 'Alternating rows: 16:9, as before.');
+
+		$goals = $this->blockJson('goals')['attributes'];
+		$this->assertSame('bold', $goals['figureStyle']['default'], 'Goals: bold body-font figures, as before.');
+		$this->assertSame('default', $goals['labelStyle']['default'], 'Goals: plain labels, as before.');
+		$this->assertFalse($goals['dividers']['default'], 'Goals: no dividers, as before.');
+		$this->assertFalse($goals['bottomRule']['default'], 'Goals: no bottom line, as before.');
+		$this->assertSame('default', $goals['spacing']['default'], 'Goals: the site section padding, as before.');
+
+		$goal = $this->blockJson('goal')['attributes'];
+		$this->assertSame('auto', $goal['unitPosition']['default'], 'Goal: currency leads, everything else follows, as before.');
 	}
 
 	/** The row footer is added by its Row's switch only, never from the inserter. */

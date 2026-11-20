@@ -41,12 +41,53 @@ $classes = sprintf(
 	$alignment
 );
 
+/*
+ * The trust-strip options. Every one is off by default and adds a class only
+ * when it is on, so a band saved before they existed prints exactly the
+ * markup it always did.
+ *
+ *   figureStyle  heading   The figure in the site's heading face and weight
+ *                          rather than bold body type.
+ *   labelStyle   eyebrow   The label small, uppercase, spaced and muted.
+ *   dividers               A hairline between neighbouring figures.
+ *   bottomRule             A hairline along the band's bottom edge.
+ *   spacing      compact   Less air above and below the row.
+ */
+$style = sprintf( '--columns: %d;', $columns );
+
+if ( 'heading' === ( $attributes['figureStyle'] ?? 'bold' ) ) {
+	$classes .= ' bridge-goals--figure-heading';
+
+	// The heading weight is a Theme Options token with no custom property of
+	// its own, and adding one would change every site's compiled styles. So
+	// the band carries it.
+	$tokens  = function_exists( 'bridge_get_tokens' ) ? bridge_get_tokens() : array();
+	$weight  = (string) ( $tokens['typography']['headingWeight'] ?? '' );
+	$style  .= preg_match( '/^[1-9]00$/', $weight ) ? '--bridge-goal-figure-weight:' . $weight . ';' : '';
+}
+
+if ( 'eyebrow' === ( $attributes['labelStyle'] ?? 'default' ) ) {
+	$classes .= ' bridge-goals--label-eyebrow';
+}
+
+if ( ! empty( $attributes['dividers'] ) ) {
+	$classes .= ' bridge-goals--dividers';
+}
+
+if ( ! empty( $attributes['bottomRule'] ) ) {
+	$classes .= ' bridge-goals--bottom-rule';
+}
+
+if ( 'compact' === ( $attributes['spacing'] ?? 'default' ) ) {
+	$classes .= ' bridge-goals--compact';
+}
+
 list( $intro_html, $label_id ) = bridge_section_intro( $intro, 'bridge-goals__intro' );
 
 echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 	$attributes,
 	$classes,
-	sprintf( '--columns: %d;', $columns ),
+	$style,
 	$label_id
 );
 ?>

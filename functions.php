@@ -612,6 +612,15 @@ function bridge_register_blocks(): void
 	// values and goals-view.js counts them from zero once the row is on
 	// screen. Nothing about the block needs it to be readable.
 	bridge_register_section_block('goals', true, true);
+	// The heading weight, so the editor can draw the "Heading font" figure
+	// style the way render.php does. See src/blocks/goals/render.php.
+	wp_add_inline_script(
+		'bridge-goals-editor',
+		'window.bridgeGoals = ' . wp_json_encode(
+			array('headingWeight' => (string) (bridge_get_tokens()['typography']['headingWeight'] ?? ''))
+		) . ';',
+		'before'
+	);
 
 	// --- Contact form ------------------------------------------------------
 	// A view script, and the block works without it: the form is an ordinary

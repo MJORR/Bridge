@@ -36,7 +36,15 @@ if ( '' === $number && '' === $unit && '' === $label ) {
 // as a fourth field. `\p{Sc}` is Unicode's currency-symbol category — £, $, €
 // — which is the set of units written in front of the number. Everything else
 // (miles, kg, %, hours) follows it. edit.js makes the same test.
-$leads = '' !== $unit && 1 === preg_match( '/^\p{Sc}/u', $unit );
+//
+// Unless the editor has said otherwise: a ★ before a rating is not currency
+// but still leads. "auto" keeps the old reading, so a figure saved before the
+// setting existed sits where it always did. A unit put in front by choice is
+// spaced off the number, because it is a symbol rather than part of it.
+$position = (string) ( $attributes['unitPosition'] ?? 'auto' );
+$position = in_array( $position, array( 'before', 'after' ), true ) ? $position : 'auto';
+$leads    = '' !== $unit && ( 'auto' === $position ? 1 === preg_match( '/^\p{Sc}/u', $unit ) : 'before' === $position );
+$spaced   = $leads && 'before' === $position;
 
 /*
  * The number as a number, for the count-up.
@@ -63,7 +71,7 @@ if ( '' !== $numeric ) {
 if ( '' === $unit ) {
 	$spoken = $number;
 } else {
-	$spoken = $leads ? $unit . $number : $number . ' ' . $unit;
+	$spoken = $leads ? $unit . ( $spaced ? ' ' : '' ) . $number : $number . ' ' . $unit;
 }
 
 $wrapper = get_block_wrapper_attributes( array( 'class' => 'bridge-goal' ) );
@@ -72,7 +80,7 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'bridge-goal' ) );
 	<?php if ( '' !== $number || '' !== $unit ) : ?>
 		<p class="bridge-goal__value">
 			<?php if ( $leads ) : ?>
-				<span class="bridge-goal__unit is-prefix" aria-hidden="true"><?php echo esc_html( $unit ); ?></span>
+				<span class="bridge-goal__unit is-prefix<?php echo $spaced ? ' is-spaced' : ''; ?>" aria-hidden="true"><?php echo esc_html( $unit ); ?></span>
 			<?php endif; ?>
 
 			<span

@@ -22,7 +22,21 @@ const TEMPLATE = [
 ];
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { width, columns, textAlignment, countUp } = attributes;
+	const {
+		width,
+		columns,
+		textAlignment,
+		countUp,
+		figureStyle = 'bold',
+		labelStyle = 'default',
+		dividers = false,
+		bottomRule = false,
+		spacing = 'default',
+	} = attributes;
+
+	// The heading weight, for the Heading figure style. render.php reads the
+	// same token; see the inline script beside this block's registration.
+	const headingWeight = (window.bridgeGoals || {}).headingWeight;
 
 	const blockProps = useBlockProps({
 		className: [
@@ -30,8 +44,20 @@ const Edit = ({ attributes, setAttributes }) => {
 			'bridge-section bridge-band alignfull',
 			`bridge-goals--${width}`,
 			`bridge-goals--text-${textAlignment}`,
-		].join(' '),
-		style: { '--columns': columns },
+			'heading' === figureStyle && 'bridge-goals--figure-heading',
+			'eyebrow' === labelStyle && 'bridge-goals--label-eyebrow',
+			dividers && 'bridge-goals--dividers',
+			bottomRule && 'bridge-goals--bottom-rule',
+			'compact' === spacing && 'bridge-goals--compact',
+		]
+			.filter(Boolean)
+			.join(' '),
+		style: {
+			'--columns': columns,
+			...('heading' === figureStyle && headingWeight
+				? { '--bridge-goal-figure-weight': headingWeight }
+				: {}),
+		},
 	});
 
 	const innerBlocksProps = useInnerBlocksProps(
@@ -88,6 +114,58 @@ const Edit = ({ attributes, setAttributes }) => {
 					],
 					onChange: (value) =>
 						setAttributes({ textAlignment: value }),
+				})
+			),
+			el(
+				PanelBody,
+				{ title: __('Style', 'bridge'), initialOpen: true },
+				el(SelectControl, {
+					label: __('Figure style', 'bridge'),
+					value: figureStyle,
+					options: [
+						{ label: __('Bold', 'bridge'), value: 'bold' },
+						{
+							label: __('Heading font', 'bridge'),
+							value: 'heading',
+						},
+					],
+					onChange: (value) => setAttributes({ figureStyle: value }),
+				}),
+				el(SelectControl, {
+					label: __('Label style', 'bridge'),
+					value: labelStyle,
+					options: [
+						{ label: __('Default', 'bridge'), value: 'default' },
+						{
+							label: __('Small capitals', 'bridge'),
+							value: 'eyebrow',
+						},
+					],
+					onChange: (value) => setAttributes({ labelStyle: value }),
+				}),
+				el(ToggleControl, {
+					label: __('Dividers between figures', 'bridge'),
+					checked: !!dividers,
+					onChange: (value) => setAttributes({ dividers: value }),
+				}),
+				el(ToggleControl, {
+					label: __('Line along the bottom', 'bridge'),
+					checked: !!bottomRule,
+					onChange: (value) => setAttributes({ bottomRule: value }),
+				}),
+				el(SelectControl, {
+					label: __('Spacing', 'bridge'),
+					help: __(
+						'Compact suits a strip of figures directly under a banner.',
+						'bridge'
+					),
+					value: spacing,
+					options: [
+						{ label: __('Default', 'bridge'), value: 'default' },
+						{ label: __('Compact', 'bridge'), value: 'compact' },
+					],
+					onChange: (value) => setAttributes({ spacing: value }),
+					__nextHasNoMarginBottom: true,
 				})
 			),
 			el(

@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/goal",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"title": "Goal",
 	"category": "design",
 	"icon": "chart-bar",
@@ -13,7 +13,12 @@
 	"attributes": {
 		"number": { "type": "string", "default": "" },
 		"unit": { "type": "string", "default": "" },
-		"label": { "type": "string", "default": "" }
+		"label": { "type": "string", "default": "" },
+		"unitPosition": {
+			"type": "string",
+			"enum": ["auto", "before", "after"],
+			"default": "auto"
+		}
 	},
 	"editorScript": "bridge-goal-editor",
 	"render": "file:./render.php"

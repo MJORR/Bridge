@@ -36,6 +36,67 @@
 		text-align: center;
 		align-items: center;
 	}
+
+	// ---- Trust-strip options ------------------------------------------
+	//
+	// Each is a class the band wears only when its option is on, so a band
+	// saved before they existed matches none of these rules. The hairlines
+	// are the same faded current colour the alternating row footer uses,
+	// so they work on any skin.
+
+	// Two classes, to outrank the one-class `.bridge-section` padding in
+	// components/_sections.scss whichever stylesheet loads last.
+	&#{&}--compact {
+		padding-block: var(--wp--preset--spacing--50);
+	}
+
+	&--bottom-rule {
+		border-block-end: 1px solid
+			color-mix(in srgb, currentcolor 25%, transparent);
+	}
+
+	&--figure-heading .bridge-goal__value {
+		font-family: var(--wp--preset--font-family--heading);
+		font-weight: var(--bridge-goal-figure-weight, 400);
+		letter-spacing: normal;
+	}
+
+	&--figure-heading .bridge-goal__unit {
+		font-weight: inherit;
+	}
+
+	&--label-eyebrow .bridge-goal__label {
+		font-size: var(--wp--preset--font-size--x-small);
+		font-weight: 400;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: color-mix(in srgb, currentcolor 65%, transparent);
+	}
+
+	/*
+	 * A line between neighbours, wherever the row wraps.
+	 *
+	 * Every figure draws a line half a gap to its start side. The list clips
+	 * anything outside its own box, so the line in front of whichever figure
+	 * starts a row lands outside it and disappears. No figure has to know its
+	 * column, and two across on a phone gets one line between them.
+	 */
+	&--dividers &__list {
+		overflow: hidden;
+	}
+
+	&--dividers .bridge-goal {
+		position: relative;
+	}
+
+	&--dividers .bridge-goal::before {
+		content: "";
+		position: absolute;
+		inset-block: 0;
+		inset-inline-start: calc(#{section.$grid-gap} / -2);
+		border-inline-start: 1px solid
+			color-mix(in srgb, currentcolor 25%, transparent);
+	}
 }
 
 .bridge-goal {
@@ -93,6 +154,12 @@
 	// it reads as a typo.
 	&__unit:not(.is-prefix) {
 		margin-inline-start: 0.1em;
+	}
+
+	// A symbol put in front by choice, like a ★ before a rating, rather than
+	// a currency sign that reads as part of the number.
+	&__unit.is-spaced {
+		margin-inline-end: 0.3em;
 	}
 
 	&__label {

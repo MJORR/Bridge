@@ -132,7 +132,21 @@ if ( '' !== $mask_url ) {
 	);
 }
 
-$wrapper = get_block_wrapper_attributes( array( 'class' => 'bridge-alternating__row' ) );
+/*
+ * A row with a footer says so, because the copy is laid out differently once
+ * there is something to pin to its bottom edge. Read off the parsed children
+ * rather than a stored flag: the footer block is the switch.
+ */
+$row_class = 'bridge-alternating__row';
+
+foreach ( $block->inner_blocks as $child ) {
+	if ( 'bridge/alternating-footer' === $child->name ) {
+		$row_class .= ' has-footer';
+		break;
+	}
+}
+
+$wrapper = get_block_wrapper_attributes( array( 'class' => $row_class ) );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core. ?>>
 	<div class="<?php echo esc_attr( $media_class ); ?>"<?php echo $media_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from esc_url()/esc_attr() above. ?>>

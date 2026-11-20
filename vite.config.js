@@ -326,6 +326,10 @@ export default defineConfig(({ mode }) => ({
 					__dirname,
 					'src/blocks/alternating-row/index.js'
 				),
+				'alternating-footer-editor': resolve(
+					__dirname,
+					'src/blocks/alternating-footer/index.js'
+				),
 				'alternating-content': resolve(
 					__dirname,
 					'src/scss/alternating-content.scss'

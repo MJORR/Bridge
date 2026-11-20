@@ -157,6 +157,21 @@
 }
 
 /**
+ * And one class per palette colour for the label alone, set in the editor's
+ * Button panel. A custom property rather than a `color` so it rides the same
+ * cascade as the fill: the fill classes set the scheme on the wrapper, this
+ * sets one more value beside it, and the link reads whichever it is given.
+ * Nothing at all for a button that has not been given one.
+ */
+@each $slug
+	in ("primary", "secondary", "accent", "background", "surface", "text")
+{
+	.bridge-button--text-#{$slug} {
+		--bridge-button-label: var(--wp--preset--color--#{$slug});
+	}
+}
+
+/**
  * Mobile.
  *
  * A button is already at least 44px tall and wraps its own label, so what is

@@ -143,6 +143,10 @@
 		"customHeightUnit": {
 			"type": "string",
 			"default": "vh"
+		},
+		"contentWidth": {
+			"type": "number",
+			"default": 0
 		}
 	},
 	"example": {

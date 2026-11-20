@@ -985,8 +985,8 @@ function bridge_button_skins(): array
 				'fill'          => 0.12,
 			),
 			/*
-			 * Solid's movement — the deeper fill climbing from the bottom edge,
-			 * the shadow coming up with it — on a crisper shape: a corner
+			 * Pill's movement — the deeper fill sweeping in from the leading
+			 * edge, the shadow coming up with it — on a crisper shape: a corner
 			 * twice Solid's, a small uppercase label with wide
 			 * tracking, and a hairline border so the outline variant reads as
 			 * drawn rather than stamped. Last in the list so every existing
@@ -995,7 +995,7 @@ function bridge_button_skins(): array
 			 */
 			'rounded' => array(
 				'name'          => __('Rounded', 'bridge'),
-				'description'   => __('Generously rounded corners, a small uppercase label with wide tracking, and a fine 1px border on the outline version. Under the pointer the deeper fill climbs it from the bottom edge and a shadow comes up with it, as on Solid. Considered and quietly premium — for healthcare, professional and hospitality brands.', 'bridge'),
+				'description'   => __('Generously rounded corners, a small uppercase label with wide tracking, and a fine 1px border on the outline version. Under the pointer the deeper fill sweeps across it from the leading edge, as on Pill, and a shadow comes up with it. Considered and quietly premium — for healthcare, professional and hospitality brands.', 'bridge'),
 				/*
 				 * Every measurement is a global token rather than a number of
 				 * its own: the radius scale's largest step (half as round
@@ -1020,8 +1020,10 @@ function bridge_button_skins(): array
 				'shadowHover'   => '0 6px 16px rgba(0, 0, 0, 0.16)',
 				'sweep'         => '0px',
 				'wipe'          => '1',
-				'wipeWidth'     => '100%',
-				'wipeHeight'    => '0px',
+				// Across from the leading edge, as on Pill, rather than up
+				// from the floor as on Solid.
+				'wipeWidth'     => '0px',
+				'wipeHeight'    => '100%',
 				'fill'          => 0.12,
 			),
 		)

@@ -101,6 +101,10 @@
 
 	const fillClass = (slug) => `bridge-button--fill-${slug}`;
 
+	// The label colour: computed against the fill unless somebody picks one.
+	const AUTO_TEXT = { label: __('Auto', 'bridge'), value: '' };
+	const textClass = (slug) => `bridge-button--text-${slug}`;
+
 	/*
 	 * The classes the Background control chooses between, plus the four a
 	 * button could once be told it was standing on.
@@ -154,6 +158,14 @@
 		return found ? found.replace('bridge-button--fill-', '') : '';
 	};
 
+	const textOf = (className) => {
+		const found = classList(className).find((name) =>
+			name.startsWith('bridge-button--text-')
+		);
+
+		return found ? found.replace('bridge-button--text-', '') : '';
+	};
+
 	/**
 	 * The panel.
 	 */
@@ -189,6 +201,15 @@
 				...palette.map((colour) => fillClass(colour.slug)),
 				...LEGACY_GROUNDS,
 			];
+
+			const texts = [
+				AUTO_TEXT,
+				...palette.map((colour) => ({
+					label: colour.name || colour.slug,
+					value: colour.slug,
+				})),
+			];
+			const textFamily = palette.map((colour) => textClass(colour.slug));
 
 			return el(
 				Fragment,
@@ -229,6 +250,24 @@
 										className,
 										family,
 										value ? fillClass(value) : ''
+									)
+								),
+						}),
+						el(SelectControl, {
+							__nextHasNoMarginBottom: true,
+							label: __('Text colour', 'bridge'),
+							help: __(
+								'Auto picks whichever colour reads best on the button. Choose one to set it yourself — check it is still easy to read. On an Outline button it colours the text at rest; the border keeps its own colour.',
+								'bridge'
+							),
+							value: textOf(className),
+							options: texts,
+							onChange: (value) =>
+								set(
+									rewrite(
+										className,
+										textFamily,
+										value ? textClass(value) : ''
 									)
 								),
 						})

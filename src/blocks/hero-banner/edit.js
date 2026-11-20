@@ -1100,6 +1100,7 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 		heightPreset,
 		customHeight,
 		customHeightUnit,
+		contentWidth,
 	} = attributes;
 
 	/*
@@ -1383,6 +1384,10 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 				customHeight,
 				customHeightUnit
 			),
+			// The content's width cap, only when one has been chosen: unset,
+			// the stylesheet's own fallback — the site's wide width — stands.
+			'--bridge-hero-banner-content-width':
+				contentWidth > 0 ? `${contentWidth}px` : undefined,
 			'--bridge-hero-banner-ground': slugToHex(color),
 			'--bridge-hero-banner-fg': inverted
 				? 'var(--wp--preset--color--background)'
@@ -2469,6 +2474,28 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 						__next40pxDefaultSize: true,
 					})
 				),
+			el(
+				PanelBody,
+				{ title: __('Content', 'bridge'), initialOpen: true },
+				el(RangeControl, {
+					label: __('Max content width (px)', 'bridge'),
+					help: __(
+						'The widest the heading, text and buttons may run. Reset to use the site\u2019s wide width.',
+						'bridge'
+					),
+					value: contentWidth > 0 ? contentWidth : undefined,
+					initialPosition: 800,
+					onChange: (value) =>
+						setAttributes({ contentWidth: value ? value : 0 }),
+					min: 320,
+					max: 1600,
+					step: 10,
+					allowReset: true,
+					resetFallbackValue: undefined,
+					__nextHasNoMarginBottom: true,
+					__next40pxDefaultSize: true,
+				})
+			),
 			el(
 				PanelBody,
 				{ title: __('Height', 'bridge'), initialOpen: true },

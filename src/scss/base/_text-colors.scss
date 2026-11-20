@@ -1,0 +1,30 @@
+/**
+ * Bridge — chosen text colours, made to stick.
+ *
+ * WordPress marks every element given a text colour with two classes: the
+ * colour's own, `has-{slug}-color`, and a generic `has-text-color` that says
+ * "a text colour was chosen". This theme's palette has a colour whose slug is
+ * `text`, and WordPress prints a rule for it under exactly that name:
+ *
+ *   .has-text-color { color: var(--wp--preset--color--text) !important; }
+ *
+ * So the generic marker on every coloured element doubles as an instruction to
+ * paint it in the Text colour. Both rules are `!important` at one class, the
+ * `text` one is printed after the others, and it wins — a heading set to
+ * Accent in the editor came out in the Text colour, everywhere on the site.
+ *
+ * The slug cannot be renamed: it is written into post content as a class name
+ * (see bridge_palette_slugs()). So the colour that was actually chosen is
+ * given one more class than the clash, which is enough for it to win, and it
+ * touches nothing but elements carrying both classes — which is to say only
+ * the ones that are broken. A block coloured Text needs no rule: the marker
+ * already paints it the right colour.
+ *
+ * The slugs are listed rather than read, for the reason given beside the
+ * button fill classes in components/_button.scss.
+ */
+@each $slug in ("primary", "secondary", "accent", "background", "surface") {
+	.has-text-color.has-#{$slug}-color {
+		color: var(--wp--preset--color--#{$slug}) !important;
+	}
+}

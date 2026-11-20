@@ -695,4 +695,117 @@ $mask-shift: calc(
 				var(--bridge-alternating-edge);
 		}
 	}
+
+	/**
+	 * ---- The row footer ------------------------------------------------------
+	 *
+	 * A ruled line of short facts along the bottom of a row's copy, added by the
+	 * Row's "Show footer" switch. Every measure is a global one: spacing presets
+	 * for the air, the x-small step of the type scale for the words, and the
+	 * text colour at a quarter strength for the rule — the same edge the
+	 * testimonial and feature cards draw.
+	 *
+	 * Stacked, it simply follows the copy, an XL below the buttons. Beside the
+	 * media, it is pinned to the bottom of the row and the rest of the copy is
+	 * centred in what remains above it, so the line runs level with the bottom of
+	 * the picture however tall that is.
+	 *
+	 * Only a row that has a footer changes: everything here hangs off the footer
+	 * itself or off `has-footer`, which nothing else sets.
+	 */
+		// Three classes, to tie with the stack's "space after the buttons" rule
+		// and win on order — the footer sets its own distance.
+		&__row &__copy > &__footer {
+			// Last, whatever order the blocks were saved in — an editor can still
+			// add a paragraph after it from the canvas.
+			order: 1;
+			margin-block-start: var(--wp--preset--spacing--60);
+		}
+
+		&__footer-inner {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: var(--wp--preset--spacing--40);
+			padding-block-start: var(--wp--preset--spacing--50);
+			border-block-start: 1px solid
+				color-mix(in srgb, currentcolor 25%, transparent);
+			font-size: var(--wp--preset--font-size--x-small);
+			line-height: 1.4;
+		}
+
+		&__footer-body {
+			min-width: 0;
+
+			> * {
+				margin-block: 0;
+			}
+
+			> * + * {
+				margin-block-start: var(--wp--preset--spacing--20);
+			}
+
+			// The list is a line of facts, not a column of bullets.
+			> ul,
+			> ol {
+				display: flex;
+				flex-wrap: wrap;
+				gap: var(--wp--preset--spacing--20) var(--wp--preset--spacing--50);
+				padding: 0;
+				list-style: none;
+			}
+
+			li {
+				margin: 0;
+			}
+		}
+
+		&__rating {
+			display: inline-flex;
+			gap: 0.1em;
+			line-height: 1;
+		}
+
+		// One colour at two strengths, as on the testimonial.
+		&__star {
+			opacity: 0.25;
+		}
+
+		&__star.is-filled {
+			opacity: 1;
+		}
+
+		@include section.two-column {
+			&__row.has-footer &__copy {
+				display: flex;
+				flex-direction: column;
+				align-self: stretch;
+			}
+
+			// The free space split above the copy and above the footer: the copy
+			// stays centred in the room the footer leaves, and the footer sinks
+			// to the bottom. The footer's padding is its minimum distance from
+			// the buttons when the copy fills the row.
+			&__row.has-footer &__copy > :first-child {
+				margin-block-start: auto;
+			}
+
+			&__row &__copy > &__footer {
+				margin-block-start: auto;
+				padding-block-start: var(--wp--preset--spacing--60);
+			}
+
+			// Full window: the rule reaches past the words by an XL each side,
+			// never further than the copy's own padding, so it cannot touch the
+			// glass. The facts stay on the words' vertical.
+			&--full &__footer-inner {
+				--bridge-alternating-bleed: min(
+					var(--wp--preset--spacing--60),
+					var(--bridge-alternating-edge)
+				);
+
+				margin-inline: calc(-1 * var(--bridge-alternating-bleed));
+				padding-inline: var(--bridge-alternating-bleed);
+			}
+		}
 }

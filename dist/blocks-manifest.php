@@ -59,6 +59,42 @@ return array(
 		'style' => 'bridge-alternating-content-style',
 		'render' => 'file:./render.php',
 	),
+	'alternating-footer' => array(
+		'$schema' => 'https://schemas.wp.org/trunk/block.json',
+		'apiVersion' => 3,
+		'name' => 'bridge/alternating-footer',
+		'version' => '1.0.0',
+		'title' => 'Row footer',
+		'category' => 'design',
+		'icon' => 'minus',
+		'description' => 'A ruled line of short facts along the bottom of a row\'s copy. Switched on and off from the Row.',
+		'textdomain' => 'bridge',
+		'parent' => array(
+			'bridge/alternating-row',
+		),
+		'supports' => array(
+			'anchor' => false,
+			'html' => false,
+			'reusable' => false,
+			'inserter' => false,
+			'lock' => false,
+		),
+		'attributes' => array(
+			'rating' => array(
+				'type' => 'number',
+				'default' => 0,
+			),
+			'lock' => array(
+				'type' => 'object',
+				'default' => array(
+					'move' => true,
+					'remove' => true,
+				),
+			),
+		),
+		'editorScript' => 'bridge-alternating-footer-editor',
+		'render' => 'file:./render.php',
+	),
 	'alternating-row' => array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
@@ -1410,6 +1446,10 @@ return array(
 			'customHeightUnit' => array(
 				'type' => 'string',
 				'default' => 'vh',
+			),
+			'contentWidth' => array(
+				'type' => 'number',
+				'default' => 0,
 			),
 		),
 		'example' => array(

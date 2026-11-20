@@ -169,6 +169,20 @@ $bridge_style = sprintf(
  * bridge_hero_focal_shift(), bridge_hero_focal_zoom() and
  * bridge_hero_focal_point().
  */
+/*
+ * The content's width cap, from the Content panel. Only when one is set, so a
+ * banner that has never had it keeps the site's wide width and the markup it
+ * had; clamped to the slider's range so a hand-edited value cannot run wild.
+ */
+$bridge_content_width = (int) ($attributes['contentWidth'] ?? 0);
+
+if ($bridge_content_width > 0) {
+	$bridge_style .= sprintf(
+		'--bridge-hero-banner-content-width:%dpx;',
+		max(320, min(1600, $bridge_content_width))
+	);
+}
+
 if ($bridge_has_media) {
 	$bridge_style .= sprintf(
 		'--bridge-hero-banner-focal:%s;--bridge-hero-banner-shift:%s;--bridge-hero-banner-zoom:%s;',

@@ -675,6 +675,7 @@ function bridge_register_blocks(): void
 			'feature-block',
 			'gallery-item',
 			'alternating-row',
+			'alternating-footer',
 			'goal',
 		) as $child
 	) {

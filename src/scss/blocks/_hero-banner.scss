@@ -337,7 +337,12 @@
 	 */
 	> * {
 		width: 100%;
-		max-width: var(--wp--style--global--wide-size, 1200px);
+		// The block's Max content width when one is set; the site's wide
+		// width otherwise, which is all this ever was.
+		max-width: var(
+			--bridge-hero-banner-content-width,
+			var(--wp--style--global--wide-size, 1200px)
+		);
 	}
 
 	// The site's rhythm: the block gap, the heading gap under the headline,
@@ -402,9 +407,15 @@
  * The `:not()` is for old content, where the same choice was a class rather
  * than a layout attribute. It costs nothing inside `:where()` and still says
  * the right thing about a page written before WordPress moved it.
+ *
+ * Every background whose content is centred, not only the solid one: on an
+ * image or a gradient the heading and paragraph were centred and the Buttons
+ * row alone sat on the left. The two styles that set their content to the
+ * left on purpose — the custom curve and two columns — and a banner with the
+ * title block on the left keep their own alignment.
  */
 :where(
-	.bridge-hero-banner.is-bg-solid
+	.bridge-hero-banner:not(.is-bg-curve, .is-bg-columns, .is-title-left)
 		.bridge-hero-banner__content
 		.wp-block-buttons:not([class*="is-content-justification"])
 ) {

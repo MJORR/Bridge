@@ -112,7 +112,9 @@
 	);
 	// Read only by the Block skin's own stylesheet — see `block` below.
 	--bridge-button-block: var(--wp--custom--button--fill-#{$slug}--block);
-	--bridge-button-block-fg: var(--wp--custom--button--fill-#{$slug}--block-fg);
+	--bridge-button-block-fg: var(
+		--wp--custom--button--fill-#{$slug}--block-fg
+	);
 	--bridge-button-ring: var(--wp--custom--button--fill-#{$slug}--ring);
 }
 
@@ -266,7 +268,13 @@
 		--bridge-button-border,
 		var(--wp--custom--button--on-default--border)
 	);
-	color: var(--bridge-button-fg, var(--wp--custom--button--on-default--fg));
+	// `--bridge-button-label` first: the text colour an editor chose on this
+	// one button (components/_button.scss). Nothing else sets it, so every
+	// other button falls through to the computed label exactly as before.
+	color: var(
+		--bridge-button-label,
+		var(--bridge-button-fg, var(--wp--custom--button--on-default--fg))
+	);
 
 	/**
 	 * The hover fill, as a layer that moves into the button rather than a
@@ -387,8 +395,11 @@
 		);
 		box-shadow: var(--wp--custom--button--shadow-hover, none);
 		color: var(
-			--bridge-button-hover-fg,
-			var(--wp--custom--button--on-default--hover-fg)
+			--bridge-button-label,
+			var(
+				--bridge-button-hover-fg,
+				var(--wp--custom--button--on-default--hover-fg)
+			)
 		);
 
 		// Uncovered, in both directions at once. Only the axis that was
@@ -456,9 +467,13 @@
 	// No resting elevation: a shadow under a transparent box is a shadow under
 	// nothing, and on the Pill skin it read as a dropped outline.
 	box-shadow: none;
+	// The label alone, not the border: an outline's two are one colour by
+	// default, and a chosen text colour should not redraw the edge. Not on
+	// hover either, where the button fills with the ghost colour and only the
+	// computed label is known to read on it.
 	color: var(
-		--bridge-button-ghost,
-		var(--wp--custom--button--on-default--ghost)
+		--bridge-button-label,
+		var(--bridge-button-ghost, var(--wp--custom--button--on-default--ghost))
 	);
 
 	&:hover,

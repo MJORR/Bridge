@@ -1,0 +1,25 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/alternating-footer",
+	"version": "1.0.0",
+	"title": "Row footer",
+	"category": "design",
+	"icon": "minus",
+	"description": "A ruled line of short facts along the bottom of a row's copy. Switched on and off from the Row.",
+	"textdomain": "bridge",
+	"parent": ["bridge/alternating-row"],
+	"supports": {
+		"anchor": false,
+		"html": false,
+		"reusable": false,
+		"inserter": false,
+		"lock": false
+	},
+	"attributes": {
+		"rating": { "type": "number", "default": 0 },
+		"lock": { "type": "object", "default": { "move": true, "remove": true } }
+	},
+	"editorScript": "bridge-alternating-footer-editor",
+	"render": "file:./render.php"
+}

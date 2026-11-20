@@ -13,7 +13,8 @@ const {
 	MediaUploadCheck,
 } = window.wp.blockEditor;
 const { createElement: el, Fragment } = window.wp.element;
-const { useSelect } = window.wp.data;
+const { useSelect, useDispatch } = window.wp.data;
+const { createBlock } = window.wp.blocks;
 const {
 	PanelBody,
 	SelectControl,
@@ -44,11 +45,16 @@ const MASK_URL = SETTINGS.maskUrl || '';
  * container as its parent, so the container manages its own children. This
  * list only governs what sits directly in the copy area.
  */
+const FOOTER = 'bridge/alternating-footer';
+
 const ALLOWED_BLOCKS = [
 	'core/heading',
 	'core/paragraph',
 	'core/list',
 	'core/buttons',
+	// Never offered in the inserter (its block.json says so): listed so the
+	// "Show footer" switch below is allowed to put it here.
+	FOOTER,
 ];
 
 /**
@@ -196,7 +202,35 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	const fitted = fitAllowed && imageFit !== 'cover';
 	const padded = fitAllowed && imageFit === 'padded';
 
-	const blockProps = useBlockProps({ className: 'bridge-alternating__row' });
+	// The footer is a child block rather than an attribute, so whether the row
+	// has one is read off the children — the switch and the block cannot
+	// disagree about it.
+	const footerId = useSelect(
+		(select) =>
+			select('core/block-editor')
+				.getBlocks(clientId)
+				.find((b) => b.name === FOOTER)?.clientId || null,
+		[clientId]
+	);
+	const { insertBlock, removeBlock, updateBlockAttributes } =
+		useDispatch('core/block-editor');
+
+	const toggleFooter = (on) => {
+		if (on && !footerId) {
+			insertBlock(createBlock(FOOTER), undefined, clientId, false);
+		}
+
+		if (!on && footerId) {
+			// Locked against removal so it cannot be deleted by accident from
+			// the canvas; the switch is the one way out, so it unlocks first.
+			updateBlockAttributes(footerId, { lock: {} });
+			removeBlock(footerId, false);
+		}
+	};
+
+	const blockProps = useBlockProps({
+		className: 'bridge-alternating__row' + (footerId ? ' has-footer' : ''),
+	});
 
 	const innerBlocksProps = useInnerBlocksProps(
 		{ className: 'bridge-alternating__copy' },
@@ -221,6 +255,20 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		el(
 			InspectorControls,
 			null,
+			el(
+				PanelBody,
+				{ title: __('Footer', 'bridge'), initialOpen: true },
+				el(ToggleControl, {
+					label: __('Show footer', 'bridge'),
+					help: __(
+						'A line of short facts under a rule along the bottom of the row, with an optional star rating. Select the footer to set the stars.',
+						'bridge'
+					),
+					checked: !!footerId,
+					onChange: toggleFooter,
+					__nextHasNoMarginBottom: true,
+				})
+			),
 			el(
 				PanelBody,
 				{ title: __('Media', 'bridge'), initialOpen: true },

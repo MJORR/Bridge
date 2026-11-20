@@ -1,0 +1,1678 @@
+{
+    "solid": {
+        "version": 3,
+        "settings": {
+            "color": {
+                "palette": [
+                    {
+                        "slug": "primary",
+                        "color": "#0F172A",
+                        "name": "Primary"
+                    },
+                    {
+                        "slug": "secondary",
+                        "color": "#2563EB",
+                        "name": "Secondary"
+                    },
+                    {
+                        "slug": "accent",
+                        "color": "#F59E0B",
+                        "name": "Accent"
+                    },
+                    {
+                        "slug": "background",
+                        "color": "#FFFFFF",
+                        "name": "Background"
+                    },
+                    {
+                        "slug": "surface",
+                        "color": "#F5F5F4",
+                        "name": "Surface"
+                    },
+                    {
+                        "slug": "text",
+                        "color": "#1F2937",
+                        "name": "Text"
+                    }
+                ]
+            },
+            "custom": {
+                "sectionPadding": "var(--wp--preset--spacing--70)",
+                "headingGap": "var(--wp--preset--spacing--40)",
+                "buttonsGap": "var(--wp--preset--spacing--60)",
+                "card": {
+                    "padding": "var(--wp--preset--spacing--40)",
+                    "radius": "6px",
+                    "clip": "none",
+                    "container": "normal",
+                    "width": "auto",
+                    "isolation": "auto",
+                    "ownBg": "initial",
+                    "layer": "none",
+                    "shadow": "0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06)",
+                    "shadowHover": "0 4px 12px rgba(0, 0, 0, 0.1), 0 12px 24px rgba(0, 0, 0, 0.08)",
+                    "shadowRoomAbove": "14px",
+                    "shadowRoomBelow": "36px",
+                    "onLight": "#f5f5f4",
+                    "onSurface": "#ffffff",
+                    "onPrimary": "#1e293b",
+                    "onAccent": "#ffffff",
+                    "summary": {
+                        "heading": "var(--wp--preset--font-size--large)",
+                        "ratio": "16 / 9"
+                    },
+                    "tile": {
+                        "heading": "var(--wp--preset--font-size--x-large)",
+                        "ratio": "16 / 9"
+                    },
+                    "cover": {
+                        "heading": "var(--wp--preset--font-size--x-large)",
+                        "ratio": "3 / 4",
+                        "wash": "var(--wp--preset--color--primary)",
+                        "ink": "#FFFFFF"
+                    },
+                    "team": {
+                        "heading": "var(--wp--preset--font-size--large)",
+                        "avatar": "min(72%, 14rem)"
+                    }
+                },
+                "button": {
+                    "radius": "6px",
+                    "paddingBlock": "0.85rem",
+                    "paddingInline": "1.65rem",
+                    "weight": "600",
+                    "transform": "none",
+                    "letterSpacing": "0",
+                    "borderWidth": "2px",
+                    "shadow": "none",
+                    "shadowHover": "0 6px 16px rgba(0, 0, 0, 0.16)",
+                    "wipe": "1",
+                    "wipeWidth": "100%",
+                    "wipeHeight": "0px",
+                    "sweep": "0px",
+                    "minSize": "44px",
+                    "onDefault": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onSurface": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onAccent": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onInverted": {
+                        "bg": "#ffffff",
+                        "fg": "#1f2937",
+                        "hoverBg": "#e0e0e0",
+                        "hoverFg": "#1f2937",
+                        "border": "#ffffff",
+                        "hoverBorder": "#e0e0e0",
+                        "ghost": "#ffffff",
+                        "ghostHover": "#1f2937",
+                        "block": "#ffffff",
+                        "blockFg": "#1f2937",
+                        "ring": "#ffffff"
+                    },
+                    "fillPrimary": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillSecondary": {
+                        "bg": "#2563eb",
+                        "fg": "#ffffff",
+                        "hoverBg": "#3f76ed",
+                        "hoverFg": "#000000",
+                        "border": "#2563eb",
+                        "hoverBorder": "#3f76ed",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillAccent": {
+                        "bg": "#f59e0b",
+                        "fg": "#1f2937",
+                        "hoverBg": "#f6aa28",
+                        "hoverFg": "#1f2937",
+                        "border": "#f59e0b",
+                        "hoverBorder": "#f6aa28",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillBackground": {
+                        "bg": "#ffffff",
+                        "fg": "#1f2937",
+                        "hoverBg": "#e0e0e0",
+                        "hoverFg": "#1f2937",
+                        "border": "#1f2937",
+                        "hoverBorder": "#e0e0e0",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillSurface": {
+                        "bg": "#f5f5f4",
+                        "fg": "#1f2937",
+                        "hoverBg": "#d8d8d7",
+                        "hoverFg": "#1f2937",
+                        "border": "#1f2937",
+                        "hoverBorder": "#d8d8d7",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillText": {
+                        "bg": "#1f2937",
+                        "fg": "#ffffff",
+                        "hoverBg": "#3a434f",
+                        "hoverFg": "#ffffff",
+                        "border": "#1f2937",
+                        "hoverBorder": "#3a434f",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    }
+                },
+                "post": {
+                    "coverMaxHeight": "52vh"
+                }
+            },
+            "typography": {
+                "fontFamilies": [
+                    {
+                        "slug": "sans",
+                        "name": "Sans",
+                        "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+                    },
+                    {
+                        "slug": "serif",
+                        "name": "Serif",
+                        "fontFamily": "Georgia, 'Times New Roman', Times, serif"
+                    },
+                    {
+                        "slug": "mono",
+                        "name": "Mono",
+                        "fontFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+                    },
+                    {
+                        "slug": "heading",
+                        "name": "Heading",
+                        "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+                    },
+                    {
+                        "slug": "script",
+                        "name": "Script",
+                        "fontFamily": "\"Caveat\", cursive"
+                    }
+                ],
+                "fontSizes": [
+                    {
+                        "slug": "x-small",
+                        "name": "Extra Small",
+                        "size": "0.75rem",
+                        "fluid": {
+                            "min": "0.7388rem",
+                            "max": "0.7556rem"
+                        }
+                    },
+                    {
+                        "slug": "small",
+                        "name": "Small",
+                        "size": "0.875rem",
+                        "fluid": {
+                            "min": "0.8488rem",
+                            "max": "0.8881rem"
+                        }
+                    },
+                    {
+                        "slug": "medium",
+                        "name": "Medium",
+                        "size": "1rem",
+                        "fluid": {
+                            "min": "0.91rem",
+                            "max": "1.045rem"
+                        }
+                    },
+                    {
+                        "slug": "large",
+                        "name": "Large",
+                        "size": "1.5rem",
+                        "fluid": {
+                            "min": "1.275rem",
+                            "max": "1.6125rem"
+                        }
+                    },
+                    {
+                        "slug": "x-large",
+                        "name": "Extra Large",
+                        "size": "2.25rem",
+                        "fluid": {
+                            "min": "1.7775rem",
+                            "max": "2.4863rem"
+                        }
+                    },
+                    {
+                        "slug": "xx-large",
+                        "name": "Huge",
+                        "size": "3.375rem",
+                        "fluid": {
+                            "min": "2.4638rem",
+                            "max": "3.8306rem"
+                        }
+                    }
+                ]
+            },
+            "spacing": {
+                "spacingSizes": [
+                    {
+                        "slug": "20",
+                        "name": "XS",
+                        "size": "clamp(0.4302rem, calc(0.425rem + 0.026vw), 0.4444rem)"
+                    },
+                    {
+                        "slug": "30",
+                        "name": "S",
+                        "size": "clamp(0.6024rem, calc(0.579rem + 0.1169vw), 0.6667rem)"
+                    },
+                    {
+                        "slug": "40",
+                        "name": "M",
+                        "size": "clamp(0.8393rem, calc(0.7808rem + 0.2922vw), 1rem)"
+                    },
+                    {
+                        "slug": "50",
+                        "name": "L",
+                        "size": "clamp(1.1625rem, calc(1.0398rem + 0.6136vw), 1.5rem)"
+                    },
+                    {
+                        "slug": "60",
+                        "name": "XL",
+                        "size": "clamp(1.5991rem, calc(1.3624rem + 1.1834vw), 2.25rem)"
+                    },
+                    {
+                        "slug": "70",
+                        "name": "2XL",
+                        "size": "clamp(2.1817rem, calc(1.7478rem + 2.1696vw), 3.375rem)"
+                    },
+                    {
+                        "slug": "80",
+                        "name": "3XL",
+                        "size": "clamp(2.9471rem, calc(2.1779rem + 3.8462vw), 5.0625rem)"
+                    }
+                ],
+                "spacingScale": {
+                    "operator": "*",
+                    "increment": 1.5,
+                    "steps": 7,
+                    "mediumStep": 1.5,
+                    "unit": "rem"
+                }
+            },
+            "layout": {
+                "contentSize": "720px",
+                "wideSize": "1200px"
+            }
+        },
+        "styles": {
+            "typography": {
+                "lineHeight": "1.6"
+            },
+            "blocks": {
+                "core/button": {
+                    "border": {
+                        "radius": "var(--wp--custom--button--radius)",
+                        "width": "var(--wp--custom--button--border-width)",
+                        "style": "solid",
+                        "color": "var(--bridge-button-border, var(--wp--custom--button--on-default--border))"
+                    },
+                    "spacing": {
+                        "padding": {
+                            "top": "var(--wp--custom--button--padding-block)",
+                            "right": "var(--wp--custom--button--padding-inline)",
+                            "bottom": "var(--wp--custom--button--padding-block)",
+                            "left": "var(--wp--custom--button--padding-inline)"
+                        }
+                    },
+                    "typography": {
+                        "fontSize": "var(--wp--preset--font-size--medium)",
+                        "fontWeight": "var(--wp--custom--button--weight)",
+                        "lineHeight": "1.2",
+                        "letterSpacing": "var(--wp--custom--button--letter-spacing)",
+                        "textTransform": "var(--wp--custom--button--transform)"
+                    }
+                }
+            },
+            "spacing": {
+                "blockGap": "var(--wp--preset--spacing--40)",
+                "padding": {
+                    "top": "0",
+                    "right": "var(--wp--preset--spacing--40)",
+                    "bottom": "0",
+                    "left": "var(--wp--preset--spacing--40)"
+                }
+            },
+            "elements": {
+                "button": {
+                    "color": {
+                        "background": "var(--wp--custom--button--on-default--bg)",
+                        "text": "var(--wp--custom--button--on-default--fg)"
+                    }
+                },
+                "heading": {
+                    "typography": {
+                        "fontFamily": "var(--wp--preset--font-family--heading)",
+                        "fontWeight": "600",
+                        "lineHeight": "1.2",
+                        "textTransform": "none"
+                    }
+                }
+            }
+        }
+    },
+    "edge": {
+        "version": 3,
+        "settings": {
+            "color": {
+                "palette": [
+                    {
+                        "slug": "primary",
+                        "color": "#0F172A",
+                        "name": "Primary"
+                    },
+                    {
+                        "slug": "secondary",
+                        "color": "#2563EB",
+                        "name": "Secondary"
+                    },
+                    {
+                        "slug": "accent",
+                        "color": "#F59E0B",
+                        "name": "Accent"
+                    },
+                    {
+                        "slug": "background",
+                        "color": "#FFFFFF",
+                        "name": "Background"
+                    },
+                    {
+                        "slug": "surface",
+                        "color": "#F5F5F4",
+                        "name": "Surface"
+                    },
+                    {
+                        "slug": "text",
+                        "color": "#1F2937",
+                        "name": "Text"
+                    }
+                ]
+            },
+            "custom": {
+                "sectionPadding": "var(--wp--preset--spacing--70)",
+                "headingGap": "var(--wp--preset--spacing--40)",
+                "buttonsGap": "var(--wp--preset--spacing--60)",
+                "card": {
+                    "padding": "var(--wp--preset--spacing--40)",
+                    "radius": "6px",
+                    "clip": "none",
+                    "container": "normal",
+                    "width": "auto",
+                    "isolation": "auto",
+                    "ownBg": "initial",
+                    "layer": "none",
+                    "shadow": "0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06)",
+                    "shadowHover": "0 4px 12px rgba(0, 0, 0, 0.1), 0 12px 24px rgba(0, 0, 0, 0.08)",
+                    "shadowRoomAbove": "14px",
+                    "shadowRoomBelow": "36px",
+                    "onLight": "#f5f5f4",
+                    "onSurface": "#ffffff",
+                    "onPrimary": "#1e293b",
+                    "onAccent": "#ffffff",
+                    "summary": {
+                        "heading": "var(--wp--preset--font-size--large)",
+                        "ratio": "16 / 9"
+                    },
+                    "tile": {
+                        "heading": "var(--wp--preset--font-size--x-large)",
+                        "ratio": "16 / 9"
+                    },
+                    "cover": {
+                        "heading": "var(--wp--preset--font-size--x-large)",
+                        "ratio": "3 / 4",
+                        "wash": "var(--wp--preset--color--primary)",
+                        "ink": "#FFFFFF"
+                    },
+                    "team": {
+                        "heading": "var(--wp--preset--font-size--large)",
+                        "avatar": "min(72%, 14rem)"
+                    }
+                },
+                "button": {
+                    "radius": "0",
+                    "paddingBlock": "0.9rem",
+                    "paddingInline": "1.75rem",
+                    "weight": "600",
+                    "transform": "uppercase",
+                    "letterSpacing": "0.08em",
+                    "borderWidth": "2px",
+                    "shadow": "none",
+                    "shadowHover": "none",
+                    "wipe": "0",
+                    "wipeWidth": "100%",
+                    "wipeHeight": "0px",
+                    "sweep": "2px",
+                    "minSize": "44px",
+                    "onDefault": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#3a4150",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#3a4150",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onSurface": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#3a4150",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#3a4150",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onAccent": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#3a4150",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#3a4150",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onInverted": {
+                        "bg": "#ffffff",
+                        "fg": "#1f2937",
+                        "hoverBg": "#d1d1d1",
+                        "hoverFg": "#1f2937",
+                        "border": "#ffffff",
+                        "hoverBorder": "#d1d1d1",
+                        "ghost": "#ffffff",
+                        "ghostHover": "#1f2937",
+                        "block": "#ffffff",
+                        "blockFg": "#1f2937",
+                        "ring": "#ffffff"
+                    },
+                    "fillPrimary": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#3a4150",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#3a4150",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillSecondary": {
+                        "bg": "#2563eb",
+                        "fg": "#ffffff",
+                        "hoverBg": "#4c7fef",
+                        "hoverFg": "#000000",
+                        "border": "#2563eb",
+                        "hoverBorder": "#4c7fef",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillAccent": {
+                        "bg": "#f59e0b",
+                        "fg": "#1f2937",
+                        "hoverBg": "#f7af37",
+                        "hoverFg": "#1f2937",
+                        "border": "#f59e0b",
+                        "hoverBorder": "#f7af37",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillBackground": {
+                        "bg": "#ffffff",
+                        "fg": "#1f2937",
+                        "hoverBg": "#d1d1d1",
+                        "hoverFg": "#1f2937",
+                        "border": "#1f2937",
+                        "hoverBorder": "#d1d1d1",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillSurface": {
+                        "bg": "#f5f5f4",
+                        "fg": "#1f2937",
+                        "hoverBg": "#c9c9c8",
+                        "hoverFg": "#1f2937",
+                        "border": "#1f2937",
+                        "hoverBorder": "#c9c9c8",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillText": {
+                        "bg": "#1f2937",
+                        "fg": "#ffffff",
+                        "hoverBg": "#47505b",
+                        "hoverFg": "#ffffff",
+                        "border": "#1f2937",
+                        "hoverBorder": "#47505b",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    }
+                },
+                "post": {
+                    "coverMaxHeight": "52vh"
+                }
+            },
+            "typography": {
+                "fontFamilies": [
+                    {
+                        "slug": "sans",
+                        "name": "Sans",
+                        "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+                    },
+                    {
+                        "slug": "serif",
+                        "name": "Serif",
+                        "fontFamily": "Georgia, 'Times New Roman', Times, serif"
+                    },
+                    {
+                        "slug": "mono",
+                        "name": "Mono",
+                        "fontFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+                    },
+                    {
+                        "slug": "heading",
+                        "name": "Heading",
+                        "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+                    },
+                    {
+                        "slug": "script",
+                        "name": "Script",
+                        "fontFamily": "\"Caveat\", cursive"
+                    }
+                ],
+                "fontSizes": [
+                    {
+                        "slug": "x-small",
+                        "name": "Extra Small",
+                        "size": "0.75rem",
+                        "fluid": {
+                            "min": "0.7388rem",
+                            "max": "0.7556rem"
+                        }
+                    },
+                    {
+                        "slug": "small",
+                        "name": "Small",
+                        "size": "0.875rem",
+                        "fluid": {
+                            "min": "0.8488rem",
+                            "max": "0.8881rem"
+                        }
+                    },
+                    {
+                        "slug": "medium",
+                        "name": "Medium",
+                        "size": "1rem",
+                        "fluid": {
+                            "min": "0.91rem",
+                            "max": "1.045rem"
+                        }
+                    },
+                    {
+                        "slug": "large",
+                        "name": "Large",
+                        "size": "1.5rem",
+                        "fluid": {
+                            "min": "1.275rem",
+                            "max": "1.6125rem"
+                        }
+                    },
+                    {
+                        "slug": "x-large",
+                        "name": "Extra Large",
+                        "size": "2.25rem",
+                        "fluid": {
+                            "min": "1.7775rem",
+                            "max": "2.4863rem"
+                        }
+                    },
+                    {
+                        "slug": "xx-large",
+                        "name": "Huge",
+                        "size": "3.375rem",
+                        "fluid": {
+                            "min": "2.4638rem",
+                            "max": "3.8306rem"
+                        }
+                    }
+                ]
+            },
+            "spacing": {
+                "spacingSizes": [
+                    {
+                        "slug": "20",
+                        "name": "XS",
+                        "size": "clamp(0.4302rem, calc(0.425rem + 0.026vw), 0.4444rem)"
+                    },
+                    {
+                        "slug": "30",
+                        "name": "S",
+                        "size": "clamp(0.6024rem, calc(0.579rem + 0.1169vw), 0.6667rem)"
+                    },
+                    {
+                        "slug": "40",
+                        "name": "M",
+                        "size": "clamp(0.8393rem, calc(0.7808rem + 0.2922vw), 1rem)"
+                    },
+                    {
+                        "slug": "50",
+                        "name": "L",
+                        "size": "clamp(1.1625rem, calc(1.0398rem + 0.6136vw), 1.5rem)"
+                    },
+                    {
+                        "slug": "60",
+                        "name": "XL",
+                        "size": "clamp(1.5991rem, calc(1.3624rem + 1.1834vw), 2.25rem)"
+                    },
+                    {
+                        "slug": "70",
+                        "name": "2XL",
+                        "size": "clamp(2.1817rem, calc(1.7478rem + 2.1696vw), 3.375rem)"
+                    },
+                    {
+                        "slug": "80",
+                        "name": "3XL",
+                        "size": "clamp(2.9471rem, calc(2.1779rem + 3.8462vw), 5.0625rem)"
+                    }
+                ],
+                "spacingScale": {
+                    "operator": "*",
+                    "increment": 1.5,
+                    "steps": 7,
+                    "mediumStep": 1.5,
+                    "unit": "rem"
+                }
+            },
+            "layout": {
+                "contentSize": "720px",
+                "wideSize": "1200px"
+            }
+        },
+        "styles": {
+            "typography": {
+                "lineHeight": "1.6"
+            },
+            "blocks": {
+                "core/button": {
+                    "border": {
+                        "radius": "var(--wp--custom--button--radius)",
+                        "width": "var(--wp--custom--button--border-width)",
+                        "style": "solid",
+                        "color": "var(--bridge-button-border, var(--wp--custom--button--on-default--border))"
+                    },
+                    "spacing": {
+                        "padding": {
+                            "top": "var(--wp--custom--button--padding-block)",
+                            "right": "var(--wp--custom--button--padding-inline)",
+                            "bottom": "var(--wp--custom--button--padding-block)",
+                            "left": "var(--wp--custom--button--padding-inline)"
+                        }
+                    },
+                    "typography": {
+                        "fontSize": "var(--wp--preset--font-size--medium)",
+                        "fontWeight": "var(--wp--custom--button--weight)",
+                        "lineHeight": "1.2",
+                        "letterSpacing": "var(--wp--custom--button--letter-spacing)",
+                        "textTransform": "var(--wp--custom--button--transform)"
+                    }
+                }
+            },
+            "spacing": {
+                "blockGap": "var(--wp--preset--spacing--40)",
+                "padding": {
+                    "top": "0",
+                    "right": "var(--wp--preset--spacing--40)",
+                    "bottom": "0",
+                    "left": "var(--wp--preset--spacing--40)"
+                }
+            },
+            "elements": {
+                "button": {
+                    "color": {
+                        "background": "var(--wp--custom--button--on-default--bg)",
+                        "text": "var(--wp--custom--button--on-default--fg)"
+                    }
+                },
+                "heading": {
+                    "typography": {
+                        "fontFamily": "var(--wp--preset--font-family--heading)",
+                        "fontWeight": "600",
+                        "lineHeight": "1.2",
+                        "textTransform": "none"
+                    }
+                }
+            }
+        }
+    },
+    "pill": {
+        "version": 3,
+        "settings": {
+            "color": {
+                "palette": [
+                    {
+                        "slug": "primary",
+                        "color": "#0F172A",
+                        "name": "Primary"
+                    },
+                    {
+                        "slug": "secondary",
+                        "color": "#2563EB",
+                        "name": "Secondary"
+                    },
+                    {
+                        "slug": "accent",
+                        "color": "#F59E0B",
+                        "name": "Accent"
+                    },
+                    {
+                        "slug": "background",
+                        "color": "#FFFFFF",
+                        "name": "Background"
+                    },
+                    {
+                        "slug": "surface",
+                        "color": "#F5F5F4",
+                        "name": "Surface"
+                    },
+                    {
+                        "slug": "text",
+                        "color": "#1F2937",
+                        "name": "Text"
+                    }
+                ]
+            },
+            "custom": {
+                "sectionPadding": "var(--wp--preset--spacing--70)",
+                "headingGap": "var(--wp--preset--spacing--40)",
+                "buttonsGap": "var(--wp--preset--spacing--60)",
+                "card": {
+                    "padding": "var(--wp--preset--spacing--40)",
+                    "radius": "6px",
+                    "clip": "none",
+                    "container": "normal",
+                    "width": "auto",
+                    "isolation": "auto",
+                    "ownBg": "initial",
+                    "layer": "none",
+                    "shadow": "0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06)",
+                    "shadowHover": "0 4px 12px rgba(0, 0, 0, 0.1), 0 12px 24px rgba(0, 0, 0, 0.08)",
+                    "shadowRoomAbove": "14px",
+                    "shadowRoomBelow": "36px",
+                    "onLight": "#f5f5f4",
+                    "onSurface": "#ffffff",
+                    "onPrimary": "#1e293b",
+                    "onAccent": "#ffffff",
+                    "summary": {
+                        "heading": "var(--wp--preset--font-size--large)",
+                        "ratio": "16 / 9"
+                    },
+                    "tile": {
+                        "heading": "var(--wp--preset--font-size--x-large)",
+                        "ratio": "16 / 9"
+                    },
+                    "cover": {
+                        "heading": "var(--wp--preset--font-size--x-large)",
+                        "ratio": "3 / 4",
+                        "wash": "var(--wp--preset--color--primary)",
+                        "ink": "#FFFFFF"
+                    },
+                    "team": {
+                        "heading": "var(--wp--preset--font-size--large)",
+                        "avatar": "min(72%, 14rem)"
+                    }
+                },
+                "button": {
+                    "radius": "999px",
+                    "paddingBlock": "0.9rem",
+                    "paddingInline": "2rem",
+                    "weight": "600",
+                    "transform": "none",
+                    "letterSpacing": "0.01em",
+                    "borderWidth": "2px",
+                    "shadow": "0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08)",
+                    "shadowHover": "0 4px 10px rgba(0, 0, 0, 0.16), 0 12px 24px rgba(0, 0, 0, 0.12)",
+                    "wipe": "1",
+                    "wipeWidth": "0px",
+                    "wipeHeight": "100%",
+                    "sweep": "0px",
+                    "minSize": "44px",
+                    "onDefault": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onSurface": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onAccent": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onInverted": {
+                        "bg": "#ffffff",
+                        "fg": "#1f2937",
+                        "hoverBg": "#e0e0e0",
+                        "hoverFg": "#1f2937",
+                        "border": "#ffffff",
+                        "hoverBorder": "#e0e0e0",
+                        "ghost": "#ffffff",
+                        "ghostHover": "#1f2937",
+                        "block": "#ffffff",
+                        "blockFg": "#1f2937",
+                        "ring": "#ffffff"
+                    },
+                    "fillPrimary": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillSecondary": {
+                        "bg": "#2563eb",
+                        "fg": "#ffffff",
+                        "hoverBg": "#3f76ed",
+                        "hoverFg": "#000000",
+                        "border": "#2563eb",
+                        "hoverBorder": "#3f76ed",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillAccent": {
+                        "bg": "#f59e0b",
+                        "fg": "#1f2937",
+                        "hoverBg": "#f6aa28",
+                        "hoverFg": "#1f2937",
+                        "border": "#f59e0b",
+                        "hoverBorder": "#f6aa28",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillBackground": {
+                        "bg": "#ffffff",
+                        "fg": "#1f2937",
+                        "hoverBg": "#e0e0e0",
+                        "hoverFg": "#1f2937",
+                        "border": "#1f2937",
+                        "hoverBorder": "#e0e0e0",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillSurface": {
+                        "bg": "#f5f5f4",
+                        "fg": "#1f2937",
+                        "hoverBg": "#d8d8d7",
+                        "hoverFg": "#1f2937",
+                        "border": "#1f2937",
+                        "hoverBorder": "#d8d8d7",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillText": {
+                        "bg": "#1f2937",
+                        "fg": "#ffffff",
+                        "hoverBg": "#3a434f",
+                        "hoverFg": "#ffffff",
+                        "border": "#1f2937",
+                        "hoverBorder": "#3a434f",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    }
+                },
+                "post": {
+                    "coverMaxHeight": "52vh"
+                }
+            },
+            "typography": {
+                "fontFamilies": [
+                    {
+                        "slug": "sans",
+                        "name": "Sans",
+                        "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+                    },
+                    {
+                        "slug": "serif",
+                        "name": "Serif",
+                        "fontFamily": "Georgia, 'Times New Roman', Times, serif"
+                    },
+                    {
+                        "slug": "mono",
+                        "name": "Mono",
+                        "fontFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+                    },
+                    {
+                        "slug": "heading",
+                        "name": "Heading",
+                        "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+                    },
+                    {
+                        "slug": "script",
+                        "name": "Script",
+                        "fontFamily": "\"Caveat\", cursive"
+                    }
+                ],
+                "fontSizes": [
+                    {
+                        "slug": "x-small",
+                        "name": "Extra Small",
+                        "size": "0.75rem",
+                        "fluid": {
+                            "min": "0.7388rem",
+                            "max": "0.7556rem"
+                        }
+                    },
+                    {
+                        "slug": "small",
+                        "name": "Small",
+                        "size": "0.875rem",
+                        "fluid": {
+                            "min": "0.8488rem",
+                            "max": "0.8881rem"
+                        }
+                    },
+                    {
+                        "slug": "medium",
+                        "name": "Medium",
+                        "size": "1rem",
+                        "fluid": {
+                            "min": "0.91rem",
+                            "max": "1.045rem"
+                        }
+                    },
+                    {
+                        "slug": "large",
+                        "name": "Large",
+                        "size": "1.5rem",
+                        "fluid": {
+                            "min": "1.275rem",
+                            "max": "1.6125rem"
+                        }
+                    },
+                    {
+                        "slug": "x-large",
+                        "name": "Extra Large",
+                        "size": "2.25rem",
+                        "fluid": {
+                            "min": "1.7775rem",
+                            "max": "2.4863rem"
+                        }
+                    },
+                    {
+                        "slug": "xx-large",
+                        "name": "Huge",
+                        "size": "3.375rem",
+                        "fluid": {
+                            "min": "2.4638rem",
+                            "max": "3.8306rem"
+                        }
+                    }
+                ]
+            },
+            "spacing": {
+                "spacingSizes": [
+                    {
+                        "slug": "20",
+                        "name": "XS",
+                        "size": "clamp(0.4302rem, calc(0.425rem + 0.026vw), 0.4444rem)"
+                    },
+                    {
+                        "slug": "30",
+                        "name": "S",
+                        "size": "clamp(0.6024rem, calc(0.579rem + 0.1169vw), 0.6667rem)"
+                    },
+                    {
+                        "slug": "40",
+                        "name": "M",
+                        "size": "clamp(0.8393rem, calc(0.7808rem + 0.2922vw), 1rem)"
+                    },
+                    {
+                        "slug": "50",
+                        "name": "L",
+                        "size": "clamp(1.1625rem, calc(1.0398rem + 0.6136vw), 1.5rem)"
+                    },
+                    {
+                        "slug": "60",
+                        "name": "XL",
+                        "size": "clamp(1.5991rem, calc(1.3624rem + 1.1834vw), 2.25rem)"
+                    },
+                    {
+                        "slug": "70",
+                        "name": "2XL",
+                        "size": "clamp(2.1817rem, calc(1.7478rem + 2.1696vw), 3.375rem)"
+                    },
+                    {
+                        "slug": "80",
+                        "name": "3XL",
+                        "size": "clamp(2.9471rem, calc(2.1779rem + 3.8462vw), 5.0625rem)"
+                    }
+                ],
+                "spacingScale": {
+                    "operator": "*",
+                    "increment": 1.5,
+                    "steps": 7,
+                    "mediumStep": 1.5,
+                    "unit": "rem"
+                }
+            },
+            "layout": {
+                "contentSize": "720px",
+                "wideSize": "1200px"
+            }
+        },
+        "styles": {
+            "typography": {
+                "lineHeight": "1.6"
+            },
+            "blocks": {
+                "core/button": {
+                    "border": {
+                        "radius": "var(--wp--custom--button--radius)",
+                        "width": "var(--wp--custom--button--border-width)",
+                        "style": "solid",
+                        "color": "var(--bridge-button-border, var(--wp--custom--button--on-default--border))"
+                    },
+                    "spacing": {
+                        "padding": {
+                            "top": "var(--wp--custom--button--padding-block)",
+                            "right": "var(--wp--custom--button--padding-inline)",
+                            "bottom": "var(--wp--custom--button--padding-block)",
+                            "left": "var(--wp--custom--button--padding-inline)"
+                        }
+                    },
+                    "typography": {
+                        "fontSize": "var(--wp--preset--font-size--medium)",
+                        "fontWeight": "var(--wp--custom--button--weight)",
+                        "lineHeight": "1.2",
+                        "letterSpacing": "var(--wp--custom--button--letter-spacing)",
+                        "textTransform": "var(--wp--custom--button--transform)"
+                    }
+                }
+            },
+            "spacing": {
+                "blockGap": "var(--wp--preset--spacing--40)",
+                "padding": {
+                    "top": "0",
+                    "right": "var(--wp--preset--spacing--40)",
+                    "bottom": "0",
+                    "left": "var(--wp--preset--spacing--40)"
+                }
+            },
+            "elements": {
+                "button": {
+                    "color": {
+                        "background": "var(--wp--custom--button--on-default--bg)",
+                        "text": "var(--wp--custom--button--on-default--fg)"
+                    }
+                },
+                "heading": {
+                    "typography": {
+                        "fontFamily": "var(--wp--preset--font-family--heading)",
+                        "fontWeight": "600",
+                        "lineHeight": "1.2",
+                        "textTransform": "none"
+                    }
+                }
+            }
+        }
+    },
+    "block": {
+        "version": 3,
+        "settings": {
+            "color": {
+                "palette": [
+                    {
+                        "slug": "primary",
+                        "color": "#0F172A",
+                        "name": "Primary"
+                    },
+                    {
+                        "slug": "secondary",
+                        "color": "#2563EB",
+                        "name": "Secondary"
+                    },
+                    {
+                        "slug": "accent",
+                        "color": "#F59E0B",
+                        "name": "Accent"
+                    },
+                    {
+                        "slug": "background",
+                        "color": "#FFFFFF",
+                        "name": "Background"
+                    },
+                    {
+                        "slug": "surface",
+                        "color": "#F5F5F4",
+                        "name": "Surface"
+                    },
+                    {
+                        "slug": "text",
+                        "color": "#1F2937",
+                        "name": "Text"
+                    }
+                ]
+            },
+            "custom": {
+                "sectionPadding": "var(--wp--preset--spacing--70)",
+                "headingGap": "var(--wp--preset--spacing--40)",
+                "buttonsGap": "var(--wp--preset--spacing--60)",
+                "card": {
+                    "padding": "var(--wp--preset--spacing--40)",
+                    "radius": "6px",
+                    "clip": "none",
+                    "container": "normal",
+                    "width": "auto",
+                    "isolation": "auto",
+                    "ownBg": "initial",
+                    "layer": "none",
+                    "shadow": "0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06)",
+                    "shadowHover": "0 4px 12px rgba(0, 0, 0, 0.1), 0 12px 24px rgba(0, 0, 0, 0.08)",
+                    "shadowRoomAbove": "14px",
+                    "shadowRoomBelow": "36px",
+                    "onLight": "#f5f5f4",
+                    "onSurface": "#ffffff",
+                    "onPrimary": "#1e293b",
+                    "onAccent": "#ffffff",
+                    "summary": {
+                        "heading": "var(--wp--preset--font-size--large)",
+                        "ratio": "16 / 9"
+                    },
+                    "tile": {
+                        "heading": "var(--wp--preset--font-size--x-large)",
+                        "ratio": "16 / 9"
+                    },
+                    "cover": {
+                        "heading": "var(--wp--preset--font-size--x-large)",
+                        "ratio": "3 / 4",
+                        "wash": "var(--wp--preset--color--primary)",
+                        "ink": "#FFFFFF"
+                    },
+                    "team": {
+                        "heading": "var(--wp--preset--font-size--large)",
+                        "avatar": "min(72%, 14rem)"
+                    }
+                },
+                "button": {
+                    "radius": "0",
+                    "paddingBlock": "0.75rem",
+                    "paddingInline": "1.75rem",
+                    "weight": "700",
+                    "transform": "uppercase",
+                    "letterSpacing": "0.04em",
+                    "borderWidth": "2px",
+                    "shadow": "none",
+                    "shadowHover": "none",
+                    "wipe": "1",
+                    "wipeWidth": "100%",
+                    "wipeHeight": "0px",
+                    "sweep": "0px",
+                    "minSize": "44px",
+                    "onDefault": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onSurface": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onAccent": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "onInverted": {
+                        "bg": "#ffffff",
+                        "fg": "#1f2937",
+                        "hoverBg": "#e0e0e0",
+                        "hoverFg": "#1f2937",
+                        "border": "#ffffff",
+                        "hoverBorder": "#e0e0e0",
+                        "ghost": "#ffffff",
+                        "ghostHover": "#1f2937",
+                        "block": "#ffffff",
+                        "blockFg": "#1f2937",
+                        "ring": "#ffffff"
+                    },
+                    "fillPrimary": {
+                        "bg": "#0f172a",
+                        "fg": "#ffffff",
+                        "hoverBg": "#2c3344",
+                        "hoverFg": "#ffffff",
+                        "border": "#0f172a",
+                        "hoverBorder": "#2c3344",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillSecondary": {
+                        "bg": "#2563eb",
+                        "fg": "#ffffff",
+                        "hoverBg": "#3f76ed",
+                        "hoverFg": "#000000",
+                        "border": "#2563eb",
+                        "hoverBorder": "#3f76ed",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillAccent": {
+                        "bg": "#f59e0b",
+                        "fg": "#1f2937",
+                        "hoverBg": "#f6aa28",
+                        "hoverFg": "#1f2937",
+                        "border": "#f59e0b",
+                        "hoverBorder": "#f6aa28",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillBackground": {
+                        "bg": "#ffffff",
+                        "fg": "#1f2937",
+                        "hoverBg": "#e0e0e0",
+                        "hoverFg": "#1f2937",
+                        "border": "#1f2937",
+                        "hoverBorder": "#e0e0e0",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillSurface": {
+                        "bg": "#f5f5f4",
+                        "fg": "#1f2937",
+                        "hoverBg": "#d8d8d7",
+                        "hoverFg": "#1f2937",
+                        "border": "#1f2937",
+                        "hoverBorder": "#d8d8d7",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    },
+                    "fillText": {
+                        "bg": "#1f2937",
+                        "fg": "#ffffff",
+                        "hoverBg": "#3a434f",
+                        "hoverFg": "#ffffff",
+                        "border": "#1f2937",
+                        "hoverBorder": "#3a434f",
+                        "ghost": "#1f2937",
+                        "ghostHover": "#ffffff",
+                        "block": "#1f2937",
+                        "blockFg": "#ffffff",
+                        "ring": "#1f2937"
+                    }
+                },
+                "post": {
+                    "coverMaxHeight": "52vh"
+                }
+            },
+            "typography": {
+                "fontFamilies": [
+                    {
+                        "slug": "sans",
+                        "name": "Sans",
+                        "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+                    },
+                    {
+                        "slug": "serif",
+                        "name": "Serif",
+                        "fontFamily": "Georgia, 'Times New Roman', Times, serif"
+                    },
+                    {
+                        "slug": "mono",
+                        "name": "Mono",
+                        "fontFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+                    },
+                    {
+                        "slug": "heading",
+                        "name": "Heading",
+                        "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+                    },
+                    {
+                        "slug": "script",
+                        "name": "Script",
+                        "fontFamily": "\"Caveat\", cursive"
+                    }
+                ],
+                "fontSizes": [
+                    {
+                        "slug": "x-small",
+                        "name": "Extra Small",
+                        "size": "0.75rem",
+                        "fluid": {
+                            "min": "0.7388rem",
+                            "max": "0.7556rem"
+                        }
+                    },
+                    {
+                        "slug": "small",
+                        "name": "Small",
+                        "size": "0.875rem",
+                        "fluid": {
+                            "min": "0.8488rem",
+                            "max": "0.8881rem"
+                        }
+                    },
+                    {
+                        "slug": "medium",
+                        "name": "Medium",
+                        "size": "1rem",
+                        "fluid": {
+                            "min": "0.91rem",
+                            "max": "1.045rem"
+                        }
+                    },
+                    {
+                        "slug": "large",
+                        "name": "Large",
+                        "size": "1.5rem",
+                        "fluid": {
+                            "min": "1.275rem",
+                            "max": "1.6125rem"
+                        }
+                    },
+                    {
+                        "slug": "x-large",
+                        "name": "Extra Large",
+                        "size": "2.25rem",
+                        "fluid": {
+                            "min": "1.7775rem",
+                            "max": "2.4863rem"
+                        }
+                    },
+                    {
+                        "slug": "xx-large",
+                        "name": "Huge",
+                        "size": "3.375rem",
+                        "fluid": {
+                            "min": "2.4638rem",
+                            "max": "3.8306rem"
+                        }
+                    }
+                ]
+            },
+            "spacing": {
+                "spacingSizes": [
+                    {
+                        "slug": "20",
+                        "name": "XS",
+                        "size": "clamp(0.4302rem, calc(0.425rem + 0.026vw), 0.4444rem)"
+                    },
+                    {
+                        "slug": "30",
+                        "name": "S",
+                        "size": "clamp(0.6024rem, calc(0.579rem + 0.1169vw), 0.6667rem)"
+                    },
+                    {
+                        "slug": "40",
+                        "name": "M",
+                        "size": "clamp(0.8393rem, calc(0.7808rem + 0.2922vw), 1rem)"
+                    },
+                    {
+                        "slug": "50",
+                        "name": "L",
+                        "size": "clamp(1.1625rem, calc(1.0398rem + 0.6136vw), 1.5rem)"
+                    },
+                    {
+                        "slug": "60",
+                        "name": "XL",
+                        "size": "clamp(1.5991rem, calc(1.3624rem + 1.1834vw), 2.25rem)"
+                    },
+                    {
+                        "slug": "70",
+                        "name": "2XL",
+                        "size": "clamp(2.1817rem, calc(1.7478rem + 2.1696vw), 3.375rem)"
+                    },
+                    {
+                        "slug": "80",
+                        "name": "3XL",
+                        "size": "clamp(2.9471rem, calc(2.1779rem + 3.8462vw), 5.0625rem)"
+                    }
+                ],
+                "spacingScale": {
+                    "operator": "*",
+                    "increment": 1.5,
+                    "steps": 7,
+                    "mediumStep": 1.5,
+                    "unit": "rem"
+                }
+            },
+            "layout": {
+                "contentSize": "720px",
+                "wideSize": "1200px"
+            }
+        },
+        "styles": {
+            "typography": {
+                "lineHeight": "1.6"
+            },
+            "blocks": {
+                "core/button": {
+                    "border": {
+                        "radius": "var(--wp--custom--button--radius)",
+                        "width": "var(--wp--custom--button--border-width)",
+                        "style": "solid",
+                        "color": "var(--bridge-button-border, var(--wp--custom--button--on-default--border))"
+                    },
+                    "spacing": {
+                        "padding": {
+                            "top": "var(--wp--custom--button--padding-block)",
+                            "right": "var(--wp--custom--button--padding-inline)",
+                            "bottom": "var(--wp--custom--button--padding-block)",
+                            "left": "var(--wp--custom--button--padding-inline)"
+                        }
+                    },
+                    "typography": {
+                        "fontSize": "var(--wp--preset--font-size--medium)",
+                        "fontWeight": "var(--wp--custom--button--weight)",
+                        "lineHeight": "1.2",
+                        "letterSpacing": "var(--wp--custom--button--letter-spacing)",
+                        "textTransform": "var(--wp--custom--button--transform)"
+                    }
+                }
+            },
+            "spacing": {
+                "blockGap": "var(--wp--preset--spacing--40)",
+                "padding": {
+                    "top": "0",
+                    "right": "var(--wp--preset--spacing--40)",
+                    "bottom": "0",
+                    "left": "var(--wp--preset--spacing--40)"
+                }
+            },
+            "elements": {
+                "button": {
+                    "color": {
+                        "background": "var(--wp--custom--button--on-default--bg)",
+                        "text": "var(--wp--custom--button--on-default--fg)"
+                    }
+                },
+                "heading": {
+                    "typography": {
+                        "fontFamily": "var(--wp--preset--font-family--heading)",
+                        "fontWeight": "600",
+                        "lineHeight": "1.2",
+                        "textTransform": "none"
+                    }
+                }
+            }
+        }
+    }
+}

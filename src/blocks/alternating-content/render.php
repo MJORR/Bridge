@@ -67,7 +67,33 @@ $classes = 'bridge-alternating'
 // No label id: with no heading in the block there is nothing to name the
 // <section> after, and an `aria-labelledby` pointing at nothing is worse than
 // an unnamed region — a region with a broken name is announced as one.
-echo bridge_section_wrapper( $attributes, $classes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
+/*
+ * How tall a row is: by the picture's shape, or by a set height.
+ *
+ * Image shape is the default, and 16:9 adds no class, so a band saved before
+ * either option existed renders exactly as it did. The other shapes cut every
+ * picture to that ratio, in any layout.
+ *
+ * Set height is for a full-window band only. It takes the hero's presets, read
+ * through the hero's own function so "Tall" is the same 80% of the window on
+ * both — the height only: the hero subtracts the header because it sits under
+ * it, and a band further down the page does not. It is a floor, as on the
+ * hero: a row whose words need more room grows past it.
+ */
+$sizing = 'full' === $width && 'height' === ( $attributes['sizing'] ?? 'ratio' ) ? 'height' : 'ratio';
+$ratio  = (string) ( $attributes['ratio'] ?? '16-9' );
+$ratio  = in_array( $ratio, array( '4-3', '1-1', '4-5' ), true ) ? $ratio : '';
+$style  = '';
+
+if ( 'height' === $sizing && function_exists( 'bridge_hero_metrics' ) ) {
+	$metrics  = bridge_hero_metrics( $attributes + array( 'heightPreset' => 'tall' ) );
+	$style    = '--bridge-alternating-height:' . $metrics['height'] . ';';
+	$classes .= ' has-set-height';
+} elseif ( '' !== $ratio ) {
+	$classes .= ' is-ratio-' . $ratio;
+}
+
+echo bridge_section_wrapper( $attributes, $classes, $style ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 ?>
 	<div class="bridge-alternating__inner">
 		<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

@@ -56,6 +56,19 @@ $mask-shift: calc(
 	// three kinds of media this block takes are 16/9 to begin with.
 	--bridge-alternating-ratio: 16 / 9;
 
+	// The band's "Image shape". 16:9 above is the default and has no class.
+	&.is-ratio-4-3 {
+		--bridge-alternating-ratio: 4 / 3;
+	}
+
+	&.is-ratio-1-1 {
+		--bridge-alternating-ratio: 1 / 1;
+	}
+
+	&.is-ratio-4-5 {
+		--bridge-alternating-ratio: 4 / 5;
+	}
+
 	// Row to row.
 	--bridge-alternating-gap: var(--wp--preset--spacing--70);
 
@@ -291,9 +304,12 @@ $mask-shift: calc(
 		@include mask-shape;
 	}
 
+	// Videos keep 16:9 whatever "Image shape" the band has: a player cut
+	// to a square letterboxes its own picture. On a full-window band the rule
+	// further down stretches them to the row like every other medium.
 	&__video {
 		position: relative;
-		aspect-ratio: var(--bridge-alternating-ratio);
+		aspect-ratio: 16 / 9;
 		border-radius: var(--wp--custom--radius--medium);
 		overflow: hidden;
 	}
@@ -307,7 +323,7 @@ $mask-shift: calc(
 	}
 
 	&__video-file {
-		@include section.media-fill(var(--bridge-alternating-ratio));
+		@include section.media-fill(16 / 9);
 
 		background-color: var(--wp--preset--color--primary);
 		border-radius: var(--wp--custom--radius--medium);
@@ -427,6 +443,11 @@ $mask-shift: calc(
 			 * media rule below.
 			 */
 			align-items: stretch;
+
+			// "Set height": the hero's presets, written onto the band as a
+			// length by render.php and the editor. Unset under Image shape,
+			// where `auto` leaves the picture's ratio in charge.
+			min-block-size: var(--bridge-alternating-height, auto);
 		}
 	}
 
@@ -476,6 +497,16 @@ $mask-shift: calc(
 			 * overflow, which is what the note above meant to say.
 			 */
 			max-inline-size: 100%;
+		}
+	}
+
+	// "Set height": the row's height is the band's, not the picture's, so the
+	// picture gives up its ratio and is cropped to fill whatever the row
+	// comes to. Without this a 16:9 picture would still hold a row taller
+	// than a short preset asked for.
+	&--full.has-set-height &__media {
+		@include section.two-column {
+			aspect-ratio: auto;
 		}
 	}
 

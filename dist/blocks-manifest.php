@@ -41,6 +41,26 @@ return array(
 				'type' => 'boolean',
 				'default' => false,
 			),
+			'sizing' => array(
+				'type' => 'string',
+				'default' => 'ratio',
+			),
+			'ratio' => array(
+				'type' => 'string',
+				'default' => '16-9',
+			),
+			'heightPreset' => array(
+				'type' => 'string',
+				'default' => 'tall',
+			),
+			'customHeight' => array(
+				'type' => 'number',
+				'default' => 600,
+			),
+			'customHeightUnit' => array(
+				'type' => 'string',
+				'default' => 'px',
+			),
 		),
 		'example' => array(
 			'attributes' => array(

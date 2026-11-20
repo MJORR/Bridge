@@ -314,12 +314,50 @@ into `dist/icons.json` and rendered inline by PHP by its file name (`rocket`).
 npm run lint       # ESLint + Stylelint
 npm run build      # production build: dist/ must be rebuilt and committed
 composer lint      # PHPCS (WordPress standards), optional
-composer test      # PHPUnit, optional
+composer test      # PHPUnit; BackCompatTest must pass (see below)
 php -l src/blocks/cards/render.php   # quick syntax check of one PHP file
 ```
 
 Then click through a few pages at phone, tablet (~820px) and desktop widths,
 and check the editor for any block you touched.
+
+### Backward compatibility
+
+Bridge runs on many sites, and an update must not change a site that hasn't
+asked for anything new.
+
+- **New options ship switched off.** "Off" must reproduce exactly what the
+  theme did before the option existed. Print a class, a CSS variable or a
+  `theme.json` key only when the option is on.
+- **Never rename or remove a stored value.** Slugs for layouts, skins, sizes
+  and palette colours are saved in settings and in post content. Add new
+  values to the end of a list.
+- **New block attributes default to their "off" value**, so content saved
+  before them still renders the same and still validates in the editor.
+- **Scope new CSS to the option's own class.** When a shared rule has to
+  exclude the new case, use `:where(:not(...))` so it adds no specificity to
+  the existing selectors.
+- **Shared helpers are shared.** The Alternating Content band's Set height
+  calls the Hero Banner's `bridge_hero_metrics()`, so changing a hero preset
+  changes both blocks.
+
+`tests/BackCompatTest.php` enforces the parts of this that can be checked
+without WordPress. It compares the compiled global styles of the original
+button skins with `tests/fixtures/legacy-theme-json.json`, checks that
+previously valid settings are still accepted, and checks that new defaults are
+off. If it fails, make the change opt-in. Regenerate the fixture only for a
+change that is deliberately meant to reach every site, and say so in the
+commit message.
+
+Two global changes were deliberate, and are fixes rather than options:
+
+- Chosen text colours now apply (`src/scss/base/_text-colors.scss`). Before,
+  the `text` palette slug overrode every chosen colour.
+- Hero Banner buttons follow the banner's centred alignment.
+
+For template and stylesheet changes, compare pages rendered with the previous
+release and the new one: same settings and content, and every element's box
+and key computed styles, at phone and desktop widths.
 
 Deploying is copying the theme folder, including `dist/`, to the server.
 `node_modules/`, `vendor/` and `src/` aren't needed at runtime, but they're

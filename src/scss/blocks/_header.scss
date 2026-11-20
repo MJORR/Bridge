@@ -258,6 +258,15 @@
 	display: none;
 }
 
+// Closer-set items than the other layouts' bar: 12px either side of a label,
+// so 24px between two. Hybrid's row carries the logo, the bar, a dropdown and
+// the call to action in one container, and the bar is the part that can give.
+// Four classes, to outrank the bar's own `--bridge-nav-inset` declaration in
+// components/_primary-nav.scss, which is three.
+.bridge-header.bridge-header--hybrid .bridge-nav--primary.bridge-nav--inline {
+	--bridge-nav-inset: 0.75rem;
+}
+
 @media (max-width: nav.$panel) {
 	.bridge-header .bridge-nav--inline {
 		display: none;
@@ -2031,8 +2040,19 @@ body:has(.bridge-header--sticky.is-scrolled:not(.bridge-header--transparent)) {
 	 * the body size too, and became a step out the moment the menu was not.
 	 * The two now read the same preset, which is the thing they actually have
 	 * in common.
+	 *
+	 * With a skin that sets a label size (Rounded), render.php publishes
+	 * `--bridge-header-cta-size` as the Menu font size, so the button follows
+	 * the links beside it. Other skins publish nothing and fall through to the
+	 * preset as they always have.
 	 */
-	font-size: var(--wp--preset--font-size--small);
+	font-size: var(
+		--bridge-header-cta-size,
+		var(
+			--wp--custom--button--font-size,
+			var(--wp--preset--font-size--small)
+		)
+	);
 }
 
 /**

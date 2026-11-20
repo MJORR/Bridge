@@ -996,15 +996,26 @@ function bridge_button_skins(): array
 			'rounded' => array(
 				'name'          => __('Rounded', 'bridge'),
 				'description'   => __('Generously rounded corners, a small uppercase label with wide tracking, and a fine 1px border on the outline version. Under the pointer the deeper fill climbs it from the bottom edge and a shadow comes up with it, as on Solid. Considered and quietly premium — for healthcare, professional and hospitality brands.', 'bridge'),
-				// Measured off the Town House hero buttons: a 12px arc on a
-				// 36px button, about a third of its height.
-				'radius'        => '12px',
-				'paddingBlock'  => '0.75rem',
-				'paddingInline' => '1.75rem',
+				/*
+				 * Every measurement is a global token rather than a number of
+				 * its own: the radius scale's largest step (half as round
+				 * again, 12px at the default 8), the spacing
+				 * scale for the padding, and the Small font size — so the
+				 * button moves with the site's scales instead of beside them.
+				 */
+				'radius'        => 'calc(var(--wp--custom--radius--large) * 1.5)',
+				'paddingBlock'  => 'var(--wp--preset--spacing--30)',
+				'paddingInline' => 'var(--wp--preset--spacing--50)',
 				'weight'        => '600',
 				'transform'     => 'uppercase',
-				'letterSpacing' => '0.08em',
+				'letterSpacing' => '0.1em',
 				'borderWidth'   => '1px',
+				// The two optional keys. A label size of its own — Small,
+				// named so the header's call to action is drawn at it too —
+				// and no floor, so the padding and the label set the height
+				// rather than a fixed number (about 40px; WCAG 2.2 asks 24).
+				'fontSize'      => 'var(--wp--preset--font-size--small)',
+				'minSize'       => '0px',
 				'shadow'        => 'none',
 				'shadowHover'   => '0 6px 16px rgba(0, 0, 0, 0.16)',
 				'sweep'         => '0px',
@@ -1482,7 +1493,14 @@ function bridge_token_constraints(): array
 			// two steps that read as a menu bar: `small` is what the header has
 			// always used, `medium` matches body copy. The top bar is not offered
 			// this — it stays at `small` as the quieter of the two menus.
-			'navFontSize'  => array('options' => array('small', 'medium')),
+			// `x-small` is for a menu set small and airy — a long row of
+			// short labels beside a logo. It shrinks the bar and its
+			// dropdowns only; the mobile panel's rows keep their own size.
+			'navFontSize'  => array('options' => array('x-small', 'small', 'medium')),
+			// The menus' weight. 500 is what the stylesheet set before this
+			// was a setting; the fonts are self-hosted with every weight from
+			// 300 to 900, so each of these is a real cut, never a faux bold.
+			'navWeight'    => array('options' => array('400', '500', '600', '700')),
 			'logoHeight'   => array('min' => 16, 'max' => 120, 'step' => 2, 'unit' => 'px'),
 			// 0 is a header whose logo touches the edges of its ground — flush
 			// is a legitimate look, so it is a legitimate value. Above ~80 the
@@ -1765,6 +1783,9 @@ function bridge_token_defaults(): array
 				// header hard-coded before this was a setting. The top bar is
 				// not governed by it.
 				'fontSize'      => 'small',
+				// The weight of the main menu and the top bar. 500 is the
+				// value the stylesheet carried before this was a setting.
+				'weight'        => '500',
 			),
 		),
 		'footer'     => array(
@@ -2670,6 +2691,13 @@ function bridge_sanitize_tokens(array $raw): array
 		'navFontSize',
 		$raw_nav['fontSize'] ?? '',
 		$defaults['header']['nav']['fontSize']
+	);
+
+	$nav['weight'] = bridge_pick_token(
+		'header',
+		'navWeight',
+		$raw_nav['weight'] ?? '',
+		$defaults['header']['nav']['weight']
 	);
 
 	$header_bg = bridge_pick_palette_slug(

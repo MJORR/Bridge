@@ -415,12 +415,37 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					label={__('Menu font size', 'bridge')}
 					value={header.nav.fontSize ?? 'small'}
 					options={[
-						{ label: __('Default', 'bridge'), value: 'small' },
+						{
+							label: __('Extra Small', 'bridge'),
+							value: 'x-small',
+						},
+						{ label: __('Small', 'bridge'), value: 'small' },
 						{ label: __('Medium', 'bridge'), value: 'medium' },
 					]}
 					onChange={(value) => setHeader('nav.fontSize', value)}
 					help={__(
-						'The size of the main menu\u2019s items and their dropdowns. Default sits a step below body text; Medium matches it. The top bar is not affected.',
+						'The size of the main menu\u2019s items and their dropdowns. Small, the standard, sits a step below body text; Medium matches it; Extra Small is a step below Small. The top bar stays at Small, so with Extra Small the main menu is the smaller of the two. The mobile menu panel keeps its own size.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+
+				<SelectControl
+					label={__('Menu font weight', 'bridge')}
+					value={String(header.nav.weight ?? '500')}
+					options={[
+						{ label: __('Regular (400)', 'bridge'), value: '400' },
+						{ label: __('Medium (500)', 'bridge'), value: '500' },
+						{
+							label: __('Semibold (600)', 'bridge'),
+							value: '600',
+						},
+						{ label: __('Bold (700)', 'bridge'), value: '700' },
+					]}
+					onChange={(value) => setHeader('nav.weight', value)}
+					help={__(
+						'How heavy the main menu’s labels are, and the top bar’s with them. Medium is the theme’s standard; Regular matches body text.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom

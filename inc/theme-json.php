@@ -448,8 +448,19 @@ function bridge_compile_button_custom(array $tokens): array
 		'wipeWidth'     => bridge_button_wipe_extent($skin['wipeWidth'] ?? '100%'),
 		'wipeHeight'    => bridge_button_wipe_extent($skin['wipeHeight'] ?? '0px'),
 		'sweep'         => (string) $skin['sweep'],
-		'minSize'       => '44px',
+		// The tap-target floor. 44px unless a skin is drawn smaller on
+		// purpose; read with a default so every skin that predates the key
+		// keeps the floor it had.
+		'minSize'       => (string) ( $skin['minSize'] ?? '44px' ),
 	);
+
+	// A label size, only for a skin that sets one. Absent, the property is
+	// never published and every button inherits its size exactly as before —
+	// the header's call to action falls back to its own step (see
+	// blocks/_header.scss).
+	if (! empty($skin['fontSize'])) {
+		$button['fontSize'] = (string) $skin['fontSize'];
+	}
 
 	// `default` => `onDefault` => `--wp--custom--button--on-default--bg`, the
 	// same shape the card grounds take. The audit travels with the scheme
@@ -475,6 +486,28 @@ function bridge_compile_button_custom(array $tokens): array
 }
 
 /**
+ * The button element's typography, for a skin that sets its own label size.
+ *
+ * Through theme.json rather than main.css so the size reaches the editor
+ * canvas and any plugin that prints a bare `.wp-element-button` — and is only
+ * there when the skin asks for it. An empty array merges to nothing.
+ *
+ * @param array<string, mixed> $tokens Sanitised tokens.
+ * @return array<string, mixed>
+ */
+function bridge_button_skin_typography(array $tokens): array
+{
+	$skins = bridge_button_skins();
+	$skin  = $skins[$tokens['buttons']['skin']] ?? reset($skins);
+
+	if (empty($skin['fontSize'])) {
+		return array();
+	}
+
+	return array('typography' => array('fontSize' => 'var(--wp--custom--button--font-size)'));
+}
+
+/**
  * Compile a token set into a theme.json fragment.
  *
  * @param array<string, mixed> $tokens Sanitised tokens.
@@ -493,6 +526,18 @@ function bridge_compile_theme_json(array $tokens): array
 
 	$layout = $tokens['layout'];
 	$type   = $tokens['typography'];
+
+	/*
+	 * The Button block's label size. Medium, as theme.json states it, unless
+	 * the skin sets a size of its own — then that, on the block and on its
+	 * Outline variation, which theme.json also pins to Medium. A skin with no
+	 * size adds nothing here, so its global styles are the ones it had.
+	 */
+	$skin_size         = array() !== bridge_button_skin_typography($tokens);
+	$button_size       = $skin_size ? 'var(--wp--custom--button--font-size)' : 'var(--wp--preset--font-size--medium)';
+	$button_variations = $skin_size
+		? array('variations' => array('outline' => array('typography' => array('fontSize' => $button_size))))
+		: array();
 
 	$block_gap    = sprintf('var(--wp--preset--spacing--%s)', $layout['blockGap']);
 	$root_padding = sprintf('var(--wp--preset--spacing--%s)', $layout['rootPadding']);
@@ -877,13 +922,13 @@ function bridge_compile_theme_json(array $tokens): array
 						),
 					),
 					'typography' => array(
-						'fontSize'      => 'var(--wp--preset--font-size--medium)',
+						'fontSize'      => $button_size,
 						'fontWeight'    => 'var(--wp--custom--button--weight)',
 						'lineHeight'    => '1.2',
 						'letterSpacing' => 'var(--wp--custom--button--letter-spacing)',
 						'textTransform' => 'var(--wp--custom--button--transform)',
 					),
-				),
+				) + $button_variations,
 			),
 			'spacing'    => array(
 				'blockGap' => $block_gap,
@@ -901,11 +946,16 @@ function bridge_compile_theme_json(array $tokens): array
 				// to the canvas, and so a block that draws a bare
 				// `.wp-element-button` — a login form, a comment reply —
 				// picks it up without knowing anything about the skins.
-				'button'  => array(
-					'color' => array(
-						'background' => 'var(--wp--custom--button--on-default--bg)',
-						'text'       => 'var(--wp--custom--button--on-default--fg)',
+				'button'  => array_merge(
+					array(
+						'color' => array(
+							'background' => 'var(--wp--custom--button--on-default--bg)',
+							'text'       => 'var(--wp--custom--button--on-default--fg)',
+						),
 					),
+					// Only for a skin with a label size of its own, so every
+					// other skin's stylesheet is the one it already had.
+					bridge_button_skin_typography($tokens)
 				),
 				'heading' => array(
 					'typography' => array(

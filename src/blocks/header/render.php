@@ -319,6 +319,29 @@ $bridge_style = sprintf(
 	$bridge_phone_fg
 );
 
+// The menus' weight, from Theme Options. Written only when it differs from the
+// 500 the stylesheet already declares on the header, so a site that has never
+// touched the setting renders exactly the markup it did before it existed.
+$bridge_nav_weight = (string) ( $bridge_header['nav']['weight'] ?? '500' );
+
+if ( '500' !== $bridge_nav_weight ) {
+	$bridge_style .= sprintf( '--bridge-nav-weight:%d;', (int) $bridge_nav_weight );
+}
+
+// The call to action at the menu's own size, for a button skin that sets a
+// label size (Rounded): there the skin's size would otherwise stand a step
+// apart from the row of links beside it. Other skins publish nothing here and
+// keep the button exactly as it was.
+$bridge_skins = bridge_button_skins();
+$bridge_skin  = $bridge_skins[ (string) ( bridge_get_tokens()['buttons']['skin'] ?? '' ) ] ?? array();
+
+if ( ! empty( $bridge_skin['fontSize'] ) ) {
+	$bridge_style .= sprintf(
+		'--bridge-header-cta-size:var(--wp--preset--font-size--%s);',
+		sanitize_key( (string) ( $bridge_header['nav']['fontSize'] ?? 'small' ) )
+	);
+}
+
 /**
  * On an overlaying header, the second answer and the script that chooses.
  *

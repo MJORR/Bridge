@@ -6,3 +6,4 @@ dist/*.map
 .vite/
 *.log
 .claude/
+/prompt/

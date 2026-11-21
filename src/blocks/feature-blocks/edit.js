@@ -61,6 +61,9 @@ const Edit = ({ attributes, setAttributes }) => {
 		showArrow,
 		panelLink,
 		textAlignment,
+		imageCorners = 'card',
+		buttonStyle = 'fill',
+		buttonSize = 'default',
 	} = attributes;
 
 	const isNumbered = layout === 'numbered';
@@ -87,6 +90,10 @@ const Edit = ({ attributes, setAttributes }) => {
 			hasStepNumbers ? 'bridge-features--show-numbers' : '',
 			!isNumbered && columns >= 5 ? 'bridge-features--dense' : '',
 			hasMask(attributes) ? 'has-mask' : '',
+			panelStyle === 'open' && imageCorners === 'round'
+				? 'bridge-features--image-round'
+				: '',
+			buttonSize === 'small' ? 'bridge-features--button-small' : '',
 			'is-editor-preview',
 		]
 			.filter(Boolean)
@@ -205,7 +212,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				el(SelectControl, {
 					label: __('Panel style', 'bridge'),
 					help: __(
-						'Card draws the surface the rest of the site uses. Plain and Outlined let the band show through.',
+						'Card draws the surface the rest of the site uses. Plain and Outlined let the band show through. Open drops the card altogether: the picture sits on the band with rounded corners and the words line up under it.',
 						'bridge'
 					),
 					value: panelStyle,
@@ -213,8 +220,42 @@ const Edit = ({ attributes, setAttributes }) => {
 						{ label: __('Card', 'bridge'), value: 'card' },
 						{ label: __('Plain', 'bridge'), value: 'plain' },
 						{ label: __('Outlined', 'bridge'), value: 'outline' },
+						{ label: __('Open', 'bridge'), value: 'open' },
 					],
 					onChange: (value) => setAttributes({ panelStyle: value }),
+				}),
+				panelStyle === 'open' &&
+					el(SelectControl, {
+						label: __('Image corners', 'bridge'),
+						help: __(
+							'Card matches the corner radius set for cards in Theme Options. Round is twice the large radius.',
+							'bridge'
+						),
+						value: imageCorners,
+						options: [
+							{ label: __('Card', 'bridge'), value: 'card' },
+							{ label: __('Round', 'bridge'), value: 'round' },
+						],
+						onChange: (value) =>
+							setAttributes({ imageCorners: value }),
+					}),
+				el(SelectControl, {
+					label: __('Button style', 'bridge'),
+					value: buttonStyle,
+					options: [
+						{ label: __('Filled', 'bridge'), value: 'fill' },
+						{ label: __('Outline', 'bridge'), value: 'outline' },
+					],
+					onChange: (value) => setAttributes({ buttonStyle: value }),
+				}),
+				el(SelectControl, {
+					label: __('Button size', 'bridge'),
+					value: buttonSize,
+					options: [
+						{ label: __('Default', 'bridge'), value: 'default' },
+						{ label: __('Small', 'bridge'), value: 'small' },
+					],
+					onChange: (value) => setAttributes({ buttonSize: value }),
 				}),
 				!isNumbered &&
 					el(ToggleControl, {

@@ -142,6 +142,9 @@ const Edit = ({ attributes, setAttributes, context, clientId }) => {
 	// The band's call: the panel is the link, so there is no cue to word or
 	// style — only the address is asked for.
 	const panelLink = !!context?.['bridge/featurePanelLink'];
+	// The band's button style: Outline draws the cue as the site's outline
+	// button. render.php reads the same context.
+	const outline = context?.['bridge/featureButtonStyle'] === 'outline';
 
 	const autoNumber = String(Math.max(1, position)).padStart(2, '0');
 
@@ -514,7 +517,8 @@ const Edit = ({ attributes, setAttributes, context, clientId }) => {
 								'span',
 								{
 									className:
-										'bridge-feature__button wp-element-button',
+										'bridge-feature__button wp-element-button' +
+										(outline ? ' is-style-outline' : ''),
 								},
 								linkText || __('Find out more', 'bridge')
 							)

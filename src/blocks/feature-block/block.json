@@ -13,7 +13,8 @@
 		"bridge/featureNumbers",
 		"bridge/featureLayout",
 		"bridge/featureArrow",
-		"bridge/featurePanelLink"
+		"bridge/featurePanelLink",
+		"bridge/featureButtonStyle"
 	],
 	"supports": { "anchor": false, "html": false, "reusable": false },
 	"attributes": {

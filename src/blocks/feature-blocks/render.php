@@ -50,7 +50,7 @@ $layout    = 'numbered' === ( $attributes['layout'] ?? 'grid' ) ? 'numbered' : '
  * hint to the editor, not a guarantee to this file. An unknown value falls
  * back to the default rather than being printed into a class name.
  */
-$panel_styles = array( 'card', 'plain', 'outline' );
+$panel_styles = array( 'card', 'plain', 'outline', 'open' );
 $panel_style  = sanitize_key( $attributes['panelStyle'] ?? 'card' );
 $panel_style  = in_array( $panel_style, $panel_styles, true ) ? $panel_style : 'card';
 
@@ -94,6 +94,28 @@ $classes = sprintf(
 	// cannot fit them and the grid quietly drops to four.
 	'grid' === $layout && $columns >= 5 ? ' bridge-features--dense' : ''
 );
+
+/*
+ * Options added after the band shipped. Each adds a class only when chosen,
+ * so a band saved before them prints the markup it always did.
+ *
+ *   panelStyle   open    No card at all: the picture stands on the band with
+ *                        its own rounded corners and the words line up with
+ *                        its edge. (In the list above.)
+ *   imageCorners round   Open panels' pictures at twice the large radius
+ *                        rather than the card radius.
+ *   buttonSize   small   A smaller button: less padding, a smaller label.
+ *
+ * The button's Outline style goes to each panel through block context, since
+ * the panel prints the button.
+ */
+if ( 'open' === $panel_style && 'round' === ( $attributes['imageCorners'] ?? 'card' ) ) {
+	$classes .= ' bridge-features--image-round';
+}
+
+if ( 'small' === ( $attributes['buttonSize'] ?? 'default' ) ) {
+	$classes .= ' bridge-features--button-small';
+}
 
 list( $intro_html, $label_id ) = bridge_section_intro( $intro, 'bridge-features__intro' );
 

@@ -317,6 +317,13 @@ $wrapper = get_block_wrapper_attributes(
 				 */
 				$button_class = 'bridge-feature__button wp-element-button';
 
+				// The band's Outline button style: the site's own outline
+				// button, through the class components/_button.scss already
+				// styles for a theme-drawn link. Absent unless chosen.
+				if ( 'outline' === ( $block->context['bridge/featureButtonStyle'] ?? 'fill' ) ) {
+					$button_class .= ' is-style-outline';
+				}
+
 				// A panel with its own background is a ground of its own too,
 				// so the button reads which side of the line that colour is on.
 				if ( '' !== $card_bg_hex ) {

@@ -378,6 +378,65 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 			@include card.padding;
 		}
 	}
+
+	/**
+	 * Open panels: no card at all, picture included.
+	 *
+	 * Plain keeps a card under a panel with a picture, so the picture and the
+	 * words don't drift apart. Open is the deliberate other answer: the
+	 * picture stands on the band with every corner rounded, and the words
+	 * line up with its edges, so the picture is what holds the panel
+	 * together. Added after the first three styles, so a band that never
+	 * chose it matches none of this.
+	 *
+	 * The corner is the card radius from Theme Options, or twice the large
+	 * radius with Image corners set to Round. The cut-corner card option is
+	 * dropped here, since the rounded picture is the corner treatment.
+	 */
+	&--panels-open .bridge-feature:not(.bridge-feature--cover) {
+		--bridge-card-layer-bg: transparent;
+		--bridge-card-clip: none;
+		--wp--custom--card--shadow-hover: none;
+
+		background-color: transparent;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	&--panels-open .bridge-feature__media {
+		border-radius: var(
+			--bridge-feature-image-radius,
+			var(--wp--custom--card--radius, 6px)
+		);
+	}
+
+	&--image-round {
+		--bridge-feature-image-radius: calc(
+			var(--wp--custom--radius--large, 8px) * 2
+		);
+	}
+
+	&--panels-open
+		.bridge-feature:not(.bridge-feature--cover)
+		.bridge-feature__body {
+		padding: var(--wp--preset--spacing--40) 0 0;
+	}
+
+	/**
+	 * A smaller button, from the global scales: the button reads its padding,
+	 * floor and label size from these properties, so setting them on the
+	 * button itself resizes it without touching any other button on the page.
+	 * No 44px floor; the padding sets the height, which still clears WCAG
+	 * 2.2's 24px target.
+	 */
+	&--button-small .bridge-feature__button {
+		--wp--custom--button--padding-block: var(--wp--preset--spacing--20);
+		--wp--custom--button--padding-inline: var(--wp--preset--spacing--40);
+		--wp--custom--button--min-size: 0;
+		--wp--custom--button--font-size: var(--wp--preset--font-size--x-small);
+
+		font-size: var(--wp--preset--font-size--x-small);
+	}
 }
 
 .bridge-feature {

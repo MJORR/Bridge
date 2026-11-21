@@ -803,6 +803,7 @@ return array(
 			'bridge/featureLayout',
 			'bridge/featureArrow',
 			'bridge/featurePanelLink',
+			'bridge/featureButtonStyle',
 		),
 		'supports' => array(
 			'anchor' => false,
@@ -938,8 +939,33 @@ return array(
 					'card',
 					'plain',
 					'outline',
+					'open',
 				),
 				'default' => 'card',
+			),
+			'imageCorners' => array(
+				'type' => 'string',
+				'enum' => array(
+					'card',
+					'round',
+				),
+				'default' => 'card',
+			),
+			'buttonStyle' => array(
+				'type' => 'string',
+				'enum' => array(
+					'fill',
+					'outline',
+				),
+				'default' => 'fill',
+			),
+			'buttonSize' => array(
+				'type' => 'string',
+				'enum' => array(
+					'default',
+					'small',
+				),
+				'default' => 'default',
 			),
 			'showNumbers' => array(
 				'type' => 'boolean',
@@ -987,6 +1013,7 @@ return array(
 			'bridge/featureLayout' => 'layout',
 			'bridge/featureArrow' => 'showArrow',
 			'bridge/featurePanelLink' => 'panelLink',
+			'bridge/featureButtonStyle' => 'buttonStyle',
 		),
 		'example' => array(
 			'attributes' => array(

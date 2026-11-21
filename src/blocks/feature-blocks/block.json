@@ -39,8 +39,23 @@
 		},
 		"panelStyle": {
 			"type": "string",
-			"enum": ["card", "plain", "outline"],
+			"enum": ["card", "plain", "outline", "open"],
 			"default": "card"
+		},
+		"imageCorners": {
+			"type": "string",
+			"enum": ["card", "round"],
+			"default": "card"
+		},
+		"buttonStyle": {
+			"type": "string",
+			"enum": ["fill", "outline"],
+			"default": "fill"
+		},
+		"buttonSize": {
+			"type": "string",
+			"enum": ["default", "small"],
+			"default": "default"
 		},
 		"showNumbers": {
 			"type": "boolean",
@@ -84,7 +99,8 @@
 		"bridge/featureNumbers": "showNumbers",
 		"bridge/featureLayout": "layout",
 		"bridge/featureArrow": "showArrow",
-		"bridge/featurePanelLink": "panelLink"
+		"bridge/featurePanelLink": "panelLink",
+		"bridge/featureButtonStyle": "buttonStyle"
 	},
 	"example": {
 		"attributes": {

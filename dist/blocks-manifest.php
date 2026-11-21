@@ -1278,6 +1278,21 @@ return array(
 				'default' => 'default',
 			),
 		),
+		'variations' => array(
+			array(
+				'name' => 'goals',
+				'title' => 'Goals',
+				'description' => 'A row of figures — a number, its unit and a label — that count up as the band scrolls into view.',
+				'icon' => 'chart-bar',
+				'isDefault' => true,
+				'scope' => array(
+					'inserter',
+				),
+				'attributes' => array(
+					'figureStyle' => 'heading',
+				),
+			),
+		),
 		'example' => array(
 			'attributes' => array(
 				'columns' => 3,

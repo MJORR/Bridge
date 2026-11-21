@@ -284,6 +284,14 @@ final class BackCompatTest extends BridgeTestCase
 		$this->assertFalse($goals['bottomRule']['default'], 'Goals: no bottom line, as before.');
 		$this->assertSame('default', $goals['spacing']['default'], 'Goals: the site section padding, as before.');
 
+		// New Goals blocks start in the heading font through the inserter's
+		// default variation, which saves the setting into the block. Old
+		// blocks never stored it, so they keep the attribute default: bold.
+		$variation = $this->blockJson('goals')['variations'][0];
+		$this->assertTrue($variation['isDefault']);
+		$this->assertSame(array('inserter'), $variation['scope']);
+		$this->assertSame(array('figureStyle' => 'heading'), $variation['attributes']);
+
 		$goal = $this->blockJson('goal')['attributes'];
 		$this->assertSame('auto', $goal['unitPosition']['default'], 'Goal: currency leads, everything else follows, as before.');
 	}

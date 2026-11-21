@@ -55,6 +55,19 @@
 			"default": "default"
 		}
 	},
+	"variations": [
+		{
+			"name": "goals",
+			"title": "Goals",
+			"description": "A row of figures — a number, its unit and a label — that count up as the band scrolls into view.",
+			"icon": "chart-bar",
+			"isDefault": true,
+			"scope": ["inserter"],
+			"attributes": {
+				"figureStyle": "heading"
+			}
+		}
+	],
 	"example": {
 		"attributes": {
 			"columns": 3,

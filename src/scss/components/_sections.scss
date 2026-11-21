@@ -39,7 +39,8 @@
 .bridge-content,
 .is-style-bridge-surface,
 .is-style-bridge-inverted,
-.is-style-bridge-accent {
+.is-style-bridge-accent,
+.is-style-bridge-alternative {
 	padding-block: var(
 		--wp--custom--section-padding,
 		var(--wp--preset--spacing--70)
@@ -137,6 +138,23 @@
 	background-color: var(--bridge-band-ground);
 }
 
+/**
+ * Alternative: the Inverted treatment on the Tertiary colour. Added after the
+ * first three skins, so a band that never chose it matches none of this.
+ * `on-dark` sets the Inverted button ground; the Alternative ground after it
+ * replaces those values with Tertiary's own.
+ */
+.is-style-bridge-alternative {
+	@include on-dark.on-dark;
+	@include button.ground("alternative");
+
+	--bridge-card-bg: var(--wp--custom--card--on-tertiary);
+	--bridge-card-link: currentcolor;
+	--bridge-band-ground: var(--wp--preset--color--tertiary);
+
+	background-color: var(--bridge-band-ground);
+}
+
 .is-style-bridge-accent {
 	@include button.ground("accent");
 
@@ -181,7 +199,8 @@
 :is(
 	.is-style-bridge-surface,
 	.is-style-bridge-inverted,
-	.is-style-bridge-accent
+	.is-style-bridge-accent,
+	.is-style-bridge-alternative
 ):not(.bridge-band) {
 	padding-inline: var(--wp--preset--spacing--40);
 }
@@ -224,6 +243,7 @@
 	.is-style-bridge-surface,
 	.is-style-bridge-inverted,
 	.is-style-bridge-accent,
+	.is-style-bridge-alternative,
 	.bridge-footer
 ) {
 	background-image: linear-gradient(
@@ -258,7 +278,8 @@
 .alignfull:is(
 		.is-style-bridge-surface,
 		.is-style-bridge-inverted,
-		.is-style-bridge-accent
+		.is-style-bridge-accent,
+		.is-style-bridge-alternative
 	):not(.bridge-band) {
 	padding-left: var(--wp--preset--spacing--40);
 	padding-right: var(--wp--preset--spacing--40);

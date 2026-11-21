@@ -50,7 +50,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 			<Section
 				title={__('Brand palette', 'bridge')}
 				description={__(
-					'These six colours are the only ones the editor offers — custom colours are switched off, so nothing off-brand can reach a page. Each slot takes the name editors see, then its hex value.',
+					'These colours are the only ones the editor offers — custom colours are switched off, so nothing off-brand can reach a page. Each slot takes the name editors see, then its hex value.',
 					'bridge'
 				)}
 			>
@@ -71,7 +71,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 				</h3>
 				<p className="bridge-options__subhelp">
 					{__(
-						'Every pair of these six colours the theme actually draws, measured. WCAG 2.2 §1.4.3 asks for 4.5:1 on body-sized text, which all of these are.',
+						'Every pair of these colours the theme actually draws, measured. WCAG 2.2 §1.4.3 asks for 4.5:1 on body-sized text, which all of these are.',
 						'bridge'
 					)}
 				</p>

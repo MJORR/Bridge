@@ -218,6 +218,14 @@ function bridge_section_skins(): array
 			'background' => 'accent',
 			'text'       => 'text',
 		),
+		// Added after the first three, on the Tertiary palette colour. A
+		// light foreground like Inverted, so Tertiary is meant to be a dark
+		// or mid tone; the contrast audit in Theme Options checks it.
+		'bridge-alternative' => array(
+			'label'      => __('Alternative', 'bridge'),
+			'background' => 'tertiary',
+			'text'       => 'background',
+		),
 	);
 }
 

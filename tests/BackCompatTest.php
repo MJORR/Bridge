@@ -175,6 +175,79 @@ final class BackCompatTest extends BridgeTestCase
 		$this->assertSame(3, $header['menus']['primary']);
 	}
 
+	/**
+	 * Tertiary was added to the palette after sites had saved theirs. A record
+	 * with no Tertiary takes that site's own Primary, so no site changes until
+	 * someone picks a colour for it; a saved one is kept.
+	 */
+	public function test_tertiary_falls_back_to_the_site_primary(): void
+	{
+		$palette = bridge_sanitize_tokens(
+			array('brand' => array('palette' => array('primary' => array('color' => '#123456'))))
+		)['brand']['palette'];
+
+		$this->assertSame('#123456', $palette['tertiary']['color']);
+
+		$palette = bridge_sanitize_tokens(
+			array('brand' => array('palette' => array(
+				'primary'  => array('color' => '#123456'),
+				'tertiary' => array('color' => '#34596F'),
+			)))
+		)['brand']['palette'];
+
+		$this->assertSame('#34596F', $palette['tertiary']['color']);
+	}
+
+	/**
+	 * The Alternative skin's button fill and card colour arrived after sites
+	 * had saved theirs. With none saved they copy the Inverted ones, the other
+	 * light-text ground; saved ones are kept.
+	 */
+	public function test_the_alternative_ground_copies_the_inverted_settings(): void
+	{
+		$tokens = bridge_sanitize_tokens(
+			array(
+				'buttons' => array('colors' => array('inverted' => 'secondary')),
+				'cards'   => array('colors' => array('primary' => '#223344')),
+			)
+		);
+
+		$this->assertSame('secondary', $tokens['buttons']['colors']['alternative']);
+		$this->assertSame('#223344', $tokens['cards']['colors']['tertiary']);
+
+		$tokens = bridge_sanitize_tokens(
+			array(
+				'buttons' => array('colors' => array('inverted' => 'secondary', 'alternative' => 'accent')),
+				'cards'   => array('colors' => array('primary' => '#223344', 'tertiary' => '#445566')),
+			)
+		);
+
+		$this->assertSame('accent', $tokens['buttons']['colors']['alternative']);
+		$this->assertSame('#445566', $tokens['cards']['colors']['tertiary']);
+	}
+
+	/** The original three section skins keep their names and order; new ones go after. */
+	public function test_the_original_section_skins_keep_their_names_and_order(): void
+	{
+		// Not in bootstrap.php's list; it loads cleanly against the stubs.
+		require_once dirname(__DIR__) . '/inc/structure.php';
+
+		$this->assertSame(
+			array('bridge-surface', 'bridge-inverted', 'bridge-accent'),
+			array_slice(array_keys(bridge_section_skins()), 0, 3)
+		);
+	}
+
+	/** The original six palette slugs keep their names; new ones only add. */
+	public function test_the_original_palette_slugs_are_all_still_there(): void
+	{
+		$slugs = array_keys(bridge_palette_slugs());
+
+		foreach (array('primary', 'secondary', 'accent', 'background', 'surface', 'text') as $slug) {
+			$this->assertContains($slug, $slugs);
+		}
+	}
+
 	/** A fresh site gets the defaults it always got. */
 	public function test_new_options_are_off_by_default(): void
 	{

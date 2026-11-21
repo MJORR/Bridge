@@ -149,7 +149,15 @@
  * none of them: they set variables and paint on their own account not at all.
  */
 @each $slug
-	in ("primary", "secondary", "accent", "background", "surface", "text")
+	in (
+		"primary",
+		"secondary",
+		"tertiary",
+		"accent",
+		"background",
+		"surface",
+		"text"
+	)
 {
 	.bridge-button--fill-#{$slug} {
 		@include button.painted($slug);
@@ -164,7 +172,15 @@
  * Nothing at all for a button that has not been given one.
  */
 @each $slug
-	in ("primary", "secondary", "accent", "background", "surface", "text")
+	in (
+		"primary",
+		"secondary",
+		"tertiary",
+		"accent",
+		"background",
+		"surface",
+		"text"
+	)
 {
 	.bridge-button--text-#{$slug} {
 		--bridge-button-label: var(--wp--preset--color--#{$slug});

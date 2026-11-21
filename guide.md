@@ -355,6 +355,22 @@ Two global changes were deliberate, and are fixes rather than options:
   the `text` palette slug overrode every chosen colour.
 - Hero Banner buttons follow the banner's centred alignment.
 
+One deliberate addition reaches every site, and the fixture was regenerated
+for it:
+
+- **The Tertiary palette colour.** Every site's global styles gain one
+  palette entry and one button fill. Nothing is changed or removed. A site
+  that has never set Tertiary gets its own Primary colour, so nothing looks
+  different until someone picks a colour for it. It sits after Secondary in
+  the editor's colour picker rather than at the end. That's safe because
+  content stores the slug, not the position.
+- **The Alternative section skin**, on Tertiary, with light text like
+  Inverted. It comes after the original three skins. Every site's global
+  styles gain a Tertiary card colour and an Alternative button ground. A site
+  that never set them copies its Primary card colour and its Inverted button
+  fill. Theme Options checks light text on Tertiary in the contrast list,
+  because Tertiary needs to be a dark or mid tone for this skin.
+
 For template and stylesheet changes, compare pages rendered with the previous
 release and the new one: same settings and content, and every element's box
 and key computed styles, at phone and desktop widths.

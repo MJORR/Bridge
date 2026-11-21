@@ -51,6 +51,11 @@
           "name": "Secondary"
         },
         {
+          "slug": "tertiary",
+          "color": "#0F172A",
+          "name": "Tertiary"
+        },
+        {
           "slug": "accent",
           "color": "#F59E0B",
           "name": "Accent"

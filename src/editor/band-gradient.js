@@ -59,6 +59,7 @@
 		'is-style-bridge-surface',
 		'is-style-bridge-inverted',
 		'is-style-bridge-accent',
+		'is-style-bridge-alternative',
 	];
 
 	const classList = (className) =>

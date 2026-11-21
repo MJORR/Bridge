@@ -202,14 +202,19 @@ final class CompileThemeJsonTest extends BridgeTestCase
 	}
 
 	/** The tap-target floor is not a skin value and does not move with one. */
+	/**
+	 * Every skin gets the 44px floor unless it declares its own. Rounded does,
+	 * deliberately: its padding and label set the height (about 40px), which
+	 * still clears WCAG 2.2's 24px target size.
+	 */
 	public function test_the_target_size_floor_is_the_same_on_every_skin(): void
 	{
-		foreach (array_keys(bridge_button_skins()) as $slug) {
+		foreach (bridge_button_skins() as $slug => $skin) {
 			$button = bridge_compile_button_custom(
 				bridge_sanitize_tokens(array('buttons' => array('skin' => $slug)))
 			);
 
-			$this->assertSame('44px', $button['minSize']);
+			$this->assertSame((string) ($skin['minSize'] ?? '44px'), $button['minSize'], "Skin: {$slug}");
 		}
 	}
 

@@ -666,7 +666,14 @@ final class SanitizeTokensTest extends BridgeTestCase
 		$tokens = bridge_sanitize_tokens(array('header' => array('layout' => 'left')));
 
 		$this->assertSame(
-			array('rollover' => 'surface', 'child' => 'surface', 'accent' => 'accent'),
+			array(
+				'rollover'      => 'surface',
+				'child'         => 'surface',
+				'accent'        => 'accent',
+				'accentEnabled' => true,
+				'fontSize'      => 'small',
+				'weight'        => '500',
+			),
 			$tokens['header']['nav']
 		);
 	}

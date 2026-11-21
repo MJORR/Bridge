@@ -56,6 +56,11 @@ function bridge_palette_slugs(): array
 	return array(
 		'primary'    => 'Primary',
 		'secondary'  => 'Secondary',
+		// Added later than the others, for a third brand colour — a mid tone
+		// a band can be painted in. A site that has never set it gets its own
+		// Primary here (see bridge_sanitize_tokens()), so it changes nothing
+		// until someone chooses a colour for it.
+		'tertiary'   => 'Tertiary',
 		'accent'     => 'Accent',
 		'background' => 'Background',
 		'surface'    => 'Surface',
@@ -98,6 +103,9 @@ function bridge_palette_contrast_slug(string $slug): string
 	$pairs = array(
 		'primary'    => 'secondary',
 		'secondary'  => 'primary',
+		// A ground, like Primary, but a mid tone that Secondary may not stand
+		// out on. The page colour always does.
+		'tertiary'   => 'background',
 		'accent'     => 'primary',
 		'background' => 'surface',
 		'surface'    => 'background',
@@ -280,6 +288,15 @@ function bridge_card_grounds(): array
 			'ground'  => 'accent',
 			'text'    => 'text',
 			'default' => '#ffffff',
+		),
+		// The Alternative skin's cards. A site that never set one takes its
+		// own Primary card colour, as Tertiary takes its own Primary — see
+		// bridge_sanitize_tokens().
+		'tertiary' => array(
+			'label'   => __('Tertiary card', 'bridge'),
+			'ground'  => 'tertiary',
+			'text'    => 'background',
+			'default' => '#1e293b',
 		),
 	);
 }
@@ -1105,6 +1122,15 @@ function bridge_button_grounds(): array
 			// on a dark band should be.
 			'fill'   => 'background',
 		),
+		// The Alternative skin, on Tertiary. Light text like Inverted, so the
+		// same light button. A site that never set one copies its Inverted
+		// fill — see bridge_sanitize_tokens().
+		'alternative' => array(
+			'label'  => __('Alternative', 'bridge'),
+			'ground' => 'tertiary',
+			'text'   => 'background',
+			'fill'   => 'background',
+		),
 	);
 }
 
@@ -1573,6 +1599,7 @@ function bridge_token_defaults(): array
 
 	$palette['primary']['color']    = '#0F172A';
 	$palette['secondary']['color']  = '#2563EB';
+	$palette['tertiary']['color']   = '#0F172A';
 	$palette['accent']['color']     = '#F59E0B';
 	$palette['background']['color'] = '#FFFFFF';
 	$palette['surface']['color']    = '#F5F5F4';
@@ -2153,6 +2180,14 @@ function bridge_palette_pairs(): array
 			'note'  => __('The Inverted skin: the light foreground on the brand’s dark ground.', 'bridge'),
 		),
 		array(
+			'fg'    => 'background',
+			'bg'    => 'tertiary',
+			'label' => __('Inverted text', 'bridge'),
+			'on'    => __('on Tertiary', 'bridge'),
+			'min'   => 4.5,
+			'note'  => __('The Alternative skin: the same light foreground on Tertiary.', 'bridge'),
+		),
+		array(
 			'fg'    => 'secondary',
 			'bg'    => 'background',
 			'label' => __('Links', 'bridge'),
@@ -2365,6 +2400,13 @@ function bridge_sanitize_tokens(array $raw): array
 		);
 	}
 
+	// Tertiary arrived after sites had saved their palettes. A record without
+	// one takes that site's own Primary rather than the theme default, so a
+	// site that has never opened the setting looks exactly as it did.
+	if (! isset($raw_palette['tertiary']['color']) || ! is_string($raw_palette['tertiary']['color'])) {
+		$palette['tertiary']['color'] = $palette['primary']['color'];
+	}
+
 	// ---- Mask shape -------------------------------------------------------
 	//
 	// An attachment id and nothing more. Not checked against the media library
@@ -2476,6 +2518,13 @@ function bridge_sanitize_tokens(array $raw): array
 		$button_fills[$key] = bridge_pick_token('buttons', 'fill', $raw_button_colors[$key] ?? '', $entry['fill']);
 	}
 
+	// The Alternative ground arrived after sites had saved their button
+	// colours; one with none takes the Inverted fill, the other light-text
+	// ground.
+	if (! isset($raw_button_colors['alternative'])) {
+		$button_fills['alternative'] = $button_fills['inverted'];
+	}
+
 	$buttons = array(
 		'skin'   => bridge_pick_token('buttons', 'skin', $raw_buttons['skin'] ?? '', $db['skin']),
 		'colors' => $button_fills,
@@ -2495,6 +2544,11 @@ function bridge_sanitize_tokens(array $raw): array
 		$card_colors[$key] = strtolower(
 			bridge_hex_or($raw_card_colors[$key] ?? null, $entry['default'])
 		);
+	}
+
+	// Likewise the Tertiary card: none saved takes the Primary card colour.
+	if (! isset($raw_card_colors['tertiary'])) {
+		$card_colors['tertiary'] = $card_colors['primary'];
 	}
 
 	/**

@@ -23,7 +23,9 @@
  * The slugs are listed rather than read, for the reason given beside the
  * button fill classes in components/_button.scss.
  */
-@each $slug in ("primary", "secondary", "accent", "background", "surface") {
+@each $slug
+	in ("primary", "secondary", "tertiary", "accent", "background", "surface")
+{
 	.has-text-color.has-#{$slug}-color {
 		color: var(--wp--preset--color--#{$slug}) !important;
 	}

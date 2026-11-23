@@ -114,6 +114,23 @@ if ( $bridge_hybrid ) {
 	$bridge_classes[] = 'bridge-footer--hybrid';
 }
 
+// A colour of its own for the copyright row. Class and properties only when
+// one is chosen; without it the row is the shade of the footer it always was.
+$bridge_legal_color = sanitize_key( (string) ( $bridge_footer['legalColor'] ?? '' ) );
+$bridge_legal_hex   = '' !== $bridge_legal_color ? (string) ( $bridge_tokens['brand']['palette'][ $bridge_legal_color ]['color'] ?? '' ) : '';
+
+if ( '' === $bridge_legal_hex ) {
+	$bridge_legal_color = '';
+}
+
+if ( '' !== $bridge_legal_color ) {
+	$bridge_classes[] = 'bridge-footer--legal-color';
+}
+
+if ( isset( $bridge_footer['legalBorder'] ) && ! $bridge_footer['legalBorder'] ) {
+	$bridge_classes[] = 'bridge-footer--no-legal-border';
+}
+
 if ( isset( $bridge_footer['headingAccent'] ) && ! $bridge_footer['headingAccent'] ) {
 	$bridge_classes[] = 'bridge-footer--no-heading-accent';
 }
@@ -178,6 +195,18 @@ $bridge_ground = sprintf(
 	// document, which sends a second request for the page itself.
 	'' !== $bridge_image ? '--bridge-footer-image: ' . $bridge_image . ';' : ''
 );
+
+// The row's own colour, and the text that reads on it — asked of the row's
+// colour rather than the footer's, since the two can differ in lightness.
+if ( '' !== $bridge_legal_color ) {
+	$bridge_ground .= sprintf(
+		'--bridge-footer-legal-bg: var(--wp--preset--color--%1$s);--bridge-footer-legal-text: %2$s;',
+		$bridge_legal_color,
+		bridge_is_light_color( $bridge_legal_hex )
+			? 'var(--wp--preset--color--text, #1f2937)'
+			: 'var(--wp--preset--color--background, #fff)'
+	);
+}
 
 // The site's mask shape behind the columns, set in Theme Options → Templates →
 // Footer with the controls the section blocks have, and drawn by the same

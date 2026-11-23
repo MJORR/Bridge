@@ -343,6 +343,8 @@ final class BackCompatTest extends BridgeTestCase
 
 		$this->assertTrue($tokens['footer']['headingAccent'], 'Footer: the heading accent stays on.');
 		$this->assertFalse($tokens['footer']['cta']['enabled'], 'Footer: no button unless switched on.');
+		$this->assertTrue($tokens['footer']['legalBorder'], 'Footer: the copyright row keeps its top border.');
+		$this->assertSame('', $tokens['footer']['legalColor'], 'Footer: the copyright row stays a shade of the footer.');
 		$this->assertSame('columns', $tokens['footer']['style']);
 		$this->assertSame('footer', bridge_footer_variants()['simple']);
 		$this->assertSame('footer-columns', bridge_footer_variants()['columns']);

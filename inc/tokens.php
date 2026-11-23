@@ -1831,6 +1831,13 @@ function bridge_token_defaults(): array
 			// Level with the footer, which is the strip every site had before
 			// the control existed.
 			'legalShade'      => 0,
+			// A palette colour for the copyright row. Empty means the footer's
+			// own colour, which is the row every site had before this existed;
+			// the shade above is then applied to whichever one it is.
+			'legalColor'      => '',
+			// The hairline along the top of the copyright row. On by default,
+			// because every footer drew it before this was a setting.
+			'legalBorder'     => true,
 			// The site's mask shape behind the columns, with the same four
 			// settings and defaults a section block gives it. Off by default,
 			// for the reason the gradient is.
@@ -2894,8 +2901,12 @@ function bridge_sanitize_tokens(array $raw): array
 			'legal'    => max(0, (int) ($raw_footer_menus['legal'] ?? 0)),
 		),
 		'labels'          => bridge_sanitize_footer_labels($raw_footer['labels'] ?? array()),
+		// Empty, or a slug in the palette. A slug that has since gone falls
+		// back to empty, which is the footer's own colour.
+		'legalColor'      => bridge_pick_palette_slug($raw_footer['legalColor'] ?? '', ''),
 		// Absent means on: a record saved before the switch existed drew the
 		// accent, and should go on drawing it.
+		'legalBorder'     => array_key_exists('legalBorder', $raw_footer) ? ! empty($raw_footer['legalBorder']) : true,
 		'headingAccent'   => array_key_exists('headingAccent', $raw_footer) ? ! empty($raw_footer['headingAccent']) : true,
 		'cta'             => array(
 			'enabled' => ! empty($raw_footer_cta['enabled']),

@@ -1136,3 +1136,34 @@
 .bridge-footer--contrast-light .bridge-footer__cta {
 	@include button.ground("inverted");
 }
+
+/**
+ * The copyright row in a palette colour of its own.
+ *
+ * The colour is the row's ground and the shade is laid over it as an image,
+ * so at a shade of 0 the row is exactly the chosen colour. Only behind
+ * `--legal-color`: a footer without one keeps the shade-of-the-footer row.
+ */
+.bridge-footer--legal-color .bridge-footer__legal {
+	background-color: var(--bridge-footer-legal-bg);
+	background-image: linear-gradient(
+		color-mix(
+			in srgb,
+			var(--bridge-footer-legal-ink, #000)
+				var(--bridge-footer-legal-shade, 0%),
+			transparent
+		),
+		color-mix(
+			in srgb,
+			var(--bridge-footer-legal-ink, #000)
+				var(--bridge-footer-legal-shade, 0%),
+			transparent
+		)
+	);
+	color: var(--bridge-footer-legal-text, inherit);
+}
+
+// The copyright row without its top hairline — only when switched off.
+.bridge-footer--no-legal-border .bridge-footer__legal {
+	border-block-start: 0;
+}

@@ -658,6 +658,41 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					__nextHasNoMarginBottom
 				/>
 
+				<SelectControl
+					label={__('Copyright row colour', 'bridge')}
+					value={draft.footer.legalColor ?? ''}
+					options={[
+						{
+							label: __('Same as the footer', 'bridge'),
+							value: '',
+						},
+						...Object.entries(paletteSlugs).map(([slug]) => ({
+							label: draft.brand.palette[slug].name,
+							value: slug,
+						})),
+					]}
+					onChange={(value) =>
+						setGroup('footer', 'legalColor', value)
+					}
+					help={__(
+						'A palette colour for the bottom row. The shade below is applied on top, so at 0 the row is exactly this colour.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+
+				<ToggleControl
+					label={__('Copyright row top border', 'bridge')}
+					checked={draft.footer.legalBorder !== false}
+					onChange={(on) => setGroup('footer', 'legalBorder', on)}
+					help={__(
+						'A thin line along the top of the bottom row.',
+						'bridge'
+					)}
+					__nextHasNoMarginBottom
+				/>
+
 				<RangeControl
 					label={__('Copyright row shade', 'bridge')}
 					value={draft.footer.legalShade}
@@ -668,7 +703,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						setGroup('footer', 'legalShade', value ?? 0)
 					}
 					help={__(
-						'How far the bottom row sits off the footer’s colour. Below zero lightens it, above zero darkens it, and zero leaves it level with the rest.',
+						'How far the bottom row sits off its colour. Below zero lightens it, above zero darkens it, and zero adds nothing.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom

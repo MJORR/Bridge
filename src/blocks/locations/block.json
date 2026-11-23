@@ -1,0 +1,74 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/locations",
+	"version": "1.0.0",
+	"title": "Locations",
+	"category": "design",
+	"icon": "location",
+	"description": "A row of locations — each a place name with its phone and email beside it — read from Site Options or listed in the block.",
+	"textdomain": "bridge",
+	"keywords": [
+		"locations",
+		"address",
+		"practices",
+		"branches",
+		"offices",
+		"contact"
+	],
+	"supports": {
+		"anchor": true,
+		"html": false
+	},
+	"attributes": {
+		"source": {
+			"type": "string",
+			"enum": ["site", "custom"],
+			"default": "site"
+		},
+		"locations": {
+			"type": "array",
+			"default": []
+		},
+		"background": {
+			"type": "string",
+			"default": ""
+		},
+		"borderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"nameSize": {
+			"type": "string",
+			"enum": ["large", "x-large"],
+			"default": "x-large"
+		},
+		"showAddress": {
+			"type": "boolean",
+			"default": false
+		}
+	},
+	"example": {
+		"attributes": {
+			"background": "primary",
+			"locations": [
+				{
+					"name": "Tunbridge Wells",
+					"phone": "01892 616062",
+					"email": "info@example.com",
+					"url": ""
+				},
+				{
+					"name": "Brighton & Hove",
+					"phone": "01273 000000",
+					"email": "brighton@example.com",
+					"url": ""
+				}
+			],
+			"source": "custom"
+		}
+	},
+	"editorScript": "bridge-locations-editor",
+	"style": "bridge-locations-style",
+	"render": "file:./render.php"
+}

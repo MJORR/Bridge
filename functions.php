@@ -53,6 +53,7 @@ require_once get_theme_file_path('inc/card-data.php');
 require_once get_theme_file_path('inc/hero-blocks.php');
 require_once get_theme_file_path('inc/header.php');
 require_once get_theme_file_path('inc/footer.php');
+require_once get_theme_file_path('inc/locations.php');
 // Seeds the content types and navigation menus a fresh site starts with.
 // After header.php and footer.php, because it points their menu slots at the
 // menus it just created and so needs bridge_header_menu_id() and
@@ -611,6 +612,10 @@ function bridge_register_blocks(): void
 	// A view script, for the count-up: the figures render at their final
 	// values and goals-view.js counts them from zero once the row is on
 	// screen. Nothing about the block needs it to be readable.
+	// A row of locations: a name with its phone and email. Dynamic, no view
+	// script. See src/blocks/locations/render.php.
+	bridge_register_section_block('locations', true, false, array('wp-server-side-render', 'wp-data'));
+
 	bridge_register_section_block('goals', true, true);
 	// The heading weight, so the editor can draw the "Heading font" figure
 	// style the way render.php does. See src/blocks/goals/render.php.
@@ -669,6 +674,11 @@ function bridge_register_blocks(): void
 				),
 				'notifyEmail' => is_email($notify) ? $notify : '',
 				'optionsUrl'  => admin_url('admin.php?page=' . BRIDGE_SITE_OPTIONS_SLUG),
+				// For the optional fields: the consent wording a new checkbox
+				// starts with, and the location names a Location dropdown
+				// offers, so the preview shows the real choices.
+				'consentDefaults' => bridge_enquiry_consent_defaults(),
+				'locations'       => function_exists('bridge_site_locations') ? array_column(bridge_site_locations(), 'name') : array(),
 			)
 		) . ';',
 		'before'

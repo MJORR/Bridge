@@ -191,6 +191,173 @@ function bridge_enquiry_field_name(string $key): string
 }
 
 /* ---------------------------------------------------------------------------
+ * Optional fields
+ *
+ * Two dropdowns and two consent checkboxes an editor can switch on per form,
+ * from the block. All four are off by default, so a form saved before they
+ * existed draws, validates and files exactly what it always did.
+ *
+ * What a form offered travels to the server inside the signed stamp — see
+ * bridge_enquiry_stamp() — so the handler checks an answer against the choices
+ * that form actually showed, and a script cannot invent a choice or skip a
+ * required consent by editing the page.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * The default wording of the two consent checkboxes.
+ *
+ * "Privacy Policy" in the first is linked to the site's privacy page when one
+ * is set in Settings → Privacy. See bridge_enquiry_consent_html().
+ *
+ * @return array<string, string>
+ */
+function bridge_enquiry_consent_defaults(): array
+{
+	return array(
+		'consent1' => __('I consent to my data being used in accordance to the Privacy Policy.', 'bridge'),
+		'consent2' => __('I consent to my personal data being collected and stored for the purpose of marketing communications.', 'bridge'),
+	);
+}
+
+/**
+ * The optional fields a block has switched on, described for the form.
+ *
+ * Each dropdown is drawn only with at least one choice. A dropdown's choices
+ * are the editor's list, one per line, or — when its source is `locations` —
+ * the names in Site Options → Locations, read now so a new location appears
+ * in every form without anyone editing it.
+ *
+ * @param array $attributes Block attributes.
+ * @return array<string, array<string, mixed>> Keyed select1, select2, consent1, consent2.
+ */
+function bridge_enquiry_extras(array $attributes): array
+{
+	$extras = array();
+
+	$select_defaults = array(
+		'select1' => array(__('Interested in', 'bridge'), 'custom'),
+		'select2' => array(__('Location', 'bridge'), 'locations'),
+	);
+
+	foreach ($select_defaults as $key => list($default_label, $default_source)) {
+		if (empty($attributes[$key . 'Enabled'])) {
+			continue;
+		}
+
+		$source = (string) ($attributes[$key . 'Source'] ?? $default_source);
+
+		if ('locations' === $source && function_exists('bridge_site_locations')) {
+			$choices = array_column(bridge_site_locations(), 'name');
+		} else {
+			$choices = preg_split('/\R/', (string) ($attributes[$key . 'Choices'] ?? '')) ?: array();
+		}
+
+		$choices = array_values(array_unique(array_filter(array_map(
+			static fn($choice): string => trim(sanitize_text_field((string) $choice)),
+			$choices
+		))));
+
+		if (! $choices) {
+			continue;
+		}
+
+		$label = trim(sanitize_text_field((string) ($attributes[$key . 'Label'] ?? '')));
+
+		$extras[$key] = array(
+			'type'     => 'select',
+			'label'    => '' !== $label ? $label : $default_label,
+			'choices'  => array_slice($choices, 0, 50),
+			'required' => ! empty($attributes[$key . 'Required']),
+		);
+	}
+
+	$consent_defaults = bridge_enquiry_consent_defaults();
+
+	foreach (array('consent1' => true, 'consent2' => false) as $key => $default_required) {
+		if (empty($attributes[$key . 'Enabled'])) {
+			continue;
+		}
+
+		$text = trim((string) ($attributes[$key . 'Text'] ?? ''));
+
+		$extras[$key] = array(
+			'type'     => 'consent',
+			// The wording as typed, with only the tags a sentence needs. The
+			// plain version is what is filed and emailed.
+			'label'    => '' !== $text ? $text : $consent_defaults[$key],
+			'required' => (bool) ($attributes[$key . 'Required'] ?? $default_required),
+		);
+	}
+
+	return $extras;
+}
+
+/**
+ * The tags a consent sentence may carry: a link, and emphasis.
+ *
+ * @return array<string, array<string, bool>>
+ */
+function bridge_enquiry_consent_tags(): array
+{
+	return array(
+		'a'      => array('href' => true, 'target' => true, 'rel' => true),
+		'strong' => array(),
+		'em'     => array(),
+	);
+}
+
+/**
+ * Check the optional fields' answers against what the form offered.
+ *
+ * @param array $raw    Raw, unslashed submission.
+ * @param array $extras What the form offered, from the stamp.
+ * @return array{values: array<string,string>, errors: array<string,string>, rows: array<int, array{label:string, value:string}>}
+ */
+function bridge_enquiry_validate_extras(array $raw, array $extras): array
+{
+	$values = array();
+	$errors = array();
+	$rows   = array();
+
+	foreach ($extras as $key => $field) {
+		$label = wp_strip_all_tags((string) ($field['label'] ?? $key));
+
+		if ('select' === ($field['type'] ?? '')) {
+			$value = trim(sanitize_text_field((string) ($raw[$key] ?? '')));
+
+			// Only a choice the form showed. Anything else is not an answer.
+			if ('' !== $value && ! in_array($value, (array) ($field['choices'] ?? array()), true)) {
+				$value = '';
+			}
+
+			if ('' === $value && ! empty($field['required'])) {
+				/* translators: %s: the dropdown's label, e.g. "Location". */
+				$errors[$key] = sprintf(__('Please choose an option for %s.', 'bridge'), $label);
+			}
+
+			$values[$key] = $value;
+			$rows[]       = array('label' => $label, 'value' => '' !== $value ? $value : '—');
+			continue;
+		}
+
+		$checked = '1' === (string) ($raw[$key] ?? '');
+
+		if (! $checked && ! empty($field['required'])) {
+			$errors[$key] = __('Please tick this box to send the form.', 'bridge');
+		}
+
+		$values[$key] = $checked ? '1' : '';
+		$rows[]       = array('label' => $label, 'value' => $checked ? __('Yes', 'bridge') : __('No', 'bridge'));
+	}
+
+	return array(
+		'values' => $values,
+		'errors' => $errors,
+		'rows'   => $rows,
+	);
+}
+
+/* ---------------------------------------------------------------------------
  * The post type
  * ------------------------------------------------------------------------ */
 
@@ -606,14 +773,20 @@ function bridge_enquiry_spam_report(array $values, array $signals): array
  * @param bool $require_phone Whether this form requires a phone number.
  * @return array{stamp:string, signature:string}
  */
-function bridge_enquiry_stamp(bool $require_phone): array
+function bridge_enquiry_stamp(bool $require_phone, array $extras = array()): array
 {
-	$stamp = wp_json_encode(
-		array(
-			't' => time(),
-			'p' => $require_phone ? 1 : 0,
-		)
+	$data = array(
+		't' => time(),
+		'p' => $require_phone ? 1 : 0,
 	);
+
+	// Only when the form has any, so a form without them ships the stamp it
+	// always did.
+	if ($extras) {
+		$data['x'] = $extras;
+	}
+
+	$stamp = wp_json_encode($data);
 
 	$stamp = base64_encode((string) $stamp);
 
@@ -652,6 +825,7 @@ function bridge_enquiry_read_stamp(string $stamp, string $signature): ?array
 	return array(
 		't' => (int) $decoded['t'],
 		'p' => ! empty($decoded['p']),
+		'x' => isset($decoded['x']) && is_array($decoded['x']) ? $decoded['x'] : array(),
 	);
 }
 
@@ -881,12 +1055,13 @@ function bridge_process_enquiry(array $post): array
 
 	$raw       = isset($post['bridge_enquiry']) && is_array($post['bridge_enquiry']) ? $post['bridge_enquiry'] : array();
 	$validated = bridge_enquiry_validate($raw, $stamp['p']);
+	$extra     = bridge_enquiry_validate_extras($raw, $stamp['x']);
 
-	if (! empty($validated['errors'])) {
+	if (! empty($validated['errors']) || ! empty($extra['errors'])) {
 		return $fail(
 			__('Please check the highlighted fields and send the form again.', 'bridge'),
-			$validated['errors'],
-			$validated['values']
+			array_merge($validated['errors'], $extra['errors']),
+			array_merge($validated['values'], $extra['values'])
 		);
 	}
 
@@ -910,6 +1085,7 @@ function bridge_process_enquiry(array $post): array
 			'source' => isset($post['_bridge_source']) ? (string) $post['_bridge_source'] : '',
 			'held'   => $held,
 			'report' => $report,
+			'extra'  => $extra['rows'],
 		)
 	);
 
@@ -923,7 +1099,7 @@ function bridge_process_enquiry(array $post): array
 	bridge_enquiry_note_send();
 
 	if (! $held) {
-		bridge_notify_enquiry((int) $post_id, $validated['values']);
+		bridge_notify_enquiry((int) $post_id, $validated['values'], $extra['rows']);
 	}
 
 	return array(
@@ -991,6 +1167,12 @@ function bridge_store_enquiry(array $values, array $args)
 
 	foreach ($meta as $key => $value) {
 		update_post_meta((int) $post_id, $key, $value);
+	}
+
+	// The optional fields' answers, as label and value, in the order the form
+	// asked them — the label as it read on the form that day.
+	if (! empty($args['extra'])) {
+		update_post_meta((int) $post_id, 'bridge_enquiry_extra', array_values((array) $args['extra']));
 	}
 
 	if ($held) {
@@ -1129,21 +1311,46 @@ function bridge_enquiry_email_shell(string $heading, string $body): string
 }
 
 /**
+ * Every answer worth showing, as label => value: the four fields that were
+ * filled in, then the optional fields the form asked.
+ *
+ * @param array $values Cleaned field values.
+ * @param array $extra  Rows from bridge_enquiry_validate_extras().
+ * @return array<string, string>
+ */
+function bridge_enquiry_rows(array $values, array $extra = array()): array
+{
+	$rows = array();
+
+	foreach (bridge_enquiry_fields() as $key => $field) {
+		$value = (string) ($values[$key] ?? '');
+
+		if ('' !== $value) {
+			$rows[(string) $field['label']] = $value;
+		}
+	}
+
+	foreach ($extra as $row) {
+		if (is_array($row) && '' !== (string) ($row['label'] ?? '')) {
+			$rows[(string) $row['label']] = (string) ($row['value'] ?? '');
+		}
+	}
+
+	return $rows;
+}
+
+/**
  * The submitted answers, as rows of a table.
  *
  * @param array $values Cleaned field values.
  * @return string
  */
-function bridge_enquiry_email_rows(array $values): string
+function bridge_enquiry_email_rows(array $values, array $extra = array()): string
 {
 	$rows = '';
 
-	foreach (bridge_enquiry_fields() as $key => $field) {
-		$value = (string) ($values[$key] ?? '');
-
-		if ('' === $value) {
-			continue;
-		}
+	foreach (bridge_enquiry_rows($values, $extra) as $label => $value) {
+		$field = array('label' => $label);
 
 		$rows .= sprintf(
 			'<tr>' .
@@ -1166,18 +1373,12 @@ function bridge_enquiry_email_rows(array $values): string
  * @param array $values Cleaned field values.
  * @return string
  */
-function bridge_enquiry_text_rows(array $values): string
+function bridge_enquiry_text_rows(array $values, array $extra = array()): string
 {
 	$lines = array();
 
-	foreach (bridge_enquiry_fields() as $key => $field) {
-		$value = (string) ($values[$key] ?? '');
-
-		if ('' === $value) {
-			continue;
-		}
-
-		$lines[] = $field['label'] . ': ' . $value;
+	foreach (bridge_enquiry_rows($values, $extra) as $label => $value) {
+		$lines[] = $label . ': ' . $value;
 	}
 
 	return implode("\n", $lines);
@@ -1193,7 +1394,7 @@ function bridge_enquiry_text_rows(array $values): string
  * @param int   $post_id Stored enquiry.
  * @param array $values  Cleaned field values.
  */
-function bridge_notify_enquiry(int $post_id, array $values): void
+function bridge_notify_enquiry(int $post_id, array $values, array $extra = array()): void
 {
 	$site = wp_specialchars_decode((string) get_bloginfo('name'), ENT_QUOTES);
 
@@ -1202,7 +1403,7 @@ function bridge_notify_enquiry(int $post_id, array $values): void
 	$body = '<p style="margin:0 0 18px;">' .
 		esc_html__('A new enquiry has come in through the website.', 'bridge') .
 		'</p>' .
-		bridge_enquiry_email_rows($values) .
+		bridge_enquiry_email_rows($values, $extra) .
 		sprintf(
 			'<p style="margin:24px 0 0;"><a href="%1$s" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:6px;font-size:14px;font-weight:600;">%2$s</a></p>',
 			esc_url(get_edit_post_link($post_id, 'raw') ?? admin_url()),
@@ -1210,7 +1411,7 @@ function bridge_notify_enquiry(int $post_id, array $values): void
 		);
 
 	$text = __('A new enquiry has come in through the website.', 'bridge') . "\n\n" .
-		bridge_enquiry_text_rows($values) . "\n\n" .
+		bridge_enquiry_text_rows($values, $extra) . "\n\n" .
 		(string) get_edit_post_link($post_id, 'raw');
 
 	bridge_enquiry_mail(
@@ -1246,7 +1447,7 @@ function bridge_notify_enquiry(int $post_id, array $values): void
 			esc_html($site)
 		),
 		esc_html__('For your records, this is what you sent us:', 'bridge'),
-		bridge_enquiry_email_rows($values)
+		bridge_enquiry_email_rows($values, $extra)
 	);
 
 	$thanks_text = sprintf(
@@ -1260,7 +1461,7 @@ function bridge_notify_enquiry(int $post_id, array $values): void
 			$site
 		) . "\n\n" .
 		__('For your records, this is what you sent us:', 'bridge') . "\n\n" .
-		bridge_enquiry_text_rows($values);
+		bridge_enquiry_text_rows($values, $extra);
 
 	bridge_enquiry_mail(
 		sprintf('%s <%s>', $values['name'], $values['email']),
@@ -1605,6 +1806,15 @@ function bridge_render_enquiry_meta_box(WP_Post $post): void
 		<?php echo '' === $phone ? '&mdash;' : esc_html($phone); ?>
 	</p>
 
+	<?php foreach ((array) get_post_meta($post->ID, 'bridge_enquiry_extra', true) as $bridge_row) : ?>
+		<?php if (is_array($bridge_row) && '' !== (string) ($bridge_row['label'] ?? '')) : ?>
+			<p>
+				<strong><?php echo esc_html((string) $bridge_row['label']); ?></strong><br>
+				<?php echo esc_html((string) ($bridge_row['value'] ?? '')); ?>
+			</p>
+		<?php endif; ?>
+	<?php endforeach; ?>
+
 	<p>
 		<strong><?php esc_html_e('Sent from', 'bridge'); ?></strong><br>
 		<?php if ('' !== $source) : ?>
@@ -1765,6 +1975,111 @@ function bridge_enquiry_field_html(string $key, array $field, array $args): stri
 }
 
 /**
+ * One optional dropdown, drawn the way the four fields are.
+ *
+ * @param string $key   select1 or select2.
+ * @param array  $field From bridge_enquiry_extras().
+ * @param array  $args  form_id, value, error.
+ * @return string
+ */
+function bridge_enquiry_select_html(string $key, array $field, array $args): string
+{
+	$id       = $args['form_id'] . '-' . $key;
+	$error    = (string) ($args['error'] ?? '');
+	$value    = (string) ($args['value'] ?? '');
+	$required = ! empty($field['required']);
+
+	$options = sprintf('<option value="">%s</option>', esc_html__('Please choose…', 'bridge'));
+
+	foreach ((array) $field['choices'] as $choice) {
+		$options .= sprintf(
+			'<option value="%1$s"%2$s>%1$s</option>',
+			esc_attr((string) $choice),
+			selected($value, (string) $choice, false)
+		);
+	}
+
+	return sprintf(
+		'<p class="bridge-field bridge-field--%1$s bridge-field--select%2$s">' .
+			'<label class="bridge-field__label" for="%3$s">%4$s%5$s</label>' .
+			'<select class="bridge-field__control" id="%3$s" name="%6$s"%7$s%8$s>%9$s</select>' .
+			'%10$s' .
+			'</p>',
+		esc_attr($key),
+		'' !== $error ? ' is-invalid' : '',
+		esc_attr($id),
+		esc_html((string) $field['label']),
+		$required ? '<span class="bridge-field__required" aria-hidden="true">*</span>' : '',
+		esc_attr(bridge_enquiry_field_name($key)),
+		$required ? ' required' : '',
+		'' !== $error ? sprintf(' aria-invalid="true" aria-describedby="%s"', esc_attr($id . '-error')) : '',
+		$options, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped above.
+		'' !== $error ? sprintf('<span class="bridge-field__error" id="%s">%s</span>', esc_attr($id . '-error'), esc_html($error)) : ''
+	);
+}
+
+/**
+ * A consent sentence as markup: the editor's links and emphasis kept, and
+ * "Privacy Policy" linked to the site's privacy page when the sentence has no
+ * link of its own and a privacy page is set.
+ *
+ * @param string $text The sentence.
+ * @return string
+ */
+function bridge_enquiry_consent_html(string $text): string
+{
+	$html = wp_kses($text, bridge_enquiry_consent_tags());
+
+	if (false === stripos($html, '<a ')) {
+		$privacy = get_privacy_policy_url();
+
+		if ('' !== $privacy) {
+			$html = preg_replace(
+				'/' . preg_quote(esc_html__('Privacy Policy', 'bridge'), '/') . '/',
+				sprintf('<a href="%s">$0</a>', esc_url($privacy)),
+				$html,
+				1
+			) ?? $html;
+		}
+	}
+
+	return $html;
+}
+
+/**
+ * One optional consent checkbox.
+ *
+ * @param string $key   consent1 or consent2.
+ * @param array  $field From bridge_enquiry_extras().
+ * @param array  $args  form_id, value, error.
+ * @return string
+ */
+function bridge_enquiry_consent_field_html(string $key, array $field, array $args): string
+{
+	$id       = $args['form_id'] . '-' . $key;
+	$error    = (string) ($args['error'] ?? '');
+	$required = ! empty($field['required']);
+
+	return sprintf(
+		'<p class="bridge-field bridge-field--%1$s bridge-field--consent%2$s">' .
+			'<input class="bridge-field__control" type="checkbox" id="%3$s" name="%4$s" value="1"%5$s%6$s%7$s>' .
+			'<label class="bridge-field__label" for="%3$s">%8$s%9$s</label>' .
+			'%10$s' .
+			'</p>',
+		esc_attr($key),
+		'' !== $error ? ' is-invalid' : '',
+		esc_attr($id),
+		esc_attr(bridge_enquiry_field_name($key)),
+		checked('1', (string) ($args['value'] ?? ''), false),
+		$required ? ' required' : '',
+		'' !== $error ? sprintf(' aria-invalid="true" aria-describedby="%s"', esc_attr($id . '-error')) : '',
+		bridge_enquiry_consent_html((string) $field['label']), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — wp_kses above.
+		$required ? '<span class="bridge-field__required" aria-hidden="true">*</span>' : '',
+		'' !== $error ? sprintf('<span class="bridge-field__error" id="%s">%s</span>', esc_attr($id . '-error'), esc_html($error)) : ''
+	);
+}
+
+/**
  * The panel a visitor sees once their message has gone.
  *
  * Replaces the form rather than sitting above it. A form still standing under
@@ -1816,9 +2131,24 @@ function bridge_enquiry_form_html(array $args): string
 	$values = (array) ($response['values'] ?? array());
 	$notice = (string) ($response['notice'] ?? '');
 
+	$extras = (array) ($args['extras'] ?? array());
 	$fields = '';
+	$field_args = static fn(string $key): array => array(
+		'form_id' => $form_id,
+		'value'   => (string) ($values[$key] ?? ''),
+		'error'   => (string) ($errors[$key] ?? ''),
+	);
 
 	foreach (bridge_enquiry_fields() as $key => $field) {
+		// The two dropdowns sit between the contact details and the message.
+		if ('message' === $key) {
+			foreach (array('select1', 'select2') as $select) {
+				if (isset($extras[$select])) {
+					$fields .= bridge_enquiry_select_html($select, $extras[$select], $field_args($select));
+				}
+			}
+		}
+
 		$fields .= bridge_enquiry_field_html(
 			$key,
 			$field,
@@ -1831,7 +2161,32 @@ function bridge_enquiry_form_html(array $args): string
 		);
 	}
 
-	$stamp = bridge_enquiry_stamp($require_phone);
+	// The consent checkboxes, together, after the message.
+	$consents = '';
+
+	foreach (array('consent1', 'consent2') as $consent) {
+		if (isset($extras[$consent])) {
+			$consents .= bridge_enquiry_consent_field_html($consent, $extras[$consent], $field_args($consent));
+		}
+	}
+
+	if ('' !== $consents) {
+		$fields .= '<div class="bridge-contact__consents">' . $consents . '</div>';
+	}
+
+	// Grid modifiers, only when asked for — a form without them keeps the
+	// markup it always had.
+	$grid_class = 'bridge-contact__grid';
+
+	if ('rows' === ($args['layout'] ?? '')) {
+		$grid_class .= ' bridge-contact__grid--rows';
+
+		if ('' !== $consents) {
+			$grid_class .= ' bridge-contact__grid--has-consents';
+		}
+	}
+
+	$stamp = bridge_enquiry_stamp($require_phone, $extras);
 
 	$hidden = array(
 		'action'            => BRIDGE_ENQUIRY_ACTION,
@@ -1896,7 +2251,7 @@ function bridge_enquiry_form_html(array $args): string
 	return sprintf(
 		'<form class="bridge-contact__form" id="%1$s" method="post" action="%2$s" data-bridge-enquiry>' .
 			'%3$s%4$s%5$s' .
-			'<div class="bridge-contact__grid">%6$s</div>' .
+			'<div class="%10$s">%6$s</div>' .
 			'<div class="bridge-contact__actions">' .
 			'<button type="submit" class="wp-element-button bridge-contact__submit">' .
 			'<span class="bridge-contact__submit-label">%7$s</span>' .
@@ -1914,6 +2269,7 @@ function bridge_enquiry_form_html(array $args): string
 		esc_html((string) $args['button_label']),
 		esc_html__('* Required. We only use these details to answer your enquiry.', 'bridge'),
 		// Waiting beside the form, for the script to reveal in place of it.
-		bridge_enquiry_success_html($success, true) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — assembled from escaped parts above.
+		bridge_enquiry_success_html($success, true), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — assembled from escaped parts above.
+		esc_attr($grid_class)
 	);
 }

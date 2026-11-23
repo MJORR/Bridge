@@ -238,6 +238,11 @@ function bridge_site_options_defaults(): array
 
 	$defaults['social'] = array_fill_keys(array_keys(bridge_social_networks()), '');
 
+	// The business's locations: practices, offices, branches. Empty until
+	// someone adds one, so a site with a single address never sees a change.
+	// See inc/locations.php.
+	$defaults['locations'] = array();
+
 	return $defaults;
 }
 
@@ -429,6 +434,12 @@ function bridge_sanitize_site_options($input): array
 		$clean['social'][$slug] = $safe;
 	}
 
+	// Re-indexed, and rows with no name dropped: a row added and left blank
+	// is not a location.
+	$clean['locations'] = function_exists('bridge_sanitize_locations')
+		? bridge_sanitize_locations($input['locations'] ?? array())
+		: array();
+
 	return $clean;
 }
 
@@ -498,6 +509,12 @@ function bridge_enqueue_site_options(string $hook_suffix): void
 			. 'border:1px solid #dcdcde;border-radius:4px;background:#f6f7f7}'
 			. '.bridge-media__preview img{max-inline-size:100%;block-size:auto;display:block}'
 			. '.bridge-media__actions{display:flex;gap:.5rem;align-items:center;margin:0}'
+			. '.bridge-location{max-inline-size:52rem;margin:0 0 1rem;padding:.75rem 1rem 1rem;border:1px solid #dcdcde;border-radius:4px;background:#fff}'
+			. '.bridge-location__legend{padding:0 .25rem;font-weight:600}'
+			. '.bridge-location__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));align-items:start;gap:.5rem 1rem}'
+			. '.bridge-location__field{margin:0}.bridge-location__field label{display:block;margin-block-end:.25rem;font-weight:500}'
+			. '.bridge-location__field input,.bridge-location__field textarea{inline-size:100%}'
+			. '.bridge-location__actions{display:flex;gap:.5rem;align-items:center;margin:.75rem 0 0}'
 	);
 }
 add_action('admin_enqueue_scripts', 'bridge_enqueue_site_options');
@@ -608,6 +625,85 @@ function bridge_site_options_field(string $key, array $field, array $value): voi
 }
 
 /**
+ * The Locations section: one block of fields per location, with buttons to
+ * add, reorder and remove them.
+ *
+ * The rows are plain form fields named `locations[n][field]`, so the form
+ * submits them like any other and the sanitiser re-indexes them. The buttons
+ * are src/admin/site-options.js; without it the saved rows still edit, and an
+ * empty row is always printed at the end to add one more.
+ *
+ * @param array<int, array<string, string>> $locations Saved locations.
+ */
+function bridge_site_options_locations(array $locations): void
+{
+	$fields = bridge_location_fields();
+
+	// One blank row on a site with none, so the section is not empty.
+	if (! $locations) {
+		$locations = array(array());
+	}
+
+	$row = static function ($index, array $location) use ($fields): void {
+		?>
+		<fieldset class="bridge-location" data-bridge-location>
+			<legend class="bridge-location__legend">
+				<span data-bridge-location-title><?php echo esc_html('' !== ($location['name'] ?? '') ? $location['name'] : __('New location', 'bridge')); ?></span>
+			</legend>
+			<div class="bridge-location__grid">
+				<?php foreach ($fields as $key => $label) : ?>
+					<?php
+					$name = BRIDGE_SITE_OPTIONS_KEY . '[locations][' . $index . '][' . $key . ']';
+					$id   = 'bridge-location-' . $index . '-' . $key;
+					$val  = (string) ($location[$key] ?? '');
+					?>
+					<p class="bridge-location__field bridge-location__field--<?php echo esc_attr($key); ?>">
+						<label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?></label>
+						<?php if ('address' === $key) : ?>
+							<textarea id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name); ?>" rows="3" class="large-text"><?php echo esc_textarea($val); ?></textarea>
+						<?php else : ?>
+							<input
+								type="<?php echo esc_attr('email' === $key ? 'email' : ('url' === $key ? 'url' : 'text')); ?>"
+								id="<?php echo esc_attr($id); ?>"
+								name="<?php echo esc_attr($name); ?>"
+								value="<?php echo esc_attr($val); ?>"
+								class="regular-text"
+								<?php echo 'name' === $key ? 'data-bridge-location-name' : ''; ?>
+								<?php echo 'url' === $key ? 'placeholder="https://"' : ''; ?>>
+						<?php endif; ?>
+					</p>
+				<?php endforeach; ?>
+			</div>
+			<p class="bridge-location__actions">
+				<button type="button" class="button button-small" data-bridge-location-up><?php esc_html_e('Move up', 'bridge'); ?></button>
+				<button type="button" class="button button-small" data-bridge-location-down><?php esc_html_e('Move down', 'bridge'); ?></button>
+				<button type="button" class="button-link button-link-delete" data-bridge-location-remove><?php esc_html_e('Remove', 'bridge'); ?></button>
+			</p>
+		</fieldset>
+		<?php
+	};
+	?>
+	<h2><?php esc_html_e('Locations', 'bridge'); ?></h2>
+	<p class="description" style="max-width:46rem">
+		<?php esc_html_e('Each practice, office or branch, entered once. The Locations block, the Hybrid footer\'s locations bar and the header\'s Locations dropdown all read this list. Only the name is required; a location with no name is not saved. The page link is what the header dropdown and the name link to.', 'bridge'); ?>
+	</p>
+	<div class="bridge-locations-admin" data-bridge-locations data-name="<?php echo esc_attr(BRIDGE_SITE_OPTIONS_KEY); ?>">
+		<?php
+		foreach (array_values($locations) as $index => $location) {
+			$row($index, (array) $location);
+		}
+		?>
+	</div>
+	<template data-bridge-location-template>
+		<?php $row('__INDEX__', array()); ?>
+	</template>
+	<p>
+		<button type="button" class="button" data-bridge-location-add><?php esc_html_e('Add location', 'bridge'); ?></button>
+	</p>
+	<?php
+}
+
+/**
  * Render the screen.
  */
 function bridge_render_site_options_page(): void
@@ -645,6 +741,8 @@ function bridge_render_site_options_page(): void
 					?>
 				</tbody>
 			</table>
+
+			<?php bridge_site_options_locations((array) ($value['locations'] ?? array())); ?>
 
 			<h2><?php esc_html_e('Notifications', 'bridge'); ?></h2>
 			<table class="form-table" role="presentation">

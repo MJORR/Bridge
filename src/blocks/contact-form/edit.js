@@ -29,6 +29,115 @@ const { __, sprintf } = window.wp.i18n;
 
 const DATA = window.bridgeContactForm || {};
 const FIELDS = Array.isArray(DATA.fields) ? DATA.fields : [];
+const CONSENT_DEFAULTS = DATA.consentDefaults || {};
+const LOCATIONS = Array.isArray(DATA.locations) ? DATA.locations : [];
+
+const SELECT_DEFAULTS = {
+	select1: __('Interested in', 'bridge'),
+	select2: __('Location', 'bridge'),
+};
+
+/**
+ * A dropdown's choices, as render.php will draw them.
+ *
+ * @param {Object} attributes Block attributes.
+ * @param {string} key        select1 or select2.
+ * @return {string[]} Choices.
+ */
+const selectChoices = (attributes, key) =>
+	attributes[`${key}Source`] === 'locations'
+		? LOCATIONS
+		: (attributes[`${key}Choices`] || '')
+				.split('\n')
+				.map((choice) => choice.trim())
+				.filter(Boolean);
+
+/**
+ * An inert dropdown for the preview.
+ *
+ * @param {Object} attributes Block attributes.
+ * @param {string} key        select1 or select2.
+ * @return {Object|null} Element, or nothing when it would not be drawn.
+ */
+const previewSelect = (attributes, key) => {
+	const choices = selectChoices(attributes, key);
+
+	if (!attributes[`${key}Enabled`] || !choices.length) {
+		return null;
+	}
+
+	return el(
+		'p',
+		{
+			className: `bridge-field bridge-field--${key} bridge-field--select`,
+			key,
+		},
+		el(
+			'span',
+			{ className: 'bridge-field__label' },
+			attributes[`${key}Label`] || SELECT_DEFAULTS[key],
+			attributes[`${key}Required`] &&
+				el(
+					'span',
+					{
+						className: 'bridge-field__required',
+						'aria-hidden': true,
+					},
+					'*'
+				)
+		),
+		el(
+			'select',
+			{
+				className: 'bridge-field__control',
+				disabled: true,
+				tabIndex: -1,
+			},
+			el('option', null, __('Please choose…', 'bridge'))
+		)
+	);
+};
+
+/**
+ * An inert consent checkbox for the preview.
+ *
+ * @param {Object} attributes Block attributes.
+ * @param {string} key        consent1 or consent2.
+ * @return {Object|null} Element.
+ */
+const previewConsent = (attributes, key) =>
+	attributes[`${key}Enabled`]
+		? el(
+				'p',
+				{
+					className: `bridge-field bridge-field--${key} bridge-field--consent`,
+					key,
+				},
+				el('input', {
+					className: 'bridge-field__control',
+					type: 'checkbox',
+					disabled: true,
+					tabIndex: -1,
+				}),
+				el(
+					'span',
+					{ className: 'bridge-field__label' },
+					(attributes[`${key}Text`] || CONSENT_DEFAULTS[key] || '')
+						// The preview shows the words; links are drawn on
+						// the page.
+						.replace(/<[^>]+>/g, ''),
+					attributes[`${key}Required`] &&
+						el(
+							'span',
+							{
+								className: 'bridge-field__required',
+								'aria-hidden': true,
+							},
+							'*'
+						)
+				)
+			)
+		: null;
 
 const TEMPLATE = [
 	['core/heading', { level: 2, placeholder: __('Get in touch', 'bridge') }],
@@ -92,8 +201,140 @@ const previewField = (field, required) =>
 	);
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { width, panel, requirePhone, buttonLabel, successMessage } =
-		attributes;
+	const {
+		width,
+		panel,
+		requirePhone,
+		buttonLabel,
+		successMessage,
+		fieldLayout = 'stacked',
+	} = attributes;
+
+	const hasConsents = !!(
+		attributes.consent1Enabled || attributes.consent2Enabled
+	);
+
+	// One dropdown's controls.
+	const selectPanel = (key, title) =>
+		el(
+			PanelBody,
+			{ title, initialOpen: false },
+			el(ToggleControl, {
+				label: __('Show this dropdown', 'bridge'),
+				checked: !!attributes[`${key}Enabled`],
+				onChange: (value) =>
+					setAttributes({ [`${key}Enabled`]: value }),
+				__nextHasNoMarginBottom: true,
+			}),
+			attributes[`${key}Enabled`] &&
+				el(
+					Fragment,
+					null,
+					el(TextControl, {
+						label: __('Label', 'bridge'),
+						value: attributes[`${key}Label`],
+						placeholder: SELECT_DEFAULTS[key],
+						onChange: (value) =>
+							setAttributes({ [`${key}Label`]: value }),
+						__nextHasNoMarginBottom: true,
+					}),
+					el(SelectControl, {
+						label: __('Choices from', 'bridge'),
+						value: attributes[`${key}Source`],
+						options: [
+							{
+								label: __('The list below', 'bridge'),
+								value: 'custom',
+							},
+							{
+								label: __('Site Options → Locations', 'bridge'),
+								value: 'locations',
+							},
+						],
+						onChange: (value) =>
+							setAttributes({ [`${key}Source`]: value }),
+						help:
+							attributes[`${key}Source`] === 'locations'
+								? sprintf(
+										/* translators: %s: list of location names. */
+										__('Currently: %s', 'bridge'),
+										LOCATIONS.join(', ') ||
+											__('no locations yet', 'bridge')
+									)
+								: undefined,
+						__nextHasNoMarginBottom: true,
+					}),
+					attributes[`${key}Source`] !== 'locations' &&
+						el(TextareaControl, {
+							label: __('Choices', 'bridge'),
+							help: __(
+								'One per line. The dropdown is hidden until it has at least one.',
+								'bridge'
+							),
+							value: attributes[`${key}Choices`],
+							rows: 5,
+							onChange: (value) =>
+								setAttributes({ [`${key}Choices`]: value }),
+							__nextHasNoMarginBottom: true,
+						}),
+					el(ToggleControl, {
+						label: __('Required', 'bridge'),
+						checked: !!attributes[`${key}Required`],
+						onChange: (value) =>
+							setAttributes({ [`${key}Required`]: value }),
+						__nextHasNoMarginBottom: true,
+					})
+				)
+		);
+
+	// One consent checkbox's controls. Switching it on fills in the standard
+	// wording, so it can be edited rather than retyped.
+	const consentPanel = (key, title) =>
+		el(
+			PanelBody,
+			{ title, initialOpen: false },
+			el(ToggleControl, {
+				label: __('Show this checkbox', 'bridge'),
+				checked: !!attributes[`${key}Enabled`],
+				onChange: (value) =>
+					setAttributes({
+						[`${key}Enabled`]: value,
+						...(value && !attributes[`${key}Text`]
+							? { [`${key}Text`]: CONSENT_DEFAULTS[key] || '' }
+							: {}),
+					}),
+				__nextHasNoMarginBottom: true,
+			}),
+			attributes[`${key}Enabled`] &&
+				el(
+					Fragment,
+					null,
+					el(TextareaControl, {
+						label: __('Text', 'bridge'),
+						help: __(
+							'“Privacy Policy” links to the privacy page set in Settings → Privacy. A link of your own can be written as <a href="…">…</a>.',
+							'bridge'
+						),
+						value: attributes[`${key}Text`],
+						placeholder: CONSENT_DEFAULTS[key],
+						rows: 3,
+						onChange: (value) =>
+							setAttributes({ [`${key}Text`]: value }),
+						__nextHasNoMarginBottom: true,
+					}),
+					el(ToggleControl, {
+						label: __('Required', 'bridge'),
+						help: __(
+							'The form cannot be sent until it is ticked.',
+							'bridge'
+						),
+						checked: !!attributes[`${key}Required`],
+						onChange: (value) =>
+							setAttributes({ [`${key}Required`]: value }),
+						__nextHasNoMarginBottom: true,
+					})
+				)
+		);
 
 	const blockProps = useBlockProps({
 		className: [
@@ -131,6 +372,26 @@ const Edit = ({ attributes, setAttributes }) => {
 						{ label: __('Wide', 'bridge'), value: 'wide' },
 					],
 					onChange: (value) => setAttributes({ width: value }),
+					__nextHasNoMarginBottom: true,
+				}),
+				el(SelectControl, {
+					label: __('Field layout', 'bridge'),
+					value: fieldLayout,
+					options: [
+						{ label: __('Stacked', 'bridge'), value: 'stacked' },
+						{ label: __('Rows', 'bridge'), value: 'rows' },
+					],
+					help:
+						fieldLayout === 'rows'
+							? __(
+									'On a wide screen: name, email and phone in one row; the dropdowns in two columns; the message beside the checkboxes.',
+									'bridge'
+								)
+							: __(
+									'Name and email side by side, then each field on its own row.',
+									'bridge'
+								),
+					onChange: (value) => setAttributes({ fieldLayout: value }),
 					__nextHasNoMarginBottom: true,
 				}),
 				el(ToggleControl, {
@@ -182,6 +443,10 @@ const Edit = ({ attributes, setAttributes }) => {
 					__nextHasNoMarginBottom: true,
 				})
 			),
+			selectPanel('select1', __('Dropdown 1', 'bridge')),
+			selectPanel('select2', __('Dropdown 2', 'bridge')),
+			consentPanel('consent1', __('Checkbox 1', 'bridge')),
+			consentPanel('consent2', __('Checkbox 2', 'bridge')),
 			el(
 				PanelBody,
 				{
@@ -242,15 +507,46 @@ const Edit = ({ attributes, setAttributes }) => {
 						},
 						el(
 							'div',
-							{ className: 'bridge-contact__grid' },
-							FIELDS.map((field) =>
+							{
+								className: [
+									'bridge-contact__grid',
+									fieldLayout === 'rows'
+										? 'bridge-contact__grid--rows'
+										: '',
+									fieldLayout === 'rows' && hasConsents
+										? 'bridge-contact__grid--has-consents'
+										: '',
+								]
+									.filter(Boolean)
+									.join(' '),
+							},
+							FIELDS.flatMap((field) => [
+								...(field.key === 'message'
+									? [
+											previewSelect(
+												attributes,
+												'select1'
+											),
+											previewSelect(
+												attributes,
+												'select2'
+											),
+										]
+									: []),
 								previewField(
 									field,
 									'phone' === field.key
 										? !!requirePhone
 										: !!field.required
+								),
+							]).filter(Boolean),
+							hasConsents &&
+								el(
+									'div',
+									{ className: 'bridge-contact__consents' },
+									previewConsent(attributes, 'consent1'),
+									previewConsent(attributes, 'consent2')
 								)
-							)
 						),
 						el(
 							'div',

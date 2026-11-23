@@ -225,6 +225,27 @@ $bridge_wrapper = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $bridge_wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core. ?>>
+	<?php
+	// The Hybrid footer's locations bar: the Site Options list, above the
+	// columns. Drawn only when switched on and there is a location to show.
+	if ( $bridge_hybrid && ! empty( $bridge_footer['locations']['enabled'] ) && function_exists( 'bridge_locations_list' ) ) {
+		$bridge_loc_list = bridge_locations_list( bridge_site_locations(), ! empty( $bridge_footer['locations']['showAddress'] ) );
+
+		if ( '' !== $bridge_loc_list ) {
+			list( $bridge_loc_classes, $bridge_loc_style ) = bridge_locations_band( $bridge_footer['locations'] );
+
+			// The block's stylesheet, which the footer is not a block page of.
+			wp_enqueue_style( 'bridge-locations-style' );
+
+			printf(
+				'<div class="%1$s bridge-footer__locations"%2$s>%3$s</div>',
+				esc_attr( $bridge_loc_classes ),
+				'' !== $bridge_loc_style ? ' style="' . esc_attr( $bridge_loc_style ) . '"' : '',
+				$bridge_loc_list // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts.
+			);
+		}
+	}
+	?>
 	<div class="bridge-footer__body<?php echo esc_attr( $bridge_mask_class ); ?>"<?php echo '' !== $bridge_mask_style ? ' style="' . esc_attr( $bridge_mask_style ) . '"' : ''; ?>>
 		<div class="bridge-footer__inner">
 			<div class="bridge-footer__col bridge-footer__col--identity">

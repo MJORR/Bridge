@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/contact-form",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"title": "Contact Form",
 	"category": "design",
 	"icon": "email-alt",
@@ -35,6 +35,77 @@
 		"successMessage": {
 			"type": "string",
 			"default": ""
+		},
+		"fieldLayout": {
+			"type": "string",
+			"enum": ["stacked", "rows"],
+			"default": "stacked"
+		},
+		"select1Enabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"select1Label": {
+			"type": "string",
+			"default": ""
+		},
+		"select1Source": {
+			"type": "string",
+			"enum": ["custom", "locations"],
+			"default": "custom"
+		},
+		"select1Choices": {
+			"type": "string",
+			"default": ""
+		},
+		"select1Required": {
+			"type": "boolean",
+			"default": false
+		},
+		"select2Enabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"select2Label": {
+			"type": "string",
+			"default": ""
+		},
+		"select2Source": {
+			"type": "string",
+			"enum": ["custom", "locations"],
+			"default": "locations"
+		},
+		"select2Choices": {
+			"type": "string",
+			"default": ""
+		},
+		"select2Required": {
+			"type": "boolean",
+			"default": false
+		},
+		"consent1Enabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"consent1Text": {
+			"type": "string",
+			"default": ""
+		},
+		"consent1Required": {
+			"type": "boolean",
+			"default": true
+		},
+		"consent2Enabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"consent2Text": {
+			"type": "string",
+			"default": ""
+		},
+		"consent2Required": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"example": {

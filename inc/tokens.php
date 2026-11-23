@@ -1540,6 +1540,7 @@ function bridge_token_constraints(): array
 			// but the options screen lists them in this order.
 			'style'           => array('options' => array('simple', 'columns', 'hybrid')),
 			'ctaStyle'        => array('options' => array('outline', 'fill')),
+			'locationsNameSize' => array('options' => array('large', 'x-large')),
 			'backgroundColor' => array('options' => array_keys(bridge_palette_slugs())),
 			// How far the copyright row is pushed off the footer's own colour.
 			// Signed, because the answer runs in both directions from one
@@ -1795,7 +1796,10 @@ function bridge_token_defaults(): array
 			// a practice's branches, a firm's offices. Off unless switched on,
 			// and drawn only once its menu has links in it. An empty label is
 			// the theme's own wording, "Locations".
-			'locations'       => array('enabled' => false, 'label' => ''),
+			// `source`: `menu` reads the dropdown's links from the menu chosen
+			// below, as it always has; `site` reads them from the locations in
+			// Site Options. Menu by default, so a site that set one keeps it.
+			'locations'       => array('enabled' => false, 'label' => '', 'source' => 'menu'),
 			// The three colours the menu bar paints that are not the header's own
 			// ground: the surface under a hovered item, the dropdown that hangs
 			// off it, and the mark that lights the item you are on. Defaults are
@@ -1876,6 +1880,16 @@ function bridge_token_defaults(): array
 			// column. Off until switched on, and drawn only with a label and a
 			// link — the same rule the header's call to action follows.
 			'cta'             => array('enabled' => false, 'label' => '', 'url' => '', 'style' => 'outline'),
+			// The Hybrid footer's locations bar, above the columns, reading the
+			// list in Site Options. Off by default. An empty background is the
+			// footer's own colour; an empty border is no line.
+			'locations'       => array(
+				'enabled'     => false,
+				'background'  => '',
+				'borderColor' => '',
+				'nameSize'    => 'large',
+				'showAddress' => false,
+			),
 		),
 		// Deviations from the theme's curated block set, not the set itself.
 		// Storing the whole list would freeze it: a block added by a later
@@ -2818,6 +2832,7 @@ function bridge_sanitize_tokens(array $raw): array
 		'locations'       => array(
 			'enabled' => ! empty($raw_header['locations']['enabled']),
 			'label'   => sanitize_text_field((string) ($raw_header['locations']['label'] ?? '')),
+			'source'  => 'site' === ($raw_header['locations']['source'] ?? '') ? 'site' : 'menu',
 		),
 		// Not a setting any more, and pinned rather than merely hidden.
 		//
@@ -2861,6 +2876,7 @@ function bridge_sanitize_tokens(array $raw): array
 
 	$raw_footer_menus = isset($raw_footer['menus']) && is_array($raw_footer['menus']) ? $raw_footer['menus'] : array();
 	$raw_footer_cta   = isset($raw_footer['cta']) && is_array($raw_footer['cta']) ? $raw_footer['cta'] : array();
+	$raw_footer_loc   = isset($raw_footer['locations']) && is_array($raw_footer['locations']) ? $raw_footer['locations'] : array();
 
 	// `quick` was this slot's name while the footer's first menu column was
 	// headed "Quick Links". Read when the new key is absent *or* zero, for the
@@ -2913,6 +2929,13 @@ function bridge_sanitize_tokens(array $raw): array
 			'label'   => sanitize_text_field((string) ($raw_footer_cta['label'] ?? '')),
 			'url'     => esc_url_raw((string) ($raw_footer_cta['url'] ?? '')),
 			'style'   => bridge_pick_token('footer', 'ctaStyle', $raw_footer_cta['style'] ?? '', $defaults['footer']['cta']['style']),
+		),
+		'locations'       => array(
+			'enabled'     => ! empty($raw_footer_loc['enabled']),
+			'background'  => bridge_pick_palette_slug($raw_footer_loc['background'] ?? '', ''),
+			'borderColor' => bridge_pick_palette_slug($raw_footer_loc['borderColor'] ?? '', ''),
+			'nameSize'    => bridge_pick_token('footer', 'locationsNameSize', $raw_footer_loc['nameSize'] ?? '', $defaults['footer']['locations']['nameSize']),
+			'showAddress' => ! empty($raw_footer_loc['showAddress']),
 		),
 		// Stored under the attribute names the section blocks use, so the
 		// footer hands this group to bridge_band_mask() as it stands.

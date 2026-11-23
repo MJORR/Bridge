@@ -1,0 +1,98 @@
+/**
+ * Bridge — Locations.
+ *
+ * A row of locations. Each is a place name in the heading face with its phone
+ * and email stacked beside it, close to it; the locations themselves sit much
+ * further apart. On a phone the same grouping turns vertical: the details sit
+ * close under their name, and a wider gap separates one location from the
+ * next. Every space here is a spacing preset, so the site's spacing settings
+ * move it.
+ */
+@use "../abstracts/section" as section;
+@use "../abstracts/on-dark" as on-dark;
+
+.bridge-locations {
+	background-color: var(--bridge-locations-bg, transparent);
+}
+
+.bridge-locations--on-dark {
+	@include on-dark.on-dark;
+}
+
+.bridge-locations--has-border {
+	border-block-end: 1px solid var(--bridge-locations-border);
+}
+
+.bridge-locations__list {
+	@include section.container(wide);
+
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--60);
+	margin-block: 0;
+	list-style: none;
+
+	@media (width >= 48rem) {
+		flex-flow: row wrap;
+		align-items: center;
+		justify-content: center;
+		gap: var(--wp--preset--spacing--50) var(--wp--preset--spacing--70);
+	}
+}
+
+.bridge-locations__item {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--20);
+
+	@media (width >= 48rem) {
+		flex-direction: row;
+		align-items: center;
+		gap: var(--wp--preset--spacing--30);
+	}
+}
+
+.bridge-locations__name {
+	margin: 0;
+	// The site's heading face and weight, set in Theme Options. The weight has
+	// no custom property of its own, so render.php passes it — as Goals does.
+	font-family: var(--wp--preset--font-family--heading);
+	font-size: var(--wp--preset--font-size--x-large);
+	font-weight: var(--bridge-locations-name-weight, 400);
+	line-height: 1.1;
+}
+
+.bridge-locations--name-large .bridge-locations__name {
+	font-size: var(--wp--preset--font-size--large);
+}
+
+.bridge-locations__details {
+	display: flex;
+	flex-direction: column;
+	font-size: var(--wp--preset--font-size--x-small);
+	line-height: 1.4;
+}
+
+// Plain text that happens to be a link: the underline comes on hover.
+.bridge-locations a {
+	color: inherit;
+	text-decoration: none;
+
+	&:hover,
+	&:focus-visible {
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+}
+
+// On a light background, the page's text colour — inside a dark footer the
+// inherited colour would be the footer's light one.
+.bridge-locations--on-light {
+	color: var(--wp--preset--color--text, #1f2937);
+}
+
+// The footer's locations bar: a step more room than a section band, so the
+// strip reads as its own band above the footer's columns.
+.bridge-footer__locations {
+	padding-block: var(--wp--preset--spacing--80);
+}

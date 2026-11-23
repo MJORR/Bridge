@@ -61,6 +61,25 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 	const setFooterCta = (key, value) =>
 		setGroup('footer', 'cta', { ...footerCta, [key]: value });
 
+	// The Hybrid footer's locations bar. The list itself is in Site Options.
+	const footerLocations = {
+		enabled: false,
+		background: '',
+		borderColor: '',
+		nameSize: 'large',
+		showAddress: false,
+		...(draft.footer.locations ?? {}),
+	};
+	const setFooterLocations = (key, value) =>
+		setGroup('footer', 'locations', { ...footerLocations, [key]: value });
+	const paletteOptions = (none) => [
+		{ label: none, value: '' },
+		...Object.keys(paletteSlugs).map((slug) => ({
+			label: draft.brand.palette[slug].name,
+			value: slug,
+		})),
+	];
+
 	return (
 		<>
 			<Section
@@ -220,21 +239,56 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							__next40pxDefaultSize
 						/>
 						<SelectControl
-							label={__('Dropdown menu', 'bridge')}
-							value={String(header.menus.locations ?? 0)}
-							options={menuOptions(
-								__('None — hide the dropdown', 'bridge')
-							)}
+							label={__('Links from', 'bridge')}
+							value={header.locations?.source ?? 'menu'}
+							options={[
+								{
+									label: __('A menu', 'bridge'),
+									value: 'menu',
+								},
+								{
+									label: __(
+										'Site Options locations',
+										'bridge'
+									),
+									value: 'site',
+								},
+							]}
 							onChange={(value) =>
-								setHeader('menus.locations', Number(value))
+								setHeader('locations.source', value)
 							}
-							help={__(
-								'Each link in this menu is one row of the dropdown. The dropdown appears once the menu has links in it. Menus themselves are built in the Site Editor.',
-								'bridge'
-							)}
+							help={
+								header.locations?.source === 'site'
+									? __(
+											'Each location in Site Options with a page link is one row of the dropdown.',
+											'bridge'
+										)
+									: __(
+											'The links in a menu built in the Site Editor.',
+											'bridge'
+										)
+							}
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
 						/>
+						{header.locations?.source !== 'site' && (
+							<SelectControl
+								label={__('Dropdown menu', 'bridge')}
+								value={String(header.menus.locations ?? 0)}
+								options={menuOptions(
+									__('None — hide the dropdown', 'bridge')
+								)}
+								onChange={(value) =>
+									setHeader('menus.locations', Number(value))
+								}
+								help={__(
+									'Each link in this menu is one row of the dropdown. The dropdown appears once the menu has links in it. Menus themselves are built in the Site Editor.',
+									'bridge'
+								)}
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+							/>
+						)}
 					</>
 				)}
 
@@ -903,6 +957,117 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 
 						{footerHybrid && (
 							<>
+								<ToggleControl
+									label={__('Locations bar', 'bridge')}
+									checked={Boolean(footerLocations.enabled)}
+									onChange={(on) =>
+										setFooterLocations('enabled', on)
+									}
+									help={__(
+										'A row of your locations across the top of the footer, on every page. The locations themselves are entered once in Site Options → Locations.',
+										'bridge'
+									)}
+									__nextHasNoMarginBottom
+								/>
+
+								{footerLocations.enabled && (
+									<>
+										<SelectControl
+											label={__(
+												'Locations bar background',
+												'bridge'
+											)}
+											value={footerLocations.background}
+											options={paletteOptions(
+												__(
+													'Same as the footer',
+													'bridge'
+												)
+											)}
+											onChange={(value) =>
+												setFooterLocations(
+													'background',
+													value
+												)
+											}
+											__nextHasNoMarginBottom
+											__next40pxDefaultSize
+										/>
+
+										<SelectControl
+											label={__(
+												'Locations bar bottom border',
+												'bridge'
+											)}
+											value={footerLocations.borderColor}
+											options={paletteOptions(
+												__('None', 'bridge')
+											)}
+											onChange={(value) =>
+												setFooterLocations(
+													'borderColor',
+													value
+												)
+											}
+											help={__(
+												'A thin line between the locations and the footer’s columns.',
+												'bridge'
+											)}
+											__nextHasNoMarginBottom
+											__next40pxDefaultSize
+										/>
+
+										<SelectControl
+											label={__(
+												'Location name size',
+												'bridge'
+											)}
+											value={footerLocations.nameSize}
+											options={[
+												{
+													label: __(
+														'Medium (as an H3)',
+														'bridge'
+													),
+													value: 'large',
+												},
+												{
+													label: __(
+														'Large (as an H2)',
+														'bridge'
+													),
+													value: 'x-large',
+												},
+											]}
+											onChange={(value) =>
+												setFooterLocations(
+													'nameSize',
+													value
+												)
+											}
+											__nextHasNoMarginBottom
+											__next40pxDefaultSize
+										/>
+
+										<ToggleControl
+											label={__(
+												'Show address and postcode',
+												'bridge'
+											)}
+											checked={Boolean(
+												footerLocations.showAddress
+											)}
+											onChange={(on) =>
+												setFooterLocations(
+													'showAddress',
+													on
+												)
+											}
+											__nextHasNoMarginBottom
+										/>
+									</>
+								)}
+
 								<ToggleControl
 									label={__('Show button', 'bridge')}
 									checked={Boolean(footerCta.enabled)}

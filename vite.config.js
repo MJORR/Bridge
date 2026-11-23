@@ -230,7 +230,10 @@ export default defineConfig(({ mode }) => ({
 			input: {
 				main: resolve(__dirname, 'src/main.js'),
 				// The Block button skin, loaded only when it is chosen.
-				'button-block': resolve(__dirname, 'src/scss/button-block.scss'),
+				'button-block': resolve(
+					__dirname,
+					'src/scss/button-block.scss'
+				),
 				slider: resolve(__dirname, 'src/js/slider.js'),
 				'header-cta-backdrop': resolve(
 					__dirname,
@@ -336,6 +339,11 @@ export default defineConfig(({ mode }) => ({
 				),
 				'faqs-editor': resolve(__dirname, 'src/blocks/faqs/index.js'),
 				faqs: resolve(__dirname, 'src/scss/faqs.scss'),
+				'locations-editor': resolve(
+					__dirname,
+					'src/blocks/locations/index.js'
+				),
+				locations: resolve(__dirname, 'src/scss/locations.scss'),
 				'goals-editor': resolve(__dirname, 'src/blocks/goals/index.js'),
 				'goal-editor': resolve(__dirname, 'src/blocks/goal/index.js'),
 				goals: resolve(__dirname, 'src/scss/goals.scss'),

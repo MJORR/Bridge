@@ -307,6 +307,12 @@ final class BackCompatTest extends BridgeTestCase
 		$this->assertSame('center', $this->blockJson('price-table')['attributes']['textAlignment']['default'], 'Price table: centred cards, as before.');
 		$this->assertTrue($this->blockJson('cards')['attributes']['showButton']['default'], 'Cards: Team cards keep their button, as before.');
 
+		$form = $this->blockJson('contact-form')['attributes'];
+		$this->assertSame('stacked', $form['fieldLayout']['default'], 'Contact form: the field layout it always had.');
+		foreach (array('select1Enabled', 'select2Enabled', 'consent1Enabled', 'consent2Enabled') as $optional) {
+			$this->assertFalse($form[$optional]['default'], "Contact form: {$optional} is off by default.");
+		}
+
 		$goal = $this->blockJson('goal')['attributes'];
 		$this->assertSame('auto', $goal['unitPosition']['default'], 'Goal: currency leads, everything else follows, as before.');
 	}
@@ -344,6 +350,8 @@ final class BackCompatTest extends BridgeTestCase
 		$this->assertTrue($tokens['footer']['headingAccent'], 'Footer: the heading accent stays on.');
 		$this->assertFalse($tokens['footer']['cta']['enabled'], 'Footer: no button unless switched on.');
 		$this->assertTrue($tokens['footer']['legalBorder'], 'Footer: the copyright row keeps its top border.');
+		$this->assertFalse($tokens['footer']['locations']['enabled'], 'Footer: no locations bar unless switched on.');
+		$this->assertSame('menu', bridge_sanitize_tokens(array())['header']['locations']['source'], 'Header: the Locations dropdown still reads its menu.');
 		$this->assertSame('', $tokens['footer']['legalColor'], 'Footer: the copyright row stays a shade of the footer.');
 		$this->assertSame('columns', $tokens['footer']['style']);
 		$this->assertSame('footer', bridge_footer_variants()['simple']);

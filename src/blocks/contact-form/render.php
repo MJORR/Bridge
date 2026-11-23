@@ -75,6 +75,10 @@ echo bridge_section_wrapper( $attributes, $classes, '', $label_id ); // phpcs:ig
 					'button_label'    => $button_label,
 					'success_message' => $success,
 					'response'        => $response,
+					// The optional dropdowns and checkboxes, and the rows
+					// layout. Both empty unless the block switches them on.
+					'extras'          => bridge_enquiry_extras( $attributes ),
+					'layout'          => 'rows' === ( $attributes['fieldLayout'] ?? 'stacked' ) ? 'rows' : 'stacked',
 				)
 			);
 			?>

@@ -604,7 +604,11 @@ if ( '' === $bridge_locations_label ) {
 }
 
 if ( ! empty( $bridge_header['locations']['enabled'] ) ) {
-	$bridge_location_links = bridge_header_locations_links( bridge_header_menu_id( 'locations' ) );
+	// From the Site Options locations when the source says so; from the menu
+	// otherwise, which is what every site did before there was a choice.
+	$bridge_location_links = ( 'site' === ( $bridge_header['locations']['source'] ?? 'menu' ) && function_exists( 'bridge_site_locations_links' ) )
+		? bridge_site_locations_links()
+		: bridge_header_locations_links( bridge_header_menu_id( 'locations' ) );
 	$bridge_locations      = bridge_header_locations_dropdown( $bridge_location_links, $bridge_locations_label );
 	$bridge_nav            = bridge_header_nav_append(
 		$bridge_nav,

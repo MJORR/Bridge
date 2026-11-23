@@ -504,7 +504,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/contact-form',
-		'version' => '1.0.0',
+		'version' => '1.1.0',
 		'title' => 'Contact Form',
 		'category' => 'design',
 		'icon' => 'email-alt',
@@ -544,6 +544,86 @@ return array(
 			'successMessage' => array(
 				'type' => 'string',
 				'default' => '',
+			),
+			'fieldLayout' => array(
+				'type' => 'string',
+				'enum' => array(
+					'stacked',
+					'rows',
+				),
+				'default' => 'stacked',
+			),
+			'select1Enabled' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'select1Label' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'select1Source' => array(
+				'type' => 'string',
+				'enum' => array(
+					'custom',
+					'locations',
+				),
+				'default' => 'custom',
+			),
+			'select1Choices' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'select1Required' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'select2Enabled' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'select2Label' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'select2Source' => array(
+				'type' => 'string',
+				'enum' => array(
+					'custom',
+					'locations',
+				),
+				'default' => 'locations',
+			),
+			'select2Choices' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'select2Required' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'consent1Enabled' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'consent1Text' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'consent1Required' => array(
+				'type' => 'boolean',
+				'default' => true,
+			),
+			'consent2Enabled' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'consent2Text' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'consent2Required' => array(
+				'type' => 'boolean',
+				'default' => false,
 			),
 		),
 		'example' => array(
@@ -1675,6 +1755,86 @@ return array(
 		),
 		'editorScript' => 'bridge-hero-slider-editor',
 		'style' => 'bridge-hero-slider-style',
+		'render' => 'file:./render.php',
+	),
+	'locations' => array(
+		'$schema' => 'https://schemas.wp.org/trunk/block.json',
+		'apiVersion' => 3,
+		'name' => 'bridge/locations',
+		'version' => '1.0.0',
+		'title' => 'Locations',
+		'category' => 'design',
+		'icon' => 'location',
+		'description' => 'A row of locations — each a place name with its phone and email beside it — read from Site Options or listed in the block.',
+		'textdomain' => 'bridge',
+		'keywords' => array(
+			'locations',
+			'address',
+			'practices',
+			'branches',
+			'offices',
+			'contact',
+		),
+		'supports' => array(
+			'anchor' => true,
+			'html' => false,
+		),
+		'attributes' => array(
+			'source' => array(
+				'type' => 'string',
+				'enum' => array(
+					'site',
+					'custom',
+				),
+				'default' => 'site',
+			),
+			'locations' => array(
+				'type' => 'array',
+				'default' => array(),
+			),
+			'background' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'borderColor' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'nameSize' => array(
+				'type' => 'string',
+				'enum' => array(
+					'large',
+					'x-large',
+				),
+				'default' => 'x-large',
+			),
+			'showAddress' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+		),
+		'example' => array(
+			'attributes' => array(
+				'background' => 'primary',
+				'locations' => array(
+					array(
+						'name' => 'Tunbridge Wells',
+						'phone' => '01892 616062',
+						'email' => 'info@example.com',
+						'url' => '',
+					),
+					array(
+						'name' => 'Brighton & Hove',
+						'phone' => '01273 000000',
+						'email' => 'brighton@example.com',
+						'url' => '',
+					),
+				),
+				'source' => 'custom',
+			),
+		),
+		'editorScript' => 'bridge-locations-editor',
+		'style' => 'bridge-locations-style',
 		'render' => 'file:./render.php',
 	),
 	'logo-slider' => array(

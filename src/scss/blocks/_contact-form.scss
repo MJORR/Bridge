@@ -521,3 +521,105 @@ textarea.bridge-field__control {
 		transform: scale(1);
 	}
 }
+
+// ---- Optional fields: the dropdowns and the consent checkboxes ----------
+
+/**
+ * The consent checkboxes sit together, under the message in the stacked
+ * layout and beside it in the rows layout. Each is a box and its sentence on
+ * one line — a checkbox is not a full-width control.
+ */
+.bridge-contact__consents {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--preset--spacing--30);
+	grid-column: 1 / -1;
+}
+
+.bridge-field--consent {
+	flex-direction: row;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+
+	.bridge-field__control {
+		flex: none;
+		width: 1.25rem;
+		min-height: 0;
+		height: 1.25rem;
+		margin: 0.1rem 0 0;
+		padding: 0;
+		accent-color: currentcolor;
+		cursor: pointer;
+	}
+
+	.bridge-field__label {
+		display: block;
+		flex: 1 1 0;
+		font-weight: 400;
+		line-height: 1.5;
+		cursor: pointer;
+
+		a {
+			color: inherit;
+			text-decoration: underline;
+			text-underline-offset: 0.2em;
+		}
+	}
+
+	.bridge-field__error {
+		flex-basis: 100%;
+	}
+}
+
+/**
+ * The Rows layout, once the panel is wide enough: name, email and phone in a
+ * row of three; the dropdowns in two columns — one dropdown takes the first
+ * and leaves the second empty; and the message beside the checkboxes when
+ * there are any, full width when not. Six tracks, so thirds and halves both
+ * land on them.
+ *
+ * Under that width it is the stacked layout. Every rule is behind
+ * `--rows`, so a form without it is untouched.
+ */
+@container (width >= 48rem) {
+	.bridge-contact__grid--rows {
+		// The site's "Gap between blocks" from Theme Options, so the form's
+		// columns open up with the rest of the page's spacing.
+		column-gap: var(--wp--style--block-gap, var(--wp--preset--spacing--40));
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+
+		> .bridge-field--name,
+		> .bridge-field--email,
+		> .bridge-field--phone {
+			grid-column: span 2;
+		}
+
+		> .bridge-field--select {
+			grid-column: span 3;
+		}
+
+		// The first dropdown starts the row, so a single one fills the
+		// first column rather than whichever is free.
+		> .bridge-field--phone + .bridge-field--select {
+			grid-column: 1 / span 3;
+		}
+
+		> .bridge-field--message {
+			grid-column: 1 / -1;
+		}
+	}
+
+	.bridge-contact__grid--has-consents {
+		> .bridge-field--message {
+			grid-column: 1 / span 3;
+		}
+
+		> .bridge-contact__consents {
+			grid-column: 4 / span 3;
+			align-self: start;
+			// Level with the top of the message box, under its label.
+			padding-block-start: 1.9rem;
+		}
+	}
+}

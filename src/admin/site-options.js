@@ -107,3 +107,77 @@
 		}
 	});
 })();
+
+/**
+ * The Locations section: add, reorder and remove locations.
+ *
+ * Each location is a fieldset of ordinary inputs named
+ * `…[locations][n][field]`. Order on the page is the order submitted, and the
+ * sanitiser re-indexes, so moving a row is only moving its element. A new row
+ * is the <template> with a fresh index — any unique number will do.
+ */
+(() => {
+	const list = document.querySelector('[data-bridge-locations]');
+	const template = document.querySelector('[data-bridge-location-template]');
+	const add = document.querySelector('[data-bridge-location-add]');
+
+	if (!list || !template || !add) {
+		return;
+	}
+
+	const wire = (row) => {
+		const name = row.querySelector('[data-bridge-location-name]');
+		const title = row.querySelector('[data-bridge-location-title]');
+
+		if (name && title) {
+			name.addEventListener('input', () => {
+				title.textContent = name.value || name.placeholder || '…';
+			});
+		}
+
+		row.querySelector('[data-bridge-location-remove]')?.addEventListener(
+			'click',
+			() => row.remove()
+		);
+
+		row.querySelector('[data-bridge-location-up]')?.addEventListener(
+			'click',
+			() => {
+				const before = row.previousElementSibling;
+
+				if (before) {
+					list.insertBefore(row, before);
+				}
+			}
+		);
+
+		row.querySelector('[data-bridge-location-down]')?.addEventListener(
+			'click',
+			() => {
+				const after = row.nextElementSibling;
+
+				if (after) {
+					list.insertBefore(after, row);
+				}
+			}
+		);
+	};
+
+	list.querySelectorAll('[data-bridge-location]').forEach(wire);
+
+	add.addEventListener('click', () => {
+		const html = template.innerHTML.replaceAll(
+			'__INDEX__',
+			String(Date.now())
+		);
+		const holder = document.createElement('div');
+
+		holder.innerHTML = html.trim();
+
+		const row = holder.firstElementChild;
+
+		list.appendChild(row);
+		wire(row);
+		row.querySelector('[data-bridge-location-name]')?.focus();
+	});
+})();

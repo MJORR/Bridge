@@ -130,7 +130,11 @@ const succeed = (form) => {
  */
 const send = async (form) => {
 	try {
-		const response = await fetch(form.action, {
+		// The attribute, not `form.action`: the form carries a hidden field
+		// named `action` (admin-post.php routes on it), and a named control
+		// shadows the property — `form.action` is that input, which fetch()
+		// turned into a request for "[object HTMLInputElement]".
+		const response = await fetch(form.getAttribute('action'), {
 			method: 'POST',
 			body: new FormData(form),
 			credentials: 'same-origin',

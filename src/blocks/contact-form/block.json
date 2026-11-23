@@ -32,6 +32,10 @@
 			"type": "string",
 			"default": ""
 		},
+		"buttonColor": {
+			"type": "string",
+			"default": ""
+		},
 		"successMessage": {
 			"type": "string",
 			"default": ""

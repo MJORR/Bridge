@@ -582,10 +582,22 @@ textarea.bridge-field__control {
  * Under that width it is the stacked layout. Every rule is behind
  * `--rows`, so a form without it is untouched.
  */
+/**
+ * The Rows layout spaces its rows by the site's "Gap between blocks" from
+ * Theme Options too, at every width, so the form breathes with the rest of
+ * the page. The stacked layout keeps its tighter gap.
+ */
+.bridge-contact__grid--rows {
+	row-gap: var(--wp--style--block-gap, var(--wp--preset--spacing--40));
+
+	> .bridge-contact__consents {
+		gap: var(--wp--preset--spacing--40);
+	}
+}
+
 @container (width >= 48rem) {
 	.bridge-contact__grid--rows {
-		// The site's "Gap between blocks" from Theme Options, so the form's
-		// columns open up with the rest of the page's spacing.
+		// The same gap between the columns.
 		column-gap: var(--wp--style--block-gap, var(--wp--preset--spacing--40));
 		grid-template-columns: repeat(6, minmax(0, 1fr));
 
@@ -621,5 +633,32 @@ textarea.bridge-field__control {
 			// Level with the top of the message box, under its label.
 			padding-block-start: 1.9rem;
 		}
+	}
+}
+
+/**
+ * A dropdown is drawn as the text fields are: the browser's own chrome is
+ * dropped and the chevron is painted in the band's ink, so it reads on all
+ * four grounds. Two gradients rather than an SVG, because a data-URI image
+ * cannot use `currentcolor`.
+ */
+select.bridge-field__control {
+	appearance: none;
+	padding-inline-end: 2.75rem;
+	background-image:
+		linear-gradient(45deg, transparent 50%, currentcolor 50%),
+		linear-gradient(135deg, currentcolor 50%, transparent 50%);
+	background-position:
+		calc(100% - 1.4rem) 50%,
+		calc(100% - 1.05rem) 50%;
+	background-repeat: no-repeat;
+	background-size: 0.35rem 0.35rem;
+	cursor: pointer;
+
+	// The list itself is the browser's; give its options the page's colours
+	// rather than whatever a translucent ground leaves behind.
+	option {
+		background-color: var(--wp--preset--color--base, #fff);
+		color: var(--wp--preset--color--contrast, #111);
 	}
 }

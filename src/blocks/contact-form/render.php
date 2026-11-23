@@ -56,6 +56,10 @@ list( $intro, $label_id ) = bridge_section_intro( $content, 'bridge-contact__int
 $button_label = trim( (string) ( $attributes['buttonLabel'] ?? '' ) );
 $button_label = '' !== $button_label ? $button_label : __( 'Send enquiry', 'bridge' );
 
+// The button's fill, as a palette slug. Empty keeps the band's own button.
+$button_color = (string) ( $attributes['buttonColor'] ?? '' );
+$button_color = array_key_exists( $button_color, bridge_palette_slugs() ) ? $button_color : '';
+
 $success = trim( (string) ( $attributes['successMessage'] ?? '' ) );
 $success = '' !== $success
 	? $success
@@ -73,6 +77,7 @@ echo bridge_section_wrapper( $attributes, $classes, '', $label_id ); // phpcs:ig
 					'form_id'         => $form_id,
 					'require_phone'   => ! empty( $attributes['requirePhone'] ),
 					'button_label'    => $button_label,
+					'button_color'    => $button_color,
 					'success_message' => $success,
 					'response'        => $response,
 					// The optional dropdowns and checkboxes, and the rows

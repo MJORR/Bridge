@@ -2112,7 +2112,7 @@ function bridge_enquiry_success_html(string $message, bool $hidden = false): str
 /**
  * The whole form.
  *
- * @param array $args form_id, require_phone, button_label, success_message,
+ * @param array $args form_id, require_phone, button_label, button_color, success_message,
  *                    response (from bridge_enquiry_response()).
  * @return string
  */
@@ -2122,6 +2122,11 @@ function bridge_enquiry_form_html(array $args): string
 	$require_phone = ! empty($args['require_phone']);
 	$response      = (array) ($args['response'] ?? array());
 	$success       = (string) $args['success_message'];
+	// A palette slug paints the button; anything else leaves it as it was.
+	$button_color  = (string) ($args['button_color'] ?? '');
+	$button_class  = array_key_exists($button_color, bridge_palette_slugs())
+		? ' bridge-button--fill-' . $button_color
+		: '';
 
 	if ('sent' === ($response['status'] ?? '')) {
 		return bridge_enquiry_success_html($success);
@@ -2253,7 +2258,7 @@ function bridge_enquiry_form_html(array $args): string
 			'%3$s%4$s%5$s' .
 			'<div class="%10$s">%6$s</div>' .
 			'<div class="bridge-contact__actions">' .
-			'<button type="submit" class="wp-element-button bridge-contact__submit">' .
+			'<button type="submit" class="wp-element-button bridge-contact__submit%11$s">' .
 			'<span class="bridge-contact__submit-label">%7$s</span>' .
 			'<span class="bridge-contact__spinner" aria-hidden="true"></span>' .
 			'</button>' .
@@ -2270,6 +2275,7 @@ function bridge_enquiry_form_html(array $args): string
 		esc_html__('* Required. We only use these details to answer your enquiry.', 'bridge'),
 		// Waiting beside the form, for the script to reveal in place of it.
 		bridge_enquiry_success_html($success, true), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — assembled from escaped parts above.
-		esc_attr($grid_class)
+		esc_attr($grid_class),
+		esc_attr($button_class)
 	);
 }

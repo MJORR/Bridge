@@ -541,6 +541,10 @@ return array(
 				'type' => 'string',
 				'default' => '',
 			),
+			'buttonColor' => array(
+				'type' => 'string',
+				'default' => '',
+			),
 			'successMessage' => array(
 				'type' => 'string',
 				'default' => '',

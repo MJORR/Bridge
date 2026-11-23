@@ -24,7 +24,10 @@ const {
 	ToggleControl,
 	ExternalLink,
 	Notice,
+	BaseControl,
+	ColorPalette,
 } = window.wp.components;
+const { useSelect } = window.wp.data;
 const { __, sprintf } = window.wp.i18n;
 
 const DATA = window.bridgeContactForm || {};
@@ -206,9 +209,18 @@ const Edit = ({ attributes, setAttributes }) => {
 		panel,
 		requirePhone,
 		buttonLabel,
+		buttonColor = '',
 		successMessage,
 		fieldLayout = 'stacked',
 	} = attributes;
+
+	// The site's palette, so the button colour is stored as a slug and
+	// follows a rebrand.
+	const themeColors = useSelect((select) => {
+		const settings = select('core/block-editor').getSettings();
+
+		return settings.colors || settings.colorPalette || [];
+	}, []);
 
 	const hasConsents = !!(
 		attributes.consent1Enabled || attributes.consent2Enabled
@@ -408,21 +420,21 @@ const Edit = ({ attributes, setAttributes }) => {
 			el(
 				PanelBody,
 				{ title: __('Form', 'bridge'), initialOpen: true },
-				el(ToggleControl, {
-					label: __('Require a phone number', 'bridge'),
-					help: requirePhone
-						? __(
-								'A visitor cannot send the form without one.',
-								'bridge'
-							)
-						: __(
-								'The field is still shown, and is optional.',
-								'bridge'
-							),
-					checked: !!requirePhone,
-					onChange: (value) => setAttributes({ requirePhone: value }),
-					__nextHasNoMarginBottom: true,
-				}),
+				// Name, email, phone and message are all required. The phone
+				// switch is kept only for a form saved with phone optional,
+				// so it can be brought into line; once on, it goes away.
+				!requirePhone &&
+					el(ToggleControl, {
+						label: __('Require a phone number', 'bridge'),
+						help: __(
+							'This form was set up with phone optional. Turn this on to require it, like name, email and message.',
+							'bridge'
+						),
+						checked: false,
+						onChange: (value) =>
+							setAttributes({ requirePhone: value }),
+						__nextHasNoMarginBottom: true,
+					}),
 				el(TextControl, {
 					label: __('Button label', 'bridge'),
 					value: buttonLabel,
@@ -430,6 +442,31 @@ const Edit = ({ attributes, setAttributes }) => {
 					onChange: (value) => setAttributes({ buttonLabel: value }),
 					__nextHasNoMarginBottom: true,
 				}),
+				el(
+					BaseControl,
+					{
+						label: __('Button colour', 'bridge'),
+						help: __(
+							"Clear it to use the band's own button.",
+							'bridge'
+						),
+						__nextHasNoMarginBottom: true,
+					},
+					el(ColorPalette, {
+						colors: themeColors,
+						value:
+							themeColors.find((c) => c.slug === buttonColor)
+								?.color || undefined,
+						onChange: (hex) =>
+							setAttributes({
+								buttonColor:
+									themeColors.find((c) => c.color === hex)
+										?.slug || '',
+							}),
+						disableCustomColors: true,
+						clearable: true,
+					})
+				),
 				el(TextareaControl, {
 					label: __('Message after sending', 'bridge'),
 					help: __(
@@ -555,7 +592,11 @@ const Edit = ({ attributes, setAttributes }) => {
 								'span',
 								{
 									className:
-										'wp-element-button bridge-contact__submit',
+										'wp-element-button bridge-contact__submit' +
+										(buttonColor
+											? ' bridge-button--fill-' +
+												buttonColor
+											: ''),
 								},
 								buttonLabel || __('Send enquiry', 'bridge')
 							),

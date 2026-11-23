@@ -405,6 +405,89 @@ function bridge_footer_social(): string
 }
 
 /**
+ * The social accounts as a row of large icons — the Hybrid layout's version.
+ *
+ * Icons alone, where bridge_footer_social() above draws labelled rows. In the
+ * Hybrid footer the accounts are not a list under a "Get in touch" heading but
+ * a strip of marks above the call to action, and a mark that big is
+ * recognisable without its name beside it. The name is still the link's
+ * accessible name, so a screen-reader user hears "Instagram" rather than an
+ * unlabelled link.
+ *
+ * Same accounts, same icons, same "opens in a new tab" warning as the rows.
+ */
+function bridge_footer_social_icons(): string
+{
+	$links = bridge_site_social_links();
+
+	if (! $links) {
+		return '';
+	}
+
+	$networks = bridge_social_networks();
+	$items    = '';
+
+	foreach ($links as $slug => $url) {
+		$icon = bridge_social_icon($slug);
+
+		if ('' === $icon) {
+			continue;
+		}
+
+		$items .= sprintf(
+			'<li class="bridge-footer__social-item"><a class="bridge-footer__social-link" href="%1$s" rel="noopener noreferrer" target="_blank"><span class="bridge-footer__social-icon" aria-hidden="true">%2$s</span><span class="screen-reader-text">%3$s %4$s</span></a></li>',
+			esc_url($url),
+			$icon, // Core's own icon markup.
+			esc_html((string) ($networks[$slug] ?? $slug)),
+			esc_html__('(opens in a new tab)', 'bridge')
+		);
+	}
+
+	if ('' === $items) {
+		return '';
+	}
+
+	return sprintf(
+		'<ul class="bridge-footer__social" role="list" aria-label="%s">%s</ul>',
+		esc_attr__('Social media', 'bridge'),
+		$items
+	);
+}
+
+/**
+ * The Hybrid layout's button, or an empty string.
+ *
+ * Drawn only when it is switched on and has both a label and a link: a button
+ * with no words is an empty box, and one with no link goes nowhere. The theme's
+ * own button — `wp-element-button` — so it takes the site's button skin, and
+ * the footer's stylesheet points it at the ground the footer is painted.
+ */
+function bridge_footer_cta(): string
+{
+	$cta = (array) (bridge_get_tokens()['footer']['cta'] ?? array());
+
+	$label = trim((string) ($cta['label'] ?? ''));
+	$url   = (string) ($cta['url'] ?? '');
+
+	if (empty($cta['enabled']) || '' === $label || '' === $url) {
+		return '';
+	}
+
+	$classes = 'bridge-footer__cta wp-element-button';
+
+	if ('fill' !== ($cta['style'] ?? 'outline')) {
+		$classes .= ' is-style-outline';
+	}
+
+	return sprintf(
+		'<a class="%1$s" href="%2$s">%3$s</a>',
+		esc_attr($classes),
+		esc_url($url),
+		esc_html($label)
+	);
+}
+
+/**
  * The address and phone number, or an empty string when Site Options holds
  * neither.
  *

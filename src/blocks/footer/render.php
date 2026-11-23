@@ -71,13 +71,26 @@ $bridge_legal    = bridge_footer_menu_id( 'legal' );
 
 $bridge_description = bridge_footer_description();
 $bridge_tagline     = bridge_footer_tagline();
-$bridge_social      = bridge_footer_social();
-$bridge_contact     = bridge_footer_contact();
+
+// Hybrid is Columns with a different last column: big social icons and a
+// button, where Columns has the labelled contact rows under a heading. The
+// other three columns and the bottom row are the same.
+$bridge_hybrid = 'hybrid' === ( $bridge_footer['style'] ?? '' );
+
+if ( $bridge_hybrid ) {
+	$bridge_social  = bridge_footer_social_icons();
+	$bridge_cta     = bridge_footer_cta();
+	$bridge_contact = '';
+} else {
+	$bridge_social  = bridge_footer_social();
+	$bridge_cta     = '';
+	$bridge_contact = bridge_footer_contact();
+}
 
 // One question asked once. The heading and the column both depend on there
 // being something to put under it, and asking twice is how a heading ends up
 // alone above nothing.
-$bridge_has_contact = '' !== $bridge_contact || '' !== $bridge_social;
+$bridge_has_contact = '' !== $bridge_contact || '' !== $bridge_social || '' !== $bridge_cta;
 
 // The band along the bottom, if Site Options holds one. A class as well as the
 // url, because the stylesheet has to know whether to paint a scrim at all —
@@ -93,6 +106,16 @@ $bridge_classes = array(
 
 if ( '' !== $bridge_image ) {
 	$bridge_classes[] = 'bridge-footer--has-image';
+}
+
+// Classes only when the setting differs from what every footer drew before
+// it existed, so a legacy footer's markup is unchanged.
+if ( $bridge_hybrid ) {
+	$bridge_classes[] = 'bridge-footer--hybrid';
+}
+
+if ( isset( $bridge_footer['headingAccent'] ) && ! $bridge_footer['headingAccent'] ) {
+	$bridge_classes[] = 'bridge-footer--no-heading-accent';
 }
 
 // The same class a skinned section wears, and the same rule paints it —
@@ -200,7 +223,12 @@ $bridge_wrapper = get_block_wrapper_attributes(
 				</div>
 			<?php endif; ?>
 
-			<?php if ( $bridge_has_contact ) : ?>
+			<?php if ( $bridge_hybrid && $bridge_has_contact ) : ?>
+				<div class="bridge-footer__col bridge-footer__col--actions">
+					<?php echo $bridge_social; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>
+					<?php echo $bridge_cta; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>
+				</div>
+			<?php elseif ( $bridge_has_contact ) : ?>
 				<div class="bridge-footer__col bridge-footer__col--contact">
 					<h2 class="bridge-footer__heading"><?php echo esc_html( bridge_footer_label( 'contact' ) ); ?></h2>
 					<?php echo $bridge_contact; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts. ?>

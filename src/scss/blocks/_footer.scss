@@ -22,6 +22,7 @@
  * note in render.php for why that is two wrappers rather than one.
  */
 @use "../abstracts/band-mask" as mask;
+@use "../abstracts/button" as button;
 
 .bridge-footer {
 	background-color: var(
@@ -1066,4 +1067,72 @@
 		vertical-align: -0.1em;
 		background-color: color-mix(in srgb, currentcolor 40%, transparent);
 	}
+}
+
+// ---- Options: heading accent, and the Hybrid layout ----------------------
+
+/**
+ * No accent rule under the column headings.
+ *
+ * Only the rule goes. The room under the heading stays, so switching the
+ * accent off does not move the links up the column.
+ */
+.bridge-footer--no-heading-accent .bridge-footer__heading::after {
+	content: none;
+}
+
+/**
+ * Hybrid: Columns, with a bold label over a regular-weight menu, and a last
+ * column of large social icons with a button underneath.
+ *
+ * Every rule here is behind `--hybrid`, so a Columns footer is untouched.
+ */
+.bridge-footer--hybrid {
+	.bridge-footer__heading {
+		font-weight: 700;
+	}
+
+	.bridge-footer__nav .wp-block-navigation-item__content {
+		font-weight: 400;
+	}
+}
+
+.bridge-footer__col--actions {
+	align-items: flex-start;
+	gap: var(--wp--preset--spacing--50);
+}
+
+.bridge-footer__social {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--30);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.bridge-footer__social-link {
+	display: inline-flex;
+	color: inherit;
+	transition: opacity 0.2s ease;
+
+	&:hover,
+	&:focus-visible {
+		opacity: 0.75;
+	}
+
+	svg {
+		inline-size: 2.5rem;
+		block-size: 2.5rem;
+		fill: currentcolor;
+	}
+}
+
+/**
+ * The button reads the ground the footer is painted. A dark footer takes the
+ * Inverted scheme — the light button, and the Outline that inverts into the
+ * band — which is what a dark section gives its buttons.
+ */
+.bridge-footer--contrast-light .bridge-footer__cta {
+	@include button.ground("inverted");
 }

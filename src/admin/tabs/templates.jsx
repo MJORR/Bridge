@@ -47,6 +47,20 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 	const setFooterLabel = (slot, value) =>
 		setGroup('footer', 'labels', { ...footerLabels, [slot]: value });
 
+	// Hybrid is Columns with a different last column, so the column controls
+	// are shared and only the last column's differ.
+	const footerHasColumns = ['columns', 'hybrid'].includes(draft.footer.style);
+	const footerHybrid = draft.footer.style === 'hybrid';
+	const footerCta = {
+		enabled: false,
+		label: '',
+		url: '',
+		style: 'outline',
+		...(draft.footer.cta ?? {}),
+	};
+	const setFooterCta = (key, value) =>
+		setGroup('footer', 'cta', { ...footerCta, [key]: value });
+
 	return (
 		<>
 			<Section
@@ -604,6 +618,14 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							label: __('Columns', 'bridge'),
 							hint: __('Logo, menus and contact', 'bridge'),
 						},
+						{
+							value: 'hybrid',
+							label: __('Hybrid', 'bridge'),
+							hint: __(
+								'Logo, menus, social and button',
+								'bridge'
+							),
+						},
 					]}
 				/>
 
@@ -756,8 +778,21 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					</>
 				)}
 
-				{draft.footer.style === 'columns' && (
+				{footerHasColumns && (
 					<>
+						<ToggleControl
+							label={__('Accent under menu headings', 'bridge')}
+							checked={draft.footer.headingAccent !== false}
+							onChange={(on) =>
+								setGroup('footer', 'headingAccent', on)
+							}
+							help={__(
+								'The short rule in the accent colour under each column heading.',
+								'bridge'
+							)}
+							__nextHasNoMarginBottom
+						/>
+
 						<TextControl
 							label={__('Explore heading', 'bridge')}
 							value={footerLabels.explore ?? ''}
@@ -814,20 +849,95 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							__next40pxDefaultSize
 						/>
 
-						<TextControl
-							label={__('Contact heading', 'bridge')}
-							value={footerLabels.contact ?? ''}
-							onChange={(value) =>
-								setFooterLabel('contact', value)
-							}
-							placeholder={__('Get in touch', 'bridge')}
-							help={__(
-								'The heading over the address, phone and social column.',
-								'bridge'
-							)}
-							__nextHasNoMarginBottom
-							__next40pxDefaultSize
-						/>
+						{!footerHybrid && (
+							<TextControl
+								label={__('Contact heading', 'bridge')}
+								value={footerLabels.contact ?? ''}
+								onChange={(value) =>
+									setFooterLabel('contact', value)
+								}
+								placeholder={__('Get in touch', 'bridge')}
+								help={__(
+									'The heading over the address, phone and social column.',
+									'bridge'
+								)}
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+							/>
+						)}
+
+						{footerHybrid && (
+							<>
+								<ToggleControl
+									label={__('Show button', 'bridge')}
+									checked={Boolean(footerCta.enabled)}
+									onChange={(on) =>
+										setFooterCta('enabled', on)
+									}
+									help={__(
+										'A button under the social icons in the last column.',
+										'bridge'
+									)}
+									__nextHasNoMarginBottom
+								/>
+
+								{footerCta.enabled && (
+									<>
+										<TextControl
+											label={__('Button text', 'bridge')}
+											value={footerCta.label}
+											onChange={(value) =>
+												setFooterCta('label', value)
+											}
+											placeholder={__(
+												'Book online',
+												'bridge'
+											)}
+											__nextHasNoMarginBottom
+											__next40pxDefaultSize
+										/>
+
+										<TextControl
+											label={__('Button link', 'bridge')}
+											type="url"
+											value={footerCta.url}
+											onChange={(value) =>
+												setFooterCta('url', value)
+											}
+											help={__(
+												'The button is shown only when it has both text and a link.',
+												'bridge'
+											)}
+											__nextHasNoMarginBottom
+											__next40pxDefaultSize
+										/>
+
+										<SelectControl
+											label={__('Button style', 'bridge')}
+											value={footerCta.style}
+											options={[
+												{
+													label: __(
+														'Outline',
+														'bridge'
+													),
+													value: 'outline',
+												},
+												{
+													label: __('Fill', 'bridge'),
+													value: 'fill',
+												},
+											]}
+											onChange={(value) =>
+												setFooterCta('style', value)
+											}
+											__nextHasNoMarginBottom
+											__next40pxDefaultSize
+										/>
+									</>
+								)}
+							</>
+						)}
 
 						<TextControl
 							label={__('Legal menu name', 'bridge')}
@@ -860,10 +970,15 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						/>
 
 						<p className="bridge-options__hint">
-							{__(
-								'The last column — the address, the phone number and the social accounts — comes from Site Options, along with the short description and the strapline under the logo.',
-								'bridge'
-							)}
+							{footerHybrid
+								? __(
+										'The social accounts in the last column come from Site Options, along with the short description and the strapline under the logo.',
+										'bridge'
+									)
+								: __(
+										'The last column — the address, the phone number and the social accounts — comes from Site Options, along with the short description and the strapline under the logo.',
+										'bridge'
+									)}
 						</p>
 					</>
 				)}

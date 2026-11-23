@@ -1536,7 +1536,10 @@ function bridge_token_constraints(): array
 			'paddingBlock' => array('min' => 0, 'max' => 80, 'step' => 2, 'unit' => 'px'),
 		),
 		'footer'     => array(
-			'style'           => array('options' => array('simple', 'columns')),
+			// `hybrid` appended, never inserted: the stored value is the word,
+			// but the options screen lists them in this order.
+			'style'           => array('options' => array('simple', 'columns', 'hybrid')),
+			'ctaStyle'        => array('options' => array('outline', 'fill')),
 			'backgroundColor' => array('options' => array_keys(bridge_palette_slugs())),
 			// How far the copyright row is pushed off the footer's own colour.
 			// Signed, because the answer runs in both directions from one
@@ -1859,6 +1862,13 @@ function bridge_token_defaults(): array
 			// themselves so a site that never changes them keeps getting them
 			// translated.
 			'labels'          => array('explore' => '', 'services' => '', 'contact' => '', 'legal' => ''),
+			// The short accent rule under each column heading. On by default,
+			// because every footer drew it before this was a setting.
+			'headingAccent'   => true,
+			// The Hybrid layout's button, under the social icons in its last
+			// column. Off until switched on, and drawn only with a label and a
+			// link — the same rule the header's call to action follows.
+			'cta'             => array('enabled' => false, 'label' => '', 'url' => '', 'style' => 'outline'),
 		),
 		// Deviations from the theme's curated block set, not the set itself.
 		// Storing the whole list would freeze it: a block added by a later
@@ -2843,6 +2853,7 @@ function bridge_sanitize_tokens(array $raw): array
 	);
 
 	$raw_footer_menus = isset($raw_footer['menus']) && is_array($raw_footer['menus']) ? $raw_footer['menus'] : array();
+	$raw_footer_cta   = isset($raw_footer['cta']) && is_array($raw_footer['cta']) ? $raw_footer['cta'] : array();
 
 	// `quick` was this slot's name while the footer's first menu column was
 	// headed "Quick Links". Read when the new key is absent *or* zero, for the
@@ -2883,6 +2894,15 @@ function bridge_sanitize_tokens(array $raw): array
 			'legal'    => max(0, (int) ($raw_footer_menus['legal'] ?? 0)),
 		),
 		'labels'          => bridge_sanitize_footer_labels($raw_footer['labels'] ?? array()),
+		// Absent means on: a record saved before the switch existed drew the
+		// accent, and should go on drawing it.
+		'headingAccent'   => array_key_exists('headingAccent', $raw_footer) ? ! empty($raw_footer['headingAccent']) : true,
+		'cta'             => array(
+			'enabled' => ! empty($raw_footer_cta['enabled']),
+			'label'   => sanitize_text_field((string) ($raw_footer_cta['label'] ?? '')),
+			'url'     => esc_url_raw((string) ($raw_footer_cta['url'] ?? '')),
+			'style'   => bridge_pick_token('footer', 'ctaStyle', $raw_footer_cta['style'] ?? '', $defaults['footer']['cta']['style']),
+		),
 		// Stored under the attribute names the section blocks use, so the
 		// footer hands this group to bridge_band_mask() as it stands.
 		'mask'            => ! empty($raw_footer['mask']),

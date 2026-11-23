@@ -332,4 +332,20 @@ final class BackCompatTest extends BridgeTestCase
 		$this->assertSame('60dvh', bridge_hero_metrics(array('heightPreset' => 'medium'))['height']);
 		$this->assertSame('600px', bridge_hero_metrics(array('heightPreset' => 'custom', 'customHeight' => 600, 'customHeightUnit' => 'px'))['height']);
 	}
+
+	/**
+	 * A footer saved before the Hybrid layout keeps its accent rule, has no
+	 * button, and its layout names still map to the parts they did.
+	 */
+	public function test_footer_saved_before_hybrid_is_unchanged(): void
+	{
+		$tokens = bridge_sanitize_tokens(array('footer' => array('style' => 'columns')));
+
+		$this->assertTrue($tokens['footer']['headingAccent'], 'Footer: the heading accent stays on.');
+		$this->assertFalse($tokens['footer']['cta']['enabled'], 'Footer: no button unless switched on.');
+		$this->assertSame('columns', $tokens['footer']['style']);
+		$this->assertSame('footer', bridge_footer_variants()['simple']);
+		$this->assertSame('footer-columns', bridge_footer_variants()['columns']);
+		$this->assertSame(array('simple', 'columns', 'hybrid'), bridge_token_constraints()['footer']['style']['options'], 'New layouts are appended.');
+	}
 }

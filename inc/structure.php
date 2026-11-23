@@ -31,6 +31,9 @@ function bridge_footer_variants(): array
 	return array(
 		'simple'  => 'footer',
 		'columns' => 'footer-columns',
+		// The same part: the footer block reads the layout and draws its last
+		// column differently.
+		'hybrid'  => 'footer-columns',
 	);
 }
 

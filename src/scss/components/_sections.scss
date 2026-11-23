@@ -254,6 +254,20 @@
 }
 
 /**
+ * Rounded corners on a coloured band, chosen per band in the Styles tab
+ * beside the gradient. Twice the large radius, the same step a "Round" image
+ * corner uses. Only a band wearing the class changes.
+ */
+.has-band-rounded:is(
+	.is-style-bridge-surface,
+	.is-style-bridge-inverted,
+	.is-style-bridge-accent,
+	.is-style-bridge-alternative
+) {
+	border-radius: calc(var(--wp--custom--radius--large, 8px) * 2);
+}
+
+/**
  * A full-width skinned section keeps its colour edge to edge but its content
  * aligned with everything else on the page.
  *

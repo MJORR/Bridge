@@ -19,6 +19,21 @@ $description = trim( (string) ( $attributes['description'] ?? '' ) );
 $image_id    = (int) ( $attributes['imageId'] ?? 0 );
 $featured    = ! empty( $attributes['featured'] );
 
+/*
+ * Added later, and each printed only when filled in, so a card saved before
+ * them renders exactly as it did:
+ *
+ *   period       A short line after the price — "/ per month".
+ *   features     One item per line, printed as a list.
+ *   buttonText   With buttonUrl, a button at the foot of the card, filled or
+ *   buttonUrl    outlined (buttonStyle). The site's own button either way.
+ */
+$period       = trim( (string) ( $attributes['period'] ?? '' ) );
+$features     = array_values( array_filter( array_map( 'trim', preg_split( '/\R/', (string) ( $attributes['features'] ?? '' ) ) ) ) );
+$button_text  = trim( (string) ( $attributes['buttonText'] ?? '' ) );
+$button_url   = trim( (string) ( $attributes['buttonUrl'] ?? '' ) );
+$button_style = 'outline' === ( $attributes['buttonStyle'] ?? 'fill' ) ? 'outline' : 'fill';
+
 if ( '' === $title && '' === $price ) {
 	return;
 }
@@ -57,10 +72,22 @@ $wrapper = get_block_wrapper_attributes(
 		// but it is not a heading, and marking it up as one would put a
 		// meaningless entry in the page's outline for every plan on offer.
 		?>
-		<p class="bridge-price-card__price"><?php echo esc_html( $price ); ?></p>
+		<p class="bridge-price-card__price"><?php echo esc_html( $price ); ?><?php if ( '' !== $period ) : ?> <span class="bridge-price-card__period"><?php echo esc_html( $period ); ?></span><?php endif; ?></p>
 	<?php endif; ?>
 
 	<?php if ( '' !== $description ) : ?>
 		<p class="bridge-price-card__description"><?php echo esc_html( $description ); ?></p>
+	<?php endif; ?>
+
+	<?php if ( array() !== $features ) : ?>
+		<ul class="bridge-price-card__features" role="list">
+			<?php foreach ( $features as $feature ) : ?>
+				<li><?php echo esc_html( $feature ); ?></li>
+			<?php endforeach; ?>
+		</ul>
+	<?php endif; ?>
+
+	<?php if ( '' !== $button_text && '' !== $button_url ) : ?>
+		<a class="bridge-price-card__button wp-element-button<?php echo 'outline' === $button_style ? ' is-style-outline' : ''; ?>" href="<?php echo esc_url( $button_url ); ?>"><?php echo esc_html( $button_text ); ?></a>
 	<?php endif; ?>
 </li>

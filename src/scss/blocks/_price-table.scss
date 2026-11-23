@@ -21,6 +21,16 @@
 		@include section.container(narrow);
 	}
 
+	// Left-aligned cards, chosen per table. Added later; a table that never
+	// chose it matches nothing here.
+	&--text-left .bridge-price-card {
+		text-align: start;
+	}
+
+	&--text-left .bridge-price-card__image {
+		margin-inline: 0;
+	}
+
 	&__list {
 		@include section.auto-grid(15rem, section.$grid-gap);
 
@@ -76,6 +86,42 @@
 	// The recommended plan. Outlined in the accent rather than recoloured:
 	// a filled card would have to name its own text colour to stay legible,
 	// and would then be the one thing on the page that ignores the skin.
+	// ---- Added later, each drawn only when the card has it ---------------
+
+	// The line after the price: "/ per month". Smaller, lighter and muted,
+	// so the figure is still the loudest thing on the card.
+	&__period,
+	&__period-preview {
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 400;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: color-mix(in srgb, currentcolor 60%, transparent);
+	}
+
+	&__features {
+		flex-grow: 1;
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--20);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: var(--wp--preset--font-size--small);
+	}
+
+	// With a list, the list takes the slack so every button in the row sits
+	// on one line; the description goes back to its own height.
+	&__description:has(+ .bridge-price-card__features) {
+		flex-grow: 0;
+	}
+
+	&__button {
+		align-self: stretch;
+		justify-content: center;
+		text-align: center;
+	}
+
 	&.is-featured {
 		border-color: var(--wp--preset--color--accent);
 		border-width: 2px;

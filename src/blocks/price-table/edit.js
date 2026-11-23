@@ -33,10 +33,12 @@ const TEMPLATE = [
 ];
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { width, columns } = attributes;
+	const { width, columns, textAlignment = 'center' } = attributes;
 
 	const blockProps = useBlockProps({
-		className: `bridge-price-table bridge-section bridge-band alignfull bridge-price-table--${width}`,
+		className:
+			`bridge-price-table bridge-section bridge-band alignfull bridge-price-table--${width}` +
+			('left' === textAlignment ? ' bridge-price-table--text-left' : ''),
 		style: { '--columns': columns },
 	});
 
@@ -78,6 +80,16 @@ const Edit = ({ attributes, setAttributes }) => {
 					min: 1,
 					max: 4,
 					step: 1,
+				}),
+				el(SelectControl, {
+					label: __('Card text alignment', 'bridge'),
+					value: textAlignment,
+					options: [
+						{ label: __('Centre', 'bridge'), value: 'center' },
+						{ label: __('Left', 'bridge'), value: 'left' },
+					],
+					onChange: (value) =>
+						setAttributes({ textAlignment: value }),
 				})
 			)
 		),

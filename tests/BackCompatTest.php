@@ -292,6 +292,21 @@ final class BackCompatTest extends BridgeTestCase
 		$this->assertSame(array('inserter'), $variation['scope']);
 		$this->assertSame(array('figureStyle' => 'heading'), $variation['attributes']);
 
+		$features = $this->blockJson('feature-blocks')['attributes'];
+		$this->assertSame('card', $features['panelStyle']['default'], 'Feature Blocks: card panels, as before.');
+		$this->assertSame(array('card', 'plain', 'outline'), array_slice($features['panelStyle']['enum'], 0, 3), 'Feature Blocks: the original panel styles keep their names and order.');
+		$this->assertSame('card', $features['imageCorners']['default'], 'Feature Blocks: the card radius, as before.');
+		$this->assertSame('fill', $features['buttonStyle']['default'], 'Feature Blocks: the filled button, as before.');
+		$this->assertSame('default', $features['buttonSize']['default'], 'Feature Blocks: the full-size button, as before.');
+
+		$card = $this->blockJson('price-card')['attributes'];
+		foreach (array('period', 'features', 'buttonText', 'buttonUrl') as $key) {
+			$this->assertSame('', $card[$key]['default'], "Price card: no {$key} unless one is entered, as before.");
+		}
+		$this->assertSame('fill', $card['buttonStyle']['default']);
+		$this->assertSame('center', $this->blockJson('price-table')['attributes']['textAlignment']['default'], 'Price table: centred cards, as before.');
+		$this->assertTrue($this->blockJson('cards')['attributes']['showButton']['default'], 'Cards: Team cards keep their button, as before.');
+
 		$goal = $this->blockJson('goal')['attributes'];
 		$this->assertSame('auto', $goal['unitPosition']['default'], 'Goal: currency leads, everything else follows, as before.');
 	}

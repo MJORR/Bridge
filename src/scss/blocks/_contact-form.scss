@@ -272,6 +272,13 @@ $control-radius: var(--wp--custom--button--radius, 6px);
 			outline: 3px solid currentcolor;
 			outline-offset: 4px;
 		}
+
+		// The panel is printed with `hidden` until the form has been sent.
+		// `display: flex` above outranks the browser's own `[hidden]` rule,
+		// so without this the thank-you showed under every unsent form.
+		&[hidden] {
+			display: none;
+		}
 	}
 
 	&__tick {

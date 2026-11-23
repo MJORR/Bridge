@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/price-table",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"title": "Price Table",
 	"category": "design",
 	"icon": "money-alt",
@@ -22,6 +22,11 @@
 		"columns": {
 			"type": "number",
 			"default": 3
+		},
+		"textAlignment": {
+			"type": "string",
+			"enum": ["center", "left"],
+			"default": "center"
 		}
 	},
 	"example": {
@@ -41,7 +46,7 @@
 				"name": "bridge/price-card",
 				"attributes": {
 					"title": "Starter",
-					"price": "\u00a319",
+					"price": "£19",
 					"description": "For one site."
 				}
 			},
@@ -49,7 +54,7 @@
 				"name": "bridge/price-card",
 				"attributes": {
 					"title": "Studio",
-					"price": "\u00a349",
+					"price": "£49",
 					"description": "For a small team.",
 					"featured": true
 				}
@@ -58,7 +63,7 @@
 				"name": "bridge/price-card",
 				"attributes": {
 					"title": "Agency",
-					"price": "\u00a399",
+					"price": "£99",
 					"description": "For many sites."
 				}
 			}

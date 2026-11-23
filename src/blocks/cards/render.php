@@ -196,6 +196,11 @@ $read_more_text  = '' !== $read_more_text ? $read_more_text : __( 'Read more', '
 // Team's button, on the same terms and for the same reason.
 $button_text     = trim( (string) ( $attributes['buttonText'] ?? '' ) );
 $button_text     = '' !== $button_text ? $button_text : __( 'View profile', 'bridge' );
+// Added later: a band can drop the Team button altogether. On unless
+// switched off, so a band saved before the setting keeps its button.
+if ( isset( $attributes['showButton'] ) && false === $attributes['showButton'] ) {
+	$button_text = '';
+}
 
 /**
  * How every card's link cue is drawn: a text link, the site's button or its

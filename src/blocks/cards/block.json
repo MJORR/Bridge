@@ -137,6 +137,10 @@
 			"type": "string",
 			"default": ""
 		},
+		"showButton": {
+			"type": "boolean",
+			"default": true
+		},
 		"linkStyle": {
 			"type": "string",
 			"enum": ["", "text", "button", "outline"],

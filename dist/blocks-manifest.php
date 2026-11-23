@@ -466,6 +466,10 @@ return array(
 				'type' => 'string',
 				'default' => '',
 			),
+			'showButton' => array(
+				'type' => 'boolean',
+				'default' => true,
+			),
 			'linkStyle' => array(
 				'type' => 'string',
 				'enum' => array(
@@ -1900,7 +1904,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/price-card',
-		'version' => '1.0.0',
+		'version' => '1.1.0',
 		'title' => 'Price Card',
 		'category' => 'design',
 		'icon' => 'money-alt',
@@ -1938,6 +1942,30 @@ return array(
 				'type' => 'boolean',
 				'default' => false,
 			),
+			'period' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'features' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'buttonText' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'buttonUrl' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'buttonStyle' => array(
+				'type' => 'string',
+				'enum' => array(
+					'fill',
+					'outline',
+				),
+				'default' => 'fill',
+			),
 		),
 		'editorScript' => 'bridge-price-card-editor',
 		'render' => 'file:./render.php',
@@ -1946,7 +1974,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/price-table',
-		'version' => '1.0.0',
+		'version' => '1.1.0',
 		'title' => 'Price Table',
 		'category' => 'design',
 		'icon' => 'money-alt',
@@ -1972,6 +2000,14 @@ return array(
 			'columns' => array(
 				'type' => 'number',
 				'default' => 3,
+			),
+			'textAlignment' => array(
+				'type' => 'string',
+				'enum' => array(
+					'center',
+					'left',
+				),
+				'default' => 'center',
 			),
 		),
 		'example' => array(

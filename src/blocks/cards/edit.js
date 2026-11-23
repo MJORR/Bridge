@@ -273,6 +273,7 @@ const Edit = ({ attributes, setAttributes }) => {
 		showReadMore,
 		readMoreText,
 		buttonText,
+		showButton = true,
 		linkStyle,
 	} = attributes;
 
@@ -776,6 +777,13 @@ const Edit = ({ attributes, setAttributes }) => {
 					onChange: (value) => setAttributes({ linkStyle: value }),
 				}),
 			cardStyleHas(style, 'button') &&
+				el(ToggleControl, {
+					label: __('Show button', 'bridge'),
+					checked: !!showButton,
+					onChange: (value) => setAttributes({ showButton: value }),
+				}),
+			cardStyleHas(style, 'button') &&
+				showButton &&
 				el(TextControl, {
 					label: __('Button text', 'bridge'),
 					help: __(

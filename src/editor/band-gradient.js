@@ -72,6 +72,20 @@
 
 	const isGraded = (className) => classList(className).includes(GRADIENT);
 
+	// Rounded corners on a coloured band, added beside the gradient later.
+	// Off unless chosen: the class is only written by this toggle.
+	const ROUNDED = 'has-band-rounded';
+	const isRounded = (className) => classList(className).includes(ROUNDED);
+	const withClass = (className, name, on) => {
+		const classes = classList(className).filter((n) => n !== name);
+
+		if (on) {
+			classes.push(name);
+		}
+
+		return classes.length ? classes.join(' ') : undefined;
+	};
+
 	/**
 	 * The same class attribute, saying the other thing.
 	 *
@@ -128,6 +142,22 @@
 							onChange: (value) =>
 								props.setAttributes({
 									className: withGradient(className, value),
+								}),
+						}),
+						el(ToggleControl, {
+							label: __('Rounded corners', 'bridge'),
+							help: __(
+								'Rounds the corners of the coloured band.',
+								'bridge'
+							),
+							checked: isRounded(className),
+							onChange: (value) =>
+								props.setAttributes({
+									className: withClass(
+										className,
+										ROUNDED,
+										value
+									),
 								}),
 							__nextHasNoMarginBottom: true,
 						})

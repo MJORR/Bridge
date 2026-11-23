@@ -10,12 +10,35 @@ const {
 	InspectorControls,
 } = window.wp.blockEditor;
 const { createElement: el, Fragment } = window.wp.element;
-const { PanelBody, Button, ToggleControl } = window.wp.components;
+const {
+	PanelBody,
+	Button,
+	ToggleControl,
+	TextControl,
+	TextareaControl,
+	SelectControl,
+} = window.wp.components;
 const { __ } = window.wp.i18n;
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { title, price, description, imageId, imageUrl, featured } =
-		attributes;
+	const {
+		title,
+		price,
+		description,
+		imageId,
+		imageUrl,
+		featured,
+		period = '',
+		features = '',
+		buttonText = '',
+		buttonUrl = '',
+		buttonStyle = 'fill',
+	} = attributes;
+
+	const featureList = features
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter(Boolean);
 
 	const blockProps = useBlockProps({
 		className: 'bridge-price-card' + (featured ? ' is-featured' : ''),
@@ -83,6 +106,46 @@ const Edit = ({ attributes, setAttributes }) => {
 							),
 					})
 				)
+			),
+			el(
+				PanelBody,
+				{
+					title: __('Details and button', 'bridge'),
+					initialOpen: true,
+				},
+				el(TextControl, {
+					label: __('After the price', 'bridge'),
+					help: __('A short line such as "/ per month".', 'bridge'),
+					value: period,
+					onChange: (value) => setAttributes({ period: value }),
+				}),
+				el(TextareaControl, {
+					label: __('What is included', 'bridge'),
+					help: __('One item per line, shown as a list.', 'bridge'),
+					value: features,
+					onChange: (value) => setAttributes({ features: value }),
+				}),
+				el(TextControl, {
+					label: __('Button text', 'bridge'),
+					value: buttonText,
+					onChange: (value) => setAttributes({ buttonText: value }),
+				}),
+				el(TextControl, {
+					label: __('Button link', 'bridge'),
+					type: 'url',
+					value: buttonUrl,
+					onChange: (value) => setAttributes({ buttonUrl: value }),
+				}),
+				el(SelectControl, {
+					label: __('Button style', 'bridge'),
+					value: buttonStyle,
+					options: [
+						{ label: __('Filled', 'bridge'), value: 'fill' },
+						{ label: __('Outline', 'bridge'), value: 'outline' },
+					],
+					onChange: (value) => setAttributes({ buttonStyle: value }),
+					__nextHasNoMarginBottom: true,
+				})
 			)
 		),
 		el(
@@ -110,6 +173,12 @@ const Edit = ({ attributes, setAttributes }) => {
 				onChange: (value) => setAttributes({ price: value }),
 				placeholder: __('£0', 'bridge'),
 			}),
+			period &&
+				el(
+					'p',
+					{ className: 'bridge-price-card__period-preview' },
+					period
+				),
 			el(RichText, {
 				tagName: 'p',
 				className: 'bridge-price-card__description',
@@ -117,7 +186,26 @@ const Edit = ({ attributes, setAttributes }) => {
 				allowedFormats: [],
 				onChange: (value) => setAttributes({ description: value }),
 				placeholder: __('What is included', 'bridge'),
-			})
+			}),
+			featureList.length > 0 &&
+				el(
+					'ul',
+					{ className: 'bridge-price-card__features', role: 'list' },
+					featureList.map((line, i) => el('li', { key: i }, line))
+				),
+			buttonText &&
+				buttonUrl &&
+				el(
+					'span',
+					{
+						className:
+							'bridge-price-card__button wp-element-button' +
+							('outline' === buttonStyle
+								? ' is-style-outline'
+								: ''),
+					},
+					buttonText
+				)
 		)
 	);
 };

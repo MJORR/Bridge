@@ -18,7 +18,9 @@ const { __ } = window.wp.i18n;
 // that offers it — see src/editor/band-mask.js.
 const { MaskPanel, maskStyle, hasMask } = window.bridgeBandMaskUI || {};
 
-const ALLOWED_BLOCKS = ['bridge/testimonial', 'core/heading'];
+// Paragraphs added later, for an eyebrow line or a summary in the intro.
+// Existing bands are unaffected: allowing a block adds nothing to one.
+const ALLOWED_BLOCKS = ['bridge/testimonial', 'core/heading', 'core/paragraph'];
 
 // The intro: a headline, and the quotes. The summary line this used to seed
 // under the heading is gone — it was left untouched more often than it was

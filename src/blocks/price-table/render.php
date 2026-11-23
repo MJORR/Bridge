@@ -33,7 +33,9 @@ list( $intro_html, $label_id ) = bridge_section_intro( $intro, 'bridge-price-tab
 
 echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 	$attributes,
-	'bridge-price-table bridge-price-table--' . $width,
+	'bridge-price-table bridge-price-table--' . $width
+		// Left-aligned cards: added later, so only a table that asks for it.
+		. ( 'left' === ( $attributes['textAlignment'] ?? 'center' ) ? ' bridge-price-table--text-left' : '' ),
 	sprintf( '--columns: %d;', $columns ),
 	$label_id
 );

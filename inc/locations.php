@@ -40,6 +40,11 @@ function bridge_location_fields(): array
 		'phone'    => __('Phone', 'bridge'),
 		'email'    => __('Email', 'bridge'),
 		'url'      => __('Page link', 'bridge'),
+		// Read only by the Location Cards block. Optional, so a site that
+		// never fills them in sees nothing new anywhere.
+		'hours'      => __('Opening hours', 'bridge'),
+		'directions' => __('Directions link', 'bridge'),
+		'image'      => __('Photo', 'bridge'),
 	);
 }
 
@@ -60,6 +65,10 @@ function bridge_sanitize_location($raw): array
 		'phone'    => sanitize_text_field((string) ($raw['phone'] ?? '')),
 		'email'    => sanitize_email((string) ($raw['email'] ?? '')),
 		'url'      => esc_url_raw(trim((string) ($raw['url'] ?? ''))),
+		'hours'      => sanitize_textarea_field((string) ($raw['hours'] ?? '')),
+		'directions' => esc_url_raw(trim((string) ($raw['directions'] ?? ''))),
+		// An attachment id, kept as a string like the other fields.
+		'image'      => (string) (absint($raw['image'] ?? 0) ?: ''),
 	);
 }
 
@@ -241,4 +250,175 @@ function bridge_site_locations_links(): array
 	}
 
 	return $links;
+}
+
+/**
+ * Where "Get directions" goes for a location.
+ *
+ * The location's own directions link when it has one; otherwise a Google Maps
+ * search for its name, address and postcode; otherwise nothing, for a
+ * location with no address to search for.
+ *
+ * @param array<string, string> $location A sanitised location.
+ * @return string
+ */
+function bridge_location_directions_url(array $location): string
+{
+	if ('' !== ($location['directions'] ?? '')) {
+		return (string) $location['directions'];
+	}
+
+	$where = trim(implode(', ', array_filter(array(
+		(string) ($location['name'] ?? ''),
+		preg_replace('/\s*\n\s*/', ', ', (string) ($location['address'] ?? '')),
+		(string) ($location['postcode'] ?? ''),
+	))));
+
+	if ('' === trim((string) ($location['address'] ?? '') . (string) ($location['postcode'] ?? ''))) {
+		return '';
+	}
+
+	return 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($where);
+}
+
+/**
+ * A solid phone or envelope for the card's contact lines.
+ *
+ * Drawn here rather than taken from the icon library, whose icons are all
+ * outlines at the site's stroke weight: these are filled, and only this block
+ * uses them.
+ *
+ * @param string $name 'phone' or 'mail'.
+ * @return string
+ */
+function bridge_location_card_icon(string $name): string
+{
+	$paths = array(
+		'phone' => 'M6 2.5h3.2a1 1 0 0 1 .93.63l1.8 4.5a1 1 0 0 1-.41 1.23l-1.97 1.18a12 12 0 0 0 4.41 4.41l1.18-1.97a1 1 0 0 1 1.23-.41l4.5 1.8a1 1 0 0 1 .63.93V18a3.5 3.5 0 0 1-3.5 3.5A16 16 0 0 1 2.5 6 3.5 3.5 0 0 1 6 2.5z',
+		'mail'  => 'M4 4h16a2 2 0 0 1 2 2v.4l-10 6.25L2 6.4V6a2 2 0 0 1 2-2zm-2 4.75 9.47 5.92a1 1 0 0 0 1.06 0L22 8.75V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z',
+	);
+
+	if (! isset($paths[$name])) {
+		return '';
+	}
+
+	return sprintf(
+		'<svg class="bridge-location-card__icon" viewBox="0 0 24 24" width="1.1em" height="1.1em" fill="currentColor" aria-hidden="true" focusable="false"><path d="%s"/></svg>',
+		esc_attr($paths[$name])
+	);
+}
+
+/**
+ * One location as a card: the photo with the name and address over it, the
+ * opening hours, the phone and email, and two buttons.
+ *
+ * @param array<string, string> $location A sanitised location.
+ * @param array<string, string> $args     book_label, book_url, directions_label,
+ *                                        heading_level.
+ * @return string
+ */
+function bridge_location_card_html(array $location, array $args): string
+{
+	$name = (string) ($location['name'] ?? '');
+
+	if ('' === $name) {
+		return '';
+	}
+
+	$level   = in_array($args['heading_level'] ?? 'h3', array('h2', 'h3', 'h4'), true) ? $args['heading_level'] : 'h3';
+	$address = trim(implode(', ', array_filter(array(
+		preg_replace('/\s*\n\s*/', ', ', trim((string) ($location['address'] ?? ''))),
+		(string) ($location['postcode'] ?? ''),
+	))));
+	$image   = (int) ($location['image'] ?? 0);
+	$photo   = $image ? wp_get_attachment_image(
+		$image,
+		'large',
+		false,
+		array(
+			'class'   => 'bridge-location-card__image',
+			'alt'     => '',
+			'loading' => 'lazy',
+			'sizes'   => '(min-width: 48rem) 50vw, 100vw',
+		)
+	) : '';
+
+	$head = sprintf(
+		'<div class="bridge-location-card__head%1$s">%2$s<div class="bridge-location-card__title"><%3$s class="bridge-location-card__name">%4$s</%3$s>%5$s</div></div>',
+		'' !== $photo ? ' has-image' : '',
+		$photo, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core markup.
+		$level,
+		esc_html($name),
+		'' !== $address ? '<p class="bridge-location-card__address">' . esc_html($address) . '</p>' : ''
+	);
+
+	$body = '';
+
+	if ('' !== ($location['hours'] ?? '')) {
+		$body .= sprintf(
+			'<div class="bridge-location-card__hours"><p class="bridge-location-card__label">%1$s</p><p>%2$s</p></div>',
+			esc_html__('Opening hours', 'bridge'),
+			nl2br(esc_html((string) $location['hours']))
+		);
+	}
+
+	$contact = '';
+
+	if ('' !== ($location['phone'] ?? '')) {
+		$contact .= sprintf(
+			'<li>%1$s<a href="tel:%2$s"><span class="screen-reader-text">%3$s </span>%4$s</a></li>',
+			bridge_location_card_icon('phone'),
+			esc_attr(preg_replace('/[^0-9+]/', '', (string) $location['phone'])),
+			esc_html__('Phone:', 'bridge'),
+			esc_html((string) $location['phone'])
+		);
+	}
+
+	if ('' !== ($location['email'] ?? '')) {
+		$contact .= sprintf(
+			'<li>%1$s<a href="mailto:%2$s"><span class="screen-reader-text">%3$s </span>%4$s</a></li>',
+			bridge_location_card_icon('mail'),
+			esc_attr(antispambot((string) $location['email'])),
+			esc_html__('Email:', 'bridge'),
+			esc_html(antispambot((string) $location['email']))
+		);
+	}
+
+	if ('' !== $contact) {
+		$body .= '<ul class="bridge-location-card__contact">' . $contact . '</ul>';
+	}
+
+	$book       = '' !== ($args['book_url'] ?? '') ? (string) $args['book_url'] : (string) ($location['url'] ?? '');
+	$directions = bridge_location_directions_url($location);
+	$buttons    = '';
+
+	if ('' !== $book) {
+		$buttons .= sprintf(
+			'<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="%1$s">%2$s<span class="screen-reader-text"> %3$s</span></a></div>',
+			esc_url($book),
+			esc_html((string) $args['book_label']),
+			/* translators: %s: location name. */
+			esc_html(sprintf(__('at %s', 'bridge'), $name))
+		);
+	}
+
+	if ('' !== $directions) {
+		$buttons .= sprintf(
+			'<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="%1$s" target="_blank" rel="noopener">%2$s<span class="screen-reader-text"> %3$s</span></a></div>',
+			esc_url($directions),
+			esc_html((string) $args['directions_label']),
+			/* translators: %s: location name. */
+			esc_html(sprintf(__('to %s (opens in a new tab)', 'bridge'), $name))
+		);
+	}
+
+	if ('' !== $buttons) {
+		$body .= '<div class="wp-block-buttons bridge-location-card__actions">' . $buttons . '</div>';
+	}
+
+	return sprintf(
+		'<article class="bridge-location-card">%1$s<div class="bridge-location-card__body">%2$s</div></article>',
+		$head, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts.
+		$body // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — built from escaped parts.
+	);
 }

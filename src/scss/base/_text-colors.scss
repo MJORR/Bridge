@@ -30,3 +30,16 @@
 		color: var(--wp--preset--color--#{$slug}) !important;
 	}
 }
+
+/**
+ * Highlighted words given a text colour only.
+ *
+ * The editor's Highlight → Text wraps the words in a <mark>, and the browser
+ * paints every <mark> yellow unless told otherwise. Core used to write a
+ * transparent background inline to stop that; when it does not, the words
+ * arrive yellow. A colour chosen under Highlight → Background is written
+ * inline, so it still wins over this.
+ */
+mark.has-inline-color {
+	background-color: transparent;
+}

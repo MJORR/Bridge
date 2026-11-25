@@ -117,6 +117,29 @@ if ( 'small' === ( $attributes['buttonSize'] ?? 'default' ) ) {
 	$classes .= ' bridge-features--button-small';
 }
 
+// A panel set to double width. The band then holds one column until it is
+// wide enough for its full set of columns — see _feature-blocks.scss. Grid
+// only: a swipe row has no columns to span.
+if ( 'grid' === $layout && ! $is_carousel ) {
+	foreach ( (array) ( $block->parsed_block['innerBlocks'] ?? array() ) as $bridge_child ) {
+		if ( 'bridge/feature-block' === ( $bridge_child['blockName'] ?? '' ) && ! empty( $bridge_child['attrs']['wide'] ) ) {
+			$classes .= ' bridge-features--has-wide';
+			break;
+		}
+	}
+}
+
+// The words at the foot of the panel and the arrow in its top-right corner.
+if ( ! empty( $attributes['titleBottom'] ) ) {
+	$classes .= ' bridge-features--title-bottom';
+}
+
+// The arrow as a solid white disc with a Primary arrow, rather than an
+// outline in the text colour.
+if ( ! empty( $attributes['showArrow'] ) && ! empty( $attributes['arrowSolid'] ) ) {
+	$classes .= ' bridge-features--arrow-solid';
+}
+
 list( $intro_html, $label_id ) = bridge_section_intro( $intro, 'bridge-features__intro' );
 
 // The decorative shape behind the panels, if this band asks for one. Shared

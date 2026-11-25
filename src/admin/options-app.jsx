@@ -280,7 +280,7 @@ function OptionsApp() {
 					status: clamped ? 'warning' : 'success',
 					message: clamped
 						? __(
-								'Saved. Some values were outside their allowed range and were adjusted to the nearest permitted value.',
+								'Saved. Some values were out of range and have been adjusted.',
 								'bridge'
 							)
 						: __(

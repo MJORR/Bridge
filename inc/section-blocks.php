@@ -46,6 +46,7 @@ function bridge_section_block_names(): array
 		'bridge/price-table',
 		'bridge/split-content',
 		'bridge/testimonials',
+		'bridge/location-cards',
 	);
 }
 

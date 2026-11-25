@@ -111,6 +111,7 @@ const Edit = ({ attributes, setAttributes, context, clientId }) => {
 		linkText,
 		linkStyle,
 		highlight,
+		wide,
 		cardBackground,
 		cardText,
 	} = attributes;
@@ -222,6 +223,7 @@ const Edit = ({ attributes, setAttributes, context, clientId }) => {
 			isSummary ? 'bridge-feature--summary' : '',
 			linkUrl ? 'is-linked' : '',
 			highlight ? 'is-highlighted' : '',
+			wide ? 'bridge-feature--wide' : '',
 			cardBackground && !isCover ? 'has-card-background' : '',
 			cardText ? 'has-card-text' : '',
 		]
@@ -289,6 +291,16 @@ const Edit = ({ attributes, setAttributes, context, clientId }) => {
 					),
 					checked: !!highlight,
 					onChange: (value) => setAttributes({ highlight: value }),
+					__nextHasNoMarginBottom: true,
+				}),
+				el(ToggleControl, {
+					label: __('Double width', 'bridge'),
+					help: __(
+						'Spans two columns on wide screens. The section shows one column below 1024px. Not used when panels swipe sideways.',
+						'bridge'
+					),
+					checked: !!wide,
+					onChange: (value) => setAttributes({ wide: value }),
 					__nextHasNoMarginBottom: true,
 				})
 			),

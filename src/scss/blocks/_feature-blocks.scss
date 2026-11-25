@@ -70,6 +70,15 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 		@include section.container(narrow);
 	}
 
+	// More room between the heading and the panels than the row's own gap —
+	// the step after it on the spacing scale, as the editor shows it. Only
+	// when there is an intro; the gap to the swipe controls is unchanged.
+	&__intro + &__list {
+		margin-block-start: calc(
+			var(--wp--preset--spacing--70) - var(--wp--preset--spacing--50)
+		);
+	}
+
 	// The gap between panels is the global block gap, so the space in this grid
 	// is the space between blocks everywhere else on the site rather than a
 	// number chosen here. 16rem is the Cards band's floor, and the panels are
@@ -837,6 +846,132 @@ $tint: color-mix(in srgb, currentcolor 12%, transparent);
 
 		&:hover &__media > img {
 			transform: none;
+		}
+	}
+}
+
+/**
+ * The panel's button, in the editor as on the page.
+ *
+ * The editor prints WordPress's own button rule (`:root :where(.wp-element-
+ * button)`) after the theme's, and at the same weight it wins there: the
+ * button lost its border, its padding and its capitals and read as a line
+ * of plain text. The front end loads the theme last, so it never showed.
+ * The same values components/_button.scss sets, one class heavier, so the
+ * page is unchanged and the editor matches it.
+ */
+.bridge-features .bridge-feature__button.wp-element-button {
+	padding: var(--wp--custom--button--padding-block, 0.85rem)
+		var(--wp--custom--button--padding-inline, 1.65rem);
+	border-width: var(--wp--custom--button--border-width, 2px);
+	font-weight: var(--wp--custom--button--weight, 600);
+	letter-spacing: var(--wp--custom--button--letter-spacing, 0);
+	line-height: 1.2;
+	text-transform: var(--wp--custom--button--transform, none);
+}
+
+/**
+ * The editor's "+" for adding a panel. It is a child of the grid like the
+ * panels are, so it took a cell of its own and sat in the card row as if it
+ * were a card. On its own line under the panels instead. Editor only: the
+ * appender is never on the page.
+ */
+.bridge-features__list > .block-list-appender {
+	grid-column: 1 / -1;
+	justify-self: end;
+	margin: 0;
+}
+
+/**
+ * Title at the bottom: the words sit at the foot of the panel and the arrow
+ * moves to its top-right corner. Only on a band that turns it on.
+ */
+.bridge-features--title-bottom .bridge-feature__body {
+	position: relative;
+	justify-content: flex-end;
+
+	> :first-child {
+		margin-block-start: auto;
+	}
+
+	> .bridge-feature__arrow {
+		position: absolute;
+		inset-block-start: var(--wp--custom--card--padding, 1.5rem);
+		inset-inline-end: var(--wp--custom--card--padding, 1.5rem);
+		margin: 0;
+		padding: 0;
+	}
+}
+
+/**
+ * Solid arrow: a white disc with the arrow in Primary, instead of an outline
+ * in the panel's text colour. The icon is a circle and two strokes, so the
+ * circle is filled and the strokes recoloured.
+ */
+.bridge-features--arrow-solid .bridge-feature__arrow .bridge-icon {
+	color: var(--wp--preset--color--primary);
+
+	circle {
+		fill: var(--wp--preset--color--background, #fff);
+		stroke: var(--wp--preset--color--background, #fff);
+	}
+}
+
+/**
+ * Double-width panels.
+ *
+ * A band with a panel set to double width keeps one column until its content
+ * is at least 64rem (1024px) wide — so phones and iPads, either way round,
+ * get one panel per row — and then shows its full number of columns, the
+ * wide panel spanning two of them. Three panels in four columns: 1 + 1 + 2.
+ *
+ * The wide panel's picture is cropped twice as wide as the others', so it
+ * stands at the same height as its neighbours rather than twice as tall.
+ *
+ * Below the switch, a photo panel takes a landscape crop on anything wider
+ * than a phone: a full-width 3:4 panel at tablet width would be taller than
+ * the screen.
+ */
+.bridge-features--has-wide .bridge-features__list {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+// In a band with a wide panel, a photo panel's crop changes with the layout,
+// so the photo and its wash are laid over the panel rather than sizing it —
+// otherwise the photo's own height pushes the words out of the bottom.
+.bridge-features--has-wide .bridge-feature--cover {
+	position: relative;
+
+	.bridge-feature__background,
+	.bridge-feature__wash {
+		position: absolute;
+		inset: 0;
+	}
+}
+
+@container bridge-features (width >= 37rem) and (width < 64rem) {
+	.bridge-features--has-wide .bridge-feature--cover {
+		aspect-ratio: 16 / 9;
+	}
+}
+
+@container bridge-features (width >= 64rem) {
+	.bridge-features--has-wide .bridge-features__list {
+		grid-template-columns: repeat(var(--columns, 3), minmax(0, 1fr));
+	}
+
+	.bridge-features--has-wide .bridge-feature--wide {
+		grid-column: span 2;
+
+		// A photo panel takes the row's height from its neighbours rather
+		// than a ratio of its own, which the gap it spans would make taller.
+		&.bridge-feature--cover {
+			aspect-ratio: auto;
+			align-self: stretch;
+		}
+
+		.bridge-feature__media {
+			aspect-ratio: calc(2 * var(--bridge-feature-ratio));
 		}
 	}
 }

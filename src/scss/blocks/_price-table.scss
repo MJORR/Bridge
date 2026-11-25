@@ -104,7 +104,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--wp--preset--spacing--20);
-		margin: 0;
+		// The same space under the price as above it. This rule outweighs
+		// the card's stack spacing, so it has to say so itself.
+		margin: var(--bridge-heading-gap) 0 0;
 		padding: 0;
 		list-style: none;
 		font-size: var(--wp--preset--font-size--small);
@@ -126,4 +128,39 @@
 		border-color: var(--wp--preset--color--accent);
 		border-width: 2px;
 	}
+}
+
+// ---- Card options, set on the Price Table. Each only when chosen. ----------
+
+.bridge-price-table--image-small .bridge-price-card__image {
+	max-width: 3.5rem;
+}
+
+.bridge-price-table--title-regular .bridge-price-card__title {
+	font-weight: 400;
+}
+
+// A small dot before each feature, in the card's text colour, hanging in
+// the margin so the words stay aligned with the rest of the card.
+.bridge-price-table--bullets .bridge-price-card__features li {
+	position: relative;
+	padding-inline-start: 1.1em;
+
+	&::before {
+		content: "";
+		position: absolute;
+		inset-inline-start: 0;
+		top: 0.6em;
+		width: 0.35em;
+		height: 0.35em;
+		border-radius: 50%;
+		background-color: currentcolor;
+	}
+}
+
+// Centred cards put the list's dots and words on one centred line each.
+.bridge-price-table--bullets:not(.bridge-price-table--text-left)
+	.bridge-price-card__features
+	li {
+	align-self: center;
 }

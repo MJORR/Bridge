@@ -60,6 +60,10 @@ $button_label = '' !== $button_label ? $button_label : __( 'Send enquiry', 'brid
 $button_color = (string) ( $attributes['buttonColor'] ?? '' );
 $button_color = array_key_exists( $button_color, bridge_palette_slugs() ) ? $button_color : '';
 
+// Its label, likewise. Empty keeps the colour picked for the fill.
+$button_text = (string) ( $attributes['buttonTextColor'] ?? '' );
+$button_text = array_key_exists( $button_text, bridge_palette_slugs() ) ? $button_text : '';
+
 $success = trim( (string) ( $attributes['successMessage'] ?? '' ) );
 $success = '' !== $success
 	? $success
@@ -75,9 +79,12 @@ echo bridge_section_wrapper( $attributes, $classes, '', $label_id ); // phpcs:ig
 			echo bridge_enquiry_form_html( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — escaped as it is assembled.
 				array(
 					'form_id'         => $form_id,
-					'require_phone'   => ! empty( $attributes['requirePhone'] ),
+					// Always: name, email, phone and message are all required.
+					// The old `requirePhone` attribute is no longer read.
+					'require_phone'   => true,
 					'button_label'    => $button_label,
 					'button_color'    => $button_color,
+					'button_text'     => $button_text,
 					'success_message' => $success,
 					'response'        => $response,
 					// The optional dropdowns and checkboxes, and the rows

@@ -1,0 +1,188 @@
+/**
+ * Bridge — Location Cards.
+ *
+ * One card per location from Site Options: the photo with the name and
+ * address laid over it, then the opening hours, the phone and email with an
+ * icon each, and the two buttons side by side.
+ *
+ * The card is the shared card surface, so its corner, ground and shadow are
+ * the Theme Options card settings like every other card on the site.
+ */
+@use "../abstracts/card" as card;
+@use "../abstracts/section" as section;
+@use "../abstracts/section-intro" as intro;
+
+@include intro.section-intro;
+
+.bridge-location-cards {
+	&__inner {
+		@include section.container(narrow);
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--50);
+		container: bridge-location-cards / inline-size;
+	}
+
+	&--wide &__inner {
+		@include section.container(wide);
+	}
+
+	&__grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: section.$grid-gap;
+
+		@container bridge-location-cards (width >= 48rem) {
+			grid-template-columns: repeat(var(--columns, 2), minmax(0, 1fr));
+		}
+	}
+}
+
+.bridge-location-card {
+	@include card.surface;
+
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	border: 1px solid color-mix(in srgb, currentcolor 12%, transparent);
+
+	// The photo, with the name and address on it. A plain Primary panel
+	// when the location has no photo, so the name still reads white.
+	&__head {
+		position: relative;
+		display: flex;
+		align-items: flex-end;
+		min-height: clamp(14rem, 30vw, 22.5rem);
+		background-color: var(--wp--preset--color--primary);
+		color: var(--wp--preset--color--background);
+
+		&.has-image::after {
+			content: "";
+			position: absolute;
+			inset: 0;
+			background: linear-gradient(
+				to top,
+				color-mix(
+					in srgb,
+					var(--wp--preset--color--primary) 75%,
+					transparent
+				),
+				color-mix(
+						in srgb,
+						var(--wp--preset--color--primary) 15%,
+						transparent
+					)
+					70%
+			);
+		}
+	}
+
+	&__image {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	&__title {
+		position: relative;
+		z-index: 1;
+		padding: var(--wp--preset--spacing--50);
+	}
+
+	&__name {
+		margin: 0;
+		color: inherit;
+		font-family: var(--wp--preset--font-family--heading, inherit);
+		font-size: var(--wp--preset--font-size--x-large);
+		line-height: 1.15;
+	}
+
+	&__address {
+		margin: 0.5rem 0 0;
+		font-size: var(--wp--preset--font-size--small);
+	}
+
+	// One column: hours, then the contact lines, then the buttons.
+	&__body {
+		display: flex;
+		flex-direction: column;
+		flex-grow: 1;
+		gap: var(--wp--preset--spacing--40);
+		padding: var(--wp--preset--spacing--50);
+
+		p {
+			margin: 0;
+		}
+	}
+
+	// A thin rule between the hours and the contact lines, only when both
+	// are there.
+	&__hours:has(+ .bridge-location-card__contact) {
+		padding-block-end: var(--wp--preset--spacing--40);
+		border-block-end: 1px solid
+			color-mix(in srgb, currentcolor 15%, transparent);
+	}
+
+	&__label {
+		margin-block-end: 0.5rem !important;
+		font-size: var(--wp--preset--font-size--x-small);
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	&__contact {
+		display: grid;
+		gap: 0.5rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+
+		li {
+			display: flex;
+			align-items: center;
+			gap: 0.65em;
+			min-width: 0;
+		}
+
+		a {
+			color: inherit;
+			text-decoration: none;
+			overflow-wrap: anywhere;
+
+			&:hover,
+			&:focus-visible {
+				text-decoration: underline;
+				text-underline-offset: 0.2em;
+			}
+		}
+	}
+
+	&__icon {
+		flex: none;
+	}
+
+	// Side by side at every width. On a narrow card each button shrinks and
+	// its label wraps inside it rather than the second dropping below.
+	&__actions {
+		display: flex;
+		flex-wrap: nowrap;
+		gap: var(--wp--preset--spacing--20);
+		margin-block-start: auto;
+		padding-block-start: var(--wp--preset--spacing--20);
+
+		.wp-block-button {
+			flex: 0 1 auto;
+			min-width: 0;
+			margin: 0;
+		}
+
+		.wp-block-button__link {
+			width: 100%;
+			white-space: normal;
+			text-align: center;
+		}
+	}
+}

@@ -11,7 +11,9 @@
 const { useBlockProps, useInnerBlocksProps, InspectorControls } =
 	window.wp.blockEditor;
 const { createElement: el, Fragment } = window.wp.element;
-const { PanelBody, RangeControl, SelectControl } = window.wp.components;
+const { PanelBody, RangeControl, SelectControl, BaseControl, ColorPalette } =
+	window.wp.components;
+const { useSelect } = window.wp.data;
 const { __ } = window.wp.i18n;
 
 // The mask shape's controls and preview styling, shared with every other band
@@ -42,7 +44,36 @@ const TEMPLATE = [
 ];
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { width, cardStyle, columns, overflowStyle } = attributes;
+	const {
+		width,
+		cardStyle,
+		columns,
+		overflowStyle,
+		cardBackground = '',
+		cardLayout = 'standard',
+		starColor = '',
+	} = attributes;
+
+	// The site's palette, so the card colour is stored as a slug.
+	const themeColors = useSelect((select) => {
+		const settings = select('core/block-editor').getSettings();
+
+		return settings.colors || settings.colorPalette || [];
+	}, []);
+	const cardHex =
+		cardStyle !== 'outlined' && cardBackground
+			? themeColors.find((c) => c.slug === cardBackground)?.color
+			: undefined;
+	// The same light-or-dark question render.php asks, for the preview.
+	const isLight = (hex) => {
+		const v = (hex || '').replace('#', '');
+		if (v.length < 6) {
+			return true;
+		}
+		const [r, g, b] = [0, 2, 4].map((i) => parseInt(v.slice(i, i + 2), 16));
+
+		return 0.299 * r + 0.587 * g + 0.114 * b > 0.6 * 255;
+	};
 
 	const blockProps = useBlockProps({
 		className: [
@@ -56,10 +87,29 @@ const Edit = ({ attributes, setAttributes }) => {
 			// fights the editor; the front end still swipes.
 			'is-editor-preview',
 			hasMask(attributes) ? 'has-mask' : '',
+			cardHex ? 'bridge-testimonials--card-bg' : '',
+			cardLayout === 'review' ? 'bridge-testimonials--layout-review' : '',
+			starColor ? 'bridge-testimonials--star-color' : '',
 		]
 			.filter(Boolean)
 			.join(' '),
-		style: { '--columns': columns, ...maskStyle(attributes) },
+		style: {
+			'--columns': columns,
+			...(cardHex
+				? {
+						'--bridge-testimonials-card-bg': `var(--wp--preset--color--${cardBackground})`,
+						'--bridge-testimonials-card-text': isLight(cardHex)
+							? 'var(--wp--preset--color--text, #1f2937)'
+							: 'var(--wp--preset--color--background, #fff)',
+					}
+				: {}),
+			...(starColor
+				? {
+						'--bridge-testimonials-star': `var(--wp--preset--color--${starColor})`,
+					}
+				: {}),
+			...maskStyle(attributes),
+		},
 	});
 
 	// One flat list in the editor so cards, intro and outro can be dragged
@@ -133,6 +183,67 @@ const Edit = ({ attributes, setAttributes }) => {
 						{ label: __('Outlined', 'bridge'), value: 'outlined' },
 					],
 					onChange: (value) => setAttributes({ cardStyle: value }),
+				}),
+				cardStyle !== 'outlined' &&
+					el(
+						BaseControl,
+						{
+							label: __('Card background', 'bridge'),
+							help: __(
+								"Clear it to use the band's own card colour. The text colour is chosen to read on it.",
+								'bridge'
+							),
+							__nextHasNoMarginBottom: true,
+						},
+						el(ColorPalette, {
+							colors: themeColors,
+							value: cardHex,
+							onChange: (hex) =>
+								setAttributes({
+									cardBackground:
+										themeColors.find((c) => c.color === hex)
+											?.slug || '',
+								}),
+							disableCustomColors: true,
+							clearable: true,
+						})
+					),
+				el(
+					BaseControl,
+					{
+						label: __('Star colour', 'bridge'),
+						help: __(
+							'Clear it to use the Accent colour.',
+							'bridge'
+						),
+						__nextHasNoMarginBottom: true,
+					},
+					el(ColorPalette, {
+						colors: themeColors,
+						value: themeColors.find((c) => c.slug === starColor)
+							?.color,
+						onChange: (hex) =>
+							setAttributes({
+								starColor:
+									themeColors.find((c) => c.color === hex)
+										?.slug || '',
+							}),
+						disableCustomColors: true,
+						clearable: true,
+					})
+				),
+				el(SelectControl, {
+					label: __('Card layout', 'bridge'),
+					help: __(
+						'Review puts the name at the top, and the stars and source along the bottom.',
+						'bridge'
+					),
+					value: cardLayout,
+					options: [
+						{ label: __('Standard', 'bridge'), value: 'standard' },
+						{ label: __('Review', 'bridge'), value: 'review' },
+					],
+					onChange: (value) => setAttributes({ cardLayout: value }),
 				})
 			),
 			MaskPanel(attributes, setAttributes)

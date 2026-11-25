@@ -35,7 +35,11 @@ echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.Out
 	$attributes,
 	'bridge-price-table bridge-price-table--' . $width
 		// Left-aligned cards: added later, so only a table that asks for it.
-		. ( 'left' === ( $attributes['textAlignment'] ?? 'center' ) ? ' bridge-price-table--text-left' : '' ),
+		. ( 'left' === ( $attributes['textAlignment'] ?? 'center' ) ? ' bridge-price-table--text-left' : '' )
+		// Card details, each only when chosen.
+		. ( 'small' === ( $attributes['imageSize'] ?? 'standard' ) ? ' bridge-price-table--image-small' : '' )
+		. ( 'regular' === ( $attributes['titleWeight'] ?? 'bold' ) ? ' bridge-price-table--title-regular' : '' )
+		. ( ! empty( $attributes['featureBullets'] ) ? ' bridge-price-table--bullets' : '' ),
 	sprintf( '--columns: %d;', $columns ),
 	$label_id
 );

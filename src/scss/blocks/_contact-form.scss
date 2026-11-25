@@ -597,8 +597,8 @@ textarea.bridge-field__control {
 
 @container (width >= 48rem) {
 	.bridge-contact__grid--rows {
-		// The same gap between the columns.
-		column-gap: var(--wp--style--block-gap, var(--wp--preset--spacing--40));
+		// One step wider than the rows: XL on the site's spacing scale.
+		column-gap: var(--wp--preset--spacing--60);
 		grid-template-columns: repeat(6, minmax(0, 1fr));
 
 		> .bridge-field--name,

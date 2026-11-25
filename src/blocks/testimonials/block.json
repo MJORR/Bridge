@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "bridge/testimonials",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"title": "Testimonials",
 	"category": "design",
 	"icon": "format-quote",
@@ -36,6 +36,19 @@
 		"overflowStyle": {
 			"type": "string",
 			"default": "wrap"
+		},
+		"cardBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"starColor": {
+			"type": "string",
+			"default": ""
+		},
+		"cardLayout": {
+			"type": "string",
+			"enum": ["standard", "review"],
+			"default": "standard"
 		},
 		"mask": {
 			"type": "boolean",

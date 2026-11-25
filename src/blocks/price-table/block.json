@@ -27,6 +27,20 @@
 			"type": "string",
 			"enum": ["center", "left"],
 			"default": "center"
+		},
+		"imageSize": {
+			"type": "string",
+			"enum": ["standard", "small"],
+			"default": "standard"
+		},
+		"titleWeight": {
+			"type": "string",
+			"enum": ["bold", "regular"],
+			"default": "bold"
+		},
+		"featureBullets": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"example": {

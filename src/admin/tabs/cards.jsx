@@ -125,20 +125,11 @@ export function CardsTab({
 	 * under it get the label alone.
 	 */
 	const helpFor = {
-		heading: __(
-			'A step on the site’s own type scale, so card headings move with the rest of the typography.',
-			'bridge'
-		),
-		ratio: __(
-			'How the featured image is cut. Every card in a grid gets the same crop.',
-			'bridge'
-		),
-		avatar: __(
-			'How much of the card the circular photograph takes; the panel’s arch is drawn around it.',
-			'bridge'
-		),
+		heading: __("Card heading size, from the site's type scale.", 'bridge'),
+		ratio: __('How the featured image is cropped.', 'bridge'),
+		avatar: __('How large the round photo is.', 'bridge'),
 		wash: __(
-			'The brand colour the gradient rises in. The title colour is derived from it and checked at 4.5:1, so every choice here is legible.',
+			'The colour of the gradient. Text colour is set automatically.',
 			'bridge'
 		),
 	};
@@ -152,7 +143,7 @@ export function CardsTab({
 			<Section
 				title={__('Card styles', 'bridge')}
 				description={__(
-					'The three shapes the Cards block can draw. An editor picks one per band. Settings are per style, not per section skin — a heading is the same size whatever colour is behind it.',
+					'The three card styles a block can use.',
 					'bridge'
 				)}
 			>
@@ -216,7 +207,7 @@ export function CardsTab({
 					'excerpt',
 					__('Excerpt length (words)', 'bridge'),
 					__(
-						'The site’s default. A Cards block that has not been given a length of its own follows this, so a client who decides their cards are too wordy changes one number rather than opening every page. A band with its own length keeps it — this is a default, not an override.',
+						'The default excerpt length. Blocks with their own length keep it.',
 						'bridge'
 					)
 				)}
@@ -225,7 +216,7 @@ export function CardsTab({
 			<Section
 				title={__('The card surface', 'bridge')}
 				description={__(
-					'One card surface, drawn by every block that has cards — the post cards, downloads, feature panels, price cards and testimonials. These values are what they share, so a change here reaches all of them and none of them can drift.',
+					'Shared by every card on the site — posts, downloads, features, prices and testimonials.',
 					'bridge'
 				)}
 			>
@@ -234,10 +225,7 @@ export function CardsTab({
 					value={draft.cards.padding}
 					options={spacingOptions}
 					onChange={(value) => setGroup('cards', 'padding', value)}
-					help={__(
-						'From the same scale as the page’s spacing, so cards tighten and open up with the rest of the page rather than needing a number of their own.',
-						'bridge'
-					)}
+					help={__('Space inside each card.', 'bridge')}
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
@@ -247,7 +235,7 @@ export function CardsTab({
 					checked={Boolean(draft.cards.cutCorner)}
 					onChange={(on) => setGroup('cards', 'cutCorner', on)}
 					help={__(
-						'Takes the top-left corner off every card at 45°, showing the band behind it. Cut cards are flat and square: a corner radius is a second answer to the corner, and a shadow is drawn around the card’s box so it would trace the very corner you just removed. Both controls are put away while this is on, and both come back at the values you left them.',
+						'Cuts the top-left corner off every card. Corner radius and shadow are turned off while this is on.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -258,19 +246,13 @@ export function CardsTab({
 							'cards',
 							'cutSize',
 							__('Corner cut (% of card width)', 'bridge'),
-							__(
-								'A share of the card’s width rather than a fixed size, so the notch keeps its proportion on a card given a third of the page and one given a whole row. The cut is always 45°; this only says how far along the edges it starts.',
-								'bridge'
-							)
+							__('How big the cut corner is.', 'bridge')
 						)
 					: range(
 							'cards',
 							'radius',
 							__('Corner radius (px)', 'bridge'),
-							__(
-								'0 is a square card, which is a design rather than a mistake. Panels set flush against each other keep their square corners whatever this says.',
-								'bridge'
-							)
+							__('0 gives square corners.', 'bridge')
 						)}
 
 				{!draft.cards.cutCorner && (
@@ -282,10 +264,7 @@ export function CardsTab({
 							value: entry.slug,
 						}))}
 						onChange={(value) => setGroup('cards', 'shadow', value)}
-						help={__(
-							'How far a card lifts off the page. Outlined testimonials draw a border instead and are left flat — an outline and a shadow are two answers to the same question.',
-							'bridge'
-						)}
+						help={__('How far cards lift off the page.', 'bridge')}
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize
 					/>
@@ -295,7 +274,7 @@ export function CardsTab({
 			<Section
 				title={__('Card backgrounds', 'bridge')}
 				description={__(
-					'What a card is painted on each of the four grounds this theme puts one on — the page itself, and the three section skins. A card takes its text colour from the band it sits in, so these only have to answer one question: what does a card look like on that background. Not offered to editors; nothing can be painted one of these by hand.',
+					'The card colour on the page background and on each section style.',
 					'bridge'
 				)}
 			>
@@ -336,10 +315,7 @@ export function CardsPreview({ draft, payload, preview }) {
 			<p className="bridge-options__subhelp">
 				{sprintf(
 					/* translators: 1: number of styles. 2: number of grounds. */
-					__(
-						'%1$d card styles across %2$d grounds. The words take the band’s colour, exactly as they do on the site.',
-						'bridge'
-					),
+					__('%1$d card styles across %2$d backgrounds.', 'bridge'),
 					(cardStyles || []).length,
 					(cardGrounds || []).length
 				)}

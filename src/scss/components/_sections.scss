@@ -254,9 +254,8 @@
 }
 
 /**
- * Rounded corners on a coloured band, chosen per band in the Styles tab
- * beside the gradient. Twice the large radius, the same step a "Round" image
- * corner uses. Only a band wearing the class changes.
+ * Rounded corners on a coloured band. The Styles-tab toggle that set this has
+ * been removed; the rule stays so a band saved with the class keeps its look.
  */
 .has-band-rounded:is(
 	.is-style-bridge-surface,

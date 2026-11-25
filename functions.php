@@ -616,6 +616,17 @@ function bridge_register_blocks(): void
 	// script. See src/blocks/locations/render.php.
 	bridge_register_section_block('locations', true, false, array('wp-server-side-render', 'wp-data'));
 
+	// A card per location, read from Site Options. Dynamic; the intro is
+	// inner blocks. See src/blocks/location-cards/render.php.
+	bridge_register_section_block('location-cards', true, false, array('wp-server-side-render'));
+	wp_add_inline_script(
+		'bridge-location-cards-editor',
+		'window.bridgeLocationCards = ' . wp_json_encode(
+			array('siteOptionsUrl' => admin_url('admin.php?page=' . BRIDGE_SITE_OPTIONS_SLUG))
+		) . ';',
+		'before'
+	);
+
 	bridge_register_section_block('goals', true, true);
 	// The heading weight, so the editor can draw the "Heading font" figure
 	// style the way render.php does. See src/blocks/goals/render.php.

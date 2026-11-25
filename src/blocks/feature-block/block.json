@@ -36,6 +36,7 @@
 			"default": "button"
 		},
 		"highlight": { "type": "boolean", "default": false },
+		"wide": { "type": "boolean", "default": false },
 		"cardBackground": { "type": "string", "default": "" },
 		"cardText": { "type": "string", "default": "" }
 	},

@@ -38,6 +38,37 @@ $classes = sprintf(
 	$width
 );
 
+// The cards' own colour, a palette slug. Empty leaves them to the band's skin,
+// as before. The text on them is chosen against that colour, not the band's.
+$card_style = '';
+$card_bg    = (string) ( $attributes['cardBackground'] ?? '' );
+$palette    = bridge_palette_slugs();
+
+if ( isset( $palette[ $card_bg ] ) && 'outlined' !== $card ) {
+	$card_hex = (string) ( bridge_get_tokens()['brand']['palette'][ $card_bg ]['color'] ?? '' );
+	$classes .= ' bridge-testimonials--card-bg';
+	$card_style = sprintf(
+		'--bridge-testimonials-card-bg: var(--wp--preset--color--%1$s);--bridge-testimonials-card-text: %2$s;',
+		$card_bg,
+		'' === $card_hex || bridge_is_light_color( $card_hex )
+			? 'var(--wp--preset--color--text, #1f2937)'
+			: 'var(--wp--preset--color--background, #fff)'
+	);
+}
+
+// The stars' colour, a palette slug. Empty keeps the accent.
+$star_color = (string) ( $attributes['starColor'] ?? '' );
+
+if ( isset( $palette[ $star_color ] ) ) {
+	$classes   .= ' bridge-testimonials--star-color';
+	$card_style .= sprintf( '--bridge-testimonials-star: var(--wp--preset--color--%s);', $star_color );
+}
+
+// The Review layout: name at the top, stars and source along the foot.
+if ( 'review' === ( $attributes['cardLayout'] ?? 'standard' ) ) {
+	$classes .= ' bridge-testimonials--layout-review';
+}
+
 list( $intro_html, $label_id ) = bridge_section_intro( $intro, 'bridge-testimonials__intro' );
 
 // The decorative mask shape, when the block asks for one: the same shape,
@@ -47,7 +78,7 @@ list( $mask_class, $mask_style ) = bridge_band_mask( $attributes );
 echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 	$attributes,
 	$classes . $mask_class,
-	sprintf( '--columns: %d;', $columns ) . $mask_style,
+	sprintf( '--columns: %d;', $columns ) . $card_style . $mask_style,
 	$label_id
 );
 ?>

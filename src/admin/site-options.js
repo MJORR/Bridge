@@ -23,7 +23,13 @@
 		return;
 	}
 
-	document.querySelectorAll('[data-bridge-media]').forEach((field) => {
+	const wireMedia = (field) => {
+		if (field.dataset.bridgeMediaWired) {
+			return;
+		}
+
+		field.dataset.bridgeMediaWired = '1';
+
 		const input = field.querySelector('[data-bridge-media-input]');
 		const choose = field.querySelector('[data-bridge-media-choose]');
 
@@ -105,7 +111,12 @@
 					: 'Choose image';
 			});
 		}
-	});
+	};
+
+	document.querySelectorAll('[data-bridge-media]').forEach(wireMedia);
+
+	// A location row added later carries a photo picker of its own.
+	window.bridgeWireMedia = wireMedia;
 })();
 
 /**
@@ -178,6 +189,9 @@
 
 		list.appendChild(row);
 		wire(row);
+		row.querySelectorAll('[data-bridge-media]').forEach((field) =>
+			window.bridgeWireMedia?.(field)
+		);
 		row.querySelector('[data-bridge-location-name]')?.focus();
 	});
 })();

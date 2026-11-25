@@ -5,7 +5,8 @@
 const { useBlockProps, useInnerBlocksProps, InspectorControls } =
 	window.wp.blockEditor;
 const { createElement: el, Fragment } = window.wp.element;
-const { PanelBody, RangeControl, SelectControl } = window.wp.components;
+const { PanelBody, RangeControl, SelectControl, ToggleControl } =
+	window.wp.components;
 const { __ } = window.wp.i18n;
 
 const ALLOWED_BLOCKS = [
@@ -33,12 +34,24 @@ const TEMPLATE = [
 ];
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { width, columns, textAlignment = 'center' } = attributes;
+	const {
+		width,
+		columns,
+		textAlignment = 'center',
+		imageSize = 'standard',
+		titleWeight = 'bold',
+		featureBullets = false,
+	} = attributes;
 
 	const blockProps = useBlockProps({
 		className:
 			`bridge-price-table bridge-section bridge-band alignfull bridge-price-table--${width}` +
-			('left' === textAlignment ? ' bridge-price-table--text-left' : ''),
+			('left' === textAlignment ? ' bridge-price-table--text-left' : '') +
+			('small' === imageSize ? ' bridge-price-table--image-small' : '') +
+			('regular' === titleWeight
+				? ' bridge-price-table--title-regular'
+				: '') +
+			(featureBullets ? ' bridge-price-table--bullets' : ''),
 		style: { '--columns': columns },
 	});
 
@@ -90,6 +103,35 @@ const Edit = ({ attributes, setAttributes }) => {
 					],
 					onChange: (value) =>
 						setAttributes({ textAlignment: value }),
+				})
+			),
+			el(
+				PanelBody,
+				{ title: __('Cards', 'bridge'), initialOpen: true },
+				el(SelectControl, {
+					label: __('Image size', 'bridge'),
+					value: imageSize,
+					options: [
+						{ label: __('Standard', 'bridge'), value: 'standard' },
+						{ label: __('Small', 'bridge'), value: 'small' },
+					],
+					onChange: (value) => setAttributes({ imageSize: value }),
+				}),
+				el(SelectControl, {
+					label: __('Plan name weight', 'bridge'),
+					value: titleWeight,
+					options: [
+						{ label: __('Bold', 'bridge'), value: 'bold' },
+						{ label: __('Regular', 'bridge'), value: 'regular' },
+					],
+					onChange: (value) => setAttributes({ titleWeight: value }),
+				}),
+				el(ToggleControl, {
+					label: __('Bullet points on features', 'bridge'),
+					checked: !!featureBullets,
+					onChange: (value) =>
+						setAttributes({ featureBullets: value }),
+					__nextHasNoMarginBottom: true,
 				})
 			)
 		),

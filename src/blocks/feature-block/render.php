@@ -223,6 +223,11 @@ if ( $highlight ) {
 	$classes .= ' is-highlighted';
 }
 
+// Two columns wide on a wide screen. The band decides when there is room.
+if ( ! empty( $attributes['wide'] ) ) {
+	$classes .= ' bridge-feature--wide';
+}
+
 $wrapper = get_block_wrapper_attributes(
 	array_filter(
 		array(

@@ -52,7 +52,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 			<Section
 				title={__('Article layout', 'bridge')}
 				description={__(
-					'Where the featured image sits relative to the headline. One choice for every post on the site — a reader learns the shape of an article once, and every page after that is easier for it. All three are the same blocks and take the site’s own palette and type scale; only the arrangement changes.',
+					'Where the featured image sits on posts.',
 					'bridge'
 				)}
 			>
@@ -94,7 +94,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 							setGroup('posts', 'coverMaxHeight', value ?? 52)
 						}
 						help={__(
-							'How tall the photograph band stands, as a share of the window\u2019s height \u2014 50 is half the screen. The photograph is cropped to fill it. A very long headline can still push the band taller so that none of it is cut off.',
+							'Height of the image band, as a percentage of the screen height.',
 							'bridge'
 						)}
 						__nextHasNoMarginBottom
@@ -119,7 +119,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 			<Section
 				title={__('Lead image', 'bridge')}
 				description={__(
-					'The corner the featured image is cut to, on every post on the site. It applies to the Classic and Feature layouts, where the photograph is a picture on a page. Cover is the exception and takes none of them: there the photograph is the band itself, bled to both edges of the window, and a band has no corners to shape.',
+					'Corner style for the featured image. Not used by the Cover layout.',
 					'bridge'
 				)}
 			>
@@ -159,7 +159,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 			<Section
 				title={__('Background', 'bridge')}
 				description={__(
-					'The colour behind a single post. Posts only — pages, archives and the front page keep the site’s page colour, which is what makes this read as an article rather than as a second theme.',
+					'Background colour for single posts only.',
 					'bridge'
 				)}
 			>
@@ -168,7 +168,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 					checked={Boolean(draft.posts?.surface)}
 					onChange={(on) => setGroup('posts', 'surface', on)}
 					help={__(
-						'Puts every post on the palette’s Surface colour instead of the page colour. The header and the footer paint their own ground and are unchanged; so are cards and skinned bands, which each carry a colour of their own.',
+						'Uses the Surface colour behind posts instead of the page colour.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -191,7 +191,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 			<Section
 				title={__('Breadcrumbs', 'bridge')}
 				description={__(
-					'The trail from the front page down to the article, above the headline. It is also the structured data that turns the URL line of a Google result into the path — so switching it off costs the trail in both places at once, which is deliberate: a site should not tell a search engine about a path it does not show.',
+					'Shows the breadcrumb trail above the headline on posts.',
 					'bridge'
 				)}
 			>
@@ -200,7 +200,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 					checked={breadcrumb}
 					onChange={(on) => setGroup('posts', 'breadcrumb', on)}
 					help={__(
-						'Pages and archives keep their trail either way. A post is the page most often arrived at cold from a search result, which is why it is the one with a choice.',
+						'Pages and archives always show their breadcrumbs.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -225,7 +225,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 			<Section
 				title={__('Byline', 'bridge')}
 				description={__(
-					'The line above the article, in the text column, over a rule. The parts that are on are separated by slashes, in the order below; a post with no categories contributes none rather than an empty one. Switch all three off and the line goes away entirely, rule and all.',
+					'The line above the article. Switch all three off to hide it.',
 					'bridge'
 				)}
 			>
@@ -233,10 +233,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 					label={__('Date', 'bridge')}
 					checked={false !== meta.date}
 					onChange={(on) => setMeta('date', on)}
-					help={__(
-						'The day it was published. Worth switching off for writing meant to stay useful — a date is the first thing that makes a guide look stale.',
-						'bridge'
-					)}
+					help={__('Shows the publish date.', 'bridge')}
 					__nextHasNoMarginBottom
 				/>
 
@@ -244,10 +241,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 					label={__('Category', 'bridge')}
 					checked={false !== meta.category}
 					onChange={(on) => setMeta('category', on)}
-					help={__(
-						'The categories the post is in, as links to their archives. Says nothing on a site where every post is in the same one.',
-						'bridge'
-					)}
+					help={__("Shows the post's categories as links.", 'bridge')}
 					__nextHasNoMarginBottom
 				/>
 
@@ -255,10 +249,7 @@ export function PostsTab({ draft, payload, setGroup }) {
 					label={__('Author', 'bridge')}
 					checked={false !== meta.author}
 					onChange={(on) => setMeta('author', on)}
-					help={__(
-						'Who wrote it. A site that publishes as an organisation rather than as people is usually better without it.',
-						'bridge'
-					)}
+					help={__("Shows the author's name.", 'bridge')}
 					__nextHasNoMarginBottom
 				/>
 			</Section>

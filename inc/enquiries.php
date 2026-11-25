@@ -2112,7 +2112,8 @@ function bridge_enquiry_success_html(string $message, bool $hidden = false): str
 /**
  * The whole form.
  *
- * @param array $args form_id, require_phone, button_label, button_color, success_message,
+ * @param array $args form_id, require_phone, button_label, button_color,
+ *                    button_text, success_message,
  *                    response (from bridge_enquiry_response()).
  * @return string
  */
@@ -2126,6 +2127,10 @@ function bridge_enquiry_form_html(array $args): string
 	$button_color  = (string) ($args['button_color'] ?? '');
 	$button_class  = array_key_exists($button_color, bridge_palette_slugs())
 		? ' bridge-button--fill-' . $button_color
+		: '';
+	$button_text   = (string) ($args['button_text'] ?? '');
+	$button_class .= array_key_exists($button_text, bridge_palette_slugs())
+		? ' bridge-button--text-' . $button_text
 		: '';
 
 	if ('sent' === ($response['status'] ?? '')) {

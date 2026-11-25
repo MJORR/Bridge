@@ -26,6 +26,7 @@ const { createElement: el, Fragment } = window.wp.element;
 const { PanelBody, RangeControl, SelectControl, ToggleControl } =
 	window.wp.components;
 const { __ } = window.wp.i18n;
+const { useSelect } = window.wp.data;
 
 // The mask shape's controls and preview styling, shared with every other band
 // that offers them. Its own script handle, named in this block's dependencies
@@ -36,6 +37,8 @@ const ALLOWED_BLOCKS = [
 	'bridge/feature-block',
 	'core/heading',
 	'core/paragraph',
+	// A button under the intro, such as "Find out more".
+	'core/buttons',
 ];
 
 const TEMPLATE = [
@@ -49,7 +52,27 @@ const TEMPLATE = [
 	['bridge/feature-block', {}],
 ];
 
-const Edit = ({ attributes, setAttributes }) => {
+const Edit = ({ attributes, setAttributes, clientId }) => {
+	// True when every panel is a full photograph (a background image). Panel
+	// style and Image corners change nothing on those — the photo is the
+	// panel — so they are hidden rather than offered and ignored.
+	const { allCover, hasWide } = useSelect(
+		(select) => {
+			const panels = select('core/block-editor')
+				.getBlocks(clientId)
+				.filter((block) => block.name === 'bridge/feature-block');
+
+			return {
+				allCover:
+					panels.length > 0 &&
+					panels.every((block) => !!block.attributes.backgroundUrl),
+				// A panel set to double width; see render.php.
+				hasWide: panels.some((block) => !!block.attributes.wide),
+			};
+		},
+		[clientId]
+	);
+
 	const {
 		width,
 		layout,
@@ -64,6 +87,8 @@ const Edit = ({ attributes, setAttributes }) => {
 		imageCorners = 'card',
 		buttonStyle = 'fill',
 		buttonSize = 'default',
+		titleBottom = false,
+		arrowSolid = false,
 	} = attributes;
 
 	const isNumbered = layout === 'numbered';
@@ -88,6 +113,11 @@ const Edit = ({ attributes, setAttributes }) => {
 				: '',
 			gutters || isNumbered ? '' : 'bridge-features--flush',
 			hasStepNumbers ? 'bridge-features--show-numbers' : '',
+			titleBottom ? 'bridge-features--title-bottom' : '',
+			hasWide && !isNumbered && overflowStyle !== 'carousel'
+				? 'bridge-features--has-wide'
+				: '',
+			showArrow && arrowSolid ? 'bridge-features--arrow-solid' : '',
 			!isNumbered && columns >= 5 ? 'bridge-features--dense' : '',
 			hasMask(attributes) ? 'has-mask' : '',
 			panelStyle === 'open' && imageCorners === 'round'
@@ -209,22 +239,37 @@ const Edit = ({ attributes, setAttributes }) => {
 			el(
 				PanelBody,
 				{ title: __('Panels', 'bridge'), initialOpen: false },
-				el(SelectControl, {
-					label: __('Panel style', 'bridge'),
-					help: __(
-						'Card draws the surface the rest of the site uses. Plain and Outlined let the band show through. Open drops the card altogether: the picture sits on the band with rounded corners and the words line up under it.',
-						'bridge'
+				allCover &&
+					el(
+						'p',
+						{ className: 'components-base-control__help' },
+						__(
+							'Panel style is hidden because every panel has a background photo, which fills the whole panel.',
+							'bridge'
+						)
 					),
-					value: panelStyle,
-					options: [
-						{ label: __('Card', 'bridge'), value: 'card' },
-						{ label: __('Plain', 'bridge'), value: 'plain' },
-						{ label: __('Outlined', 'bridge'), value: 'outline' },
-						{ label: __('Open', 'bridge'), value: 'open' },
-					],
-					onChange: (value) => setAttributes({ panelStyle: value }),
-				}),
-				panelStyle === 'open' &&
+				!allCover &&
+					el(SelectControl, {
+						label: __('Panel style', 'bridge'),
+						help: __(
+							'Card draws the surface the rest of the site uses. Plain and Outlined let the band show through. Open drops the card altogether: the picture sits on the band with rounded corners and the words line up under it.',
+							'bridge'
+						),
+						value: panelStyle,
+						options: [
+							{ label: __('Card', 'bridge'), value: 'card' },
+							{ label: __('Plain', 'bridge'), value: 'plain' },
+							{
+								label: __('Outlined', 'bridge'),
+								value: 'outline',
+							},
+							{ label: __('Open', 'bridge'), value: 'open' },
+						],
+						onChange: (value) =>
+							setAttributes({ panelStyle: value }),
+					}),
+				!allCover &&
+					panelStyle === 'open' &&
 					el(SelectControl, {
 						label: __('Image corners', 'bridge'),
 						help: __(
@@ -277,6 +322,28 @@ const Edit = ({ attributes, setAttributes }) => {
 					),
 					checked: !!showArrow,
 					onChange: (value) => setAttributes({ showArrow: value }),
+					__nextHasNoMarginBottom: true,
+				}),
+				showArrow &&
+					el(ToggleControl, {
+						label: __('Solid arrow', 'bridge'),
+						help: __(
+							'A solid white circle with a Primary-coloured arrow.',
+							'bridge'
+						),
+						checked: !!arrowSolid,
+						onChange: (value) =>
+							setAttributes({ arrowSolid: value }),
+						__nextHasNoMarginBottom: true,
+					}),
+				el(ToggleControl, {
+					label: __('Title at the bottom', 'bridge'),
+					help: __(
+						'Moves the title and text to the bottom of each panel, and the arrow to the top right.',
+						'bridge'
+					),
+					checked: !!titleBottom,
+					onChange: (value) => setAttributes({ titleBottom: value }),
 					__nextHasNoMarginBottom: true,
 				}),
 				el(ToggleControl, {

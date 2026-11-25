@@ -129,7 +129,9 @@ $two-column: 48rem;
 	// dropped in here is a grid cell sitting beside the first card. No item is
 	// ever a heading or a paragraph — every one of them renders an <li> or a
 	// <figure> — so this only ever catches the intro, and only in the editor.
-	> :is(h1, h2, h3, h4, h5, h6, p) {
+	// A row of buttons in the intro is the same case: without it, the
+	// buttons took a card's cell.
+	> :is(h1, h2, h3, h4, h5, h6, p, .wp-block-buttons) {
 		grid-column: 1 / -1;
 	}
 }

@@ -545,6 +545,10 @@ return array(
 				'type' => 'string',
 				'default' => '',
 			),
+			'buttonTextColor' => array(
+				'type' => 'string',
+				'default' => '',
+			),
 			'successMessage' => array(
 				'type' => 'string',
 				'default' => '',
@@ -957,6 +961,10 @@ return array(
 				'type' => 'boolean',
 				'default' => false,
 			),
+			'wide' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
 			'cardBackground' => array(
 				'type' => 'string',
 				'default' => '',
@@ -1064,6 +1072,14 @@ return array(
 				'default' => false,
 			),
 			'panelLink' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'titleBottom' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'arrowSolid' => array(
 				'type' => 'boolean',
 				'default' => false,
 			),
@@ -1761,6 +1777,72 @@ return array(
 		'style' => 'bridge-hero-slider-style',
 		'render' => 'file:./render.php',
 	),
+	'location-cards' => array(
+		'$schema' => 'https://schemas.wp.org/trunk/block.json',
+		'apiVersion' => 3,
+		'name' => 'bridge/location-cards',
+		'version' => '1.0.0',
+		'title' => 'Location Cards',
+		'category' => 'design',
+		'icon' => 'location-alt',
+		'description' => 'A card for each location in Site Options — photo, name, address, opening hours, phone, email, and buttons to book and get directions.',
+		'textdomain' => 'bridge',
+		'keywords' => array(
+			'locations',
+			'practices',
+			'branches',
+			'offices',
+			'opening hours',
+			'directions',
+		),
+		'supports' => array(
+			'anchor' => true,
+			'html' => false,
+			'layout' => false,
+		),
+		'attributes' => array(
+			'width' => array(
+				'type' => 'string',
+				'enum' => array(
+					'wide',
+					'narrow',
+				),
+				'default' => 'wide',
+			),
+			'columns' => array(
+				'type' => 'number',
+				'default' => 2,
+			),
+			'headingLevel' => array(
+				'type' => 'string',
+				'enum' => array(
+					'h2',
+					'h3',
+					'h4',
+				),
+				'default' => 'h3',
+			),
+			'bookLabel' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'bookUrl' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'directionsLabel' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'preview' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+		),
+		'editorScript' => 'bridge-location-cards-editor',
+		'style' => 'bridge-location-cards-style',
+		'render' => 'file:./render.php',
+	),
 	'locations' => array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
@@ -2173,6 +2255,26 @@ return array(
 				),
 				'default' => 'center',
 			),
+			'imageSize' => array(
+				'type' => 'string',
+				'enum' => array(
+					'standard',
+					'small',
+				),
+				'default' => 'standard',
+			),
+			'titleWeight' => array(
+				'type' => 'string',
+				'enum' => array(
+					'bold',
+					'regular',
+				),
+				'default' => 'bold',
+			),
+			'featureBullets' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
 		),
 		'example' => array(
 			'attributes' => array(
@@ -2401,7 +2503,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'bridge/testimonials',
-		'version' => '1.1.0',
+		'version' => '1.2.0',
 		'title' => 'Testimonials',
 		'category' => 'design',
 		'icon' => 'format-quote',
@@ -2435,6 +2537,22 @@ return array(
 			'overflowStyle' => array(
 				'type' => 'string',
 				'default' => 'wrap',
+			),
+			'cardBackground' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'starColor' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'cardLayout' => array(
+				'type' => 'string',
+				'enum' => array(
+					'standard',
+					'review',
+				),
+				'default' => 'standard',
 			),
 			'mask' => array(
 				'type' => 'boolean',

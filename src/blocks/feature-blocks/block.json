@@ -69,6 +69,14 @@
 			"type": "boolean",
 			"default": false
 		},
+		"titleBottom": {
+			"type": "boolean",
+			"default": false
+		},
+		"arrowSolid": {
+			"type": "boolean",
+			"default": false
+		},
 		"textAlignment": {
 			"type": "string",
 			"default": "left"

@@ -112,7 +112,7 @@ function bridge_site_options_schema(): array
 			'section' => 'business',
 			'type'    => 'text',
 			'label'   => __('Company name', 'bridge'),
-			'help'    => __('The trading name, as it should read in the footer and anywhere else the company is named.', 'bridge'),
+			'help'    => __('The trading name, as it should read in the footer.', 'bridge'),
 		),
 		'tagline'      => array(
 			'section' => 'business',
@@ -131,13 +131,13 @@ function bridge_site_options_schema(): array
 			// strapline.
 			'type'    => 'textarea',
 			'label'   => __('Strapline', 'bridge'),
-			'help'    => __('The short line the footer signs off with. Press return where it should break — "Better websites." on one line, "Real results." on the next. It is set in a handwriting face, so keep it to a few words; the swoosh underneath it is an image, chosen in Theme Options → Templates.', 'bridge'),
+			'help'    => __('The short line the footer signs off with.', 'bridge'),
 		),
 		'description'  => array(
 			'section' => 'business',
 			'type'    => 'textarea',
 			'label'   => __('Short description', 'bridge'),
-			'help'    => __('A sentence or two saying what the business does, for the footer and anywhere else the site introduces itself in a line. Not the tagline — this is the plain-English version.', 'bridge'),
+			'help'    => __('Short business description appears below the footer logo.', 'bridge'),
 		),
 		'footer_image' => array(
 			'section' => 'business',
@@ -152,7 +152,6 @@ function bridge_site_options_schema(): array
 			'section' => 'business',
 			'type'    => 'textarea',
 			'label'   => __('Address', 'bridge'),
-			'help'    => __('One line per line, as it would be written on an envelope. A single line is a perfectly good answer — the footer prints what is typed.', 'bridge'),
 		),
 		'phone'        => array(
 			'section' => 'business',
@@ -164,7 +163,6 @@ function bridge_site_options_schema(): array
 			'section' => 'business',
 			'type'    => 'text',
 			'label'   => __('Customer service email', 'bridge'),
-			'help'    => __('The address customers can write to. When it is filled in it appears in the footer\'s Get in touch column, with an email icon, as a link that opens their email app. Not the notifications address below — that one is where the contact form sends enquiries, and is never shown on the site.', 'bridge'),
 		),
 		'notify_email' => array(
 			'section' => 'notifications',
@@ -509,12 +507,15 @@ function bridge_enqueue_site_options(string $hook_suffix): void
 			. 'border:1px solid #dcdcde;border-radius:4px;background:#f6f7f7}'
 			. '.bridge-media__preview img{max-inline-size:100%;block-size:auto;display:block}'
 			. '.bridge-media__actions{display:flex;gap:.5rem;align-items:center;margin:0}'
-			. '.bridge-location{max-inline-size:52rem;margin:0 0 1rem;padding:.75rem 1rem 1rem;border:1px solid #dcdcde;border-radius:4px;background:#fff}'
-			. '.bridge-location__legend{padding:0 .25rem;font-weight:600}'
-			. '.bridge-location__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));align-items:start;gap:.5rem 1rem}'
-			. '.bridge-location__field{margin:0}.bridge-location__field label{display:block;margin-block-end:.25rem;font-weight:500}'
+			// The legend floats, which takes it out of the fieldset's border
+			// and makes it an ordinary title at the top of the box.
+			. '.bridge-location{max-inline-size:56rem;margin:0 0 1.5rem;padding:1.5rem 1.75rem 1.25rem;border:1px solid #dcdcde;border-radius:6px;background:#fff}'
+			. '.bridge-location__legend{float:left;inline-size:100%;margin:0 0 1.25rem;padding:0 0 .75rem;border-block-end:1px solid #f0f0f1;font-size:15px;font-weight:600}'
+			. '.bridge-location__grid{clear:both;display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));align-items:start;gap:1.25rem 1.5rem}'
+			. '.bridge-location__field{margin:0}.bridge-location__field label{display:block;margin-block-end:.4rem;font-weight:500}'
 			. '.bridge-location__field input,.bridge-location__field textarea{inline-size:100%}'
-			. '.bridge-location__actions{display:flex;gap:.5rem;align-items:center;margin:.75rem 0 0}'
+			. '.bridge-location__actions{display:flex;gap:.5rem;align-items:center;margin:1.5rem 0 0;padding-block-start:1rem;border-block-start:1px solid #f0f0f1}'
+			. '.bridge-location__field .bridge-media{display:block}.bridge-location__field .bridge-media__preview{box-sizing:border-box;inline-size:100%;min-block-size:4rem}'
 	);
 }
 add_action('admin_enqueue_scripts', 'bridge_enqueue_site_options');
@@ -659,17 +660,33 @@ function bridge_site_options_locations(array $locations): void
 					?>
 					<p class="bridge-location__field bridge-location__field--<?php echo esc_attr($key); ?>">
 						<label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?></label>
-						<?php if ('address' === $key) : ?>
-							<textarea id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name); ?>" rows="3" class="large-text"><?php echo esc_textarea($val); ?></textarea>
+						<?php if ('image' === $key) : ?>
+							<?php $preview = '' !== $val ? wp_get_attachment_image((int) $val, 'medium', false, array('alt' => '')) : ''; ?>
+							<span class="bridge-media" data-bridge-media>
+								<span class="bridge-media__preview" data-bridge-media-preview>
+									<?php
+									echo $preview // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core markup.
+										?: '<em>' . esc_html__('No image chosen', 'bridge') . '</em>';
+									?>
+								</span>
+								<span class="bridge-media__actions">
+									<button type="button" class="button" id="<?php echo esc_attr($id); ?>" data-bridge-media-choose><?php echo esc_html('' !== $val ? __('Replace image', 'bridge') : __('Choose image', 'bridge')); ?></button>
+									<button type="button" class="button-link-delete button-link" data-bridge-media-clear <?php disabled('' === $val); ?>><?php esc_html_e('Remove', 'bridge'); ?></button>
+								</span>
+								<input type="hidden" name="<?php echo esc_attr($name); ?>" value="<?php echo esc_attr($val); ?>" data-bridge-media-input>
+							</span>
+						<?php elseif ('address' === $key || 'hours' === $key) : ?>
+							<textarea id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($name); ?>" rows="3" class="large-text"<?php echo 'hours' === $key ? ' placeholder="' . esc_attr__("Mon – Fri: 8:15am – 5pm\nSaturday: By appointment\nSunday: Closed", 'bridge') . '"' : ''; ?>><?php echo esc_textarea($val); ?></textarea>
 						<?php else : ?>
 							<input
-								type="<?php echo esc_attr('email' === $key ? 'email' : ('url' === $key ? 'url' : 'text')); ?>"
+								type="<?php echo esc_attr('email' === $key ? 'email' : (in_array($key, array('url', 'directions'), true) ? 'url' : 'text')); ?>"
 								id="<?php echo esc_attr($id); ?>"
 								name="<?php echo esc_attr($name); ?>"
 								value="<?php echo esc_attr($val); ?>"
 								class="regular-text"
 								<?php echo 'name' === $key ? 'data-bridge-location-name' : ''; ?>
-								<?php echo 'url' === $key ? 'placeholder="https://"' : ''; ?>>
+								<?php echo 'url' === $key ? 'placeholder="https://"' : ''; ?>
+								<?php echo 'directions' === $key ? 'placeholder="' . esc_attr__('Optional — a Google Maps search is used', 'bridge') . '"' : ''; ?>>
 						<?php endif; ?>
 					</p>
 				<?php endforeach; ?>
@@ -685,7 +702,7 @@ function bridge_site_options_locations(array $locations): void
 	?>
 	<h2><?php esc_html_e('Locations', 'bridge'); ?></h2>
 	<p class="description" style="max-width:46rem">
-		<?php esc_html_e('Each practice, office or branch, entered once. The Locations block, the Hybrid footer\'s locations bar and the header\'s Locations dropdown all read this list. Only the name is required; a location with no name is not saved. The page link is what the header dropdown and the name link to.', 'bridge'); ?>
+		<?php esc_html_e('Each practice, office or branch. Used in the Locations block, the Hybrid footer\'s locations bar and the header\'s Locations dropdown. Opening hours, the directions link and the photo are shown by the Location Cards block.', 'bridge'); ?>
 	</p>
 	<div class="bridge-locations-admin" data-bridge-locations data-name="<?php echo esc_attr(BRIDGE_SITE_OPTIONS_KEY); ?>">
 		<?php

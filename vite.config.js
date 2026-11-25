@@ -344,6 +344,14 @@ export default defineConfig(({ mode }) => ({
 					'src/blocks/locations/index.js'
 				),
 				locations: resolve(__dirname, 'src/scss/locations.scss'),
+				'location-cards-editor': resolve(
+					__dirname,
+					'src/blocks/location-cards/index.js'
+				),
+				'location-cards': resolve(
+					__dirname,
+					'src/scss/location-cards.scss'
+				),
 				'goals-editor': resolve(__dirname, 'src/blocks/goals/index.js'),
 				'goal-editor': resolve(__dirname, 'src/blocks/goal/index.js'),
 				goals: resolve(__dirname, 'src/scss/goals.scss'),

@@ -1,0 +1,59 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/location-cards",
+	"version": "1.0.0",
+	"title": "Location Cards",
+	"category": "design",
+	"icon": "location-alt",
+	"description": "A card for each location in Site Options — photo, name, address, opening hours, phone, email, and buttons to book and get directions.",
+	"textdomain": "bridge",
+	"keywords": [
+		"locations",
+		"practices",
+		"branches",
+		"offices",
+		"opening hours",
+		"directions"
+	],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"enum": ["wide", "narrow"],
+			"default": "wide"
+		},
+		"columns": {
+			"type": "number",
+			"default": 2
+		},
+		"headingLevel": {
+			"type": "string",
+			"enum": ["h2", "h3", "h4"],
+			"default": "h3"
+		},
+		"bookLabel": {
+			"type": "string",
+			"default": ""
+		},
+		"bookUrl": {
+			"type": "string",
+			"default": ""
+		},
+		"directionsLabel": {
+			"type": "string",
+			"default": ""
+		},
+		"preview": {
+			"type": "boolean",
+			"default": false
+		}
+	},
+	"editorScript": "bridge-location-cards-editor",
+	"style": "bridge-location-cards-style",
+	"render": "file:./render.php"
+}

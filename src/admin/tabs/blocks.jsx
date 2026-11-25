@@ -20,7 +20,7 @@ export function BlocksTab({ draft, payload, preview, setBlocks, setGroup }) {
 			<Section
 				title={__('Block library', 'bridge')}
 				description={__(
-					'Which blocks the editor offers. A block switched off here disappears from the inserter for everyone, including you \u2014 this is a decision about what the site is built from, not about who is editing. Content already using a switched-off block keeps rendering; only inserting a new one stops.',
+					'Blocks switched off here are hidden from the inserter. Content already using them still displays.',
 					'bridge'
 				)}
 			>
@@ -35,7 +35,7 @@ export function BlocksTab({ draft, payload, preview, setBlocks, setGroup }) {
 			<Section
 				title={__('Section skins', 'bridge')}
 				description={__(
-					'Named treatments an editor can apply to a section. Each resolves to palette colours, so a skin restyles itself when the brand changes.',
+					'Colour styles an editor can apply to a section. They follow the brand palette.',
 					'bridge'
 				)}
 			>
@@ -49,7 +49,7 @@ export function BlocksTab({ draft, payload, preview, setBlocks, setGroup }) {
 			<Section
 				title={__('Third-party blocks', 'bridge')}
 				description={__(
-					'Whether the editor can install new blocks from the WordPress.org Block Directory.',
+					'Lets editors install new blocks from WordPress.org.',
 					'bridge'
 				)}
 			>
@@ -60,7 +60,7 @@ export function BlocksTab({ draft, payload, preview, setBlocks, setGroup }) {
 						setGroup('blocks', 'disableDirectory', on)
 					}
 					help={__(
-						'When on, searching the block inserter no longer offers blocks from WordPress.org to install, so the library above stays the whole library. Blocks already installed by plugins are not affected.',
+						'Stops the block inserter offering blocks from WordPress.org. Installed blocks are unaffected.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom

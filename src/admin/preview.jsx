@@ -1400,7 +1400,7 @@ export function CardAudit({ checks }) {
 						<em>
 							{check.band.flat
 								? __(
-										'The same colour as its band, with no shadow to lift it — this card is invisible.',
+										"Same colour as the section and no shadow — this card won't be visible.",
 										'bridge'
 									)
 								: sprintf(

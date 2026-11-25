@@ -84,10 +84,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 		<>
 			<Section
 				title={__('Header', 'bridge')}
-				description={__(
-					'What the header is made of, and which menus fill it. One setting drives every template. No layout puts the menu in a fixed centre column — that caps how many items it can hold, and a service list only ever grows.',
-					'bridge'
-				)}
+				description={__('The header layout and its menus.', 'bridge')}
 			>
 				<LayoutPicker
 					label={__('Layout', 'bridge')}
@@ -127,7 +124,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						setHeader('menus.primary', Number(value))
 					}
 					help={__(
-						'Which menu the header navigation shows. Menus themselves are still built in the Site Editor.',
+						'The menu shown in the header. Menus are built in the Site Editor.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -145,7 +142,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							setHeader('menus.burger', Number(value))
 						}
 						help={__(
-							'Hybrid shows the main menu as a bar beside the logo, and the button before the logo opens a panel. Pick a fuller menu here to have the panel hold the whole site while the bar keeps to the essentials. On a phone the bar is hidden and this panel is the only menu, so it should include everything the bar does.',
+							'The menu shown in the slide-out panel. On phones this is the only menu, so include everything.',
 							'bridge'
 						)}
 						__nextHasNoMarginBottom
@@ -158,7 +155,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					checked={Boolean(header.topBar)}
 					onChange={(on) => setHeader('topBar', on)}
 					help={__(
-						'A slim strip above the header holding a second, quieter menu. Available on every layout.',
+						'A slim strip above the header with a second menu.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -174,10 +171,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						onChange={(value) =>
 							setHeader('menus.utility', Number(value))
 						}
-						help={__(
-							'The bar renders only once it has a menu: an empty strip is worse than no strip.',
-							'bridge'
-						)}
+						help={__('Only shows once a menu is chosen.', 'bridge')}
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize
 					/>
@@ -195,7 +189,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						help={sprintf(
 							/* translators: %s: the site's phone number. */
 							__(
-								'%s, as the last item of the top bar and the last row of the menu on a phone. The number itself is set in Site Options.',
+								'%s, shown at the end of the top bar and in the mobile menu. Set the number in Site Options.',
 								'bridge'
 							),
 							sitePhone
@@ -208,10 +202,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					label={__('Search icon', 'bridge')}
 					checked={Boolean(header.search)}
 					onChange={(on) => setHeader('search', on)}
-					help={__(
-						'A search icon at the end of the main menu, opening a field in the header itself.',
-						'bridge'
-					)}
+					help={__('Adds a search icon to the main menu.', 'bridge')}
 					__nextHasNoMarginBottom
 				/>
 
@@ -220,7 +211,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					checked={Boolean(header.locations?.enabled)}
 					onChange={(on) => setHeader('locations.enabled', on)}
 					help={__(
-						'A dropdown beside the CTA button listing the links in one menu — your practices, offices or branches. On a phone its links move into the menu panel.',
+						'A dropdown of your locations beside the header button. On phones it moves into the menu.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -260,7 +251,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							help={
 								header.locations?.source === 'site'
 									? __(
-											'Each location in Site Options with a page link is one row of the dropdown.',
+											'Lists each location from Site Options that has a page link.',
 											'bridge'
 										)
 									: __(
@@ -282,7 +273,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 									setHeader('menus.locations', Number(value))
 								}
 								help={__(
-									'Each link in this menu is one row of the dropdown. The dropdown appears once the menu has links in it. Menus themselves are built in the Site Editor.',
+									'Lists each link in this menu. Menus are built in the Site Editor.',
 									'bridge'
 								)}
 								__nextHasNoMarginBottom
@@ -336,7 +327,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							)}
 							onChange={(value) => setHeader('cta.color', value)}
 							help={__(
-								'What fills the button. The header is the one ground the Buttons tab does not model \u2014 it is whichever colour you painted it, or a hero photograph on a landing page \u2014 so this fill is chosen rather than computed. The label follows it automatically, and the same colour paints the button in the mobile menu.',
+								'The header button colour. The text colour is set automatically.',
 								'bridge'
 							)}
 							__nextHasNoMarginBottom
@@ -358,7 +349,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 								setHeader('cta.textColor', value)
 							}
 							help={__(
-								'The label colour of the header button. Auto picks whichever reads best against the button colour; choose a colour to set it yourself \u2014 check it is still easy to read.',
+								'The header button text colour. Auto picks the most readable.',
 								'bridge'
 							)}
 							__nextHasNoMarginBottom
@@ -370,10 +361,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 
 			<Section
 				title={__('Header logo', 'bridge')}
-				description={__(
-					'The mark, and how tall it is drawn. Two images rather than one: the header can sit on a light ground or a dark one, and a logo that reads on both is rarer than a pair that each read on one.',
-					'bridge'
-				)}
+				description={__('The logo and its height.', 'bridge')}
 			>
 				<LogoPicker
 					label={__('Dark logo', 'bridge')}
@@ -390,7 +378,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					value={header.logo.lightId}
 					onChange={(id) => setHeader('logo.lightId', id)}
 					help={__(
-						'Used when the header background is dark, including a transparent header over a hero. Optional — without one the dark logo is used everywhere.',
+						'Used on dark header backgrounds. Optional.',
 						'bridge'
 					)}
 				/>
@@ -401,7 +389,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					onChange={(id) => setHeader('logo.faviconId', id)}
 					types={['image/png', 'image/svg+xml']}
 					help={__(
-						'The icon in the browser tab, as a PNG or SVG. A square image of at least 512px works best. Optional — without one the WordPress Site Icon is used.',
+						'The browser tab icon, as a square PNG or SVG of 512px or more. Optional.',
 						'bridge'
 					)}
 				/>
@@ -421,7 +409,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 			<Section
 				title={__('Header colours', 'bridge')}
 				description={__(
-					'The header\u2019s own ground and the four colours the navigation spends on it. Every label colour follows automatically from what it is standing on, so nothing here can be set to an unreadable pair.',
+					'Header and menu colours. Text colours are set automatically to stay readable.',
 					'bridge'
 				)}
 			>
@@ -444,7 +432,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					}))}
 					onChange={(value) => setHeader('backgroundColor', value)}
 					help={__(
-						'The ground the header sits on everywhere except the Landing Page template, whose header overlays the hero instead.',
+						'The header background. Not used on the Landing Page template.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -461,7 +449,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						}))}
 						onChange={(value) => setHeader('topBarColor', value)}
 						help={__(
-							'The ground under the slim strip above the header. Its label colour follows automatically. Like the header\u2019s own ground it has no effect on the Landing Page template, where the strip sits over the hero and takes a light black wash instead so its links stay readable.',
+							'The top bar background. Not used on the Landing Page template.',
 							'bridge'
 						)}
 						__nextHasNoMarginBottom
@@ -478,7 +466,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					}))}
 					onChange={(value) => setHeader('nav.rollover', value)}
 					help={__(
-						'The surface behind a main menu item the pointer is on. Its label colour follows automatically, so this stays readable on the Landing Page template where the menu sits over the hero.',
+						'The background behind a menu item on hover.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -493,10 +481,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						value: slug,
 					}))}
 					onChange={(value) => setHeader('nav.child', value)}
-					help={__(
-						'The dropdown panel, and the item it hangs from \u2014 the two are painted in one colour so the open menu reads as the tab having grown rather than as a slab under it.',
-						'bridge'
-					)}
+					help={__('The dropdown menu background.', 'bridge')}
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
@@ -513,10 +498,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						{ label: __('Medium', 'bridge'), value: 'medium' },
 					]}
 					onChange={(value) => setHeader('nav.fontSize', value)}
-					help={__(
-						'The size of the main menu\u2019s items and their dropdowns. Small, the standard, sits a step below body text; Medium matches it; Extra Small is a step below Small. The top bar stays at Small, so with Extra Small the main menu is the smaller of the two. The mobile menu panel keeps its own size.',
-						'bridge'
-					)}
+					help={__('The main menu text size.', 'bridge')}
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
@@ -534,10 +516,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						{ label: __('Bold (700)', 'bridge'), value: '700' },
 					]}
 					onChange={(value) => setHeader('nav.weight', value)}
-					help={__(
-						'How heavy the main menu’s labels are, and the top bar’s with them. Medium is the theme’s standard; Regular matches body text.',
-						'bridge'
-					)}
+					help={__('The main menu text weight.', 'bridge')}
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
@@ -547,7 +526,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					checked={Boolean(header.nav.accentEnabled)}
 					onChange={(on) => setHeader('nav.accentEnabled', on)}
 					help={__(
-						'Off leaves the menu with its rollover and its dropdowns and nothing else \u2014 no bar over the item you are on, and the current page\u2019s label in a dropdown set like every other row. The colour below is remembered either way.',
+						'Shows a bar under the hovered item and the current page.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -563,7 +542,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						}))}
 						onChange={(value) => setHeader('nav.accent', value)}
 						help={__(
-							'The bar that lights a hovered item and marks the page you are on, and the colour of the current page\u2019s label inside a dropdown.',
+							'The colour of the hover bar and the current page in dropdowns.',
 							'bridge'
 						)}
 						__nextHasNoMarginBottom
@@ -590,7 +569,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					]}
 					onChange={(value) => setHeader('contrast', value)}
 					help={__(
-						'On the Landing Page template the header sits over the hero rather than on a colour, so its text is chosen against a photograph. Auto assumes a dark one; a photograph\u2019s brightness cannot be known in advance, so set it here if auto reads wrong.',
+						"Header text colour on the Landing Page template. Change it if Auto doesn't read well over the photo.",
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -601,7 +580,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 			<Section
 				title={__('Header shape and behaviour', 'bridge')}
 				description={__(
-					'How tall it stands, where it ends, and whether it follows the page down.',
+					'Header height, width and sticky behaviour.',
 					'bridge'
 				)}
 			>
@@ -612,10 +591,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					max={constraints.header.paddingBlock.max}
 					step={constraints.header.paddingBlock.step}
 					onChange={(value) => setHeader('paddingBlock', value ?? 12)}
-					help={__(
-						'Space above and below the logo on a full-width screen. Narrower viewports scale down to a proportion of it, so the header keeps its shape on a phone.',
-						'bridge'
-					)}
+					help={__('Space above and below the logo.', 'bridge')}
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
@@ -631,10 +607,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					label={__('Bottom shadow', 'bridge')}
 					checked={Boolean(header.shadow)}
 					onChange={(on) => setHeader('shadow', on)}
-					help={__(
-						'A soft drop shadow under the bar, lifting it off the page rather than drawing a line across it. Independent of the border \u2014 a header may have either, both or neither. On every template, including the Landing Page, where it separates the menu from the hero behind it.',
-						'bridge'
-					)}
+					help={__('Adds a soft shadow under the header.', 'bridge')}
 					__nextHasNoMarginBottom
 				/>
 
@@ -643,7 +616,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					checked={Boolean(header.sticky)}
 					onChange={(on) => setHeader('sticky', on)}
 					help={__(
-						'On a landing page the sticky header turns solid once it leaves the hero, so its links stay readable.',
+						'On landing pages, the sticky header turns solid once it scrolls past the hero.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -694,7 +667,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						setGroup('footer', 'backgroundColor', value)
 					}
 					help={__(
-						'Text, links and icons take a light or dark colour to suit it, and the light logo is used on a dark ground.',
+						'Text and logo colours adjust to suit it.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -706,7 +679,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					checked={Boolean(draft.footer.gradient)}
 					onChange={(on) => setGroup('footer', 'gradient', on)}
 					help={__(
-						'The same wash a skinned section can wear, on the footer’s own colour: an eighth darker at the left edge and an eighth lighter at the right.',
+						'Adds a subtle left-to-right gradient to the footer.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -728,10 +701,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					onChange={(value) =>
 						setGroup('footer', 'legalColor', value)
 					}
-					help={__(
-						'A palette colour for the bottom row. The shade below is applied on top, so at 0 the row is exactly this colour.',
-						'bridge'
-					)}
+					help={__('The bottom row colour.', 'bridge')}
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
@@ -757,7 +727,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						setGroup('footer', 'legalShade', value ?? 0)
 					}
 					help={__(
-						'How far the bottom row sits off its colour. Below zero lightens it, above zero darkens it, and zero adds nothing.',
+						'Lightens or darkens the bottom row. 0 adds nothing.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -777,7 +747,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					help={
 						draft.brand.maskShapeId
 							? __(
-									'Paints the site’s mask shape behind the footer’s columns, as a lighter or darker shade of the footer’s colour.',
+									"Adds the site's mask shape behind the footer.",
 									'bridge'
 								)
 							: __(
@@ -800,7 +770,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 								setGroup('footer', 'maskShade', value ?? -20)
 							}
 							help={__(
-								'How much lighter or darker the shape is than the footer behind it. Below zero darkens, above zero lightens. At zero there is no shape.',
+								'How much lighter or darker the shape is. 0 hides it.',
 								'bridge'
 							)}
 							__nextHasNoMarginBottom
@@ -816,10 +786,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							onChange={(value) =>
 								setGroup('footer', 'maskSize', value || 60)
 							}
-							help={__(
-								'How large the shape is drawn. It is held to a floor on a narrow screen and a ceiling on a wide one, so it stays a crop of something large rather than a complete object on a phone.',
-								'bridge'
-							)}
+							help={__('How large the shape is.', 'bridge')}
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
 						/>
@@ -858,7 +825,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 								setGroup('footer', 'maskBleed', value ?? 0)
 							}
 							help={__(
-								'How much of the shape is pushed off that edge and cropped by it. A share of the shape rather than of the footer, so it keeps its proportion at every screen width.',
+								'How much of the shape is cropped off the edge.',
 								'bridge'
 							)}
 							__nextHasNoMarginBottom
@@ -931,7 +898,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 								setFooterMenu('services', Number(value))
 							}
 							help={__(
-								'The two menu columns. A column with no menu is not drawn: a heading with nothing under it is worse than three columns. Menus themselves are still built in the Site Editor.',
+								'The two menu columns. A column without a menu is hidden. Menus are built in the Site Editor.',
 								'bridge'
 							)}
 							__nextHasNoMarginBottom
@@ -964,7 +931,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 										setFooterLocations('enabled', on)
 									}
 									help={__(
-										'A row of your locations across the top of the footer, on every page. The locations themselves are entered once in Site Options → Locations.',
+										'A row of your locations across the top of the footer. Locations are set in Site Options.',
 										'bridge'
 									)}
 									__nextHasNoMarginBottom
@@ -1145,7 +1112,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 							onChange={(value) => setFooterLabel('legal', value)}
 							placeholder={__('Legal', 'bridge')}
 							help={__(
-								'Not shown on screen — the legal links have no heading. This is the name screen readers announce for them.',
+								'Not shown on screen. Read out by screen readers.',
 								'bridge'
 							)}
 							__nextHasNoMarginBottom
@@ -1162,7 +1129,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 								setFooterMenu('legal', Number(value))
 							}
 							help={__(
-								'Not a column: these run along the bottom row beside the copyright, which is where small print belongs.',
+								'Shown in the bottom row beside the copyright.',
 								'bridge'
 							)}
 							__nextHasNoMarginBottom
@@ -1172,11 +1139,11 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 						<p className="bridge-options__hint">
 							{footerHybrid
 								? __(
-										'The social accounts in the last column come from Site Options, along with the short description and the strapline under the logo.',
+										'Social links, description and strapline come from Site Options.',
 										'bridge'
 									)
 								: __(
-										'The last column — the address, the phone number and the social accounts — comes from Site Options, along with the short description and the strapline under the logo.',
+										'Address, phone, social links, description and strapline come from Site Options.',
 										'bridge'
 									)}
 						</p>
@@ -1187,7 +1154,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 			<Section
 				title={__('Templates', 'bridge')}
 				description={__(
-					'The page structures this build ships, and which header and footer each one resolves to. A template that names its own part keeps it.',
+					'Each page template and the header and footer it uses.',
 					'bridge'
 				)}
 			>
@@ -1197,7 +1164,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 			<Section
 				title={__('Brand shapes', 'bridge')}
 				description={__(
-					'An image the content bands can use, kept with the rest of the design system rather than inside any one band.',
+					'An image that section blocks can use.',
 					'bridge'
 				)}
 			>
@@ -1213,7 +1180,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					value={draft.brand.swooshId}
 					onChange={(id) => setGroup('brand', 'swooshId', id)}
 					help={__(
-						'The drawn stroke under the footer’s strapline. Just the stroke — the words are written in Site Options and set in a handwriting face. Leave it empty and the strapline is drawn without it.',
+						'The swoosh under the footer strapline. Optional.',
 						'bridge'
 					)}
 				/>
@@ -1223,7 +1190,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					value={draft.brand.maskShapeId}
 					onChange={(id) => setGroup('brand', 'maskShapeId', id)}
 					help={__(
-						'A silhouette the Cards, Downloads, FAQs, Testimonials and Call to action bands, and the footer, can paint behind their content. Each band decides whether to show it and how light or dark to shade it; the shape itself is set once, here.',
+						'A background shape that section blocks and the footer can show.',
 						'bridge'
 					)}
 				/>
@@ -1232,7 +1199,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 			<Section
 				title={__('Site output', 'bridge')}
 				description={__(
-					'What WordPress serves alongside the pages themselves. This theme strips the generator meta, emoji script, XML-RPC and oEmbed discovery links and shortlinks from every response, because nothing here uses them. Feeds are the one piece of that worth deciding per site.',
+					'Extra things WordPress adds to each page.',
 					'bridge'
 				)}
 			>
@@ -1241,7 +1208,7 @@ export function TemplatesTab({ draft, payload, setGroup, setHeader }) {
 					checked={Boolean(draft.site?.feeds)}
 					onChange={(on) => setGroup('site', 'feeds', on)}
 					help={__(
-						'Off, no page advertises a feed \u2014 which is right for a brochure site, where the comment and category feeds are crawl surface and nothing else. Turn it on for a build with a blog readers actually subscribe to. Either way /feed/ keeps working for anything pointed straight at it, such as a mailing list.',
+						'Adds feed links to every page. Turn on for a blog people subscribe to.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom

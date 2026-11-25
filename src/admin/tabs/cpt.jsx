@@ -183,7 +183,7 @@ function rowError(row, index, rows, limits) {
 
 	if (!/^[a-z][a-z0-9_]*$/.test(row.slug)) {
 		return __(
-			'A slug must start with a letter and hold only lower-case letters, numbers and underscores.',
+			'Use lower-case letters, numbers and underscores, starting with a letter.',
 			'bridge'
 		);
 	}
@@ -256,7 +256,7 @@ export function CptTab({ draft, payload, setPostTypes }) {
 		<Section
 			title={__('Content types', 'bridge')}
 			description={__(
-				'Content that is neither a page nor a blog post — projects, venues, FAQs. Each one declared here becomes an item in the admin sidebar. Every type gets a title, a block editor and an order field, and a type with pages gets an excerpt and a featured image too; nothing else is configurable, because a content type nothing renders is worse than one type too few.',
+				'Extra content types, such as projects or FAQs. Each one gets its own admin menu.',
 				'bridge'
 			)}
 		>
@@ -385,7 +385,7 @@ export function CptTab({ draft, payload, setPostTypes }) {
 												'bridge'
 											)
 										: __(
-												'Switched off. The type is not registered, so it has no menu item, no editor and no pages — but this row keeps every setting on it, and the content stays in the database. Switching it back on restores both.',
+												'Switched off. Its content is kept and comes back when switched on.',
 												'bridge'
 											)
 								}
@@ -401,11 +401,11 @@ export function CptTab({ draft, payload, setPostTypes }) {
 								help={
 									hasPages
 										? __(
-												'This content has addresses of its own: a page per item and an archive listing them.',
+												'Each item gets its own page, plus an archive page.',
 												'bridge'
 											)
 										: __(
-												'Material for blocks only. No page, no archive, no search results — nothing to link to. Authors still write it here as normal.',
+												'Used in blocks only — no pages or archive.',
 												'bridge'
 											)
 								}
@@ -423,7 +423,7 @@ export function CptTab({ draft, payload, setPostTypes }) {
 										? sprintf(
 												/* translators: %s: singular name of the content type. */
 												__(
-													'Each one can be filed under a %s Category. Blocks that draw from this type can then be pointed at one category rather than all of them.',
+													'Items can be sorted into %s categories.',
 													'bridge'
 												),
 												row.singular ||
@@ -452,7 +452,7 @@ export function CptTab({ draft, payload, setPostTypes }) {
 										help={
 											hasLink
 												? __(
-														'Each item gets a Link and Link text, for blocks that show it to point somewhere.',
+														'Adds a link and link text to each item.',
 														'bridge'
 													)
 												: __(
@@ -527,7 +527,7 @@ export function CptTab({ draft, payload, setPostTypes }) {
 								{sprintf(
 									/* translators: %d: number of posts. */
 									__(
-										'Holding %d items. Switching this off — or removing it — hides them. Neither deletes them, and both are undone by putting it back.',
+										'Holds %d items. Switching off or removing hides them; nothing is deleted.',
 										'bridge'
 									),
 									count
@@ -551,10 +551,7 @@ export function CptTab({ draft, payload, setPostTypes }) {
 					<p className="bridge-options__subhelp">
 						{sprintf(
 							/* translators: %d: maximum number of content types. */
-							__(
-								'%d is as many as this screen will declare. More than that is a conversation about the site, not another row in a form.',
-								'bridge'
-							),
+							__('%d is the maximum.', 'bridge'),
 							max
 						)}
 					</p>

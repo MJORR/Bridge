@@ -50,7 +50,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 			<Section
 				title={__('Brand palette', 'bridge')}
 				description={__(
-					'These colours are the only ones the editor offers — custom colours are switched off, so nothing off-brand can reach a page. Each slot takes the name editors see, then its hex value.',
+					'The only colours editors can use. Enter a name and hex value for each.',
 					'bridge'
 				)}
 			>
@@ -71,7 +71,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 				</h3>
 				<p className="bridge-options__subhelp">
 					{__(
-						'Every pair of these colours the theme actually draws, measured. WCAG 2.2 §1.4.3 asks for 4.5:1 on body-sized text, which all of these are.',
+						'Contrast checks for each colour pair the site uses. 4.5:1 or above passes.',
 						'bridge'
 					)}
 				</p>
@@ -81,7 +81,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 			<Section
 				title={__('Typography', 'bridge')}
 				description={__(
-					'Every font size on the site is generated from the base size and the scale ratio. Editors choose Small through Huge; they never type a number.',
+					'Font sizes are generated from the base size and scale ratio.',
 					'bridge'
 				)}
 			>
@@ -111,7 +111,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 							setGroup('typography', 'googleFonts', on)
 						}
 						help={__(
-							'Adds well-known Google families to the pickers below. Files are downloaded and served from this site — nothing is ever requested from Google when a visitor loads a page.',
+							'Adds Google Fonts to the pickers below. Fonts are hosted on this site.',
 							'bridge'
 						)}
 						__nextHasNoMarginBottom
@@ -143,7 +143,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 							/>
 							<p className="bridge-google__note">
 								{__(
-									'Fonts download when you save, which can take a few seconds the first time.',
+									'Fonts download when you save, which can take a few seconds.',
 									'bridge'
 								)}
 							</p>
@@ -222,7 +222,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 			<Section
 				title={__('Icons', 'bridge')}
 				description={__(
-					'Icons are drawn from the theme\u2019s library and inherit their colour from the text around them. Weight is the only choice — a heavier stroke reads as more confident, a lighter one as more refined.',
+					'Icon line weight. Icons take the colour of the text around them.',
 					'bridge'
 				)}
 			>
@@ -245,7 +245,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 			<Section
 				title={__('Layout and spacing', 'bridge')}
 				description={__(
-					'Widths and rhythm for every template. The spacing steps editors can pick from are generated from the base and increment below.',
+					'Page widths and spacing. The spacing steps are generated from the base and increment below.',
 					'bridge'
 				)}
 			>
@@ -297,7 +297,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 						setGroup('layout', 'headingGap', value)
 					}
 					help={__(
-						'Between any heading and the text under it, in every block and on every page. Usually a step or two smaller than the gap between blocks.',
+						'Space between a heading and the text below it.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -312,7 +312,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 						setGroup('layout', 'buttonsGap', value)
 					}
 					help={__(
-						'Between a row of buttons and the text above or below it, in every block and on every page.',
+						'Space between buttons and the text above or below them.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom
@@ -338,7 +338,7 @@ export function DesignTab({ draft, payload, preview, setGroup, setSlot }) {
 						setGroup('layout', 'sectionPadding', value)
 					}
 					help={__(
-						'The air above and below every full-width section — the section patterns, and any group given a Surface, Inverted or Accent style. Sections already on a page follow the new value; nothing has to be re-inserted.',
+						'Space above and below each full-width section.',
 						'bridge'
 					)}
 					__nextHasNoMarginBottom

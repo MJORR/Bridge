@@ -207,9 +207,9 @@ const Edit = ({ attributes, setAttributes }) => {
 	const {
 		width,
 		panel,
-		requirePhone,
 		buttonLabel,
 		buttonColor = '',
+		buttonTextColor = '',
 		successMessage,
 		fieldLayout = 'stacked',
 	} = attributes;
@@ -221,6 +221,27 @@ const Edit = ({ attributes, setAttributes }) => {
 
 		return settings.colors || settings.colorPalette || [];
 	}, []);
+
+	// A palette picker: the site's colours only, stored as the slug.
+	const swatches = (label, value, key, help) =>
+		el(
+			BaseControl,
+			{ label, help, __nextHasNoMarginBottom: true },
+			el(ColorPalette, {
+				colors: themeColors,
+				value:
+					themeColors.find((c) => c.slug === value)?.color ||
+					undefined,
+				onChange: (hex) =>
+					setAttributes({
+						[key]:
+							themeColors.find((c) => c.color === hex)?.slug ||
+							'',
+					}),
+				disableCustomColors: true,
+				clearable: true,
+			})
+		);
 
 	const hasConsents = !!(
 		attributes.consent1Enabled || attributes.consent2Enabled
@@ -420,21 +441,6 @@ const Edit = ({ attributes, setAttributes }) => {
 			el(
 				PanelBody,
 				{ title: __('Form', 'bridge'), initialOpen: true },
-				// Name, email, phone and message are all required. The phone
-				// switch is kept only for a form saved with phone optional,
-				// so it can be brought into line; once on, it goes away.
-				!requirePhone &&
-					el(ToggleControl, {
-						label: __('Require a phone number', 'bridge'),
-						help: __(
-							'This form was set up with phone optional. Turn this on to require it, like name, email and message.',
-							'bridge'
-						),
-						checked: false,
-						onChange: (value) =>
-							setAttributes({ requirePhone: value }),
-						__nextHasNoMarginBottom: true,
-					}),
 				el(TextControl, {
 					label: __('Button label', 'bridge'),
 					value: buttonLabel,
@@ -442,30 +448,20 @@ const Edit = ({ attributes, setAttributes }) => {
 					onChange: (value) => setAttributes({ buttonLabel: value }),
 					__nextHasNoMarginBottom: true,
 				}),
-				el(
-					BaseControl,
-					{
-						label: __('Button colour', 'bridge'),
-						help: __(
-							"Clear it to use the band's own button.",
-							'bridge'
-						),
-						__nextHasNoMarginBottom: true,
-					},
-					el(ColorPalette, {
-						colors: themeColors,
-						value:
-							themeColors.find((c) => c.slug === buttonColor)
-								?.color || undefined,
-						onChange: (hex) =>
-							setAttributes({
-								buttonColor:
-									themeColors.find((c) => c.color === hex)
-										?.slug || '',
-							}),
-						disableCustomColors: true,
-						clearable: true,
-					})
+				swatches(
+					__('Button colour', 'bridge'),
+					buttonColor,
+					'buttonColor',
+					__("Clear it to use the band's own button.", 'bridge')
+				),
+				swatches(
+					__('Button text colour', 'bridge'),
+					buttonTextColor,
+					'buttonTextColor',
+					__(
+						'Clear it to use the colour picked to read on the button.',
+						'bridge'
+					)
 				),
 				el(TextareaControl, {
 					label: __('Message after sending', 'bridge'),
@@ -572,9 +568,9 @@ const Edit = ({ attributes, setAttributes }) => {
 									: []),
 								previewField(
 									field,
-									'phone' === field.key
-										? !!requirePhone
-										: !!field.required
+									// Phone is always required, like name,
+									// email and message.
+									'phone' === field.key || !!field.required
 								),
 							]).filter(Boolean),
 							hasConsents &&
@@ -596,6 +592,10 @@ const Edit = ({ attributes, setAttributes }) => {
 										(buttonColor
 											? ' bridge-button--fill-' +
 												buttonColor
+											: '') +
+										(buttonTextColor
+											? ' bridge-button--text-' +
+												buttonTextColor
 											: ''),
 								},
 								buttonLabel || __('Send enquiry', 'bridge')

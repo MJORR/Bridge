@@ -782,6 +782,11 @@ const BRIDGE_ITEM_SUBTITLE_KEY = 'bridge_subtitle';
  */
 function bridge_post_type_has_subtitle(string $post_type): bool
 {
+	// A type with team member fields has Position in its place.
+	if (function_exists('bridge_post_type_has_person') && bridge_post_type_has_person($post_type)) {
+		return false;
+	}
+
 	return bridge_is_simple_editor_post_type($post_type);
 }
 

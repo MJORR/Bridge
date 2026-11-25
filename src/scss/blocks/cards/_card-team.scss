@@ -67,7 +67,8 @@
 		// How much of the circle sits inside the panel. Below about 0.3 the
 		// arch stops reading as an arch and becomes a circle resting on a box;
 		// above about 0.5 the panel swallows the face.
-		--post-card-avatar-sink: 0.42;
+		// Exactly half: the panel's top edge runs through the circle's middle.
+		--post-card-avatar-sink: 0.5;
 		// The ring of panel colour between the photograph and the open air.
 		// A length rather than a percentage: it is the visual weight of the
 		// arch's edge, and it should not thin out on a narrow card.
@@ -86,6 +87,13 @@
 		box-shadow: none;
 		// Centres the avatar over the panel. The body sets its own width below.
 		align-items: center;
+		// Square: the card clips its children to its own corners, so the
+		// panel's square corners need the card's to be square too.
+		border-radius: 0;
+		// Fill the column, up to the usual card maximum. Centred with auto
+		// margins, a card otherwise shrinks to its contents and the space it
+		// leaves is added to the gap between cards.
+		width: 100%;
 		// Nothing escapes the card box — the negative margin pulls the body
 		// *up*, it does not push the image out — so the base's `overflow:
 		// hidden` is harmless here and is left alone.
@@ -93,6 +101,7 @@
 
 	// ---- The avatar, and the top of the arch ----------------------------
 	.post-card--team .post-card__image {
+		box-sizing: border-box;
 		width: var(--post-card-avatar);
 		// Square, so the 50% radius below is a circle rather than an ellipse.
 		// The base crops every other style to 16:9.
@@ -118,7 +127,18 @@
 		overflow: visible;
 	}
 
+	// A true circle whatever shape the photograph is: square, filled and
+	// cropped. Without this the img kept its own proportions and stretched
+	// the ring into an oval.
 	.post-card--team .post-card__image > img {
+		display: block;
+		width: 100%;
+		// Its own square, not a percentage of the ring's height: Safari does
+		// not resolve `height: 100%` against a height that comes from
+		// `aspect-ratio`, and fell back to the photo's own proportions.
+		height: auto;
+		aspect-ratio: 1;
+		object-fit: cover;
 		border-radius: 50%;
 	}
 
@@ -140,10 +160,8 @@
 			--bridge-card-bg,
 			var(--wp--custom--card--on-light, #f5f5f4)
 		);
-		// The card is transparent, so the corners belong to the panel — and
-		// only the bottom two: the top two are underneath the circle.
-		border-radius: 0 0 var(--wp--custom--card--radius, 6px)
-			var(--wp--custom--card--radius, 6px);
+		// Square corners: the arch of the circle is the card's one curve.
+		border-radius: 0;
 		// Clears the sunken half of the circle, then the card's usual air. The
 		// first term is the mirror of the negative margin above.
 		// stylelint-disable scss/operator-no-newline-after -- prettier wraps
@@ -196,4 +214,94 @@
 	font-size: var(--wp--preset--font-size--small);
 	font-weight: 500;
 	color: var(--post-card-accent);
+}
+
+/**
+ * Design 1 — the round photo arching over the panel.
+ *
+ * Still: no lift and no growing shadow under the pointer. Its shadow is the
+ * card shadow from Theme Options drawn as a `filter`, so it follows the
+ * circle and the panel together; a box-shadow would trace the rectangle
+ * around them both.
+ */
+.bridge-cards-grid .post-card.post-card--team-arch {
+	filter: var(--wp--custom--card--drop-shadow, none);
+	transition: filter 200ms ease;
+
+	// Under the pointer the card stays where it is and its shadow deepens,
+	// still following the circle and the panel.
+	&:hover,
+	&:focus-within {
+		box-shadow: none;
+		transform: none;
+		filter: var(
+			--wp--custom--card--drop-shadow-hover,
+			var(--wp--custom--card--drop-shadow, none)
+		);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		transition: none;
+	}
+}
+
+/**
+ * Design 2 — a tall photo, the name and role below it.
+ *
+ * An ordinary card: the card colour, corners and shadow from Theme Options,
+ * the photo running to the top and side edges, the words left-aligned in the
+ * card's padding.
+ */
+.bridge-cards-grid .post-card.post-card--team-photo {
+	--bridge-card-layer-bg: initial;
+
+	align-items: stretch;
+	background-color: var(
+		--bridge-card-bg,
+		var(--wp--custom--card--on-light, #f5f5f4)
+	);
+	border-radius: var(--wp--custom--card--radius, 6px);
+	box-shadow: var(
+		--bridge-card-shadow,
+		var(--wp--custom--card--shadow, none)
+	);
+
+	.post-card__image {
+		width: 100%;
+		aspect-ratio: 3 / 4;
+		margin: 0;
+		padding: 0;
+		border-radius: 0;
+		background: none;
+	}
+
+	.post-card__image > img {
+		height: 100%;
+		aspect-ratio: auto;
+		border-radius: 0;
+	}
+
+	.post-card__image-placeholder {
+		inset: 0;
+		border-radius: 0;
+	}
+
+	.post-card__body {
+		padding: var(--wp--custom--card--padding, 1.5rem);
+		background: none;
+		text-align: start;
+		align-items: flex-start;
+	}
+}
+
+// Design 2's location, under the role and a full-width rule, both in the
+// secondary colour.
+.bridge-cards-grid .post-card--team-photo .post-card__location {
+	align-self: stretch;
+	margin: 1rem 0 0;
+	padding-block-start: 0.25rem;
+	border-block-start: 1px solid var(--wp--preset--color--secondary);
+	font-size: var(--wp--preset--font-size--x-small);
+	line-height: 1.4;
+	color: var(--wp--preset--color--secondary);
 }

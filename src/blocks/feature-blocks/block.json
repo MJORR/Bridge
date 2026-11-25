@@ -69,6 +69,18 @@
 			"type": "boolean",
 			"default": false
 		},
+		"roundCorners": {
+			"type": "boolean",
+			"default": false
+		},
+		"cornerTop": {
+			"type": "string",
+			"default": ""
+		},
+		"cornerBottom": {
+			"type": "string",
+			"default": ""
+		},
 		"titleBottom": {
 			"type": "boolean",
 			"default": false

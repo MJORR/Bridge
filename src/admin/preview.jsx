@@ -510,188 +510,166 @@ export function CardStylePreview({
 					</span>
 
 					<div className="bridge-preview__cardstyle-row">
-						{(styles || []).map((style) => {
-							const set = settings(style.slug);
-							const surface = cards.colors?.[ground.key];
-							const heading = {
-								fontSize: scaled(fontSize(set.heading)),
-								lineHeight: 1.2,
-								display: 'block',
-							};
+						{(styles || [])
+							// Team has its own layouts and is not drawn
+							// here; the preview compares the three post
+							// card styles.
+							.filter((style) => style.slug !== 'team')
+							.map((style) => {
+								const set = settings(style.slug);
+								const surface = cards.colors?.[ground.key];
+								const heading = {
+									fontSize: scaled(fontSize(set.heading)),
+									lineHeight: 1.2,
+									display: 'block',
+								};
 
-							// Team paints its children rather than itself,
-							// so the arch and the panel are one colour and the
-							// card behind them is nothing.
-							const isTeam = 'team' === style.slug;
+								// Team paints its children rather than itself,
+								// so the arch and the panel are one colour and the
+								// card behind them is nothing.
+								const isTeam = 'team' === style.slug;
 
-							// Cover paints the photograph across the whole
-							// card and washes it in the Inverted colour, so
-							// its ground is Primary rather than the card
-							// surface this ground would otherwise give it.
-							const isCover = 'cover' === style.slug;
+								// Cover paints the photograph across the whole
+								// card and washes it in the Inverted colour, so
+								// its ground is Primary rather than the card
+								// surface this ground would otherwise give it.
+								const isCover = 'cover' === style.slug;
 
-							// One lookup rather than a chain of conditionals:
-							// three styles, three answers, and a fourth is a
-							// line here rather than another nested branch.
-							// The chosen wash, and the ink the compiler derived
-							// from it — read out of the preview response rather
-							// than recomputed here, so the contrast shown is the
-							// contrast the server checked.
-							const washFor = (slug) =>
-								color(slug) || color('primary');
-							const coverInk =
-								custom?.card?.cover?.ink || color('background');
+								// One lookup rather than a chain of conditionals:
+								// three styles, three answers, and a fourth is a
+								// line here rather than another nested branch.
+								// The chosen wash, and the ink the compiler derived
+								// from it — read out of the preview response rather
+								// than recomputed here, so the contrast shown is the
+								// contrast the server checked.
+								const washFor = (slug) =>
+									color(slug) || color('primary');
+								const coverInk =
+									custom?.card?.cover?.ink ||
+									color('background');
 
-							const groundFor = (slug) =>
-								({
-									team: 'transparent',
-									cover: washFor(set.wash),
-								})[slug] ?? surface;
+								const groundFor = (slug) =>
+									({
+										team: 'transparent',
+										cover: washFor(set.wash),
+									})[slug] ?? surface;
 
-							return (
-								<div
-									key={style.slug}
-									className="bridge-preview__cardstyle"
-									style={{
-										borderRadius: radius,
-										boxShadow: isTeam ? 'none' : shadow,
-										// The surface below is placed against
-										// the card, and has to stay inside it:
-										// it sits at z-index -1, which only
-										// stays put in an element that
-										// establishes a stacking context. The
-										// card's own stylesheet isolates for
-										// the same reason.
-										position: 'relative',
-										isolation: 'isolate',
-										// What the cut is measured against:
-										// `cqw` is a share of this element's
-										// inline size, on both axes, which is
-										// what holds the notch at 45°.
-										containerType: container,
-										aspectRatio: isCover
-											? ratioValue(set.ratio)
-											: undefined,
-										// Team paints nothing of its own,
-										// Cover paints the Inverted ground the
-										// wash resolves to, and the rest take
-										// this ground's card surface. Once the
-										// corner is cut this moves to the
-										// layer below, which is the thing that
-										// can be clipped.
-										background: cut
-											? 'transparent'
-											: groundFor(style.slug),
-									}}
-								>
-									{/* eslint-disable-next-line no-nested-ternary -- three sibling branches of one switch; a lookup here would mean building three trees eagerly. */}
-									{isCover ? (
-										<div
-											className="bridge-preview__cardstyle-cover"
-											style={{ clipPath: clip }}
-										>
-											{/*
-											 * The wash, drawn with the same
-											 * stops the stylesheet uses so the
-											 * contrast under the title here is
-											 * the contrast on the page.
-											 */}
-											<span
-												className="bridge-preview__cardstyle-wash"
-												style={{
-													background: `linear-gradient(to top, ${washFor(set.wash)} 0%, color-mix(in srgb, ${washFor(set.wash)} 88%, transparent) 28%, color-mix(in srgb, ${washFor(set.wash)} 45%, transparent) 55%, color-mix(in srgb, ${washFor(set.wash)} 12%, transparent) 78%, transparent 100%)`,
-												}}
-											/>
+								return (
+									<div
+										key={style.slug}
+										className="bridge-preview__cardstyle"
+										style={{
+											borderRadius: radius,
+											boxShadow: isTeam ? 'none' : shadow,
+											// The surface below is placed against
+											// the card, and has to stay inside it:
+											// it sits at z-index -1, which only
+											// stays put in an element that
+											// establishes a stacking context. The
+											// card's own stylesheet isolates for
+											// the same reason.
+											position: 'relative',
+											isolation: 'isolate',
+											// What the cut is measured against:
+											// `cqw` is a share of this element's
+											// inline size, on both axes, which is
+											// what holds the notch at 45°.
+											containerType: container,
+											aspectRatio: isCover
+												? ratioValue(set.ratio)
+												: undefined,
+											// Team paints nothing of its own,
+											// Cover paints the Inverted ground the
+											// wash resolves to, and the rest take
+											// this ground's card surface. Once the
+											// corner is cut this moves to the
+											// layer below, which is the thing that
+											// can be clipped.
+											background: cut
+												? 'transparent'
+												: groundFor(style.slug),
+										}}
+									>
+										{/* eslint-disable-next-line no-nested-ternary -- three sibling branches of one switch; a lookup here would mean building three trees eagerly. */}
+										{isCover ? (
 											<div
-												className="bridge-preview__cardstyle-coverbody"
-												style={{
-													padding,
-													// Derived from the wash by
-													// the compiler; see the
-													// `wash` case in
-													// bridge_compile_theme_json().
-													color: coverInk,
-												}}
+												className="bridge-preview__cardstyle-cover"
+												style={{ clipPath: clip }}
 											>
-												<strong style={heading}>
-													{style.name}
-												</strong>
+												{/*
+												 * The wash, drawn with the same
+												 * stops the stylesheet uses so the
+												 * contrast under the title here is
+												 * the contrast on the page.
+												 */}
 												<span
-													className="bridge-preview__cardstyle-go"
-													aria-hidden="true"
-												>
-													{'\u2192'}
-												</span>
-											</div>
-										</div>
-									) : isTeam ? (
-										<>
-											{/*
-											 * The same arithmetic the card
-											 * itself does — the circle pulled
-											 * down into the panel by a
-											 * fraction of its own width, and
-											 * the panel padded by the mirror
-											 * of it. Written out here rather
-											 * than approximated, so the arch
-											 * on screen is the arch the site
-											 * draws at whichever size is
-											 * chosen.
-											 */}
-											<span
-												className="bridge-preview__cardstyle-avatar"
-												style={{
-													width: avatarWidth(
-														set.avatar
-													),
-													marginBottom: `calc(${avatarWidth(set.avatar)} * -0.42)`,
-													background: surface,
-												}}
-											/>
-											<div
-												className="bridge-preview__cardstyle-panel"
-												style={{
-													background: surface,
-													padding: `calc(${avatarWidth(set.avatar)} * 0.42 + ${padding}) ${padding} ${padding}`,
-													borderRadius: `0 0 ${radius} ${radius}`,
-												}}
-											>
-												<strong style={heading}>
-													{__('Name', 'bridge')}
-												</strong>
-												<span className="bridge-preview__cardstyle-sub">
-													{__('Role', 'bridge')}
-												</span>
-												<span
-													className="bridge-preview__cardstyle-button"
+													className="bridge-preview__cardstyle-wash"
 													style={{
-														background:
-															color('accent'),
-														color: color('text'),
+														background: `linear-gradient(to top, ${washFor(set.wash)} 0%, color-mix(in srgb, ${washFor(set.wash)} 88%, transparent) 28%, color-mix(in srgb, ${washFor(set.wash)} 45%, transparent) 55%, color-mix(in srgb, ${washFor(set.wash)} 12%, transparent) 78%, transparent 100%)`,
+													}}
+												/>
+												<div
+													className="bridge-preview__cardstyle-coverbody"
+													style={{
+														padding,
+														// Derived from the wash by
+														// the compiler; see the
+														// `wash` case in
+														// bridge_compile_theme_json().
+														color: coverInk,
 													}}
 												>
-													{__('Button', 'bridge')}
-												</span>
-											</div>
-										</>
-									) : (
-										<>
-											<span
-												className="bridge-preview__cardstyle-media"
-												style={{
-													aspectRatio: ratioValue(
-														set.ratio
-													),
-													// Cut to match the surface
-													// under it — the same job
-													// `card.cut-corner-child`
-													// does on the real card.
-													clipPath: clip,
-												}}
-											>
-												{'tile' === style.slug && (
+													<strong style={heading}>
+														{style.name}
+													</strong>
 													<span
-														className="bridge-preview__cardstyle-badge"
+														className="bridge-preview__cardstyle-go"
+														aria-hidden="true"
+													>
+														{'\u2192'}
+													</span>
+												</div>
+											</div>
+										) : isTeam ? (
+											<>
+												{/*
+												 * The same arithmetic the card
+												 * itself does — the circle pulled
+												 * down into the panel by a
+												 * fraction of its own width, and
+												 * the panel padded by the mirror
+												 * of it. Written out here rather
+												 * than approximated, so the arch
+												 * on screen is the arch the site
+												 * draws at whichever size is
+												 * chosen.
+												 */}
+												<span
+													className="bridge-preview__cardstyle-avatar"
+													style={{
+														width: avatarWidth(
+															set.avatar
+														),
+														marginBottom: `calc(${avatarWidth(set.avatar)} * -0.42)`,
+														background: surface,
+													}}
+												/>
+												<div
+													className="bridge-preview__cardstyle-panel"
+													style={{
+														background: surface,
+														padding: `calc(${avatarWidth(set.avatar)} * 0.42 + ${padding}) ${padding} ${padding}`,
+														borderRadius: `0 0 ${radius} ${radius}`,
+													}}
+												>
+													<strong style={heading}>
+														{__('Name', 'bridge')}
+													</strong>
+													<span className="bridge-preview__cardstyle-sub">
+														{__('Role', 'bridge')}
+													</span>
+													<span
+														className="bridge-preview__cardstyle-button"
 														style={{
 															background:
 																color('accent'),
@@ -700,93 +678,131 @@ export function CardStylePreview({
 															),
 														}}
 													>
-														{__('1.3 mi', 'bridge')}
+														{__('Button', 'bridge')}
 													</span>
-												)}
-											</span>
-											<div
-												className="bridge-preview__cardstyle-body"
-												style={{ padding }}
-											>
-												<strong style={heading}>
-													{style.name}
-												</strong>
-												<p>
-													{__(
-														'The words take the band’s colour.',
-														'bridge'
+												</div>
+											</>
+										) : (
+											<>
+												<span
+													className="bridge-preview__cardstyle-media"
+													style={{
+														aspectRatio: ratioValue(
+															set.ratio
+														),
+														// Cut to match the surface
+														// under it — the same job
+														// `card.cut-corner-child`
+														// does on the real card.
+														clipPath: clip,
+													}}
+												>
+													{'tile' === style.slug && (
+														<span
+															className="bridge-preview__cardstyle-badge"
+															style={{
+																background:
+																	color(
+																		'accent'
+																	),
+																color: color(
+																	'text'
+																),
+															}}
+														>
+															{__(
+																'1.3 mi',
+																'bridge'
+															)}
+														</span>
 													)}
-												</p>
-												{'summary' === style.slug && (
-													<span
-														className="bridge-preview__cardstyle-more"
-														style={{
-															// What
-															// `--post-card-accent`
-															// resolves to: the
-															// link colour,
-															// except on the
-															// Inverted ground
-															// — keyed `primary`
-															// — where the skin
-															// repoints it at
-															// the band's own
-															// foreground.
-															color:
-																'primary' ===
-																ground.key
-																	? 'currentcolor'
-																	: color(
-																			'secondary'
-																		),
-														}}
-													>
+												</span>
+												<div
+													className="bridge-preview__cardstyle-body"
+													style={{ padding }}
+												>
+													<strong style={heading}>
+														{style.name}
+													</strong>
+													<p>
 														{__(
-															'Read more →',
+															'The words take the band’s colour.',
 															'bridge'
 														)}
-													</span>
+													</p>
+													{'summary' ===
+														style.slug && (
+														<span
+															className="bridge-preview__cardstyle-more"
+															style={{
+																// What
+																// `--post-card-accent`
+																// resolves to: the
+																// link colour,
+																// except on the
+																// Inverted ground
+																// — keyed `primary`
+																// — where the skin
+																// repoints it at
+																// the band's own
+																// foreground.
+																color:
+																	'primary' ===
+																	ground.key
+																		? 'currentcolor'
+																		: color(
+																				'secondary'
+																			),
+															}}
+														>
+															{__(
+																'Read more →',
+																'bridge'
+															)}
+														</span>
+													)}
+												</div>
+												{'tile' === style.slug && (
+													<span
+														className="bridge-preview__cardstyle-rule"
+														style={{
+															background:
+																color(
+																	'secondary'
+																),
+														}}
+													/>
 												)}
-											</div>
-											{'tile' === style.slug && (
-												<span
-													className="bridge-preview__cardstyle-rule"
-													style={{
-														background:
-															color('secondary'),
-													}}
-												/>
-											)}
-										</>
-									)}
+											</>
+										)}
 
-									{/*
-									 * The surface, clipped to the cut — the
-									 * card's `::before` on the site. Behind the
-									 * content and in front of the card's own
-									 * (now clear) background, which is where a
-									 * negative index puts it. Not on Team,
-									 * which paints no rectangle for a corner to
-									 * be taken off: the same exemption
-									 * blocks/cards/_card-team.scss makes.
-									 */}
-									{cut && !isTeam && (
-										<span
-											aria-hidden="true"
-											style={{
-												position: 'absolute',
-												inset: 0,
-												zIndex: -1,
-												background: groundFor(
-													style.slug
-												),
-												clipPath: clip,
-											}}
-										/>
-									)}
-								</div>
-							);
-						})}
+										{/*
+										 * The surface, clipped to the cut — the
+										 * card's `::before` on the site. Behind the
+										 * content and in front of the card's own
+										 * (now clear) background, which is where a
+										 * negative index puts it. Not on Team,
+										 * which paints no rectangle for a corner to
+										 * be taken off: the same exemption
+										 * blocks/cards/_card-team.scss makes.
+										 */}
+										{cut && !isTeam && (
+											<span
+												aria-hidden="true"
+												style={{
+													position: 'absolute',
+													inset: 0,
+													zIndex: -1,
+													background: groundFor(
+														style.slug
+													),
+													clipPath: clip,
+												}}
+											/>
+										)}
+									</div>
+								);
+							})}
 					</div>
 				</div>
 			))}

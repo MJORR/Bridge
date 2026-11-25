@@ -140,6 +140,26 @@ if ( ! empty( $attributes['showArrow'] ) && ! empty( $attributes['arrowSolid'] )
 	$classes .= ' bridge-features--arrow-solid';
 }
 
+// Rounded corners on the band, at the XL radius, with the colour that shows
+// behind each curve: the section above for the top two, the section below for
+// the bottom two. Palette slugs; empty is the page colour.
+$corner_style = '';
+
+if ( ! empty( $attributes['roundCorners'] ) ) {
+	$classes  .= ' bridge-features--corners';
+	$palette   = bridge_palette_slugs();
+	$behind    = static function ( $slug ) use ( $palette ): string {
+		$slug = (string) $slug;
+
+		return isset( $palette[ $slug ] ) ? $slug : 'background';
+	};
+	$corner_style = sprintf(
+		'--bridge-corner-top: var(--wp--preset--color--%1$s);--bridge-corner-bottom: var(--wp--preset--color--%2$s);',
+		$behind( $attributes['cornerTop'] ?? '' ),
+		$behind( $attributes['cornerBottom'] ?? '' )
+	);
+}
+
 list( $intro_html, $label_id ) = bridge_section_intro( $intro, 'bridge-features__intro' );
 
 // The decorative shape behind the panels, if this band asks for one. Shared
@@ -149,7 +169,7 @@ list( $mask_class, $mask_style ) = bridge_band_mask( $attributes );
 echo bridge_section_wrapper( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 	$attributes,
 	$classes . $mask_class,
-	sprintf( '--columns: %d;', $columns ) . $mask_style,
+	sprintf( '--columns: %d;', $columns ) . $corner_style . $mask_style,
 	$label_id
 );
 ?>

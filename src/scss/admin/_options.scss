@@ -704,24 +704,17 @@ $slot-height: 40px;
 /**
  * ---- Preview column ------------------------------------------------------
  *
- * Sticky, and scrollable in its own right. The old column stuck to the top of
- * the viewport and then simply ran off the bottom of it: on the Design tab the
- * type scale is taller than a laptop screen, and the Widths panel underneath
- * it could not be reached at all without scrolling the settings past their
- * end. Capping the column at the viewport and letting it scroll internally
- * makes the whole preview reachable from anywhere in the form.
+ * The height of its content, scrolling with the page like the settings
+ * beside it. It used to be pinned and capped at the window with a scrollbar
+ * of its own, which cut the Cards preview off part-way down.
  */
 .bridge-options__preview {
 	min-width: 0;
 }
 
 .bridge-options__preview-inner {
-	position: sticky;
-	// Under the admin bar and the sticky tab strip.
-	top: calc(32px + 48px + var(--bo-space-6));
-	max-height: calc(100vh - 32px - 48px - var(--bo-space-8));
-	overflow-y: auto;
-	overscroll-behavior: contain;
+	// As tall as what it holds, and it moves with the page: no pinned
+	// column with a scrollbar of its own inside the page's scroll.
 	background: var(--bo-surface);
 	border: 1px solid var(--bo-border);
 	border-radius: var(--bo-r-lg);
@@ -730,31 +723,6 @@ $slot-height: 40px;
 	display: grid;
 	gap: var(--bo-space-3);
 	align-content: start;
-
-	@media (max-width: 1180px) {
-		position: static;
-		max-height: none;
-	}
-
-	/**
-	 * The Buttons tab, uncapped.
-	 *
-	 * Its preview is four short sample grounds, and every one of them is
-	 * the point: Inverted is the band most likely to fail a contrast check,
-	 * and it was the one left below the fold behind an inner scrollbar. So
-	 * here the column is as tall as its content and travels with the page —
-	 * the settings beside it are a grid of skins that is taller still, so
-	 * nothing is lost by it not being pinned.
-	 */
-	.bridge-options__preview--buttons & {
-		position: static;
-		max-height: none;
-		overflow: visible;
-	}
-
-	// A quiet scrollbar — the column is a panel, not a document.
-	scrollbar-width: thin;
-	scrollbar-color: var(--bo-gray-300) transparent;
 
 	/**
 	 * A group heading inside the preview.
@@ -789,6 +757,16 @@ $slot-height: 40px;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: var(--bo-space-2);
+	// The preview scrolls with the page now, so the bar is what stays put:
+	// pinned under the admin bar and the tab strip for as long as the
+	// preview column runs.
+	position: sticky;
+	top: calc(32px + 48px + var(--bo-space-4));
+	z-index: 2;
+	margin: calc(var(--bo-space-5) * -1) calc(var(--bo-space-5) * -1) 0;
+	padding: var(--bo-space-5) var(--bo-space-5) var(--bo-space-3);
+	border-radius: var(--bo-r-lg) var(--bo-r-lg) 0 0;
+	background: var(--bo-surface);
 
 	.components-button.is-primary {
 		border-radius: var(--bo-r-md);

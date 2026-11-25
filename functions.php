@@ -73,6 +73,7 @@ require_once get_theme_file_path('inc/login-logo.php');
 require_once get_theme_file_path('inc/site-options.php');
 require_once get_theme_file_path('inc/admin-page.php');
 require_once get_theme_file_path('inc/simple-editor.php');
+require_once get_theme_file_path('inc/team-fields.php');
 require_once get_theme_file_path('inc/rest.php');
 // The contact form's server half: the Enquiries post type, the submission
 // handler and the two emails. After site-options.php, because it asks that
@@ -759,7 +760,17 @@ function bridge_register_blocks(): void
 	wp_add_inline_script(
 		'bridge-cards-editor',
 		'window.bridgeCards = ' . wp_json_encode(
-			array('excerptLength' => (int) ($card_tokens['cards']['excerpt'] ?? 20))
+			array(
+				'excerptLength' => (int) ($card_tokens['cards']['excerpt'] ?? 20),
+				// Post types whose cards a plugin draws — see the
+				// `bridge_card_html` filter in src/blocks/cards/card.php.
+				// The sidebar hides the card style and card content
+				// settings for them. Empty unless a plugin adds one.
+				'ownCardTypes'  => array_values(array_filter(array_map(
+					'sanitize_key',
+					(array) apply_filters('bridge_cards_own_card_post_types', array())
+				))),
+			)
 		) . ';',
 		'before'
 	);

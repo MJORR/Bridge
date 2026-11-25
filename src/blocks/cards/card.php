@@ -37,6 +37,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * A post type that draws its own card.
+ *
+ * For a plugin whose content is not a picture and some words — a before and
+ * after slider, say — and so fits none of the styles below. Return the card's
+ * HTML, escaped, and it is printed in place of the style's; return null and
+ * nothing changes. No callback is hooked by the theme, so every existing band
+ * is untouched. A type that does this should also be named in
+ * `bridge_cards_own_card_post_types`, so the block's sidebar stops offering
+ * card options that would change nothing.
+ *
+ * @param string|null $html      Null, or the card's HTML.
+ * @param array       $card      The card record.
+ * @param WP_Post     $post      The post the card is for.
+ * @param array       $card_args The style and layout the band asked for.
+ */
+$bridge_own_card = apply_filters(
+	'bridge_card_html',
+	null,
+	$card,
+	get_post(),
+	array(
+		'style'   => $card_style ?? '',
+		'is_list' => ! empty( $is_list ),
+	)
+);
+
+if ( is_string( $bridge_own_card ) ) {
+	echo $bridge_own_card; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — the filter returns escaped HTML.
+
+	return;
+}
+
+/**
  * A list draws its own row, and the card style does not enter into it.
  *
  * Deliberately not four styles crossed with two layouts. That is eight markup

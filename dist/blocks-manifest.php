@@ -1075,6 +1075,18 @@ return array(
 				'type' => 'boolean',
 				'default' => false,
 			),
+			'roundCorners' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'cornerTop' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'cornerBottom' => array(
+				'type' => 'string',
+				'default' => '',
+			),
 			'titleBottom' => array(
 				'type' => 'boolean',
 				'default' => false,

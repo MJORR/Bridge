@@ -23,8 +23,14 @@
 const { useBlockProps, useInnerBlocksProps, InspectorControls } =
 	window.wp.blockEditor;
 const { createElement: el, Fragment } = window.wp.element;
-const { PanelBody, RangeControl, SelectControl, ToggleControl } =
-	window.wp.components;
+const {
+	PanelBody,
+	RangeControl,
+	SelectControl,
+	ToggleControl,
+	BaseControl,
+	ColorPalette,
+} = window.wp.components;
 const { __ } = window.wp.i18n;
 const { useSelect } = window.wp.data;
 
@@ -56,6 +62,31 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	// True when every panel is a full photograph (a background image). Panel
 	// style and Image corners change nothing on those — the photo is the
 	// panel — so they are hidden rather than offered and ignored.
+	// The site's palette, for the colours behind the rounded corners.
+	const themeColors = useSelect((select) => {
+		const settings = select('core/block-editor').getSettings();
+
+		return settings.colors || settings.colorPalette || [];
+	}, []);
+
+	const cornerSwatches = (label, help, value, key) =>
+		el(
+			BaseControl,
+			{ label, help, __nextHasNoMarginBottom: true },
+			el(ColorPalette, {
+				colors: themeColors,
+				value: themeColors.find((c) => c.slug === value)?.color,
+				onChange: (hex) =>
+					setAttributes({
+						[key]:
+							themeColors.find((c) => c.color === hex)?.slug ||
+							'',
+					}),
+				disableCustomColors: true,
+				clearable: true,
+			})
+		);
+
 	const { allCover, hasWide } = useSelect(
 		(select) => {
 			const panels = select('core/block-editor')
@@ -88,6 +119,9 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		buttonStyle = 'fill',
 		buttonSize = 'default',
 		titleBottom = false,
+		roundCorners = false,
+		cornerTop = '',
+		cornerBottom = '',
 		arrowSolid = false,
 	} = attributes;
 
@@ -114,6 +148,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			gutters || isNumbered ? '' : 'bridge-features--flush',
 			hasStepNumbers ? 'bridge-features--show-numbers' : '',
 			titleBottom ? 'bridge-features--title-bottom' : '',
+			roundCorners ? 'bridge-features--corners' : '',
 			hasWide && !isNumbered && overflowStyle !== 'carousel'
 				? 'bridge-features--has-wide'
 				: '',
@@ -128,7 +163,16 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		]
 			.filter(Boolean)
 			.join(' '),
-		style: { '--columns': columns, ...maskStyle(attributes) },
+		style: {
+			'--columns': columns,
+			...(roundCorners
+				? {
+						'--bridge-corner-top': `var(--wp--preset--color--${cornerTop || 'background'})`,
+						'--bridge-corner-bottom': `var(--wp--preset--color--${cornerBottom || 'background'})`,
+					}
+				: {}),
+			...maskStyle(attributes),
+		},
 	});
 
 	// The same element render.php prints, for the same reason: a numbered run
@@ -368,6 +412,44 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				})
 			),
 			MaskPanel(attributes, setAttributes)
+		),
+		el(
+			InspectorControls,
+			{ group: 'styles' },
+			el(
+				PanelBody,
+				{ title: __('Corners', 'bridge'), initialOpen: true },
+				el(ToggleControl, {
+					label: __('Rounded corners', 'bridge'),
+					help: __(
+						'Rounds the corners of the section at the XL radius.',
+						'bridge'
+					),
+					checked: !!roundCorners,
+					onChange: (value) => setAttributes({ roundCorners: value }),
+					__nextHasNoMarginBottom: true,
+				}),
+				roundCorners &&
+					cornerSwatches(
+						__('Colour behind the top corners', 'bridge'),
+						__(
+							'Match the section above. Clear for the page colour.',
+							'bridge'
+						),
+						cornerTop,
+						'cornerTop'
+					),
+				roundCorners &&
+					cornerSwatches(
+						__('Colour behind the bottom corners', 'bridge'),
+						__(
+							'Match the section below. Clear for the page colour.',
+							'bridge'
+						),
+						cornerBottom,
+						'cornerBottom'
+					)
+			)
 		),
 		el(
 			'section',

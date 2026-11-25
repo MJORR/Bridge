@@ -151,9 +151,9 @@ const CARD_STYLES = [
 	},
 ];
 
-// What the Card style control offers. Hidden styles stay in the table above so
-// a block already using one keeps working — they are simply not choosable.
-const CARD_STYLE_CHOICES = CARD_STYLES.filter((s) => !s.hidden);
+// Hidden styles stay in the table above so a block already using one keeps
+// working. The Card style control filters them out where it is drawn: Team is
+// offered there for Team content.
 
 const cardStyleHas = (style, field) =>
 	(
@@ -281,9 +281,18 @@ const Edit = ({ attributes, setAttributes }) => {
 	// band decides what classes to wear.
 	const isList = layout === 'list';
 
-	const style = CARD_STYLES.find((s) => s.value === cardStyle)
+	// A post type whose card a plugin draws (window.bridgeCards.ownCardTypes,
+	// from the `bridge_cards_own_card_post_types` filter) has no card style
+	// or card content to choose, so those settings are not offered.
+	const ownCard = (window.bridgeCards?.ownCardTypes || []).includes(postType);
+
+	// Team content is always a Team card — render.php says the same.
+	let style = CARD_STYLES.find((s) => s.value === cardStyle)
 		? cardStyle
 		: 'summary';
+	if (postType === 'team') {
+		style = 'team';
+	}
 
 	// Viewable post types, plus the content types with no pages of their own
 	// — not viewable, but material a band is exactly where it goes. Core's
@@ -567,15 +576,18 @@ const Edit = ({ attributes, setAttributes }) => {
 			}),
 
 			// ---- Grid ----------------------------------------------------
+			// Team content always uses the Team card (its design is set in
+			// Theme Options → Cards), so there is nothing to choose.
 			!isList &&
+				postType !== 'team' &&
+				!ownCard &&
 				el(SelectControl, {
 					label: __('Card style', 'bridge'),
 					help: CARD_STYLES.find((s) => s.value === style)?.help,
 					value: style,
-					options: CARD_STYLE_CHOICES.map(({ value, label }) => ({
-						value,
-						label,
-					})),
+					options: CARD_STYLES.filter((s) => !s.hidden).map(
+						({ value, label }) => ({ value, label })
+					),
 					onChange: (value) => setAttributes({ cardStyle: value }),
 				}),
 			!isList &&
@@ -701,100 +713,106 @@ const Edit = ({ attributes, setAttributes }) => {
 		// Which controls belong here is the style's decision — see CARD_STYLES.
 		// Portrait draws no excerpt and Tile no read-more, and a panel offering
 		// settings that change nothing on screen is worse than a shorter panel.
-		el(
-			PanelBody,
-			{ title: __('Card content', 'bridge') },
-			cardStyleHas(style, 'excerpt') &&
-				el(RangeControl, {
-					label: __('Excerpt length (words)', 'bridge'),
-					help: excerptLength
-						? __(
-								'This band only. Reset it to follow the site default set in Theme Options → Cards.',
-								'bridge'
-							)
-						: sprintf(
-								/* translators: %d: number of words. */
-								__(
-									'Following the site default of %d words, set in Theme Options → Cards.',
+		!ownCard &&
+			el(
+				PanelBody,
+				{ title: __('Card content', 'bridge') },
+				cardStyleHas(style, 'excerpt') &&
+					el(RangeControl, {
+						label: __('Excerpt length (words)', 'bridge'),
+						help: excerptLength
+							? __(
+									'This band only. Reset it to follow the site default set in Theme Options → Cards.',
 									'bridge'
+								)
+							: sprintf(
+									/* translators: %d: number of words. */
+									__(
+										'Following the site default of %d words, set in Theme Options → Cards.',
+										'bridge'
+									),
+									SITE_EXCERPT_LENGTH
 								),
-								SITE_EXCERPT_LENGTH
-							),
-					// `undefined` rather than 0 is what draws the slider as
-					// unset: 0 would put the handle at the far left and read as
-					// "no excerpt" rather than "not decided here".
-					value: excerptLength || undefined,
-					min: 10,
-					max: 100,
-					allowReset: true,
-					// What Reset writes. 0 is the block saying nothing, which
-					// is what render.php reads as "ask the site".
-					resetFallbackValue: 0,
-					onChange: (value) =>
-						setAttributes({ excerptLength: value ?? 0 }),
-				}),
-			cardStyleHas(style, 'readMore') &&
-				el(ToggleControl, {
-					label: __('Show read more link', 'bridge'),
-					checked: !!showReadMore,
-					onChange: (value) => setAttributes({ showReadMore: value }),
-				}),
-			cardStyleHas(style, 'readMore') &&
-				showReadMore &&
-				el(TextControl, {
-					label: __('Read more text', 'bridge'),
-					// Empty uses the theme's own wording, which is the only
-					// wording that gets translated.
-					placeholder: __('Read more', 'bridge'),
-					value: readMoreText,
-					onChange: (value) => setAttributes({ readMoreText: value }),
-				}),
-			(isList ||
-				cardStyleHas(style, 'readMore') ||
-				cardStyleHas(style, 'button')) &&
-				el(SelectControl, {
-					label: __('Show link as', 'bridge'),
-					help: __(
-						'For every card in this block. What the buttons look like is set in Theme Options → Buttons.',
-						'bridge'
-					),
-					// Empty is the style's own default, which is what
-					// render.php draws for it — so the control shows that
-					// rather than a blank.
-					value:
-						linkStyle ||
-						(!isList && cardStyleHas(style, 'button')
-							? 'button'
-							: 'text'),
-					options: [
-						{ label: __('Text link', 'bridge'), value: 'text' },
-						{ label: __('Button', 'bridge'), value: 'button' },
-						{
-							label: __('Outline button', 'bridge'),
-							value: 'outline',
-						},
-					],
-					onChange: (value) => setAttributes({ linkStyle: value }),
-				}),
-			cardStyleHas(style, 'button') &&
-				el(ToggleControl, {
-					label: __('Show button', 'bridge'),
-					checked: !!showButton,
-					onChange: (value) => setAttributes({ showButton: value }),
-				}),
-			cardStyleHas(style, 'button') &&
-				showButton &&
-				el(TextControl, {
-					label: __('Button text', 'bridge'),
-					help: __(
-						'The same on every card. It is the visual cue, not a second link — the card’s name already carries the link.',
-						'bridge'
-					),
-					placeholder: __('View profile', 'bridge'),
-					value: buttonText,
-					onChange: (value) => setAttributes({ buttonText: value }),
-				})
-		),
+						// `undefined` rather than 0 is what draws the slider as
+						// unset: 0 would put the handle at the far left and read as
+						// "no excerpt" rather than "not decided here".
+						value: excerptLength || undefined,
+						min: 10,
+						max: 100,
+						allowReset: true,
+						// What Reset writes. 0 is the block saying nothing, which
+						// is what render.php reads as "ask the site".
+						resetFallbackValue: 0,
+						onChange: (value) =>
+							setAttributes({ excerptLength: value ?? 0 }),
+					}),
+				cardStyleHas(style, 'readMore') &&
+					el(ToggleControl, {
+						label: __('Show read more link', 'bridge'),
+						checked: !!showReadMore,
+						onChange: (value) =>
+							setAttributes({ showReadMore: value }),
+					}),
+				cardStyleHas(style, 'readMore') &&
+					showReadMore &&
+					el(TextControl, {
+						label: __('Read more text', 'bridge'),
+						// Empty uses the theme's own wording, which is the only
+						// wording that gets translated.
+						placeholder: __('Read more', 'bridge'),
+						value: readMoreText,
+						onChange: (value) =>
+							setAttributes({ readMoreText: value }),
+					}),
+				(isList ||
+					cardStyleHas(style, 'readMore') ||
+					cardStyleHas(style, 'button')) &&
+					el(SelectControl, {
+						label: __('Show link as', 'bridge'),
+						help: __(
+							'For every card in this block. What the buttons look like is set in Theme Options → Buttons.',
+							'bridge'
+						),
+						// Empty is the style's own default, which is what
+						// render.php draws for it — so the control shows that
+						// rather than a blank.
+						value:
+							linkStyle ||
+							(!isList && cardStyleHas(style, 'button')
+								? 'button'
+								: 'text'),
+						options: [
+							{ label: __('Text link', 'bridge'), value: 'text' },
+							{ label: __('Button', 'bridge'), value: 'button' },
+							{
+								label: __('Outline button', 'bridge'),
+								value: 'outline',
+							},
+						],
+						onChange: (value) =>
+							setAttributes({ linkStyle: value }),
+					}),
+				cardStyleHas(style, 'button') &&
+					el(ToggleControl, {
+						label: __('Show button', 'bridge'),
+						checked: !!showButton,
+						onChange: (value) =>
+							setAttributes({ showButton: value }),
+					}),
+				cardStyleHas(style, 'button') &&
+					showButton &&
+					el(TextControl, {
+						label: __('Button text', 'bridge'),
+						help: __(
+							'The same on every card. It is the visual cue, not a second link — the card’s name already carries the link.',
+							'bridge'
+						),
+						placeholder: __('View profile', 'bridge'),
+						value: buttonText,
+						onChange: (value) =>
+							setAttributes({ buttonText: value }),
+					})
+			),
 		MaskPanel(attributes, setAttributes)
 	);
 

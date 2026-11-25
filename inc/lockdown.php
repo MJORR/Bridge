@@ -440,6 +440,23 @@ function bridge_block_library(): array
 		);
 	}
 
+	// Group's layout variations — Row, Stack and Grid. They are not blocks
+	// (each is core/group with a layout set), so the registry loop above never
+	// lists them, and they could not be switched off. Listed here under
+	// pseudo-names; bridge_enqueue_block_variation_switches() hides the ones
+	// switched off. Content already using one is untouched.
+	if (WP_Block_Type_Registry::get_instance()->is_registered('core/group')) {
+		foreach (bridge_group_variations() as $pseudo => $variation) {
+			$groups['design'][] = array(
+				'name'     => $pseudo,
+				'title'    => $variation['title'],
+				'default'  => true,
+				'required' => false,
+				'theme'    => false,
+			);
+		}
+	}
+
 	// Core's own category order, which is the order the inserter uses — an
 	// operator looking for a block should find it where the editor keeps it.
 	$labels = array();
@@ -653,3 +670,52 @@ function bridge_user_global_styles_overrides(): array
 
 	return $overrides ? array('post_id' => $post_id) + $overrides : array();
 }
+
+/**
+ * Group's layout variations, as the Blocks screen lists them.
+ *
+ * Pseudo-names in the block-name shape so they can sit in `blocks.disabled`
+ * beside real blocks; no block is registered under them.
+ *
+ * @return array<string, array<string, string>> Pseudo-name => title and the
+ *                                              variation's own name.
+ */
+function bridge_group_variations(): array
+{
+	return array(
+		'core/group-row'   => array('title' => __('Row (Group variation)', 'bridge'), 'variation' => 'group-row'),
+		'core/group-stack' => array('title' => __('Stack (Group variation)', 'bridge'), 'variation' => 'group-stack'),
+		'core/group-grid'  => array('title' => __('Grid (Group variation)', 'bridge'), 'variation' => 'group-grid'),
+	);
+}
+
+/**
+ * Hide the Group variations switched off in Theme Options from the inserter.
+ *
+ * Unregistering the variation removes it from the inserter and the block's
+ * variation picker. A Group already laid out as a grid is still a Group with a
+ * grid layout, so it keeps rendering and stays editable.
+ */
+function bridge_enqueue_block_variation_switches(): void
+{
+	$disabled = bridge_get_tokens()['blocks']['disabled'];
+	$off      = array();
+
+	foreach (bridge_group_variations() as $pseudo => $variation) {
+		if (in_array($pseudo, $disabled, true)) {
+			$off[] = $variation['variation'];
+		}
+	}
+
+	if (! $off) {
+		return;
+	}
+
+	wp_register_script('bridge-block-variations', false, array('wp-blocks', 'wp-dom-ready'), BRIDGE_VERSION, true);
+	wp_enqueue_script('bridge-block-variations');
+	wp_add_inline_script(
+		'bridge-block-variations',
+		'wp.domReady(function(){' . wp_json_encode($off) . '.forEach(function(v){wp.blocks.unregisterBlockVariation("core/group",v);});});'
+	);
+}
+add_action('enqueue_block_editor_assets', 'bridge_enqueue_block_variation_switches');

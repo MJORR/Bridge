@@ -105,6 +105,16 @@ export function CardsTab({
 			label: name,
 			value: slug,
 		})),
+		design: [
+			{
+				label: __('Design 1 — round photo over a panel', 'bridge'),
+				value: 'arch',
+			},
+			{
+				label: __('Design 2 — tall photo, words below', 'bridge'),
+				value: 'photo',
+			},
+		],
 	};
 
 	const labelFor = {
@@ -112,6 +122,7 @@ export function CardsTab({
 		ratio: __('Image crop', 'bridge'),
 		avatar: __('Photograph size', 'bridge'),
 		wash: __('Wash colour', 'bridge'),
+		design: __('Design', 'bridge'),
 	};
 
 	/**
@@ -132,6 +143,7 @@ export function CardsTab({
 			'The colour of the gradient. Text colour is set automatically.',
 			'bridge'
 		),
+		design: __('Which Team card design every Team block uses.', 'bridge'),
 	};
 
 	// Reset on each render, so the help lands on the first style that uses a
@@ -142,10 +154,7 @@ export function CardsTab({
 		<>
 			<Section
 				title={__('Card styles', 'bridge')}
-				description={__(
-					'The three card styles a block can use.',
-					'bridge'
-				)}
+				description={__('The card styles blocks can use.', 'bridge')}
 			>
 				{(cardStyles || []).map((style) => (
 					<div key={style.slug} className="bridge-options__cardstyle">
@@ -316,7 +325,8 @@ export function CardsPreview({ draft, payload, preview }) {
 				{sprintf(
 					/* translators: 1: number of styles. 2: number of grounds. */
 					__('%1$d card styles across %2$d backgrounds.', 'bridge'),
-					(cardStyles || []).length,
+					// Team is not drawn in the preview.
+					(cardStyles || []).filter((s) => s.slug !== 'team').length,
 					(cardGrounds || []).length
 				)}
 			</p>

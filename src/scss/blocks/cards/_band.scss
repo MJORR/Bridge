@@ -92,7 +92,7 @@
 		// Capped like the wrapped layout below, so a row of two or three cards
 		// on a wide screen is a row of cards rather than a row of billboards.
 		grid-auto-columns: min(
-			#{section.track-width(16rem, section.$grid-gap, 80%)},
+			#{section.track-width(var(--bridge-cards-min, 16rem), section.$grid-gap, 80%)},
 			#{section.$item-max}
 		);
 
@@ -153,7 +153,7 @@
 	// of how wide the window is — which is the right question once a card grid
 	// can sit inside a column — and it collapses on its own, so `--columns`
 	// becomes a ceiling rather than a promise the layout cannot keep.
-	@include section.auto-grid(16rem, section.$grid-gap);
+	@include section.auto-grid(var(--bridge-cards-min, 16rem), section.$grid-gap);
 
 	width: 100%;
 

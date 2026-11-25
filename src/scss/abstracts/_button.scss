@@ -210,6 +210,9 @@
 	}
 
 	&:hover::after,
+	// A button inside a card that is one big link: the card is what the
+	// pointer is over, so the card's hover is the button's.
+	.post-card:hover &::after,
 	&:focus-visible:not([contenteditable])::after {
 		transform: scaleX(1);
 	}
@@ -365,6 +368,7 @@
 	}
 
 	&:hover,
+	.post-card:hover &,
 	&:focus-visible:not([contenteditable]) {
 		/**
 		 * The box under the climbing layer.
@@ -435,6 +439,7 @@
  */
 @mixin wash {
 	&:hover,
+	.post-card:hover &,
 	&:focus-visible:not([contenteditable]) {
 		background-image: linear-gradient(
 			color-mix(in srgb, currentcolor 12%, transparent),
@@ -477,6 +482,7 @@
 	);
 
 	&:hover,
+	.post-card:hover &,
 	&:focus-visible:not([contenteditable]) {
 		background-color: var(
 			--bridge-button-ghost,
@@ -590,6 +596,7 @@
 	}
 
 	&:hover,
+	.post-card:hover &,
 	&:focus-visible:not([contenteditable]) {
 		background-color: var(--bridge-block-rest-bg);
 		border-color: var(--bridge-block-ink);

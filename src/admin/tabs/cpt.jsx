@@ -248,6 +248,7 @@ export function CptTab({ draft, payload, setPostTypes }) {
 				hasCategories: false,
 				hasLink: false,
 				hasImage: false,
+				hasPerson: false,
 				icon: '',
 			},
 		]);
@@ -286,6 +287,7 @@ export function CptTab({ draft, payload, setPostTypes }) {
 				// Absent means no, like categories.
 				const hasLink = !!row.hasLink;
 				const hasImage = !!row.hasImage;
+				const hasPerson = !!row.hasPerson;
 
 				return (
 					<div
@@ -490,6 +492,35 @@ export function CptTab({ draft, payload, setPostTypes }) {
 										__nextHasNoMarginBottom
 										onChange={(value) =>
 											patch(index, { hasImage: value })
+										}
+									/>
+								)
+							}
+
+							{
+								// Pageless only: a person with a page of
+								// their own is edited in the block editor.
+								!hasPages && (
+									<ToggleControl
+										label={__(
+											'Team member fields',
+											'bridge'
+										)}
+										help={
+											hasPerson
+												? __(
+														'Each item has Name, Position, Location, LinkedIn and Profile. Turn on Featured image for a photo.',
+														'bridge'
+													)
+												: __(
+														'Off. Items have the standard fields.',
+														'bridge'
+													)
+										}
+										checked={hasPerson}
+										__nextHasNoMarginBottom
+										onChange={(value) =>
+											patch(index, { hasPerson: value })
 										}
 									/>
 								)

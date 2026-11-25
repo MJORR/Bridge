@@ -710,6 +710,12 @@ function bridge_compile_theme_json(array $tokens): array
 		'shadow'      => $cut ? 'none' : $shadow['shadow'],
 		'shadowHover' => $cut ? 'none' : $shadow['hover'],
 
+		// The same shadow as a `filter`, for a card whose outline is not its
+		// box — the Team card's round photo over a panel. A box-shadow traces
+		// the rectangle; drop-shadow() traces what is actually painted.
+		'dropShadow'  => $cut ? 'none' : bridge_box_to_drop_shadow((string) $shadow['shadow']),
+		'dropShadowHover' => $cut ? 'none' : bridge_box_to_drop_shadow((string) $shadow['hover']),
+
 		/*
 		 * How far that shadow reaches, for the one place on the site that
 		 * would otherwise cut it off.
@@ -769,6 +775,12 @@ function bridge_compile_theme_json(array $tokens): array
 					$group['ratio'] = (string) (
 						$ratios[$value]['value'] ?? $ratios[$entry['ratio'] ?? '16-9']['value'] ?? '16 / 9'
 					);
+					break;
+
+				// Which Team design is in use. The class that draws it is
+				// printed by the Cards block; this publishes the choice.
+				case 'design':
+					$group['design'] = 'photo' === $value ? 'photo' : 'arch';
 					break;
 
 				case 'avatar':
@@ -1112,3 +1124,35 @@ function bridge_block_style_lockdown(): array
 	return $blocks;
 }
 add_filter('wp_theme_json_data_theme', 'bridge_filter_theme_json_data');
+
+/**
+ * A box-shadow list as the equivalent `filter: drop-shadow()` chain.
+ *
+ * The theme's shadow presets are plain offset/blur/colour layers with no
+ * spread or inset, which is exactly what drop-shadow() takes.
+ *
+ * @param string $box A box-shadow value, or 'none'.
+ * @return string
+ */
+function bridge_box_to_drop_shadow(string $box): string
+{
+	$box = trim($box);
+
+	if ('' === $box || 'none' === $box) {
+		return 'none';
+	}
+
+	// Split on the commas between layers, not the ones inside rgba().
+	$layers = preg_split('/,(?![^(]*\))/', $box) ?: array();
+	$out    = array();
+
+	foreach ($layers as $layer) {
+		$layer = trim($layer);
+
+		if ('' !== $layer && false === stripos($layer, 'inset')) {
+			$out[] = 'drop-shadow(' . $layer . ')';
+		}
+	}
+
+	return $out ? implode(' ', $out) : 'none';
+}

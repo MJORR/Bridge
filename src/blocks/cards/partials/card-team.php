@@ -33,14 +33,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 // The chip belongs to Tile. See image.php.
 $card_show_badge = false;
 ?>
-<article class="post-card post-card--team">
+<article class="post-card post-card--team<?php echo 'photo' === ( $team_design ?? 'arch' ) ? ' post-card--team-photo' : ' post-card--team-arch'; ?>">
 	<?php require __DIR__ . '/image.php'; ?>
 	<div class="post-card__body">
 		<?php if ( '' !== $card['eyebrow'] ) : ?>
 			<p class="post-card__eyebrow"><?php echo esc_html( $card['eyebrow'] ); ?></p>
 		<?php endif; ?>
 		<h3 class="post-card__title">
-			<a class="post-card__link" href="<?php echo esc_url( $card['permalink'] ); ?>"><?php echo esc_html( $card['title'] ); ?></a>
+			<?php if ( '' !== $card['permalink'] ) : ?>
+				<a class="post-card__link" href="<?php echo esc_url( $card['permalink'] ); ?>"<?php echo ! empty( $card['external'] ) ? ' target="_blank" rel="noopener"' : ''; ?>><?php echo esc_html( $card['title'] ); ?></a>
+			<?php else : ?>
+				<?php echo esc_html( $card['title'] ); ?>
+			<?php endif; ?>
 		</h3>
 		<?php
 		// Printed only when the post has one. A post type with no role field
@@ -49,6 +53,13 @@ $card_show_badge = false;
 		if ( '' !== $card['subtitle'] ) :
 			?>
 			<p class="post-card__subtitle"><?php echo esc_html( $card['subtitle'] ); ?></p>
+		<?php endif; ?>
+		<?php
+		// The person's location, a line under the role in Design 2. Set by
+		// inc/team-fields.php on types with team member fields.
+		if ( 'photo' === ( $team_design ?? 'arch' ) && '' !== ( $card['location'] ?? '' ) ) :
+			?>
+			<p class="post-card__location"><?php echo esc_html( $card['location'] ); ?></p>
 		<?php endif; ?>
 		<?php
 		// A pageless item with a link of its own says its own words — see

@@ -108,6 +108,13 @@ $card_styles     = array( 'summary', 'tile', 'cover', 'team' );
 $card_style      = sanitize_key( $attributes['cardStyle'] ?? 'summary' );
 $card_style      = in_array( $card_style, $card_styles, true ) ? $card_style : 'summary';
 
+// Team content is always drawn as Team cards, in the design chosen in Theme
+// Options → Cards; the block has no card style of its own for it.
+if ( 'team' === sanitize_key( $attributes['postType'] ?? '' ) ) {
+	$card_style = 'team';
+}
+$team_design = 'photo' === ( bridge_get_tokens()['cards']['styles']['team']['design'] ?? 'arch' ) ? 'photo' : 'arch';
+
 /**
  * Which query fills the grid.
  *
@@ -265,6 +272,16 @@ if ( 'menu_order' === $orderby_key ) {
 // — Text moved into Typography, Background into a panel of its own, and Link
 // into Elements — which read as four ways to overrule the design system.
 $grid_style = sprintf( '--columns:%d;', $columns );
+
+// The narrowest a card may get before the row drops a column. 16rem suits
+// three or fewer, but four 16rem cards need 1132px, so "4 per row" showed 3
+// anywhere narrower — including the editor with its sidebar open — and five
+// or six never fitted the page at all. More columns, smaller floor.
+if ( $columns >= 5 ) {
+	$grid_style .= '--bridge-cards-min:10rem;';
+} elseif ( 4 === $columns ) {
+	$grid_style .= '--bridge-cards-min:13rem;';
+}
 
 /*
  * How strong the shaded rows are, as a value rather than a class.

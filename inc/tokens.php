@@ -748,9 +748,12 @@ function bridge_card_styles(): array
 			 */
 			'team'    => array(
 				'name'        => __('Team', 'bridge'),
-				'description' => __('A circular photograph arching over a panel, a name, a role line and a button. For people.', 'bridge'),
+				'description' => __('Used automatically for Team content. Design 1: a round photo arching over a panel. Design 2: a tall photo with the name and role below.', 'bridge'),
 				'hidden'      => true,
-				'fields'      => array('heading', 'avatar'),
+				// Offered in Theme Options once a Team post type exists.
+				'postType'    => 'team',
+				'fields'      => array('design', 'heading', 'avatar'),
+				'design'      => 'arch',
 				'heading'     => 'large',
 				'avatar'      => 'm',
 			),
@@ -778,6 +781,9 @@ function bridge_card_style_options(): array
 		// compiler deriving the ink from it, rather than forbidden here. The
 		// same argument the button fills make.
 		'wash'    => array_keys(bridge_palette_slugs()),
+		// The Team card's two designs: the round photo over a panel, and a
+		// tall photo with the words below.
+		'design'  => array('arch', 'photo'),
 	);
 }
 
@@ -794,7 +800,13 @@ function bridge_card_style_choices(): array
 		// A hidden style is one the theme draws but does not offer — see the
 		// note on `team` above. Everything else still walks the full list, so
 		// hiding a style takes nothing away from a site already using it.
-		if (! empty($entry['hidden'])) {
+		// A hidden style tied to a post type is shown here once that post
+		// type exists — the Team card, on a site with Team content.
+		$shown_for_type = ! empty($entry['postType'])
+			&& function_exists('post_type_exists')
+			&& post_type_exists((string) $entry['postType']);
+
+		if (! empty($entry['hidden']) && ! $shown_for_type) {
 			continue;
 		}
 
@@ -3089,6 +3101,10 @@ function bridge_sanitize_tokens(array $raw): array
 			// no pages — a type with pages always has one — but stored as
 			// given. Absent means no, for the reason `hasCategories` gives.
 			'hasImage'      => ! empty($entry['hasImage']),
+			// Whether items get team member fields — Position, Location and
+			// LinkedIn — and are edited as Name and Profile. Pageless types
+			// only (see inc/team-fields.php). Absent means no.
+			'hasPerson'     => ! empty($entry['hasPerson']),
 			// The sidebar icon. Empty means the default, which follows
 			// `hasPages` — see bridge_post_type_icon(). Anything not on the
 			// theme's list is dropped to empty rather than stored, so a stale

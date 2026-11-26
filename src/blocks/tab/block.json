@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/tab",
+	"version": "1.0.0",
+	"title": "Tab",
+	"category": "design",
+	"icon": "index-card",
+	"description": "One tab: its label in the tab row, and the heading, text, features and image it shows.",
+	"textdomain": "bridge",
+	"parent": ["bridge/tabs"],
+	"supports": { "anchor": false, "html": false, "reusable": false },
+	"attributes": {
+		"label": { "type": "string", "default": "" },
+		"imageId": { "type": "number" },
+		"imageUrl": { "type": "string", "default": "" },
+		"imageAlt": { "type": "string", "default": "" }
+	},
+	"editorScript": "bridge-tab-editor",
+	"render": "file:./render.php"
+}

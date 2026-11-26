@@ -2465,6 +2465,221 @@ return array(
 		'style' => 'bridge-split-content-style',
 		'render' => 'file:./render.php',
 	),
+	'tab' => array(
+		'$schema' => 'https://schemas.wp.org/trunk/block.json',
+		'apiVersion' => 3,
+		'name' => 'bridge/tab',
+		'version' => '1.0.0',
+		'title' => 'Tab',
+		'category' => 'design',
+		'icon' => 'index-card',
+		'description' => 'One tab: its label in the tab row, and the heading, text, features and image it shows.',
+		'textdomain' => 'bridge',
+		'parent' => array(
+			'bridge/tabs',
+		),
+		'supports' => array(
+			'anchor' => false,
+			'html' => false,
+			'reusable' => false,
+		),
+		'attributes' => array(
+			'label' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'imageId' => array(
+				'type' => 'number',
+			),
+			'imageUrl' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'imageAlt' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+		),
+		'editorScript' => 'bridge-tab-editor',
+		'render' => 'file:./render.php',
+	),
+	'tab-feature' => array(
+		'$schema' => 'https://schemas.wp.org/trunk/block.json',
+		'apiVersion' => 3,
+		'name' => 'bridge/tab-feature',
+		'version' => '1.0.0',
+		'title' => 'Tab Feature',
+		'category' => 'design',
+		'icon' => 'tag',
+		'description' => 'A small two-line feature inside a tab: a title and a line of detail.',
+		'textdomain' => 'bridge',
+		'parent' => array(
+			'bridge/tab',
+		),
+		'supports' => array(
+			'anchor' => false,
+			'html' => false,
+			'reusable' => false,
+		),
+		'attributes' => array(
+			'title' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'text' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+		),
+		'editorScript' => 'bridge-tab-feature-editor',
+		'render' => 'file:./render.php',
+	),
+	'tabs' => array(
+		'$schema' => 'https://schemas.wp.org/trunk/block.json',
+		'apiVersion' => 3,
+		'name' => 'bridge/tabs',
+		'version' => '1.0.0',
+		'title' => 'Tab Block',
+		'category' => 'design',
+		'icon' => 'index-card',
+		'description' => 'A row of numbered tabs, each showing its own heading, text, features and image — with Previous and Next buttons to step through them.',
+		'textdomain' => 'bridge',
+		'keywords' => array(
+			'tabs',
+			'steps',
+			'journey',
+			'process',
+			'stepper',
+		),
+		'supports' => array(
+			'anchor' => true,
+			'html' => false,
+			'layout' => false,
+		),
+		'attributes' => array(
+			'width' => array(
+				'type' => 'string',
+				'enum' => array(
+					'wide',
+					'narrow',
+				),
+				'default' => 'wide',
+			),
+			'textAlignment' => array(
+				'type' => 'string',
+				'enum' => array(
+					'left',
+					'center',
+				),
+				'default' => 'center',
+			),
+			'showNumbers' => array(
+				'type' => 'boolean',
+				'default' => true,
+			),
+			'showSteps' => array(
+				'type' => 'boolean',
+				'default' => true,
+			),
+			'prevLabel' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'nextLabel' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'imageSide' => array(
+				'type' => 'string',
+				'enum' => array(
+					'right',
+					'left',
+				),
+				'default' => 'right',
+			),
+			'imageCorners' => array(
+				'type' => 'string',
+				'enum' => array(
+					'card',
+					'round',
+				),
+				'default' => 'card',
+			),
+			'panelStyle' => array(
+				'type' => 'string',
+				'enum' => array(
+					'card',
+					'plain',
+					'outline',
+				),
+				'default' => 'card',
+			),
+			'buttonStyle' => array(
+				'type' => 'string',
+				'enum' => array(
+					'fill',
+					'outline',
+				),
+				'default' => 'fill',
+			),
+			'buttonSize' => array(
+				'type' => 'string',
+				'enum' => array(
+					'default',
+					'small',
+				),
+				'default' => 'default',
+			),
+			'transition' => array(
+				'type' => 'string',
+				'enum' => array(
+					'fade',
+					'none',
+				),
+				'default' => 'fade',
+			),
+			'roundCorners' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'cornerTop' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'cornerBottom' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'mask' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'maskShade' => array(
+				'type' => 'number',
+				'default' => -20,
+			),
+			'maskSize' => array(
+				'type' => 'number',
+				'default' => 60,
+			),
+			'maskEdge' => array(
+				'type' => 'string',
+				'enum' => array(
+					'left',
+					'right',
+				),
+				'default' => 'right',
+			),
+			'maskBleed' => array(
+				'type' => 'number',
+				'default' => 0,
+			),
+		),
+		'editorScript' => 'bridge-tabs-editor',
+		'style' => 'bridge-tabs-style',
+		'viewScript' => 'bridge-tabs-view',
+		'render' => 'file:./render.php',
+	),
 	'testimonial' => array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,

@@ -36,3 +36,59 @@
 :root p.has-background {
 	padding: var(--wp--custom--card--padding, var(--wp--preset--spacing--40));
 }
+
+/**
+ * Eyebrow — a Paragraph block style (Styles → Eyebrow).
+ *
+ * The small uppercase line above a heading, with a short rule after it in
+ * the text's own colour. Opt-in: a paragraph only looks like this when an
+ * editor picks the style, so nothing changes on a site that never does.
+ *
+ * The rule is an inline box rather than a flex item, so bold, links and
+ * line wrapping inside the eyebrow behave as they do in any paragraph.
+ * Raised to the middle of the capitals, which sit higher than the middle of
+ * the lowercase letters `vertical-align: middle` aims at.
+ *
+ * Centred, a rule each side, so the line stays balanced; right-aligned, the
+ * rule comes before the words instead.
+ *
+ * Size, spacing and case are the style's own, so every eyebrow matches. A
+ * paragraph that already set them by hand keeps its own values.
+ */
+:root p.is-style-eyebrow {
+	--bridge-eyebrow-rule: 3rem;
+
+	font-size: var(--wp--preset--font-size--x-small);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+
+	&::before,
+	&::after {
+		display: inline-block;
+		width: var(--bridge-eyebrow-rule);
+		height: 1px;
+		background: currentcolor;
+		vertical-align: 0.32em;
+	}
+
+	&::after {
+		content: "";
+		margin-inline-start: 0.85em;
+	}
+
+	&.has-text-align-center::before {
+		content: "";
+		margin-inline-end: 0.85em;
+	}
+
+	&.has-text-align-right {
+		&::before {
+			content: "";
+			margin-inline-end: 0.85em;
+		}
+
+		&::after {
+			content: none;
+		}
+	}
+}

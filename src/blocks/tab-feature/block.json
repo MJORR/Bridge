@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/tab-feature",
+	"version": "1.0.0",
+	"title": "Tab Feature",
+	"category": "design",
+	"icon": "tag",
+	"description": "A small two-line feature inside a tab: a title and a line of detail.",
+	"textdomain": "bridge",
+	"parent": ["bridge/tab"],
+	"supports": { "anchor": false, "html": false, "reusable": false },
+	"attributes": {
+		"title": { "type": "string", "default": "" },
+		"text": { "type": "string", "default": "" }
+	},
+	"editorScript": "bridge-tab-feature-editor",
+	"render": "file:./render.php"
+}

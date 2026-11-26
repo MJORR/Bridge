@@ -265,6 +265,23 @@ function bridge_register_section_skins(): void
 add_action('init', 'bridge_register_section_skins');
 
 /**
+ * The Eyebrow style for paragraphs: the small uppercase line above a heading,
+ * with a short rule after it. Opt-in per paragraph (Styles → Eyebrow); see
+ * components/_paragraph.scss.
+ */
+function bridge_register_paragraph_styles(): void
+{
+	register_block_style(
+		'core/paragraph',
+		array(
+			'name'  => 'eyebrow',
+			'label' => __('Eyebrow', 'bridge'),
+		)
+	);
+}
+add_action('init', 'bridge_register_paragraph_styles');
+
+/**
  * Carry the chosen article layout onto <body>.
  *
  * The three post layouts are one template and three grids — see

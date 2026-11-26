@@ -1,0 +1,112 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "bridge/tabs",
+	"version": "1.0.0",
+	"title": "Tab Block",
+	"category": "design",
+	"icon": "index-card",
+	"description": "A row of numbered tabs, each showing its own heading, text, features and image — with Previous and Next buttons to step through them.",
+	"textdomain": "bridge",
+	"keywords": ["tabs", "steps", "journey", "process", "stepper"],
+	"supports": {
+		"anchor": true,
+		"html": false,
+		"layout": false
+	},
+	"attributes": {
+		"width": {
+			"type": "string",
+			"enum": ["wide", "narrow"],
+			"default": "wide"
+		},
+		"textAlignment": {
+			"type": "string",
+			"enum": ["left", "center"],
+			"default": "center"
+		},
+		"showNumbers": {
+			"type": "boolean",
+			"default": true
+		},
+		"showSteps": {
+			"type": "boolean",
+			"default": true
+		},
+		"prevLabel": {
+			"type": "string",
+			"default": ""
+		},
+		"nextLabel": {
+			"type": "string",
+			"default": ""
+		},
+		"imageSide": {
+			"type": "string",
+			"enum": ["right", "left"],
+			"default": "right"
+		},
+		"imageCorners": {
+			"type": "string",
+			"enum": ["card", "round"],
+			"default": "card"
+		},
+		"panelStyle": {
+			"type": "string",
+			"enum": ["card", "plain", "outline"],
+			"default": "card"
+		},
+		"buttonStyle": {
+			"type": "string",
+			"enum": ["fill", "outline"],
+			"default": "fill"
+		},
+		"buttonSize": {
+			"type": "string",
+			"enum": ["default", "small"],
+			"default": "default"
+		},
+		"transition": {
+			"type": "string",
+			"enum": ["fade", "none"],
+			"default": "fade"
+		},
+		"roundCorners": {
+			"type": "boolean",
+			"default": false
+		},
+		"cornerTop": {
+			"type": "string",
+			"default": ""
+		},
+		"cornerBottom": {
+			"type": "string",
+			"default": ""
+		},
+		"mask": {
+			"type": "boolean",
+			"default": false
+		},
+		"maskShade": {
+			"type": "number",
+			"default": -20
+		},
+		"maskSize": {
+			"type": "number",
+			"default": 60
+		},
+		"maskEdge": {
+			"type": "string",
+			"enum": ["left", "right"],
+			"default": "right"
+		},
+		"maskBleed": {
+			"type": "number",
+			"default": 0
+		}
+	},
+	"editorScript": "bridge-tabs-editor",
+	"style": "bridge-tabs-style",
+	"viewScript": "bridge-tabs-view",
+	"render": "file:./render.php"
+}

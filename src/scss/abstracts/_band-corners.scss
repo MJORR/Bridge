@@ -1,0 +1,95 @@
+/**
+ * Rounded band corners, at the XL radius, with the right colour behind each
+ * curve. Shared by Feature Blocks and the Tab Block.
+ *
+ * A band's colour runs to the window's edges, so a rounded band shows
+ * whatever is behind its corners — and that is the page colour, not the
+ * section above or below it, which is why rounding a band on its own looked
+ * broken. Each corner is drawn as a quarter-circle cut out of a small square
+ * of the colour behind it: the top two in the section above's colour
+ * (`--bridge-corner-top`), the bottom two in the section below's
+ * (`--bridge-corner-bottom`). Background images over the band's own colour,
+ * so the band, its gradient and its shape are left alone.
+ *
+ * Call it on the band's modifier class, e.g. `.bridge-features--corners`.
+ */
+@mixin rounded {
+	--bridge-corner-r: var(--wp--custom--radius--xl, 16px);
+
+	background-image:
+		radial-gradient(
+			circle at 100% 100%,
+			transparent calc(var(--bridge-corner-r) - 0.5px),
+			var(--bridge-corner-top) var(--bridge-corner-r)
+		),
+		radial-gradient(
+			circle at 0 100%,
+			transparent calc(var(--bridge-corner-r) - 0.5px),
+			var(--bridge-corner-top) var(--bridge-corner-r)
+		),
+		radial-gradient(
+			circle at 100% 0,
+			transparent calc(var(--bridge-corner-r) - 0.5px),
+			var(--bridge-corner-bottom) var(--bridge-corner-r)
+		),
+		radial-gradient(
+			circle at 0 0,
+			transparent calc(var(--bridge-corner-r) - 0.5px),
+			var(--bridge-corner-bottom) var(--bridge-corner-r)
+		);
+	background-position:
+		0 0,
+		100% 0,
+		0 100%,
+		100% 100%;
+	background-repeat: no-repeat;
+	background-size: var(--bridge-corner-r) var(--bridge-corner-r);
+
+	// With the band's gradient on as well: the corners over the gradient, in
+	// one list, since both are background images.
+	&.has-band-gradient:is(
+			.is-style-bridge-surface,
+			.is-style-bridge-inverted,
+			.is-style-bridge-accent,
+			.is-style-bridge-alternative
+		) {
+		background-image:
+			radial-gradient(
+				circle at 100% 100%,
+				transparent calc(var(--bridge-corner-r) - 0.5px),
+				var(--bridge-corner-top) var(--bridge-corner-r)
+			),
+			radial-gradient(
+				circle at 0 100%,
+				transparent calc(var(--bridge-corner-r) - 0.5px),
+				var(--bridge-corner-top) var(--bridge-corner-r)
+			),
+			radial-gradient(
+				circle at 100% 0,
+				transparent calc(var(--bridge-corner-r) - 0.5px),
+				var(--bridge-corner-bottom) var(--bridge-corner-r)
+			),
+			radial-gradient(
+				circle at 0 0,
+				transparent calc(var(--bridge-corner-r) - 0.5px),
+				var(--bridge-corner-bottom) var(--bridge-corner-r)
+			),
+			linear-gradient(
+				to right,
+				color-mix(in srgb, #000 12.5%, var(--bridge-band-ground)),
+				color-mix(in srgb, #fff 12.5%, var(--bridge-band-ground))
+			);
+		background-position:
+			0 0,
+			100% 0,
+			0 100%,
+			100% 100%,
+			0 0;
+		background-size:
+			var(--bridge-corner-r) var(--bridge-corner-r),
+			var(--bridge-corner-r) var(--bridge-corner-r),
+			var(--bridge-corner-r) var(--bridge-corner-r),
+			var(--bridge-corner-r) var(--bridge-corner-r),
+			100% 100%;
+	}
+}

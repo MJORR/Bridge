@@ -298,6 +298,14 @@ export default defineConfig(({ mode }) => ({
 					__dirname,
 					'src/scss/feature-blocks.scss'
 				),
+				'tabs-editor': resolve(__dirname, 'src/blocks/tabs/index.js'),
+				'tab-editor': resolve(__dirname, 'src/blocks/tab/index.js'),
+				'tab-feature-editor': resolve(
+					__dirname,
+					'src/blocks/tab-feature/index.js'
+				),
+				tabs: resolve(__dirname, 'src/scss/tabs.scss'),
+				'tabs-view': resolve(__dirname, 'src/js/tabs-view.js'),
 				'gallery-editor': resolve(
 					__dirname,
 					'src/blocks/gallery/index.js'

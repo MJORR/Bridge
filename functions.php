@@ -539,6 +539,9 @@ function bridge_register_blocks(): void
 	bridge_register_section_block('downloads', true, false, array('bridge-band-mask'));
 	bridge_register_section_block('price-table');
 	bridge_register_section_block('feature-blocks', true, false, array('bridge-band-mask'));
+	// Tabs: a view script shows one panel at a time; every panel is in the
+	// HTML. Same mask controls as Feature Blocks.
+	bridge_register_section_block('tabs', true, true, array('bridge-band-mask'));
 	bridge_register_section_block('gallery', true, true);
 	// A view script, and the row reads without it: the marquee is CSS, and a
 	// page that never receives the file gets the sliding row it always got.
@@ -704,6 +707,8 @@ function bridge_register_blocks(): void
 			'download-item',
 			'price-card',
 			'feature-block',
+			'tab',
+			'tab-feature',
 			'gallery-item',
 			'alternating-row',
 			'alternating-footer',

@@ -480,6 +480,29 @@ return array(
 				),
 				'default' => '',
 			),
+			'showFilters' => array(
+				'type' => 'boolean',
+				'default' => false,
+			),
+			'filterAllLabel' => array(
+				'type' => 'string',
+				'default' => '',
+			),
+			'filters' => array(
+				'type' => 'array',
+				'default' => array(),
+				'items' => array(
+					'type' => 'object',
+					'properties' => array(
+						'label' => array(
+							'type' => 'string',
+						),
+						'value' => array(
+							'type' => 'string',
+						),
+					),
+				),
+			),
 		),
 		'example' => array(
 			'attributes' => array(

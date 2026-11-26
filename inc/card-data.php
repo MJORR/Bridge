@@ -240,3 +240,56 @@ function bridge_card_data(array $args = array()): array
 
 	return array_merge(bridge_card_data_defaults(), $card);
 }
+
+/**
+ * What a Cards grid's filter buttons sort a post by.
+ *
+ * The keys a post answers to, as slugs: a team member's Location (from Site
+ * Options), and for every other type the terms of its filter taxonomy —
+ * Category on posts. See bridge_cards_filter_taxonomy().
+ *
+ * @param WP_Post $post The post.
+ * @return string[] Slugs.
+ */
+function bridge_cards_filter_keys(WP_Post $post): array
+{
+	if (function_exists('bridge_post_type_has_person') && bridge_post_type_has_person((string) $post->post_type)) {
+		$location = (string) get_post_meta($post->ID, 'bridge_location', true);
+
+		return '' !== $location ? array(sanitize_title($location)) : array();
+	}
+
+	$taxonomy = bridge_cards_filter_taxonomy((string) $post->post_type);
+
+	if ('' === $taxonomy) {
+		return array();
+	}
+
+	$terms = get_the_terms($post, $taxonomy);
+
+	return is_array($terms) ? array_values(array_map(static fn($term) => (string) $term->slug, $terms)) : array();
+}
+
+/**
+ * The taxonomy a type's cards are filtered by: Category where the type has
+ * it, otherwise its first public taxonomy with an admin screen, or none.
+ *
+ * @param string $post_type Post type slug.
+ */
+function bridge_cards_filter_taxonomy(string $post_type): string
+{
+	$taxonomies = get_object_taxonomies($post_type, 'objects');
+
+	if (isset($taxonomies['category'])) {
+		return 'category';
+	}
+
+	foreach ($taxonomies as $slug => $taxonomy) {
+		if (! empty($taxonomy->public) && ! empty($taxonomy->show_ui) && 'post_format' !== $slug) {
+			return (string) $slug;
+		}
+	}
+
+	return '';
+}
+

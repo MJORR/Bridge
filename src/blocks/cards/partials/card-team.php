@@ -39,8 +39,17 @@ $card_show_badge = false;
 		<?php if ( '' !== $card['eyebrow'] ) : ?>
 			<p class="post-card__eyebrow"><?php echo esc_html( $card['eyebrow'] ); ?></p>
 		<?php endif; ?>
+		<?php
+		// A team member with no page of their own: the card opens their
+		// profile in a pop-up (the <dialog> at the end of this card) rather
+		// than linking anywhere. See src/js/person-dialog.js.
+		$card_person    = is_array( $card['person'] ?? null ) ? $card['person'] : null;
+		$card_dialog_id = $card_person ? wp_unique_id( 'bridge-person-' ) : '';
+		?>
 		<h3 class="post-card__title">
-			<?php if ( '' !== $card['permalink'] ) : ?>
+			<?php if ( $card_person ) : ?>
+				<button type="button" class="post-card__link post-card__open" aria-haspopup="dialog" aria-controls="<?php echo esc_attr( $card_dialog_id ); ?>" data-bridge-person-open><?php echo esc_html( $card['title'] ); ?></button>
+			<?php elseif ( '' !== $card['permalink'] ) : ?>
 				<a class="post-card__link" href="<?php echo esc_url( $card['permalink'] ); ?>"<?php echo ! empty( $card['external'] ) ? ' target="_blank" rel="noopener"' : ''; ?>><?php echo esc_html( $card['title'] ); ?></a>
 			<?php else : ?>
 				<?php echo esc_html( $card['title'] ); ?>
@@ -71,4 +80,10 @@ $card_show_badge = false;
 			<span class="<?php echo esc_attr( '' !== $link_class ? 'post-card__cta ' . $link_class : 'post-card__cta post-card__cta--text' ); ?>" aria-hidden="true"><?php echo esc_html( $card_cta_text ); ?></span>
 		<?php endif; ?>
 	</div>
+	<?php
+	if ( $card_person ) {
+		wp_enqueue_script( 'bridge-person-dialog' );
+		require __DIR__ . '/person-dialog.php';
+	}
+	?>
 </article>

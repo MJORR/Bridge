@@ -294,14 +294,212 @@
 	}
 }
 
-// Design 2's location, under the role and a full-width rule, both in the
-// secondary colour.
+// Design 2's location, a small pill under the role: Secondary, white text.
 .bridge-cards-grid .post-card--team-photo .post-card__location {
-	align-self: stretch;
-	margin: 1rem 0 0;
-	padding-block-start: 0.25rem;
-	border-block-start: 1px solid var(--wp--preset--color--secondary);
+	align-self: flex-start;
+	margin: var(--wp--preset--spacing--40) 0 0;
+	padding: 0.3em 0.85em;
+	border-radius: 999px;
+	background-color: var(--wp--preset--color--secondary);
+	color: var(--wp--preset--color--white, #fff);
 	font-size: var(--wp--preset--font-size--x-small);
-	line-height: 1.4;
-	color: var(--wp--preset--color--secondary);
+	line-height: 1.3;
+}
+
+// The button that opens a team member's pop-up, drawn like the title link it
+// replaces: the stretched cover over the whole card comes from `post-card__link`.
+.bridge-cards-grid .post-card__open {
+	padding: 0;
+	border: 0;
+	background: none;
+	font: inherit;
+	letter-spacing: inherit;
+	text-align: inherit;
+	cursor: pointer;
+}
+
+/**
+ * A team member's profile pop-up.
+ *
+ * Painted in the card's colours (set by src/js/person-dialog.js; the site's
+ * card colour until then), over the page dimmed 80%. Picture left, words
+ * right at two thirds of the width; one column on a phone, where the whole
+ * pop-up scrolls. On wider screens the picture stays put and the words
+ * scroll on their own if the profile is long.
+ */
+.bridge-person {
+	--bridge-person-pad: var(--wp--preset--spacing--60);
+
+	width: min(60rem, calc(100% - 2 * var(--wp--preset--spacing--40)));
+	max-width: none;
+	max-height: min(40rem, calc(100dvh - 2 * var(--wp--preset--spacing--40)));
+	padding: 0;
+	overflow: auto;
+	overscroll-behavior: contain;
+	border: 0;
+	border-radius: var(--wp--custom--card--radius, 6px);
+	background: var(
+		--bridge-person-bg,
+		var(--wp--custom--card--on-light, #fff)
+	);
+	box-shadow: 0 24px 60px rgb(0 0 0 / 35%);
+	color: var(--bridge-person-fg, var(--wp--preset--color--text, #1e1e1e));
+	text-align: start;
+
+	&::backdrop {
+		background: rgb(0 0 0 / 80%);
+	}
+
+	&[open] {
+		animation: bridge-person-in 0.25s ease;
+	}
+
+	&__panel {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	&__close {
+		position: absolute;
+		z-index: 2;
+		inset-block-start: var(--wp--preset--spacing--30);
+		inset-inline-end: var(--wp--preset--spacing--30);
+		display: grid;
+		place-items: center;
+		width: 2.5rem;
+		height: 2.5rem;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: var(--bridge-person-bg, #fff);
+		box-shadow: 0 1px 4px rgb(0 0 0 / 20%);
+		color: inherit;
+		cursor: pointer;
+
+		&:focus-visible {
+			outline: 2px solid currentcolor;
+			outline-offset: 2px;
+		}
+	}
+
+	&__media {
+		aspect-ratio: 4 / 3;
+		overflow: hidden;
+		background: color-mix(in srgb, currentcolor 8%, transparent);
+	}
+
+	&__img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: center top;
+	}
+
+	&__body {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--wp--preset--spacing--30);
+		padding: var(--bridge-person-pad);
+
+		> * {
+			margin: 0;
+		}
+	}
+
+	&__location {
+		padding: 0.3em 0.85em;
+		border-radius: 999px;
+		background-color: var(--wp--preset--color--secondary);
+		color: var(--wp--preset--color--white, #fff);
+		font-size: var(--wp--preset--font-size--x-small);
+		line-height: 1.3;
+	}
+
+	&__name {
+		font-family: var(--wp--preset--font-family--heading);
+		font-size: var(--wp--preset--font-size--x-large);
+		line-height: 1.15;
+	}
+
+	&__position {
+		color: color-mix(in srgb, currentcolor 70%, transparent);
+		font-size: var(--wp--preset--font-size--small);
+	}
+
+	&__profile {
+		margin-block-start: var(--wp--preset--spacing--30) !important;
+		padding-block-start: var(--wp--preset--spacing--40);
+		border-block-start: 1px solid
+			color-mix(in srgb, currentcolor 15%, transparent);
+		line-height: 1.6;
+
+		> * + * {
+			margin-block-start: 1em;
+		}
+
+		> :first-child {
+			margin-block-start: 0;
+		}
+	}
+
+	&__linkedin {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: inherit;
+		font-size: var(--wp--preset--font-size--small);
+		font-weight: 600;
+		text-decoration: none;
+
+		&:hover,
+		&:focus-visible {
+			text-decoration: underline;
+			text-underline-offset: 0.2em;
+		}
+	}
+
+	@media (width >= 48rem) {
+		overflow: hidden;
+
+		&__panel {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+		}
+
+		&__media {
+			aspect-ratio: auto;
+			min-height: 26rem;
+		}
+
+		// The words scroll on their own; the picture stays beside them at
+		// the full height of the pop-up.
+		&__body {
+			max-height: min(
+				40rem,
+				calc(100dvh - 2 * var(--wp--preset--spacing--40))
+			);
+			overflow-y: auto;
+			overscroll-behavior: contain;
+		}
+	}
+}
+
+// The page behind stays put while a pop-up is open.
+:root.has-open-dialog {
+	overflow: hidden;
+}
+
+@keyframes bridge-person-in {
+	from {
+		opacity: 0;
+		transform: translateY(0.75rem) scale(0.98);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bridge-person[open] {
+		animation: none;
+	}
 }

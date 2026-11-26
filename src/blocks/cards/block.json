@@ -145,6 +145,25 @@
 			"type": "string",
 			"enum": ["", "text", "button", "outline"],
 			"default": ""
+		},
+		"showFilters": {
+			"type": "boolean",
+			"default": false
+		},
+		"filterAllLabel": {
+			"type": "string",
+			"default": ""
+		},
+		"filters": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object",
+				"properties": {
+					"label": { "type": "string" },
+					"value": { "type": "string" }
+				}
+			}
 		}
 	},
 	"example": {

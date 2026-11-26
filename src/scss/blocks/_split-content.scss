@@ -75,6 +75,16 @@
 		margin-inline: 0;
 	}
 
+	// The heroes stretch themselves to the window (100vw) on a page; in a
+	// column they are the column's width like any other band. Four classes,
+	// to outrank their own three-class breakout.
+	&__column
+		:is(.bridge-hero-banner, .bridge-hero-slider).alignfull.alignfull {
+		width: auto;
+		max-width: none;
+		margin-inline: 0;
+	}
+
 	&__column .bridge-band > [class*="__inner"] {
 		max-width: none;
 		margin-inline: 0;
@@ -89,6 +99,7 @@
 		.bridge-section:not(
 			[class*="-background-color"],
 			[class*="is-style-bridge-"],
+			[class*="--has-background"],
 			[style*="background"]
 		) {
 		padding-block: 0;

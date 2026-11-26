@@ -29,6 +29,7 @@ const {
 	FormTokenField,
 	Placeholder,
 	Spinner,
+	Button,
 } = window.wp.components;
 const { useSelect } = window.wp.data;
 const { __, sprintf } = window.wp.i18n;
@@ -275,11 +276,59 @@ const Edit = ({ attributes, setAttributes }) => {
 		buttonText,
 		showButton = true,
 		linkStyle,
+		showFilters = false,
+		filterAllLabel = '',
+		filters = [],
 	} = attributes;
 
 	// Named once. Six places read it — the panel decides what to show, and the
 	// band decides what classes to wear.
 	const isList = layout === 'list';
+
+	// ---- Filter buttons ------------------------------------------------------
+	// What a grid's filter buttons can be: a team member type's Locations
+	// (Site Options), or the terms of the type's filter taxonomy — Category
+	// on posts. render.php tags each card with the same keys.
+	const canFilter =
+		!isList && overflowStyle !== 'carousel' && source !== 'main';
+	const isPersonType = (window.bridgeCards?.personTypes || []).includes(
+		postType
+	);
+	const filterOptions = useSelect(
+		(select) => {
+			if (!canFilter || !showFilters) {
+				return [];
+			}
+			if (isPersonType) {
+				return window.bridgeCards?.locations || [];
+			}
+			const core = select('core');
+			const taxonomies = core.getTaxonomies({ per_page: -1 }) || [];
+			const forType = taxonomies.filter(
+				(t) =>
+					(t.types || []).includes(postType) && t.visibility?.public
+			);
+			const taxonomy =
+				forType.find((t) => t.slug === 'category') || forType[0];
+			if (!taxonomy) {
+				return [];
+			}
+			const terms =
+				core.getEntityRecords('taxonomy', taxonomy.slug, {
+					per_page: 100,
+					hide_empty: false,
+				}) || [];
+			return terms.map((t) => ({ label: t.name, value: t.slug }));
+		},
+		[canFilter, showFilters, isPersonType, postType]
+	);
+
+	const setFilter = (index, patch) =>
+		setAttributes({
+			filters: filters.map((f, i) =>
+				i === index ? { ...f, ...patch } : f
+			),
+		});
 
 	// A post type whose card a plugin draws (window.bridgeCards.ownCardTypes,
 	// from the `bridge_cards_own_card_post_types` filter) has no card style
@@ -710,6 +759,154 @@ const Edit = ({ attributes, setAttributes }) => {
 					__nextHasNoMarginBottom: true,
 				})
 		),
+		canFilter &&
+			el(
+				PanelBody,
+				{ title: __('Filters', 'bridge'), initialOpen: !!showFilters },
+				el(ToggleControl, {
+					label: __('Filter buttons', 'bridge'),
+					help: isPersonType
+						? __(
+								'A row of buttons over the grid: All, then one per location. Visitors press one to show only those team members.',
+								'bridge'
+							)
+						: __(
+								'A row of buttons over the grid: All, then one per category. Visitors press one to show only those posts.',
+								'bridge'
+							),
+					checked: !!showFilters,
+					onChange: (value) => setAttributes({ showFilters: value }),
+					__nextHasNoMarginBottom: true,
+				}),
+				showFilters &&
+					el(TextControl, {
+						label: __('First button (shows everything)', 'bridge'),
+						value: filterAllLabel,
+						placeholder: __('All', 'bridge'),
+						onChange: (value) =>
+							setAttributes({ filterAllLabel: value }),
+						__nextHasNoMarginBottom: true,
+					}),
+				showFilters &&
+					filters.map((filter, index) =>
+						el(
+							'div',
+							{
+								key: index,
+								style: {
+									marginTop: '16px',
+									paddingTop: '12px',
+									borderTop: '1px solid #e0e0e0',
+								},
+							},
+							el(SelectControl, {
+								label: sprintf(
+									/* translators: %d: filter button number. */
+									__('Button %d shows', 'bridge'),
+									index + 1
+								),
+								value: filter.value || '',
+								options: [
+									{
+										label: __('— Choose —', 'bridge'),
+										value: '',
+									},
+									...filterOptions,
+								],
+								onChange: (value) =>
+									setFilter(index, {
+										value,
+										label:
+											filter.label ||
+											filterOptions.find(
+												(o) => o.value === value
+											)?.label ||
+											'',
+									}),
+								__nextHasNoMarginBottom: true,
+							}),
+							el(TextControl, {
+								label: __('Button label', 'bridge'),
+								value: filter.label || '',
+								onChange: (value) =>
+									setFilter(index, { label: value }),
+								__nextHasNoMarginBottom: true,
+							}),
+							el(
+								Button,
+								{
+									variant: 'link',
+									isDestructive: true,
+									onClick: () =>
+										setAttributes({
+											filters: filters.filter(
+												(f, i) => i !== index
+											),
+										}),
+								},
+								__('Remove button', 'bridge')
+							)
+						)
+					),
+				showFilters &&
+					el(
+						'div',
+						{
+							style: {
+								display: 'flex',
+								gap: '8px',
+								marginTop: '16px',
+								flexWrap: 'wrap',
+							},
+						},
+						el(
+							Button,
+							{
+								variant: 'secondary',
+								onClick: () =>
+									setAttributes({
+										filters: [
+											...filters,
+											{ label: '', value: '' },
+										],
+									}),
+							},
+							__('Add filter button', 'bridge')
+						),
+						filterOptions.length > 0 &&
+							filters.length === 0 &&
+							el(
+								Button,
+								{
+									variant: 'tertiary',
+									onClick: () =>
+										setAttributes({
+											filters: filterOptions.map((o) => ({
+												...o,
+											})),
+										}),
+								},
+								isPersonType
+									? __('Add all locations', 'bridge')
+									: __('Add all categories', 'bridge')
+							)
+					),
+				showFilters &&
+					filterOptions.length === 0 &&
+					el(
+						'p',
+						{ className: 'components-base-control__help' },
+						isPersonType
+							? __(
+									'Add locations in Site Options to filter by them.',
+									'bridge'
+								)
+							: __(
+									'This content type has no categories to filter by.',
+									'bridge'
+								)
+					)
+			),
 		// Which controls belong here is the style's decision — see CARD_STYLES.
 		// Portrait draws no excerpt and Tile no read-more, and a panel offering
 		// settings that change nothing on screen is worse than a shorter panel.

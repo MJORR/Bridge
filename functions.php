@@ -414,6 +414,10 @@ function bridge_register_blocks(): void
 	// carries both. Nothing needs it to scroll — the row does that in CSS —
 	// so it is deferred.
 	bridge_register_script('bridge-carousel', 'carousel.js', array(), true);
+	// A team member's profile pop-up; enqueued by the Team card that needs it.
+	bridge_register_script('bridge-person-dialog', 'person-dialog.js', array(), true);
+	// The filter buttons over a Cards grid; enqueued by a grid that has them.
+	bridge_register_script('bridge-cards-filter', 'cards-filter.js', array(), true);
 
 	/**
 	 * The decorative mask shape's editor controls, shared by every band that
@@ -775,6 +779,17 @@ function bridge_register_blocks(): void
 					'sanitize_key',
 					(array) apply_filters('bridge_cards_own_card_post_types', array())
 				))),
+				// For the filter buttons: the types whose cards filter by
+				// Location, and the locations to choose from (Site Options).
+				'personTypes'   => function_exists('bridge_post_type_has_person')
+					? array_values(array_filter(bridge_simple_editor_post_types(), 'bridge_post_type_has_person'))
+					: array(),
+				'locations'     => function_exists('bridge_person_location_choices')
+					? array_map(
+						static fn($name) => array('label' => $name, 'value' => sanitize_title($name)),
+						bridge_person_location_choices()
+					)
+					: array(),
 			)
 		) . ';',
 		'before'

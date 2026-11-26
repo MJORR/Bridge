@@ -306,6 +306,8 @@ export default defineConfig(({ mode }) => ({
 				),
 				tabs: resolve(__dirname, 'src/scss/tabs.scss'),
 				'tabs-view': resolve(__dirname, 'src/js/tabs-view.js'),
+				'person-dialog': resolve(__dirname, 'src/js/person-dialog.js'),
+				'cards-filter': resolve(__dirname, 'src/js/cards-filter.js'),
 				'gallery-editor': resolve(
 					__dirname,
 					'src/blocks/gallery/index.js'

@@ -170,6 +170,32 @@ if ( $is_list ) {
 $is_carousel     = 'carousel' === $overflow && ! $is_preview && ! $use_main;
 
 /*
+ * Filter buttons over the grid (optional): "All", then one button per
+ * location or category the editor chose. A grid in rows only — a carousel or
+ * a list does not offer them, and a grid filled from the main query (an
+ * archive) is already filtered by its URL. Each card is tagged with the keys
+ * it answers to (bridge_cards_filter_keys()), and src/js/cards-filter.js
+ * shows the cards that match the pressed button.
+ */
+$filter_buttons = array();
+
+if ( ! empty( $attributes['showFilters'] ) && ! $is_list && 'wrap' === $overflow && ! $use_main ) {
+	foreach ( (array) ( $attributes['filters'] ?? array() ) as $filter ) {
+		$filter_value = sanitize_title( (string) ( $filter['value'] ?? '' ) );
+		$filter_label = trim( (string) ( $filter['label'] ?? '' ) );
+
+		if ( '' !== $filter_value ) {
+			$filter_buttons[] = array(
+				'value' => $filter_value,
+				'label' => '' !== $filter_label ? $filter_label : $filter_value,
+			);
+		}
+	}
+}
+
+$has_filters = ! empty( $filter_buttons );
+
+/*
  * Pagination for a band with a query of its own: the grid or list pages
  * through every matching post, Number of posts at a time. Never on a carousel,
  * which pages sideways already, and not on the main-query source, which is
@@ -571,6 +597,19 @@ $card_index  = 0;
 
 // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — pre-escaped by core.
 echo $section_open, $inner_open, $intro_html;
+
+if ( $has_filters ) {
+	wp_enqueue_script( 'bridge-cards-filter' );
+	$filter_all = trim( (string) ( $attributes['filterAllLabel'] ?? '' ) );
+	?>
+	<div class="bridge-cards__filters" role="group" aria-label="<?php esc_attr_e( 'Filter', 'bridge' ); ?>" data-bridge-cards-filters<?php echo $is_preview ? '' : ' hidden'; ?>>
+		<button type="button" class="bridge-cards__filter" aria-pressed="true" data-filter=""><?php echo esc_html( '' !== $filter_all ? $filter_all : __( 'All', 'bridge' ) ); ?></button>
+		<?php foreach ( $filter_buttons as $filter_button ) : ?>
+			<button type="button" class="bridge-cards__filter" aria-pressed="false" data-filter="<?php echo esc_attr( $filter_button['value'] ); ?>"><?php echo esc_html( $filter_button['label'] ); ?></button>
+		<?php endforeach; ?>
+	</div>
+	<?php
+}
 ?>
 <div class="<?php echo esc_attr( $grid_class ); ?>" style="<?php echo esc_attr( $grid_style ); ?>"
 	<?php
@@ -600,7 +639,19 @@ echo $section_open, $inner_open, $intro_html;
 			)
 		);
 
-		include __DIR__ . '/card.php';
+		if ( $has_filters ) {
+			// The card's first tag carries the keys the filter buttons match.
+			ob_start();
+			include __DIR__ . '/card.php';
+			echo preg_replace( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — the card is escaped by its partial; the keys here.
+				'/^(\s*<[a-z][a-z0-9]*)/i',
+				'$1 data-filter-keys="' . esc_attr( implode( ' ', bridge_cards_filter_keys( get_post() ) ) ) . '"',
+				(string) ob_get_clean(),
+				1
+			);
+		} else {
+			include __DIR__ . '/card.php';
+		}
 	endwhile;
 	?>
 </div>

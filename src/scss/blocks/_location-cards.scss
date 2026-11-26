@@ -118,12 +118,12 @@
 		}
 	}
 
-	// A thin rule between the hours and the contact lines, only when both
-	// are there.
-	&__hours:has(+ .bridge-location-card__contact) {
-		padding-block-end: var(--wp--preset--spacing--40);
-		border-block-end: 1px solid
-			color-mix(in srgb, currentcolor 15%, transparent);
+	// The opening hours in a panel of their own: the card's ground shaded
+	// 5% darker, with the card's corner radius.
+	&__hours {
+		padding: var(--wp--preset--spacing--40);
+		border-radius: var(--wp--custom--card--radius, 6px);
+		background-color: color-mix(in srgb, #000 5%, transparent);
 	}
 
 	&__label {

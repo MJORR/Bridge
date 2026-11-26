@@ -484,18 +484,65 @@
 	&:hover,
 	.post-card:hover &,
 	&:focus-visible:not([contenteditable]) {
-		background-color: var(
-			--bridge-button-ghost,
-			var(--wp--custom--button--on-default--ghost)
+		/**
+		 * The box and its edge under the pointer.
+		 *
+		 * Without a wipe both fill with the ghost colour. With one, the fill's
+		 * sliding panel is what shows, so the box and the border take the
+		 * panel's colour too: a border left in the ghost colour showed as a
+		 * hairline round the panel's anti-aliased curve (white round a dark
+		 * button on the hero). One solid shape, nothing to peek through.
+		 */
+		background-color: color-mix(
+			in srgb,
+			var(
+					--bridge-button-hover-bg,
+					var(--wp--custom--button--on-default--hover-bg)
+				)
+				calc(var(--wp--custom--button--wipe, 0) * 100%),
+			var(
+				--bridge-button-ghost,
+				var(--wp--custom--button--on-default--ghost)
+			)
 		);
-		border-color: var(
-			--bridge-button-ghost,
-			var(--wp--custom--button--on-default--ghost)
+		border-color: color-mix(
+			in srgb,
+			var(
+					--bridge-button-hover-bg,
+					var(--wp--custom--button--on-default--hover-bg)
+				)
+				calc(var(--wp--custom--button--wipe, 0) * 100%),
+			var(
+				--bridge-button-ghost,
+				var(--wp--custom--button--on-default--ghost)
+			)
 		);
 		box-shadow: var(--wp--custom--button--shadow-hover, none);
-		color: var(
-			--bridge-button-ghost-hover,
-			var(--wp--custom--button--on-default--ghost-hover)
+
+		/**
+		 * The label under the pointer.
+		 *
+		 * Without a wipe the button fills with the ghost colour, and the
+		 * ghost-hover label is the one measured against it. With a wipe
+		 * (`--wipe: 1`) the fill's sliding panel covers the button instead,
+		 * in the hover colour, so the label is the one measured against that
+		 * panel. They differ on a dark hero, where the ghost is white but the
+		 * panel is dark: the ghost-hover label was navy on the dark panel.
+		 *
+		 * The same 0-or-1 switch the fill's background uses, so only one of
+		 * the two colours is ever asked for.
+		 */
+		color: color-mix(
+			in srgb,
+			var(
+					--bridge-button-hover-fg,
+					var(--wp--custom--button--on-default--hover-fg)
+				)
+				calc(var(--wp--custom--button--wipe, 0) * 100%),
+			var(
+				--bridge-button-ghost-hover,
+				var(--wp--custom--button--on-default--ghost-hover)
+			)
 		);
 	}
 }

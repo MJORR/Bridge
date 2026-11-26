@@ -175,10 +175,19 @@ const init = (block) => {
 	// screen called that a single page, so the row was declared to fit, the
 	// chevrons stayed hidden and no dots were built, on exactly the card
 	// counts a carousel is most often given.
+	//
+	// When fitWhole() below has counted the cards a screen holds, the pages
+	// are counted in cards instead: the row's padding and the gap after the
+	// last card of a screen made the width sum come out a hair over a whole
+	// number of screens, which rounded up to a page with nothing on it.
+	let perView = 0;
+
 	const pageCount = () =>
 		Math.max(
 			1,
-			Math.ceil((track.scrollWidth - EPSILON) / track.clientWidth)
+			perView
+				? Math.ceil(track.children.length / perView)
+				: Math.ceil((track.scrollWidth - EPSILON) / track.clientWidth)
 		);
 
 	// Pages are mapped across the distance the row can travel rather than laid
@@ -265,7 +274,53 @@ const init = (block) => {
 		});
 	};
 
+	/**
+	 * Whole cards only.
+	 *
+	 * The stylesheet sizes the row's cards from a minimum width, which is
+	 * right for a row that wraps and leaves a carousel showing a sliver of
+	 * the next card wherever the width is not an exact multiple. Here the
+	 * row is measured instead: how many cards of the stylesheet's size fit
+	 * whole, and then every card is widened to share the row between exactly
+	 * that many, gaps included. So a screenful is always N whole cards.
+	 *
+	 * The stylesheet's own size is read back first (the inline width is
+	 * cleared, then one card-to-card step is measured), so the count follows
+	 * the design's breakpoints and the row is refitted on every resize.
+	 * Without this script the row keeps its CSS sizing and still scrolls.
+	 */
+	const fitWhole = () => {
+		const items = track.children;
+
+		track.style.removeProperty('grid-auto-columns');
+		perView = 0;
+
+		if (items.length < 2) {
+			return;
+		}
+
+		const style = getComputedStyle(track);
+		const gap = parseFloat(style.columnGap) || 0;
+		const width =
+			track.clientWidth -
+			(parseFloat(style.paddingLeft) || 0) -
+			(parseFloat(style.paddingRight) || 0);
+		const step = Math.abs(items[1].offsetLeft - items[0].offsetLeft);
+
+		if (!width || !step) {
+			return;
+		}
+
+		// A pixel of slack, so rounding does not cost a card that fits.
+		perView = Math.max(1, Math.floor((width + gap + 1) / step));
+		const size = (width - (perView - 1) * gap) / perView;
+
+		track.style.gridAutoColumns = `${size}px`;
+	};
+
 	const measure = () => {
+		fitWhole();
+
 		const before = pages;
 
 		pages = pageCount();

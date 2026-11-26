@@ -12,8 +12,7 @@
  *             Cards block already reads for a card's role line.
  *   Location  one of the Site Options locations, chosen from a list — or typed,
  *             on a site with none.
- *   LinkedIn  the profile address. With no page of their own, a person's card
- *             links here when it is set, and is not a link when it is not.
+ *   LinkedIn  the profile address, linked from the person's profile pop-up.
  *
  * Off unless a type asks for it, so nothing changes for any other type.
  *
@@ -221,9 +220,12 @@ function bridge_save_person_fields(int $post_id): void
 add_action('save_post', 'bridge_save_person_fields');
 
 /**
- * What a person's card carries: the location, and the LinkedIn profile as
- * its link. With no page of their own, a card with no LinkedIn address is
- * not a link at all.
+ * What a person's card carries: the location, and everything the profile
+ * pop-up shows — the profile text and the LinkedIn address.
+ *
+ * With no page of their own, a person's card opens that pop-up rather than
+ * linking anywhere: see the Team card partial and src/js/person-dialog.js.
+ * The LinkedIn address is a link inside the pop-up.
  *
  * @param array   $card The card record.
  * @param WP_Post $post The post it was built from.
@@ -235,15 +237,14 @@ function bridge_card_data_person($card, $post)
 		return $card;
 	}
 
-	$linkedin = (string) get_post_meta($post->ID, BRIDGE_PERSON_LINKEDIN_KEY, true);
-
 	$card['location']  = (string) get_post_meta($post->ID, BRIDGE_PERSON_LOCATION_KEY, true);
-	$card['permalink'] = '' !== $linkedin ? $linkedin : '';
-	$card['external']  = '' !== $linkedin;
-
-	if ('' === $linkedin) {
-		$card['cta_text'] = '';
-	}
+	$card['permalink'] = '';
+	$card['external']  = false;
+	$card['person']    = array(
+		'linkedin' => (string) get_post_meta($post->ID, BRIDGE_PERSON_LINKEDIN_KEY, true),
+		// The Profile field is the item's body.
+		'profile'  => trim((string) $post->post_content),
+	);
 
 	return $card;
 }

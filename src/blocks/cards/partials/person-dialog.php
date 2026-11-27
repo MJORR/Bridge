@@ -32,37 +32,82 @@ if ( '' !== $person_profile ) {
 $person_linkedin = esc_url( (string) ( $card_person['linkedin'] ?? '' ) );
 $person_name_id  = $card_dialog_id . '-name';
 ?>
-<dialog class="bridge-person" id="<?php echo esc_attr( $card_dialog_id ); ?>" aria-labelledby="<?php echo esc_attr( $person_name_id ); ?>">
+<dialog class="bridge-person" tabindex="-1" id="<?php echo esc_attr( $card_dialog_id ); ?>" aria-labelledby="<?php echo esc_attr( $person_name_id ); ?>">
 	<div class="bridge-person__panel">
-		<button type="button" class="bridge-person__close" data-bridge-person-close aria-label="<?php esc_attr_e( 'Close', 'bridge' ); ?>">
-			<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
-		</button>
-
 		<div class="bridge-person__media">
 			<?php
-			if ( ! empty( $card['thumbnail_id'] ) ) {
-				echo wp_get_attachment_image(
-					(int) $card['thumbnail_id'],
-					'large',
-					false,
-					array(
-						'class'   => 'bridge-person__img',
-						'sizes'   => '(min-width: 48rem) 22rem, 100vw',
-						'loading' => 'lazy',
-						'alt'     => '',
-					)
-				);
-			}
-			?>
+			// Two frames: the profile photo, and a 4:3 frame under it that
+			// always shows the site's light logo on Primary, as a card with no
+			// image does. The photo falls back to the same when it is missing.
+			$person_logo_id = function_exists( 'bridge_light_logo_id' ) ? bridge_light_logo_id() : 0;
+			$person_frames  = array(
+				'photo' => (int) ( $card['thumbnail_id'] ?? 0 ),
+				'extra' => 0,
+			);
+
+			foreach ( $person_frames as $person_frame => $person_image_id ) :
+				?>
+				<div class="bridge-person__frame bridge-person__frame--<?php echo esc_attr( $person_frame ); ?>">
+					<?php
+					$person_image = $person_image_id
+						? wp_get_attachment_image(
+							$person_image_id,
+							'large',
+							false,
+							array(
+								'class'   => 'bridge-person__img',
+								'sizes'   => '(min-width: 48rem) 22rem, 50vw',
+								'loading' => 'lazy',
+								'alt'     => '',
+							)
+						)
+						: '';
+
+					if ( '' !== $person_image ) {
+						echo $person_image; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — core markup.
+					} elseif ( $person_logo_id ) {
+						echo '<div class="bridge-person__logo-tile" aria-hidden="true">';
+						echo wp_get_attachment_image(
+							$person_logo_id,
+							'medium',
+							false,
+							array(
+								'class'   => 'bridge-person__logo',
+								'alt'     => '',
+								'loading' => 'lazy',
+							)
+						);
+						echo '</div>';
+					} else {
+						echo '<div class="bridge-person__logo-tile" aria-hidden="true"></div>';
+					}
+					?>
+				</div>
+			<?php endforeach; ?>
 		</div>
 
 		<div class="bridge-person__body">
+			<button type="button" class="bridge-person__close" data-bridge-person-close aria-label="<?php esc_attr_e( 'Close', 'bridge' ); ?>">
+				<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
+			</button>
 			<?php if ( '' !== ( $card['location'] ?? '' ) ) : ?>
-				<p class="bridge-person__location"><?php echo esc_html( $card['location'] ); ?></p>
+				<p class="bridge-person__location is-style-eyebrow"><?php echo esc_html( $card['location'] ); ?></p>
 			<?php endif; ?>
 			<h2 class="bridge-person__name" id="<?php echo esc_attr( $person_name_id ); ?>"><?php echo esc_html( $card['title'] ); ?></h2>
-			<?php if ( '' !== $card['subtitle'] ) : ?>
-				<p class="bridge-person__position"><?php echo esc_html( $card['subtitle'] ); ?></p>
+			<?php
+			// The job title and the professional reference share a line,
+			// split by a bar: "Dentist | GDC 270959". Either may be missing.
+			$person_line = array_filter(
+				array(
+					(string) $card['subtitle'],
+					(string) ( $card_person['reference'] ?? '' ),
+				),
+				'strlen'
+			);
+
+			if ( $person_line ) :
+				?>
+				<p class="bridge-person__position"><?php echo implode( ' <span class="bridge-person__sep" aria-hidden="true">|</span> ', array_map( 'esc_html', $person_line ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — each part escaped. ?></p>
 			<?php endif; ?>
 			<?php if ( '' !== $person_profile ) : ?>
 				<div class="bridge-person__profile"><?php echo $person_profile; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — wp_kses_post above. ?></div>

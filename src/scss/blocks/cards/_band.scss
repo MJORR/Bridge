@@ -127,11 +127,12 @@
 		}
 	}
 
-	// A focusable scroll container needs a visible focus ring, or a keyboard
-	// user cannot tell they have reached it.
+	// No ring round the carousel row: it drew a heavy line round the whole
+	// block. The cards inside still show focus, and the arrows and dots
+	// still take the keyboard.
+	&--carousel .bridge-cards-grid:focus,
 	&--carousel .bridge-cards-grid:focus-visible {
-		outline: 2px solid currentcolor;
-		outline-offset: 4px;
+		outline: none;
 	}
 
 	@include carousel.controls;
@@ -187,8 +188,9 @@
 		overflow: hidden;
 
 		// The ring belongs on the card, not on the few words of title that
-		// happen to carry the link.
-		&:focus-within {
+		// happen to carry the link. Keyboard focus only, so a click (or
+		// focus handed back when a profile pop-up closes) draws no ring.
+		&:has(:focus-visible) {
 			outline: 2px solid var(--post-card-accent);
 			outline-offset: 2px;
 		}
@@ -370,7 +372,7 @@
 	}
 
 	.post-card:hover .post-card__link,
-	.post-card:focus-within .post-card__link {
+	.post-card:has(:focus-visible) .post-card__link {
 		text-decoration: underline;
 		text-underline-offset: 0.15em;
 	}

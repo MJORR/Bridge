@@ -46,6 +46,14 @@ $card_show_badge = false;
 		$card_person    = is_array( $card['person'] ?? null ) ? $card['person'] : null;
 		$card_dialog_id = $card_person ? wp_unique_id( 'bridge-person-' ) : '';
 		?>
+		<?php
+		// The person's location above the name in Design 2, drawn as an
+		// Eyebrow (small capitals and a line after; components/_paragraph.scss). Set by
+		// inc/team-fields.php on types with team member fields.
+		if ( 'photo' === ( $team_design ?? 'arch' ) && '' !== ( $card['location'] ?? '' ) ) :
+			?>
+			<p class="post-card__location is-style-eyebrow"><?php echo esc_html( $card['location'] ); ?></p>
+		<?php endif; ?>
 		<h3 class="post-card__title">
 			<?php if ( $card_person ) : ?>
 				<button type="button" class="post-card__link post-card__open" aria-haspopup="dialog" aria-controls="<?php echo esc_attr( $card_dialog_id ); ?>" data-bridge-person-open><?php echo esc_html( $card['title'] ); ?></button>
@@ -64,16 +72,11 @@ $card_show_badge = false;
 			<p class="post-card__subtitle"><?php echo esc_html( $card['subtitle'] ); ?></p>
 		<?php endif; ?>
 		<?php
-		// The person's location, a line under the role in Design 2. Set by
-		// inc/team-fields.php on types with team member fields.
-		if ( 'photo' === ( $team_design ?? 'arch' ) && '' !== ( $card['location'] ?? '' ) ) :
-			?>
-			<p class="post-card__location"><?php echo esc_html( $card['location'] ); ?></p>
-		<?php endif; ?>
-		<?php
 		// A pageless item with a link of its own says its own words — see
 		// inc/simple-editor.php. Drawn in the block's Link style.
-		$card_cta_text = '' !== $card['item_link_text'] ? $card['item_link_text'] : $card['cta_text'];
+		// A card that opens a profile pop-up needs no button: the whole card
+		// is the way in.
+		$card_cta_text = $card_person ? '' : ( '' !== $card['item_link_text'] ? $card['item_link_text'] : $card['cta_text'] );
 
 		if ( '' !== $card_cta_text ) :
 			?>

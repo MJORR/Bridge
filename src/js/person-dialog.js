@@ -55,6 +55,9 @@ function open(button) {
 	}
 
 	dialog.showModal();
+	// Focus the pop-up itself, not the close button, so the X opens
+	// without a focus ring. Tab still reaches it.
+	dialog.focus();
 	document.documentElement.classList.add('has-open-dialog');
 	// Start at the top of the profile every time it opens.
 	dialog.scrollTop = 0;

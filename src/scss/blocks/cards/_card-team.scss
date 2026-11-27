@@ -266,16 +266,25 @@
 		var(--wp--custom--card--shadow, none)
 	);
 
+	// The 3:4 frame sets the height, never the photo: `min-height: 0` and
+	// a photo pinned inside it, or a tall portrait stretches every card in
+	// the row to many times its size.
 	.post-card__image {
+		position: relative;
 		width: 100%;
+		min-height: 0;
 		aspect-ratio: 3 / 4;
 		margin: 0;
 		padding: 0;
+		overflow: hidden;
 		border-radius: 0;
 		background: none;
 	}
 
 	.post-card__image > img {
+		position: absolute;
+		inset: 0;
+		width: 100%;
 		height: 100%;
 		aspect-ratio: auto;
 		border-radius: 0;
@@ -294,15 +303,19 @@
 	}
 }
 
-// Design 2's location, a small pill under the role: Secondary, white text.
+// Design 2's job title at the body text size.
+.bridge-cards-grid .post-card--team-photo .post-card__subtitle {
+	font-size: var(--wp--preset--font-size--medium);
+}
+
+// Design 2's location, above the name: the Eyebrow paragraph style (its
+// size, capitals and line come from components/_paragraph.scss), in
+// Secondary.
 .bridge-cards-grid .post-card--team-photo .post-card__location {
-	align-self: flex-start;
-	margin: var(--wp--preset--spacing--40) 0 0;
-	padding: 0.3em 0.85em;
-	border-radius: 999px;
-	background-color: var(--wp--preset--color--secondary);
-	color: var(--wp--preset--color--white, #fff);
-	font-size: var(--wp--preset--font-size--x-small);
+	--bridge-eyebrow-rule: 2rem;
+
+	margin: 0;
+	color: var(--wp--preset--color--secondary);
 	line-height: 1.3;
 }
 
@@ -328,7 +341,8 @@
  * scroll on their own if the profile is long.
  */
 .bridge-person {
-	--bridge-person-pad: var(--wp--preset--spacing--60);
+	// Twice the card padding.
+	--bridge-person-pad: calc(2 * var(--wp--custom--card--padding, 1.5rem));
 
 	width: min(60rem, calc(100% - 2 * var(--wp--preset--spacing--40)));
 	max-width: none;
@@ -350,6 +364,11 @@
 		background: rgb(0 0 0 / 80%);
 	}
 
+	// The pop-up takes focus when it opens (see person-dialog.js), not the X.
+	&:focus {
+		outline: none;
+	}
+
 	&[open] {
 		animation: bridge-person-in 0.25s ease;
 	}
@@ -360,33 +379,54 @@
 		grid-template-columns: minmax(0, 1fr);
 	}
 
+	// A bare X in the body's top corner, its lines lined up with the
+	// body's padding. The button is a little larger than the icon so it is
+	// easy to hit; the offset pulls it back by that difference.
 	&__close {
+		--bridge-person-close-nudge: calc((2rem - 20px) / 2);
+
 		position: absolute;
 		z-index: 2;
-		inset-block-start: var(--wp--preset--spacing--30);
-		inset-inline-end: var(--wp--preset--spacing--30);
+		inset-block-start: calc(
+			var(--bridge-person-pad) - var(--bridge-person-close-nudge)
+		);
+		inset-inline-end: calc(
+			var(--bridge-person-pad) - var(--bridge-person-close-nudge)
+		);
 		display: grid;
 		place-items: center;
-		width: 2.5rem;
-		height: 2.5rem;
+		width: 2rem;
+		height: 2rem;
 		padding: 0;
 		border: 0;
-		border-radius: 50%;
-		background: var(--bridge-person-bg, #fff);
-		box-shadow: 0 1px 4px rgb(0 0 0 / 20%);
+		border-radius: 0;
+		background: none;
+		box-shadow: none;
 		color: inherit;
 		cursor: pointer;
 
+		// No ring or border: hover and keyboard focus fade the X instead.
+		&:hover,
 		&:focus-visible {
-			outline: 2px solid currentcolor;
-			outline-offset: 2px;
+			opacity: 0.7;
+		}
+
+		&:focus {
+			outline: none;
 		}
 	}
 
+	// The profile photo with a 4:3 picture under it. On a phone the two sit
+	// side by side as squares, so the words are not pushed far down.
 	&__media {
-		aspect-ratio: 4 / 3;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	}
+
+	&__frame {
+		position: relative;
+		aspect-ratio: 1;
 		overflow: hidden;
-		background: color-mix(in srgb, currentcolor 8%, transparent);
 	}
 
 	&__img {
@@ -397,7 +437,30 @@
 		object-position: center top;
 	}
 
+	&__frame--extra &__img {
+		object-position: center;
+	}
+
+	// No picture: the site's light logo on Primary, as on a card.
+	&__logo-tile {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background-color: var(--wp--preset--color--primary);
+	}
+
+	&__logo {
+		display: block;
+		width: auto;
+		height: auto;
+		max-width: 60%;
+		max-height: 60%;
+	}
+
 	&__body {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
@@ -409,13 +472,22 @@
 		}
 	}
 
+	// The top line keeps clear of the X.
+	&__location,
+	&__name {
+		margin-inline-end: 2rem !important;
+	}
+
+	// The Eyebrow paragraph style in Secondary, as on the Design 2 card.
 	&__location {
-		padding: 0.3em 0.85em;
-		border-radius: 999px;
-		background-color: var(--wp--preset--color--secondary);
-		color: var(--wp--preset--color--white, #fff);
-		font-size: var(--wp--preset--font-size--x-small);
+		color: var(--wp--preset--color--secondary);
 		line-height: 1.3;
+	}
+
+	// A shorter line than the Eyebrow style's own. Specific enough to beat
+	// `:root p.is-style-eyebrow`, which sets it.
+	& &__location.is-style-eyebrow {
+		--bridge-eyebrow-rule: 2rem;
 	}
 
 	&__name {
@@ -427,6 +499,11 @@
 	&__position {
 		color: color-mix(in srgb, currentcolor 70%, transparent);
 		font-size: var(--wp--preset--font-size--small);
+	}
+
+	&__sep {
+		padding-inline: 0.2em;
+		opacity: 0.6;
 	}
 
 	&__profile {
@@ -468,9 +545,19 @@
 			grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 		}
 
+		// The photo takes the height the 4:3 picture leaves.
 		&__media {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: minmax(12rem, 1fr) auto;
+			min-height: 32rem;
+		}
+
+		&__frame--photo {
 			aspect-ratio: auto;
-			min-height: 26rem;
+		}
+
+		&__frame--extra {
+			aspect-ratio: 4 / 3;
 		}
 
 		// The words scroll on their own; the picture stays beside them at

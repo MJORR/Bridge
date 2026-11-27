@@ -13,6 +13,9 @@
  *   Location  one of the Site Options locations, chosen from a list — or typed,
  *             on a site with none.
  *   LinkedIn  the profile address, linked from the person's profile pop-up.
+ *   Professional reference  a registration or reference number (e.g. a GDC
+ *             number), in its own box under Featured image; shown in the
+ *             profile pop-up under the position.
  *
  * Off unless a type asks for it, so nothing changes for any other type.
  *
@@ -28,6 +31,7 @@ if (! defined('ABSPATH')) {
 const BRIDGE_PERSON_POSITION_KEY = 'subtitle';
 const BRIDGE_PERSON_LOCATION_KEY = 'bridge_location';
 const BRIDGE_PERSON_LINKEDIN_KEY = 'bridge_linkedin';
+const BRIDGE_PERSON_REFERENCE_KEY = 'bridge_professional_reference';
 
 /**
  * Whether a post type has the team member fields.
@@ -72,6 +76,7 @@ function bridge_register_person_fields(): void
 				BRIDGE_PERSON_POSITION_KEY => 'sanitize_text_field',
 				BRIDGE_PERSON_LOCATION_KEY => 'sanitize_text_field',
 				BRIDGE_PERSON_LINKEDIN_KEY => 'esc_url_raw',
+				BRIDGE_PERSON_REFERENCE_KEY => 'sanitize_text_field',
 			) as $key => $sanitize
 		) {
 			register_post_meta(
@@ -183,6 +188,51 @@ function bridge_person_fields_box($post): void
 add_action('edit_form_after_title', 'bridge_person_fields_box', 6);
 
 /**
+ * The Professional reference box, in the sidebar under Featured image.
+ *
+ * Core adds Featured image to the side column at `low` priority before
+ * `add_meta_boxes` runs, so a box added here at `low` lands just below it.
+ *
+ * @param string $post_type Post type being edited.
+ */
+function bridge_person_reference_meta_box($post_type): void
+{
+	if (! is_string($post_type) || ! bridge_post_type_has_person($post_type)) {
+		return;
+	}
+
+	add_meta_box(
+		'bridge-person-reference-box',
+		__('Professional Reference', 'bridge'),
+		'bridge_person_reference_box',
+		$post_type,
+		'side',
+		'low'
+	);
+}
+add_action('add_meta_boxes', 'bridge_person_reference_meta_box');
+
+/**
+ * The Professional reference field.
+ *
+ * Saved by bridge_save_person_fields(), under the nonce printed with the
+ * fields under the name.
+ *
+ * @param WP_Post $post The item being edited.
+ */
+function bridge_person_reference_box($post): void
+{
+	$reference = (string) get_post_meta($post->ID, BRIDGE_PERSON_REFERENCE_KEY, true);
+	?>
+	<p>
+		<label class="screen-reader-text" for="bridge-person-reference"><?php esc_html_e('Professional Reference', 'bridge'); ?></label>
+		<input type="text" id="bridge-person-reference" name="bridge_person_reference" class="widefat" value="<?php echo esc_attr($reference); ?>" autocomplete="off" placeholder="<?php esc_attr_e('e.g. GDC No. 123456', 'bridge'); ?>">
+	</p>
+	<p class="description"><?php esc_html_e('Shown in the profile pop-up, under the position.', 'bridge'); ?></p>
+	<?php
+}
+
+/**
  * Save the three fields.
  *
  * @param int $post_id Post being saved.
@@ -207,6 +257,7 @@ function bridge_save_person_fields(int $post_id): void
 		BRIDGE_PERSON_POSITION_KEY => sanitize_text_field(wp_unslash($_POST['bridge_person_position'] ?? '')), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized — sanitised here.
 		BRIDGE_PERSON_LOCATION_KEY => sanitize_text_field(wp_unslash($_POST['bridge_person_location'] ?? '')), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized — sanitised here.
 		BRIDGE_PERSON_LINKEDIN_KEY => esc_url_raw(trim((string) wp_unslash($_POST['bridge_person_linkedin'] ?? ''))), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized — sanitised here.
+		BRIDGE_PERSON_REFERENCE_KEY => sanitize_text_field(wp_unslash($_POST['bridge_person_reference'] ?? '')), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized — sanitised here.
 	);
 
 	foreach ($values as $key => $value) {
@@ -241,9 +292,10 @@ function bridge_card_data_person($card, $post)
 	$card['permalink'] = '';
 	$card['external']  = false;
 	$card['person']    = array(
-		'linkedin' => (string) get_post_meta($post->ID, BRIDGE_PERSON_LINKEDIN_KEY, true),
+		'linkedin'  => (string) get_post_meta($post->ID, BRIDGE_PERSON_LINKEDIN_KEY, true),
+		'reference' => (string) get_post_meta($post->ID, BRIDGE_PERSON_REFERENCE_KEY, true),
 		// The Profile field is the item's body.
-		'profile'  => trim((string) $post->post_content),
+		'profile'   => trim((string) $post->post_content),
 	);
 
 	return $card;
